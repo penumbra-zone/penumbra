@@ -3,7 +3,9 @@ package penumbra.core.component.governance.v1;
 
 import "google/protobuf/any.proto";
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/auction/v1/auction.proto";
 import "penumbra/core/component/community_pool/v1/community_pool.proto";
+import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/distributions/v1/distributions.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/funding/v1/funding.proto";
@@ -260,7 +262,7 @@ message Proposal {
     string commit = 1;
   }
 
-  // An emergency proposal can be passed instantaneously by a 2/3 majority of validators, without
+  // An emergency proposal can be passed instantaneously by a 1/3 majority of validators, without
   // waiting for the voting period to expire.
   //
   // If the boolean `halt_chain` is set to `true`, then the chain will halt immediately when the
@@ -273,15 +275,21 @@ message Proposal {
   // A parameter change proposal describes a replacement of the app parameters, which should take
   // effect when the proposal is passed.
   message ParameterChange {
-    // The old app parameters to be replaced: even if the proposal passes, the update will not be
-    // applied if the app parameters have changed *at all* from these app parameters. Usually,
-    // this should be set to the current app parameters at time of proposal.
-    ChangedAppParameters old_parameters = 1;
+    // DEPRECATED
+    ChangedAppParameters old_parameters = 1 [deprecated = true];
+    // DEPRECATED
+    ChangedAppParameters new_parameters = 2 [deprecated = true];
 
-    // The new app parameters to be set: the *entire* app parameters will be replaced with these
-    // at the time the proposal is passed, for every component's parameters that is set. If a component's
-    // parameters are not set, then they were not changed by the proposal, and will not be updated.
-    ChangedAppParameters new_parameters = 2;
+    // A list of encoded preconditions for the parameter change: even if the
+    // proposal passes, the update will not be applied if the value of the
+    // precondition does not match the proposal at the time it is enacted.
+    //
+    // This can be empty, in which case the changes will be applied
+    // unconditionally.
+    repeated EncodedParameter preconditions = 3;
+
+    // A list of encoded changes to the application parameters.
+    repeated EncodedParameter changes = 4;
   }
 
   // A Community Pool spend proposal describes zero or more transactions to execute on behalf of the Community Pool, with
@@ -428,9 +436,24 @@ message GenesisContent {
   GovernanceParameters governance_params = 1;
 }
 
-// Note: must be kept in sync with AppParameters.
-// Each field here is optional.
+message EncodedParameter {
+  // The component name in the `AppParameters`.
+  //
+  // This is the ProtoJSON-produced key in the `AppParameters` structure.
+  string component = 1;
+  // The parameter key in the component parameters.
+  //
+  // This is the ProtoJSON-produced field name in the component's substructure.
+  string key = 2;
+  // The parameter value.
+  //
+  // This is the ProtoJSON-encoded value of the parameter.
+  string value = 3;
+}
+
+// DEPRECATED
 message ChangedAppParameters {
+  option deprecated = true;
   // Sct module parameters.
   core.component.sct.v1.SctParameters sct_params = 1;
   // Community Pool module parameters.
@@ -449,9 +472,15 @@ message ChangedAppParameters {
   core.component.funding.v1.FundingParameters funding_params = 8;
   // Shielded pool module parameters
   core.component.shielded_pool.v1.ShieldedPoolParameters shielded_pool_params = 9;
+  // DEX component parameters
+  core.component.dex.v1.DexParameters dex_params = 10;
+  // Auction module parameters.
+  core.component.auction.v1.AuctionParameters auction_params = 11;
 }
 
+// DEPRECATED
 message ChangedAppParametersSet {
+  option deprecated = true;
   // The set of app parameters at the time the proposal was submitted.
   ChangedAppParameters old = 1;
   // The new set of parameters the proposal is trying to enact.
@@ -485,8 +514,7 @@ message AllTalliedDelegatorVotesForProposalResponse {
   keys.v1.IdentityKey identity_key = 2;
 }
 
-message NextProposalIdRequest {
-}
+message NextProposalIdRequest {}
 
 message NextProposalIdResponse {
   // The next proposal ID.

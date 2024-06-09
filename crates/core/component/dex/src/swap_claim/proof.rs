@@ -8,6 +8,7 @@ use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq};
+use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_fee::Fee;
 use penumbra_proto::{core::component::dex::v1 as pb, DomainType};
 use penumbra_tct as tct;
@@ -17,7 +18,10 @@ use penumbra_asset::{
     asset::{self, Id},
     Value, ValueVar,
 };
-use penumbra_keys::keys::{Bip44Path, NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
+use penumbra_keys::keys::{
+    AuthorizationKeyVar, Bip44Path, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
+    SeedPhrase, SpendKey,
+};
 use penumbra_num::{Amount, AmountVar};
 use penumbra_sct::{Nullifier, NullifierVar};
 use penumbra_shielded_pool::{
@@ -59,7 +63,9 @@ pub struct SwapClaimProofPrivate {
     pub swap_plaintext: SwapPlaintext,
     /// Inclusion proof for the swap commitment
     pub state_commitment_proof: tct::Proof,
-    // The nullifier deriving key for the Swap NFT note.
+    /// The spend verification key
+    pub ak: VerificationKey<SpendAuth>,
+    // The nullifier deriving key for the swap.
     pub nk: NullifierKey,
     /// Output amount 1
     pub lambda_1: Amount,
@@ -76,6 +82,8 @@ fn check_satisfaction(
     public: &SwapClaimProofPublic,
     private: &SwapClaimProofPrivate,
 ) -> Result<()> {
+    use penumbra_keys::FullViewingKey;
+
     let swap_commitment = private.swap_plaintext.swap_commitment();
     if swap_commitment != private.state_commitment_proof.commitment() {
         anyhow::bail!("swap commitment integrity check failed");
@@ -92,15 +100,36 @@ fn check_satisfaction(
         anyhow::bail!("nullifier did not match public input");
     }
 
+    let fvk = FullViewingKey::from_components(private.ak, private.nk);
+    let ivk = fvk.incoming();
+    let transmission_key = ivk.diversified_public(private.swap_plaintext.diversified_generator());
+    anyhow::ensure!(
+        transmission_key == *private.swap_plaintext.transmission_key(),
+        "transmission key did not match swap plaintext"
+    );
+    anyhow::ensure!(
+        !private.swap_plaintext.diversified_generator().is_identity(),
+        "diversified generator is identity"
+    );
+    anyhow::ensure!(
+        !private.ak.is_identity(),
+        "diversified generator is identity"
+    );
+
     if private.swap_plaintext.claim_fee != public.claim_fee {
         anyhow::bail!("claim fee did not match public input");
     }
 
-    let block: u64 = private.state_commitment_proof.position().block().into();
-    let note_commitment_block_height: u64 = public.output_data.epoch_starting_height + block;
-    if note_commitment_block_height != public.output_data.height {
-        anyhow::bail!("swap commitment height did not match public input");
-    }
+    anyhow::ensure!(
+        private.state_commitment_proof.position().block()
+            == public.output_data.sct_position_prefix.block(),
+        "scm block did not match batch swap"
+    );
+    anyhow::ensure!(
+        private.state_commitment_proof.position().epoch()
+            == public.output_data.sct_position_prefix.epoch(),
+        "scm epoch did not match batch swap"
+    );
 
     if private.swap_plaintext.trading_pair != public.output_data.trading_pair {
         anyhow::bail!("trading pair did not match public input");
@@ -150,9 +179,7 @@ fn check_circuit_satisfaction(
     Ok(())
 }
 
-/// SwapClaim consumes an existing Swap NFT so they are most similar to Spend operations,
-/// however the note commitment proof needs to be for a specific block due to clearing prices
-/// only being valid for particular blocks (i.e. the exchange rates of assets change over time).
+/// SwapClaim consumes an existing Swap so they are most similar to Spend operations.
 #[derive(Clone, Debug)]
 pub struct SwapClaimCircuit {
     public: SwapClaimProofPublic,
@@ -162,6 +189,8 @@ pub struct SwapClaimCircuit {
 impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
+        // Note: in the allocation of the address on the `SwapPlaintextVar`, we check the diversified
+        // base is not identity.
         let swap_plaintext_var =
             SwapPlaintextVar::new_witness(cs.clone(), || Ok(self.private.swap_plaintext.clone()))?;
 
@@ -176,6 +205,8 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
             Ok(self.private.state_commitment_proof)
         })?;
+        // Note: in the allocation of `AuthorizationKeyVar` we check it is not identity.
+        let ak_var = AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.private.ak))?;
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
         let lambda_1_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.private.lambda_1))?;
         let lambda_2_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.private.lambda_2))?;
@@ -211,16 +242,23 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &claimed_swap_commitment)?;
         nullifier_var.enforce_equal(&claimed_nullifier_var)?;
 
+        // Connection between nullifier key and address
+        let ivk = IncomingViewingKeyVar::derive(&nk_var, &ak_var)?;
+        let computed_transmission_key =
+            ivk.diversified_public(&swap_plaintext_var.claim_address.diversified_generator)?;
+        computed_transmission_key
+            .enforce_equal(&swap_plaintext_var.claim_address.transmission_key)?;
+
         // Fee consistency check.
         claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
 
         // Validate the swap commitment's height matches the output data's height (i.e. the clearing price height).
-        let block = position_var.block()?;
-        let note_commitment_block_height_var =
-            output_data_var.epoch_starting_height.clone() + block;
         output_data_var
-            .height
-            .enforce_equal(&note_commitment_block_height_var)?;
+            .block_within_epoch
+            .enforce_equal(&position_var.block()?)?;
+        output_data_var
+            .epoch
+            .enforce_equal(&position_var.epoch()?)?;
 
         // Validate that the output data's trading pair matches the note commitment's trading pair.
         output_data_var
@@ -281,6 +319,7 @@ impl DummyWitness for SwapClaimCircuit {
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
+        let ak = *fvk_sender.spend_verification_key();
         let nk = *sk_sender.nullifier_key();
 
         let delta_1_i = 10u64.into();
@@ -318,7 +357,7 @@ impl DummyWitness for SwapClaimCircuit {
             unfilled_2: Amount::from(10u64),
             height: 0,
             trading_pair: swap_plaintext.trading_pair,
-            epoch_starting_height: 0,
+            sct_position_prefix: Default::default(),
         };
         let note_blinding_1 = Fq::from(1);
         let note_blinding_2 = Fq::from(1);
@@ -338,6 +377,7 @@ impl DummyWitness for SwapClaimCircuit {
             swap_plaintext,
             state_commitment_proof,
             nk,
+            ak,
             lambda_1,
             lambda_2,
             note_blinding_1,
@@ -561,6 +601,7 @@ mod tests {
         let ivk_recipient = fvk_recipient.incoming();
         let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
         let nk = *sk_recipient.nullifier_key();
+        let ak = *fvk_recipient.spend_verification_key();
 
         let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
         let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
@@ -599,7 +640,7 @@ mod tests {
             unfilled_2: test_bsod.unfilled_2,
             height: height.into(),
             trading_pair: swap_plaintext.trading_pair,
-            epoch_starting_height: (epoch_duration * position.epoch()).into(),
+            sct_position_prefix: Default::default(),
         };
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
@@ -621,6 +662,7 @@ mod tests {
         let private = SwapClaimProofPrivate {
             swap_plaintext,
             state_commitment_proof,
+            ak,
             nk,
             lambda_1,
             lambda_2,
@@ -691,6 +733,7 @@ mod tests {
         let ivk_recipient = fvk_recipient.incoming();
         let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
         let nk = *sk_recipient.nullifier_key();
+        let ak = *fvk_recipient.spend_verification_key();
 
         let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
         let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
@@ -729,7 +772,7 @@ mod tests {
             unfilled_2: test_bsod.unfilled_2,
             height: height.into(),
             trading_pair: swap_plaintext.trading_pair,
-            epoch_starting_height: (epoch_duration * position.epoch()).into(),
+            sct_position_prefix: Default::default()
         };
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
@@ -751,6 +794,7 @@ mod tests {
         let private = SwapClaimProofPrivate {
             swap_plaintext,
             state_commitment_proof,
+            ak,
             nk,
             lambda_1,
             lambda_2,
@@ -779,7 +823,8 @@ mod tests {
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
-        let nk = *sk_recipient.nullifier_key();
+        let nk = *fvk_recipient.nullifier_key();
+        let ak = *fvk_recipient.spend_verification_key();
 
         let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
         let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
@@ -827,7 +872,7 @@ mod tests {
             unfilled_2: test_bsod.unfilled_2,
             height: height.into(),
             trading_pair: swap_plaintext.trading_pair,
-            epoch_starting_height: (epoch_duration * dummy_position.epoch()).into(),
+            sct_position_prefix: Default::default()
         };
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
@@ -849,6 +894,7 @@ mod tests {
         let private = SwapClaimProofPrivate {
             swap_plaintext,
             state_commitment_proof,
+            ak,
             nk,
             lambda_1,
             lambda_2,

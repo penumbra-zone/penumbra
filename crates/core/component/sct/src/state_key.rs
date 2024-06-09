@@ -2,10 +2,6 @@ pub mod config {
     pub fn sct_params() -> &'static str {
         "sct/config/sct_params"
     }
-
-    pub fn sct_params_updated() -> &'static str {
-        "sct/config/sct_params_updated"
-    }
 }
 
 pub mod block_manager {

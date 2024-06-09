@@ -10,6 +10,7 @@ use ark_ff::fields::PrimeField;
 use decaf377::Fq;
 use penumbra_num::Amount;
 use penumbra_proto::{penumbra::core::asset::v1 as pb, view::v1::AssetsResponse, DomainType};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -38,6 +39,7 @@ pub(super) struct Inner {
     // For now, don't bother with a domain type here,
     // since we don't render images from Rust code.
     images: Vec<pb::AssetImage>,
+    priority_score: u64,
 
     /// Sorted by priority order.
     pub(super) units: Vec<BareDenomUnit>,
@@ -63,6 +65,7 @@ impl From<&Inner> for pb::Metadata {
             penumbra_asset_id: Some(inner.id.into()),
             denom_units: inner.units.clone().into_iter().map(|x| x.into()).collect(),
             images: inner.images.clone(),
+            priority_score: inner.priority_score,
         }
     }
 }
@@ -128,6 +131,7 @@ impl TryFrom<pb::Metadata> for Inner {
             name: value.name,
             symbol: value.symbol,
             images: value.images,
+            priority_score: value.priority_score,
         })
     }
 }
@@ -249,6 +253,7 @@ impl Inner {
             name: String::new(),
             symbol: String::new(),
             images: Vec::new(),
+            priority_score: 0,
         }
     }
 }
@@ -333,6 +338,10 @@ impl Metadata {
         REGISTRY.parse_denom(&denom.denom)
     }
 
+    pub fn is_auction_nft(&self) -> bool {
+        self.starts_with("auctionnft_")
+    }
+
     pub fn is_opened_position_nft(&self) -> bool {
         let prefix = "lpnft_opened_".to_string();
 
@@ -349,6 +358,21 @@ impl Metadata {
         let prefix = "lpnft_closed_".to_string();
 
         self.starts_with(&prefix)
+    }
+
+    /// Returns the IBC transfer path and base denom
+    /// if this is an IBC transferred asset, `None` otherwise.
+    pub fn ibc_transfer_path(&self) -> anyhow::Result<Option<(String, String)>> {
+        let base_denom = self.base_denom().denom;
+        let re = Regex::new(r"^(?<path>transfer/channel-[0-9]+)/(?<denom>\w+)$")
+            .context("error instantiating denom matching regex")?;
+
+        let Some(caps) = re.captures(&base_denom) else {
+            // Not an IBC asset
+            return Ok(None);
+        };
+
+        Ok(Some((caps["path"].to_string(), caps["denom"].to_string())))
     }
 }
 
@@ -386,7 +410,30 @@ impl Ord for Metadata {
 
 impl Debug for Metadata {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.inner.base_denom.as_str())
+        let Self { inner } = self;
+        let Inner {
+            id,
+            base_denom,
+            description,
+            images,
+            units,
+            display_index,
+            name,
+            symbol,
+            priority_score,
+        } = inner.as_ref();
+
+        f.debug_struct("Metadata")
+            .field("id", id)
+            .field("base_denom", base_denom)
+            .field("description", description)
+            .field("images", images)
+            .field("priority_score", priority_score)
+            .field("units", units)
+            .field("display_index", display_index)
+            .field("name", name)
+            .field("symbol", symbol)
+            .finish()
     }
 }
 
@@ -520,6 +567,8 @@ impl Display for Unit {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     #[test]
     fn can_parse_metadata_from_chain_registry() {
         const SOME_COSMOS_JSON: &str = r#"
@@ -564,5 +613,32 @@ mod tests {
         // uncomment to see what our subset looks like
         //let json2 = serde_json::to_string_pretty(&_metadata).unwrap();
         //println!("{}", json2);
+    }
+
+    #[test]
+    fn encoding_round_trip_succeeds() {
+        let metadata = super::Metadata::try_from("upenumbra").unwrap();
+
+        let proto = super::pb::Metadata::from(metadata.clone());
+
+        let metadata_2 = super::Metadata::try_from(proto).unwrap();
+
+        assert_eq!(metadata, metadata_2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn changing_asset_id_without_changing_denom_fails_decoding() {
+        let mut metadata = super::Metadata::try_from("upenumbra").unwrap();
+
+        let inner = Arc::get_mut(&mut metadata.inner).unwrap();
+
+        inner.id = super::Id::from_raw_denom("uusd");
+
+        let proto = super::pb::Metadata::from(metadata);
+
+        // This should throw an error, because the asset ID and denom are now inconsistent.
+
+        let _domain_type = super::Metadata::try_from(proto).unwrap();
     }
 }

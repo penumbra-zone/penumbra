@@ -36,8 +36,12 @@ pub struct CompactBlock {
     pub swap_outputs: BTreeMap<TradingPair, BatchSwapOutputData>,
     /// Set if the app parameters have been updated. Notifies the client that it should re-sync from the fullnode RPC.
     pub app_parameters_updated: bool,
-    /// Updated gas prices, if they have changed.
+    /// Updated gas prices for the native token, if they have changed.
     pub gas_prices: Option<GasPrices>,
+    /// Updated gas prices for alternative fee tokens, if they have changed.
+    pub alt_gas_prices: Vec<GasPrices>,
+    // The epoch index
+    pub epoch_index: u64,
     // **IMPORTANT NOTE FOR FUTURE HUMANS**: if you want to add new fields to the `CompactBlock`,
     // you must update `CompactBlock::requires_scanning` to check for the emptiness of those fields,
     // because the client will skip processing any compact block that is marked as not requiring
@@ -57,6 +61,8 @@ impl Default for CompactBlock {
             swap_outputs: BTreeMap::new(),
             app_parameters_updated: false,
             gas_prices: None,
+            alt_gas_prices: Vec::new(),
+            epoch_index: 0,
         }
     }
 }
@@ -70,6 +76,7 @@ impl CompactBlock {
             || self.proposal_started // need to process proposal start
             || self.app_parameters_updated // need to save latest app parameters
             || self.gas_prices.is_some() // need to save latest gas prices
+            || !self.alt_gas_prices.is_empty() // need to save latest alt gas prices
     }
 }
 
@@ -95,6 +102,8 @@ impl From<CompactBlock> for pb::CompactBlock {
             swap_outputs: cb.swap_outputs.into_values().map(Into::into).collect(),
             app_parameters_updated: cb.app_parameters_updated,
             gas_prices: cb.gas_prices.map(Into::into),
+            alt_gas_prices: cb.alt_gas_prices.into_iter().map(Into::into).collect(),
+            epoch_index: cb.epoch_index,
         }
     }
 }
@@ -132,6 +141,12 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
             proposal_started: value.proposal_started,
             app_parameters_updated: value.app_parameters_updated,
             gas_prices: value.gas_prices.map(TryInto::try_into).transpose()?,
+            alt_gas_prices: value
+                .alt_gas_prices
+                .into_iter()
+                .map(GasPrices::try_from)
+                .collect::<Result<Vec<GasPrices>>>()?,
+            epoch_index: value.epoch_index,
         })
     }
 }

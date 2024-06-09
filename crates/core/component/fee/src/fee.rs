@@ -1,5 +1,7 @@
 use anyhow::Context;
 use penumbra_proto::{penumbra::core::component::fee::v1 as pb, DomainType};
+use std::fmt;
+use std::str::FromStr;
 
 use decaf377::Fr;
 use penumbra_asset::{asset, balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
@@ -35,6 +37,10 @@ impl Fee {
         self.0.asset_id
     }
 
+    pub fn asset_matches(&self, other: &Fee) -> bool {
+        self.asset_id() == other.asset_id()
+    }
+
     pub fn balance(&self) -> balance::Balance {
         -Balance::from(self.0)
     }
@@ -53,15 +59,24 @@ impl Fee {
         match fee_tier {
             FeeTier::Low => {
                 let amount = (self.amount() * FEE_TIER_LOW_MULTIPLIER.into()) / 100u32.into();
-                Self::from_staking_token_amount(amount)
+                Self(Value {
+                    amount,
+                    asset_id: self.0.asset_id,
+                })
             }
             FeeTier::Medium => {
                 let amount = (self.amount() * FEE_TIER_MEDIUM_MULTIPLIER.into()) / 100u32.into();
-                Self::from_staking_token_amount(amount)
+                Self(Value {
+                    amount,
+                    asset_id: self.0.asset_id,
+                })
             }
             FeeTier::High => {
                 let amount = (self.amount() * FEE_TIER_HIGH_MULTIPLIER.into()) / 100u32.into();
-                Self::from_staking_token_amount(amount)
+                Self(Value {
+                    amount,
+                    asset_id: self.0.asset_id,
+                })
             }
         }
     }
@@ -130,6 +145,29 @@ pub enum FeeTier {
 impl Default for FeeTier {
     fn default() -> Self {
         Self::Low
+    }
+}
+
+impl fmt::Display for FeeTier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = match self {
+            FeeTier::Low => "low".to_owned(),
+            FeeTier::Medium => "medium".to_owned(),
+            FeeTier::High => "high".to_owned(),
+        };
+        write!(f, "{}", s)
+    }
+}
+
+impl FromStr for FeeTier {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "low" => Ok(FeeTier::Low),
+            "medium" => Ok(FeeTier::Medium),
+            "high" => Ok(FeeTier::High),
+            _ => anyhow::bail!(format!("cannot parse '{}' as FeeTier", s)),
+        }
     }
 }
 

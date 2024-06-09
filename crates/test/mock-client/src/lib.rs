@@ -59,7 +59,7 @@ impl MockClient {
                 .compact_block(height)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("missing compact block for height {}", height))?;
-            self.scan_block(compact_block)?;
+            self.scan_block(compact_block.try_into()?)?;
             let (latest_height, root) = self.latest_height_and_sct_root();
             anyhow::ensure!(latest_height == height, "latest height should be updated");
             let expected_root = state
@@ -199,5 +199,14 @@ impl MockClient {
         plan.clone()
             .build_concurrent(&self.fvk, &witness_data, &auth_data)
             .await
+    }
+
+    pub fn notes_by_asset(
+        &self,
+        asset_id: penumbra_asset::asset::Id,
+    ) -> impl Iterator<Item = &Note> + '_ {
+        self.notes
+            .values()
+            .filter(move |n| n.asset_id() == asset_id)
     }
 }

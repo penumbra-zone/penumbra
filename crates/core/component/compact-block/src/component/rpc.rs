@@ -142,7 +142,7 @@ impl QueryService for Server {
                     // Future iterations of this work should start by moving block serialization
                     // outside of the `send_op` future, and investigate if long blocking sends can
                     // happen for benign reasons (i.e not caused by the client).
-                    tx_blocks.send(Ok(compact_block.into())).await?;
+                    tx_blocks.send(Ok(compact_block)).await?;
                     metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);
                 }
 
@@ -172,7 +172,7 @@ impl QueryService for Server {
                         .expect("no error fetching block")
                         .expect("compact block for in-range height must be present");
                     tx_blocks
-                        .send(Ok(block.into()))
+                        .send(Ok(block))
                         .await
                         .map_err(|_| tonic::Status::cancelled("client closed connection"))?;
                     metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);
@@ -201,7 +201,7 @@ impl QueryService for Server {
                         .map_err(|e| tonic::Status::internal(e.to_string()))?
                         .expect("compact block for in-range height must be present");
                     tx_blocks
-                        .send(Ok(block.into()))
+                        .send(Ok(block))
                         .await
                         .map_err(|_| tonic::Status::cancelled("channel closed"))?;
                     metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);

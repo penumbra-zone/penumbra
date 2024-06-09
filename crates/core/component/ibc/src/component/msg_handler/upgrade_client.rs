@@ -58,7 +58,7 @@ impl MsgHandler for MsgUpgradeClient {
             .context("couldn't decode proof for upgraded client state")?;
 
         state
-            .verify_client_upgrade_proof(
+            .verify_client_upgrade_proof::<HI>(
                 &self.client_id,
                 &proof_client_state,
                 &proof_consensus_state,

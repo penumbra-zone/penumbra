@@ -221,10 +221,7 @@ impl TransactionViewExt for TransactionView {
                 penumbra_transaction::ActionView::Swap(swap) => {
                     // Typical swaps are one asset for another, but we can't know that for sure.
                     match swap {
-                        SwapView::Visible {
-                            swap: _,
-                            swap_plaintext,
-                        } => {
+                        SwapView::Visible { swap_plaintext, .. } => {
                             let (from_asset, from_value, to_asset) = match (
                                 swap_plaintext.delta_1_i.value(),
                                 swap_plaintext.delta_2_i.value(),
@@ -257,7 +254,7 @@ impl TransactionViewExt for TransactionView {
 
                             ["Swap", &action]
                         }
-                        SwapView::Opaque { swap } => {
+                        SwapView::Opaque { swap, .. } => {
                             action = format!(
                                 "Opaque swap for trading pair: {} <=> {}",
                                 format_asset_id(&swap.body.trading_pair.asset_1()),
@@ -273,6 +270,7 @@ impl TransactionViewExt for TransactionView {
                             swap_claim,
                             output_1,
                             output_2,
+                            swap_tx: _,
                         } => {
                             // View service can't see SwapClaims: https://github.com/penumbra-zone/penumbra/issues/2547
                             dbg!(swap_claim);
@@ -380,6 +378,13 @@ impl TransactionViewExt for TransactionView {
                 penumbra_transaction::ActionView::Delegate(_) => ["Delegation", ""],
                 penumbra_transaction::ActionView::Undelegate(_) => ["Undelegation", ""],
                 penumbra_transaction::ActionView::UndelegateClaim(_) => ["Undelegation Claim", ""],
+                penumbra_transaction::ActionView::ActionDutchAuctionSchedule(_) => todo!(),
+                penumbra_transaction::ActionView::ActionDutchAuctionEnd(_) => {
+                    todo!()
+                }
+                penumbra_transaction::ActionView::ActionDutchAuctionWithdraw(_) => {
+                    todo!()
+                }
             };
 
             actions_table.add_row(row);

@@ -58,7 +58,7 @@ impl Penalty {
 
     /// Compound this `Penalty` with another `Penalty`.
     pub fn compound(&self, other: Penalty) -> Penalty {
-        Self((self.0 * other.0).expect("compounding penalities will not overflow"))
+        Self((self.0 * other.0).expect("compounding penalties will not overflow"))
     }
 
     /// Apply this `Penalty` to an `Amount` of unbonding tokens.

@@ -18,7 +18,7 @@ use jmt::storage::TreeWriter;
 
 /// Specifies the configuration of a substore, which is a prefixed subset of
 /// the main store with its own merkle tree, nonverifiable data, preimage index, etc.
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct SubstoreConfig {
     /// The prefix of the substore. If empty, it is the root-level store config.
     pub prefix: String,
@@ -75,42 +75,52 @@ impl SubstoreConfig {
 
     pub fn cf_jmt<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_jmt.as_str();
-        db_handle.cf_handle(column).expect(&format!(
-            "jmt column family not found for prefix: {}, substore: {}",
-            column, self.prefix
-        ))
+        db_handle.cf_handle(column).unwrap_or_else(|| {
+            panic!(
+                "jmt column family not found for prefix: {}, substore: {}",
+                column, self.prefix
+            )
+        })
     }
 
     pub fn cf_jmt_values<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_jmt_values.as_str();
-        db_handle.cf_handle(column).expect(&format!(
-            "jmt-values column family not found for prefix: {}, substore: {}",
-            column, self.prefix
-        ))
+        db_handle.cf_handle(column).unwrap_or_else(|| {
+            panic!(
+                "jmt-values column family not found for prefix: {}, substore: {}",
+                column, self.prefix
+            )
+        })
     }
 
     pub fn cf_jmt_keys_by_keyhash<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_jmt_keys_by_keyhash.as_str();
-        db_handle.cf_handle(column).expect(&format!(
-            "jmt-keys-by-keyhash column family not found for prefix: {}, substore: {}",
-            column, self.prefix
-        ))
+        db_handle.cf_handle(column).unwrap_or_else(|| {
+            panic!(
+                "jmt-keys-by-keyhash column family not found for prefix: {}, substore: {}",
+                column, self.prefix
+            )
+        })
     }
 
     pub fn cf_jmt_keys<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_jmt_keys.as_str();
-        db_handle.cf_handle(column).expect(&format!(
-            "jmt-keys column family not found for prefix: {}, substore: {}",
-            column, self.prefix
-        ))
+        db_handle.cf_handle(column).unwrap_or_else(|| {
+            panic!(
+                "jmt-keys column family not found for prefix: {}, substore: {}",
+                column, self.prefix
+            )
+        })
     }
 
     pub fn cf_nonverifiable<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_nonverifiable.as_str();
-        db_handle.cf_handle(column).expect(&format!(
-            "nonverifiable column family not found for prefix: {}, substore: {}",
-            column, self.prefix
-        ))
+        db_handle.cf_handle(column).unwrap_or_else(|| {
+            panic!(
+                "nonverifiable column family not found for prefix: {}, substore: {}",
+                column, self.prefix
+            )
+        })
     }
 
     pub fn latest_version_from_db(
@@ -360,24 +370,25 @@ impl SubstoreStorage {
         self,
         cache: Cache,
         mut write_batch: rocksdb::WriteBatch,
-        new_version: jmt::Version,
+        write_version: jmt::Version,
+        perform_migration: bool,
     ) -> Result<(RootHash, rocksdb::WriteBatch)> {
         let span = Span::current();
 
-        tokio::task::Builder::new()
-                .name("Storage::commit_inner_substore")
-                .spawn_blocking(move || {
+        tokio::task
+                ::spawn_blocking(move || {
                     span.in_scope(|| {
                         let jmt = jmt::Sha256Jmt::new(&self.substore_snapshot);
-
-                        // TODO(erwan): this could be folded with sharding the changesets.
                         let unwritten_changes: Vec<_> = cache
                             .unwritten_changes
                             .into_iter()
                             .map(|(key, some_value)| (KeyHash::with::<sha2::Sha256>(&key), key, some_value))
                             .collect();
+
                         let cf_jmt_keys = self.substore_snapshot.config.cf_jmt_keys(&self.substore_snapshot.db);
                         let cf_jmt_keys_by_keyhash = self.substore_snapshot.config.cf_jmt_keys_by_keyhash(&self.substore_snapshot.db);
+                        let cf_jmt = self.substore_snapshot.config.cf_jmt(&self.substore_snapshot.db);
+                        let cf_jmt_values = self.substore_snapshot.config.cf_jmt_values(&self.substore_snapshot.db);
 
                         /* Keyhash and pre-image indices */
                         for (keyhash, key_preimage, value) in unwritten_changes.iter() {
@@ -394,13 +405,34 @@ impl SubstoreStorage {
                             };
                         }
 
-                        let (root_hash, batch) = jmt.put_value_set(
-                            unwritten_changes.into_iter().map(|(keyhash, _key, some_value)| (keyhash, some_value)),
-                            new_version,
-                        )?;
+                        // We only track the keyhash and possible values; at the time of writing,
+                        // `rustfmt` panics on inlining the closure, so we use a helper function to skip the key.
+                        let skip_key = |(keyhash, _key, some_value)| (keyhash, some_value);
 
-                        self.write_node_batch(&batch.node_batch)?;
-                        tracing::trace!(?root_hash, "wrote node batch to backing store");
+                        let (root_hash, batch) = if perform_migration {
+                            jmt.append_value_set(unwritten_changes.into_iter().map(skip_key), write_version)?
+                        } else {
+                            jmt.put_value_set(unwritten_changes.into_iter().map(skip_key), write_version)?
+                        };
+
+                        /* JMT nodes and values */
+                        for (node_key, node) in batch.node_batch.nodes() {
+                            let db_node_key_bytes= DbNodeKey::encode_from_node_key(node_key)?;
+                            let value_bytes = borsh::to_vec(node)?;
+                            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(&value_bytes));
+                            write_batch.put_cf(cf_jmt, db_node_key_bytes, value_bytes);
+                        }
+
+
+                        for ((version, key_hash), some_value) in batch.node_batch.values() {
+                            let key_bytes = VersionedKeyHash::encode_from_keyhash(key_hash, version);
+                            let value_bytes = borsh::to_vec(some_value)?;
+                            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
+                            write_batch.put_cf(cf_jmt_values, key_bytes, value_bytes);
+                        }
+
+                        tracing::trace!(?root_hash, "accumulated node changes in the write batch");
+
 
                         for (k, v) in cache.nonverifiable_changes.into_iter() {
                             let cf_nonverifiable = self.substore_snapshot.config.cf_nonverifiable(&self.substore_snapshot.db);
@@ -414,58 +446,31 @@ impl SubstoreStorage {
                                 }
                             };
                         }
+
                         Ok((root_hash, write_batch))
                     })
-                })?
+                })
                 .await?
     }
 }
 
 impl TreeWriter for SubstoreStorage {
-    /// Writes a [`NodeBatch`] into storage which includes the JMT
-    /// nodes (`DbNodeKey` -> `Node`) and the JMT values,
-    /// (`VersionedKeyHash` -> `Option<Vec<u8>>`).
-    fn write_node_batch(&self, node_batch: &jmt::storage::NodeBatch) -> Result<()> {
-        use borsh::BorshSerialize;
-
-        let node_batch = node_batch.clone();
-        let cf_jmt = self
-            .substore_snapshot
-            .config
-            .cf_jmt(&self.substore_snapshot.db);
-
-        for (node_key, node) in node_batch.nodes() {
-            let db_node_key = DbNodeKey::from(node_key.clone());
-            let db_node_key_bytes = db_node_key.encode()?;
-            let value_bytes = &node.try_to_vec()?;
-            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(value_bytes));
-            self.substore_snapshot
-                .db
-                .put_cf(cf_jmt, db_node_key_bytes, value_bytes)?;
-        }
-        let cf_jmt_values = self
-            .substore_snapshot
-            .config
-            .cf_jmt_values(&self.substore_snapshot.db);
-
-        for ((version, key_hash), some_value) in node_batch.values() {
-            let versioned_key = VersionedKeyHash::new(*version, *key_hash);
-            let key_bytes = &versioned_key.encode();
-            let value_bytes = &some_value.try_to_vec()?;
-            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
-
-            self.substore_snapshot
-                .db
-                .put_cf(cf_jmt_values, key_bytes, value_bytes)?;
-        }
-
-        Ok(())
+    fn write_node_batch(&self, _node_batch: &jmt::storage::NodeBatch) -> Result<()> {
+        // The "write"-part of the `TreeReader + TreeWriter` jmt architecture does not work
+        // well with a deferred write strategy.
+        // What we would like to do is to accumulate the changes in a write batch, and then commit
+        // them all at once. This isn't possible to do easily because the `TreeWriter` trait
+        // rightfully does not expose RocksDB-specific types in its API.
+        //
+        // The alternative is to use interior mutability but the semantics become
+        // so implementation specific that we lose the benefits of the trait abstraction.
+        unimplemented!("We inline the tree writing logic in the `commit` method")
     }
 }
 
 /// An ordered node key is a node key that is encoded in a way that
 /// preserves the order of the node keys in the database.
-pub struct DbNodeKey(NodeKey);
+pub struct DbNodeKey(pub NodeKey);
 
 impl DbNodeKey {
     pub fn from(node_key: NodeKey) -> Self {
@@ -477,9 +482,13 @@ impl DbNodeKey {
     }
 
     pub fn encode(&self) -> Result<Vec<u8>> {
+        Self::encode_from_node_key(&self.0)
+    }
+
+    pub fn encode_from_node_key(node_key: &NodeKey) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.0.version().to_be_bytes()); // encode version as big-endian
-        let rest = borsh::BorshSerialize::try_to_vec(&self.0)?;
+        bytes.extend_from_slice(&node_key.version().to_be_bytes()); // encode version as big-endian
+        let rest = borsh::to_vec(node_key)?;
         bytes.extend_from_slice(&rest);
         Ok(bytes)
     }
@@ -504,13 +513,13 @@ pub struct VersionedKeyHash {
 }
 
 impl VersionedKeyHash {
-    pub fn new(version: jmt::Version, key_hash: KeyHash) -> Self {
-        Self { version, key_hash }
+    pub fn encode(&self) -> Vec<u8> {
+        VersionedKeyHash::encode_from_keyhash(&self.key_hash, &self.version)
     }
 
-    pub fn encode(&self) -> Vec<u8> {
-        let mut buf: Vec<u8> = self.key_hash.0.to_vec();
-        buf.extend_from_slice(&self.version.to_be_bytes());
+    pub fn encode_from_keyhash(key_hash: &KeyHash, version: &jmt::Version) -> Vec<u8> {
+        let mut buf: Vec<u8> = key_hash.0.to_vec();
+        buf.extend_from_slice(&version.to_be_bytes());
         buf
     }
 

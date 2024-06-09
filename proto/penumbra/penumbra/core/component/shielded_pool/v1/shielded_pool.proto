@@ -5,12 +5,15 @@ import "penumbra/core/asset/v1/asset.proto";
 import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
+import "penumbra/core/txhash/v1/txhash.proto";
+import "penumbra/crypto/decaf377_fmd/v1/decaf377_fmd.proto";
 import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
 import "penumbra/crypto/tct/v1/tct.proto";
 
 // Configuration data for the shielded pool component.
 message ShieldedPoolParameters {
-  FmdParameters fixed_fmd_params = 1;
+  FmdParameters fixed_fmd_params = 1 [deprecated = true];
+  FmdMetaParameters fmd_meta_params = 2;
 }
 
 // Genesis data for the shielded pool component.
@@ -24,6 +27,44 @@ message GenesisContent {
 
   // The allocations present at genesis
   repeated Allocation allocations = 3;
+}
+
+// The parameters which control how the FMD parameters evolve over time.
+message FmdMetaParameters {
+  // A sliding window algorithm for updating the parameters.
+  message AlgorithmSlidingWindow {
+    // The window size, in terms of the number of update periods.
+    //
+    // The update period is 16 blocks, by default, but can change with governance.
+    uint32 window_update_periods = 1;
+    // The number of detections we aim to see per window.
+    uint32 targeted_detections_per_window = 2;
+  }
+
+  // How much time users have to transition to new parameters.
+  uint64 fmd_grace_period_blocks = 1; 
+  // The algorithm governing how the parameters change.
+  oneof algorithm {
+    uint32 fixed_precision_bits = 2;
+    AlgorithmSlidingWindow sliding_window = 3;
+  }
+}
+
+// Used to potentially store state for the FMD Meta Parameters algorithm.
+message FmdMetaParametersAlgorithmState {
+  // The state used for the fixed algorithm.
+  message FixedState {}
+
+  // The state used for the sliding window algorithm.
+  message SlidingWindowState {
+    // The number of clues previously observed, approximately.
+    uint32 approximate_clue_count = 1;
+  }
+
+  oneof state {
+    FixedState fixed = 1;
+    SlidingWindowState sliding_window = 2;
+  }
 }
 
 // Parameters for Fuzzy Message Detection
@@ -97,6 +138,12 @@ message EventOutput {
   crypto.tct.v1.StateCommitment note_commitment = 1;
 }
 
+// ABCI Event recording a clue.
+message EventBroadcastClue {
+  crypto.decaf377_fmd.v1.Clue clue = 1;
+  txhash.v1.TransactionId tx = 2;
+}
+
 // The body of a spend description, containing only the effecting data
 // describing changes to the ledger, and not the authorizing data that allows
 // those changes to be performed.
@@ -156,7 +203,7 @@ message OutputBody {
   // An encrypted key for decrypting the memo.
   bytes wrapped_memo_key = 3;
   // The key material used for note encryption, wrapped in encryption to the
-  // sender's outgoing viewing key. 80 bytes.
+  // sender's outgoing viewing key. 48 bytes.
   bytes ovk_wrapped_key = 4;
 }
 
@@ -194,7 +241,15 @@ message OutputPlan {
 // Query operations for the shielded pool component.
 service QueryService {
   rpc AssetMetadataById(AssetMetadataByIdRequest) returns (AssetMetadataByIdResponse);
+
+  // Requests a stream of asset metadata, given an array of asset IDs. Responses
+  // may be streamed in a different order from that of the asset IDs in the
+  // request, and asset IDs unknown to the node will not receive any response
+  // objects -- that is, the number of responses may be smaller than the length
+  // of the asset IDs array.
+  rpc AssetMetadataByIds(AssetMetadataByIdsRequest) returns (stream AssetMetadataByIdsResponse);
 }
+
 
 // Requests information on an asset by asset id
 message AssetMetadataByIdRequest {
@@ -206,5 +261,17 @@ message AssetMetadataByIdResponse {
   // If present, information on the requested asset.
   //
   // If the requested asset was unknown, this field will not be present.
+  core.asset.v1.Metadata denom_metadata = 1;
+}
+
+// Requests information on an asset by multiple asset ids
+message AssetMetadataByIdsRequest {
+  // The asset IDs to request information on. Note that node is neither required
+  // nor expected to stream responses in the same order as this array.
+  repeated core.asset.v1.AssetId asset_id = 1;
+}
+
+message AssetMetadataByIdsResponse {
+  // A single asset metadata streamed from the node.
   core.asset.v1.Metadata denom_metadata = 1;
 }

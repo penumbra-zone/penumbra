@@ -1,20 +1,22 @@
-use std::str::FromStr;
-use std::{collections::BTreeMap, num::NonZeroU64, sync::Arc, time::Duration};
+use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc, time::Duration};
 
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use penumbra_auction::auction::AuctionId;
 use r2d2_sqlite::{
     rusqlite::{OpenFlags, OptionalExtension},
     SqliteConnectionManager,
 };
 use sha2::{Digest, Sha256};
+use tap::{Tap, TapFallible};
 use tokio::{
     sync::broadcast::{self, error::RecvError},
     task::spawn_blocking,
 };
+use tracing::{error_span, Instrument};
 use url::Url;
 
 use penumbra_app::params::AppParameters;
@@ -75,25 +77,37 @@ pub struct Storage {
 
 impl Storage {
     /// If the database at `storage_path` exists, [`Self::load`] it, otherwise, [`Self::initialize`] it.
+    #[tracing::instrument(
+        skip_all,
+        fields(
+            path = ?storage_path.as_ref().map(|p| p.as_ref().as_str()),
+            url = %node,
+        )
+    )]
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {
-        if let Some(path) = storage_path.as_ref() {
-            if path.as_ref().exists() {
-                return Self::load(
-                    storage_path.expect(
-                        "storage path is not `None` because we already matched on it above",
-                    ),
-                )
-                .await;
+        if let Some(path) = storage_path.as_ref().map(AsRef::as_ref) {
+            if path.exists() {
+                tracing::debug!(?path, "database exists");
+                return Self::load(path).await;
+            } else {
+                tracing::debug!(?path, "database does not exist");
             }
         };
 
-        let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
+        let mut client = AppQueryServiceClient::connect(node.to_string())
+            .instrument(error_span!("connecting_to_endpoint"))
+            .await
+            .tap_err(|error| {
+                tracing::error!(?error, "failed to connect to app query service endpoint")
+            })?
+            .tap(|_| tracing::debug!("connected to app query service endpoint"));
         let params = client
             .app_parameters(tonic::Request::new(AppParametersRequest {}))
+            .instrument(error_span!("getting_app_parameters"))
             .await?
             .into_inner()
             .try_into()?;
@@ -172,7 +186,7 @@ impl Storage {
                     .context("failed to query client version: the database was probably created by an old client version, and needs to be reset and resynchronized")?;
 
                 anyhow::bail!(
-                    "can't load view database created by client version {} using client version {}: they have different schemata, so you need to reset your view database and resynchronize",
+                    "can't load view database created by client version {} using client version {}: they have different schemata, so you need to reset your view database and resynchronize by running pcli view reset",
                     database_client_version,
                     env!("CARGO_PKG_VERSION"),
                 );
@@ -982,7 +996,6 @@ impl Storage {
                 .query_and_then((), |row| row.try_into())?
                 .collect::<anyhow::Result<Vec<_>>>()?;
 
-
             // TODO: this could be internalized into the SQL query in principle, but it's easier to
             // do it this way; if it becomes slow, we can do it better
             let mut results = Vec::new();
@@ -1024,23 +1037,114 @@ impl Storage {
         Ok(())
     }
 
-    pub async fn record_unknown_asset(&self, id: asset::Id) -> anyhow::Result<()> {
-        let asset_id = id.to_bytes().to_vec();
-        let denom = "Unknown".to_string();
+    pub async fn record_auction_with_state(
+        &self,
+        auction_id: AuctionId,
+        auction_state: u64,
+    ) -> anyhow::Result<()> {
+        let auction_id = auction_id.0.to_vec();
+
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            let mut lock = pool.get()?;
+            let tx = lock.transaction()?;
+            tx.execute(
+                "INSERT OR IGNORE INTO auctions (auction_id, auction_state, note_commitment) VALUES (?1, ?2, NULL)",
+                (auction_id.clone(), auction_state),
+            )?;
+            tx.execute(
+                "UPDATE auctions SET auction_state = ?2 WHERE auction_id = ?1",
+                (auction_id, auction_state),
+            )
+                .map_err(anyhow::Error::from)?;
+
+            tx.commit()?;
+            Ok::<(), anyhow::Error>(())
+            })
+            .await??;
+
+        Ok(())
+    }
+
+    pub async fn update_auction_with_note_commitment(
+        &self,
+        auction_id: AuctionId,
+        note_commitment: StateCommitment,
+    ) -> anyhow::Result<()> {
+        let auction_id = auction_id.0.to_vec();
+        let blob_nc = note_commitment.0.to_bytes().to_vec();
 
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
             pool.get()?
                 .execute(
-                    "INSERT OR IGNORE INTO assets (asset_id, denom) VALUES (?1, ?2)",
-                    (asset_id, denom),
+                    "UPDATE auctions SET (note_commitment) = ?1 WHERE auction_id = ?2",
+                    (blob_nc, auction_id),
                 )
                 .map_err(anyhow::Error::from)
         })
         .await??;
 
         Ok(())
+    }
+
+    pub async fn fetch_auctions_by_account(
+        &self,
+        account_filter: Option<AddressIndex>,
+        include_inactive: bool,
+    ) -> anyhow::Result<Vec<(AuctionId, SpendableNoteRecord, u64 /* local seqnum */)>> {
+        let account_clause = account_filter
+            .map(|idx| {
+                format!(
+                    "AND spendable_notes.address_index = x'{}'",
+                    hex::encode(idx.to_bytes())
+                )
+            })
+            .unwrap_or_else(|| "".to_string());
+
+        let active_clause = if !include_inactive {
+            "AND auctions.auction_state = 0"
+        } else {
+            ""
+        };
+
+        let query = format!(
+            "SELECT auctions.auction_id, spendable_notes.*, notes.*, auctions.auction_state
+                 FROM auctions
+                 JOIN spendable_notes ON auctions.note_commitment = spendable_notes.note_commitment
+                 JOIN notes ON auctions.note_commitment = notes.note_commitment
+                 WHERE 1 = 1
+                 {account_clause}
+                 {active_clause}",
+            account_clause = account_clause,
+            active_clause = active_clause,
+        );
+
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            let mut conn = pool.get()?;
+            let tx = conn.transaction()?;
+
+            let spendable_note_records: Vec<(AuctionId, SpendableNoteRecord, u64)> = tx
+                .prepare(&query)?
+                .query_and_then((), |row| {
+                    let raw_auction_id: Vec<u8> = row.get("auction_id")?;
+                    let array_auction_id: [u8; 32] = raw_auction_id
+                        .try_into()
+                        .map_err(|_| anyhow!("auction id must be 32 bytes"))?;
+                    let auction_id = AuctionId(array_auction_id);
+                    let spendable_note_record: SpendableNoteRecord = row.try_into()?;
+                    let local_seq: u64 = row.get("auction_state")?;
+                    Ok((auction_id, spendable_note_record, local_seq))
+                })?
+                .collect::<anyhow::Result<Vec<_>>>()?;
+
+            Ok(spendable_note_records)
+        })
+        .await?
     }
 
     pub async fn record_position(&self, position: Position) -> anyhow::Result<()> {
@@ -1118,7 +1222,12 @@ impl Storage {
         dbtx.execute(
             "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed)
                 VALUES (?1, ?2, ?3, ?4, ?5)
-                ON CONFLICT DO NOTHING",
+                ON CONFLICT (note_commitment) 
+                DO UPDATE SET 
+                address = excluded.address, 
+                amount = excluded.amount, 
+                asset_id = excluded.asset_id, 
+                rseed = excluded.rseed",
             (note_commitment, address, amount, asset_id, rseed),
         )?;
 
@@ -1227,8 +1336,7 @@ impl Storage {
         filtered_block: FilteredBlock,
         transactions: Vec<Transaction>,
         sct: &mut tct::Tree,
-        // TODO: sucks passing this around, figure something better out
-        node: Url,
+        channel: tonic::transport::Channel,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?;
@@ -1259,7 +1367,7 @@ impl Storage {
         // If the app parameters have changed, update them.
         let new_app_parameters: Option<AppParameters> = if filtered_block.app_parameters_updated {
             // Fetch the latest parameters
-            let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
+            let mut client = AppQueryServiceClient::new(channel);
             Some(
                 client
                     .app_parameters(tonic::Request::new(AppParametersRequest {}))
@@ -1314,7 +1422,15 @@ impl Storage {
                 dbtx.execute(
                     "INSERT INTO spendable_notes
                     (note_commitment, nullifier, position, height_created, address_index, source, height_spent, tx_hash)
-                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7)",
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7)
+                    ON CONFLICT (note_commitment)
+                    DO UPDATE SET nullifier = excluded.nullifier, 
+                    position = excluded.position, 
+                    height_created = excluded.height_created, 
+                    address_index = excluded.address_index, 
+                    source = excluded.source, 
+                    height_spent = excluded.height_spent, 
+                    tx_hash = excluded.tx_hash",
                     (
                         &note_commitment,
                         &nullifier,
@@ -1339,7 +1455,14 @@ impl Storage {
 
                 dbtx.execute(
                     "INSERT INTO swaps (swap_commitment, swap, position, nullifier, output_data, height_claimed, source)
-                    VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6)",
+                    VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6)
+                    ON CONFLICT (swap_commitment) 
+                    DO UPDATE SET swap = excluded.swap, 
+                    position = excluded.position, 
+                    nullifier = excluded.nullifier, 
+                    output_data = excluded.output_data, 
+                    height_claimed = excluded.height_claimed, 
+                    source = excluded.source",
                     (
                         &swap_commitment,
                         &swap_bytes,
@@ -1435,7 +1558,7 @@ impl Storage {
                 tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
 
                 dbtx.execute(
-                    "INSERT INTO tx (tx_hash, tx_bytes, block_height, return_address) VALUES (?1, ?2, ?3, ?4)",
+                    "INSERT OR IGNORE INTO tx (tx_hash, tx_bytes, block_height, return_address) VALUES (?1, ?2, ?3, ?4)",
                     (&tx_hash, &tx_bytes, tx_block_height, return_address),
                 )?;
 
@@ -1443,7 +1566,7 @@ impl Storage {
                 for nf in transaction.spent_nullifiers() {
                     let nf_bytes = nf.0.to_bytes().to_vec();
                     dbtx.execute(
-                        "INSERT INTO tx_by_nullifier (nullifier, tx_hash) VALUES (?1, ?2)",
+                        "INSERT OR IGNORE INTO tx_by_nullifier (nullifier, tx_hash) VALUES (?1, ?2)",
                         (&nf_bytes, &tx_hash),
                     )?;
                 }

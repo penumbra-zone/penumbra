@@ -8,16 +8,29 @@ pub mod router;
 
 mod action_handler;
 mod arb;
+mod chandelier;
+pub(crate) mod circuit_breaker;
 mod dex;
+mod eviction_manager;
 mod flow;
-pub(crate) mod position_manager;
+mod position_manager;
 mod swap_manager;
 
-pub use self::metrics::register_metrics;
-pub use arb::Arbitrage;
 pub use dex::{Dex, StateReadExt, StateWriteExt};
-pub use position_manager::{PositionManager, PositionRead};
-pub use swap_manager::SwapManager;
+pub use position_manager::PositionManager;
+
+// Read data from the Dex component;
+pub use position_manager::PositionRead;
+pub use swap_manager::SwapDataRead;
+
+pub(crate) use arb::Arbitrage;
+pub(crate) use circuit_breaker::ExecutionCircuitBreaker;
+pub(crate) use circuit_breaker::ValueCircuitBreaker;
+pub(crate) use dex::InternalDexWrite;
+pub(crate) use swap_manager::SwapDataWrite;
+pub(crate) use swap_manager::SwapManager;
 
 #[cfg(test)]
 pub(crate) mod tests;
+
+pub use self::metrics::register_metrics;

@@ -34,6 +34,16 @@ module "gke" {
   enable_private_nodes       = false
   master_ipv4_cidr_block     = var.master_cidr
   remove_default_node_pool   = true
+  // Manually specifying a version because we can only do one minor hop at a time,
+  // and we'd fallen behind 1.27.x -> 1.29.x. As of 2024-03-07, we were running `1.27.5-gke.200`,
+  // and the 1.27.x series EOLs in 2024-06.
+  // See for reference: https://cloud.google.com/kubernetes-engine/docs/release-notes
+  // To see available versions:
+  //
+  //  gcloud container get-server-config --format "yaml(channels)" --zone us-central1
+  //
+  // and choose something from the STABLE channel.
+  kubernetes_version = "1.28.3-gke.1286000"
 
   node_pools = [
     {

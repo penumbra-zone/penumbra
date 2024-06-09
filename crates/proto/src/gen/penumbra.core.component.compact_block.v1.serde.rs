@@ -36,6 +36,12 @@ impl serde::Serialize for CompactBlock {
         if self.gas_prices.is_some() {
             len += 1;
         }
+        if !self.alt_gas_prices.is_empty() {
+            len += 1;
+        }
+        if self.epoch_index != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.compact_block.v1.CompactBlock", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
@@ -68,6 +74,13 @@ impl serde::Serialize for CompactBlock {
         if let Some(v) = self.gas_prices.as_ref() {
             struct_ser.serialize_field("gasPrices", v)?;
         }
+        if !self.alt_gas_prices.is_empty() {
+            struct_ser.serialize_field("altGasPrices", &self.alt_gas_prices)?;
+        }
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
         struct_ser.end()
     }
 }
@@ -96,6 +109,10 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
             "appParametersUpdated",
             "gas_prices",
             "gasPrices",
+            "alt_gas_prices",
+            "altGasPrices",
+            "epoch_index",
+            "epochIndex",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -110,6 +127,8 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
             SwapOutputs,
             AppParametersUpdated,
             GasPrices,
+            AltGasPrices,
+            EpochIndex,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -142,6 +161,8 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                             "swapOutputs" | "swap_outputs" => Ok(GeneratedField::SwapOutputs),
                             "appParametersUpdated" | "app_parameters_updated" => Ok(GeneratedField::AppParametersUpdated),
                             "gasPrices" | "gas_prices" => Ok(GeneratedField::GasPrices),
+                            "altGasPrices" | "alt_gas_prices" => Ok(GeneratedField::AltGasPrices),
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -171,6 +192,8 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                 let mut swap_outputs__ = None;
                 let mut app_parameters_updated__ = None;
                 let mut gas_prices__ = None;
+                let mut alt_gas_prices__ = None;
+                let mut epoch_index__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Height => {
@@ -235,6 +258,20 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                             }
                             gas_prices__ = map_.next_value()?;
                         }
+                        GeneratedField::AltGasPrices => {
+                            if alt_gas_prices__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("altGasPrices"));
+                            }
+                            alt_gas_prices__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -251,6 +288,8 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                     swap_outputs: swap_outputs__.unwrap_or_default(),
                     app_parameters_updated: app_parameters_updated__.unwrap_or_default(),
                     gas_prices: gas_prices__,
+                    alt_gas_prices: alt_gas_prices__.unwrap_or_default(),
+                    epoch_index: epoch_index__.unwrap_or_default(),
                 })
             }
         }

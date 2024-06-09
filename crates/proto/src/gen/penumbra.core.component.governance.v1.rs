@@ -628,7 +628,7 @@ pub mod proposal {
             )
         }
     }
-    /// An emergency proposal can be passed instantaneously by a 2/3 majority of validators, without
+    /// An emergency proposal can be passed instantaneously by a 1/3 majority of validators, without
     /// waiting for the voting period to expire.
     ///
     /// If the boolean `halt_chain` is set to `true`, then the chain will halt immediately when the
@@ -654,16 +654,25 @@ pub mod proposal {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ParameterChange {
-        /// The old app parameters to be replaced: even if the proposal passes, the update will not be
-        /// applied if the app parameters have changed *at all* from these app parameters. Usually,
-        /// this should be set to the current app parameters at time of proposal.
+        /// DEPRECATED
+        #[deprecated]
         #[prost(message, optional, tag = "1")]
         pub old_parameters: ::core::option::Option<super::ChangedAppParameters>,
-        /// The new app parameters to be set: the *entire* app parameters will be replaced with these
-        /// at the time the proposal is passed, for every component's parameters that is set. If a component's
-        /// parameters are not set, then they were not changed by the proposal, and will not be updated.
+        /// DEPRECATED
+        #[deprecated]
         #[prost(message, optional, tag = "2")]
         pub new_parameters: ::core::option::Option<super::ChangedAppParameters>,
+        /// A list of encoded preconditions for the parameter change: even if the
+        /// proposal passes, the update will not be applied if the value of the
+        /// precondition does not match the proposal at the time it is enacted.
+        ///
+        /// This can be empty, in which case the changes will be applied
+        /// unconditionally.
+        #[prost(message, repeated, tag = "3")]
+        pub preconditions: ::prost::alloc::vec::Vec<super::EncodedParameter>,
+        /// A list of encoded changes to the application parameters.
+        #[prost(message, repeated, tag = "4")]
+        pub changes: ::prost::alloc::vec::Vec<super::EncodedParameter>,
     }
     impl ::prost::Name for ParameterChange {
         const NAME: &'static str = "ParameterChange";
@@ -1003,8 +1012,33 @@ impl ::prost::Name for GenesisContent {
         ::prost::alloc::format!("penumbra.core.component.governance.v1.{}", Self::NAME)
     }
 }
-/// Note: must be kept in sync with AppParameters.
-/// Each field here is optional.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EncodedParameter {
+    /// The component name in the `AppParameters`.
+    ///
+    /// This is the ProtoJSON-produced key in the `AppParameters` structure.
+    #[prost(string, tag = "1")]
+    pub component: ::prost::alloc::string::String,
+    /// The parameter key in the component parameters.
+    ///
+    /// This is the ProtoJSON-produced field name in the component's substructure.
+    #[prost(string, tag = "2")]
+    pub key: ::prost::alloc::string::String,
+    /// The parameter value.
+    ///
+    /// This is the ProtoJSON-encoded value of the parameter.
+    #[prost(string, tag = "3")]
+    pub value: ::prost::alloc::string::String,
+}
+impl ::prost::Name for EncodedParameter {
+    const NAME: &'static str = "EncodedParameter";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.governance.v1.{}", Self::NAME)
+    }
+}
+/// DEPRECATED
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChangedAppParameters {
@@ -1043,6 +1077,14 @@ pub struct ChangedAppParameters {
     pub shielded_pool_params: ::core::option::Option<
         super::super::shielded_pool::v1::ShieldedPoolParameters,
     >,
+    /// DEX component parameters
+    #[prost(message, optional, tag = "10")]
+    pub dex_params: ::core::option::Option<super::super::dex::v1::DexParameters>,
+    /// Auction module parameters.
+    #[prost(message, optional, tag = "11")]
+    pub auction_params: ::core::option::Option<
+        super::super::auction::v1::AuctionParameters,
+    >,
 }
 impl ::prost::Name for ChangedAppParameters {
     const NAME: &'static str = "ChangedAppParameters";
@@ -1051,6 +1093,7 @@ impl ::prost::Name for ChangedAppParameters {
         ::prost::alloc::format!("penumbra.core.component.governance.v1.{}", Self::NAME)
     }
 }
+/// DEPRECATED
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChangedAppParametersSet {

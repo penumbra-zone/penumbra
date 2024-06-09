@@ -18,8 +18,6 @@ use penumbra_proto::{
 };
 use penumbra_stake::validator;
 
-// TODO: remove this subcommand and merge into `pcli q`
-
 use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
@@ -56,62 +54,9 @@ impl ChainCmd {
             .ok_or_else(|| anyhow::anyhow!("empty AppParametersResponse message"))?
             .try_into()?;
 
-        println!("Chain Parameters:");
-        let mut table = Table::new();
-        table.load_preset(presets::NOTHING);
-        table
-            .set_header(vec!["", ""])
-            .add_row(vec!["Chain ID", &params.chain_id])
-            .add_row(vec![
-                "Epoch Duration",
-                &format!("{}", params.sct_params.epoch_duration),
-            ])
-            .add_row(vec![
-                "Unbonding Epochs",
-                &format!("{}", params.stake_params.unbonding_epochs),
-            ])
-            .add_row(vec![
-                "Active Validator Limit",
-                &format!("{}", params.stake_params.active_validator_limit),
-            ])
-            .add_row(vec![
-                "Base Reward Rate (bps^2)",
-                &format!("{}", params.stake_params.base_reward_rate),
-            ])
-            .add_row(vec![
-                "Slashing Penalty (Misbehavior) (bps^2)",
-                &format!("{}", params.stake_params.slashing_penalty_misbehavior),
-            ])
-            .add_row(vec![
-                "Slashing Penalty (Downtime) (bps^2)",
-                &format!("{}", params.stake_params.slashing_penalty_downtime),
-            ])
-            .add_row(vec![
-                "Signed Blocks Window (blocks)",
-                &format!("{}", params.stake_params.signed_blocks_window_len),
-            ])
-            .add_row(vec![
-                "Missed Blocks Max",
-                &format!("{}", params.stake_params.missed_blocks_maximum),
-            ])
-            .add_row(vec![
-                "Proposal Deposit Amount (upenumbra)",
-                &format!("{}", params.governance_params.proposal_deposit_amount),
-            ])
-            .add_row(vec![
-                "IBC Enabled",
-                &format!("{}", params.ibc_params.ibc_enabled),
-            ])
-            .add_row(vec![
-                "Inbound ICS-20 Enabled",
-                &format!("{}", params.ibc_params.inbound_ics20_transfers_enabled),
-            ])
-            .add_row(vec![
-                "Outbound ICS-20 Enabled",
-                &format!("{}", params.ibc_params.outbound_ics20_transfers_enabled),
-            ]);
-
-        println!("{table}");
+        // Use serde-json to pretty print the params
+        let params_json = serde_json::to_string_pretty(&params)?;
+        println!("{}", params_json);
 
         Ok(())
     }

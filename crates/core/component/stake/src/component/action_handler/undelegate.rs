@@ -1,7 +1,8 @@
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_shielded_pool::component::SupplyWrite;
+use penumbra_sct::component::clock::EpochRead;
+use penumbra_shielded_pool::component::AssetRegistry;
 
 use crate::{
     component::action_handler::ActionHandler,
@@ -20,22 +21,23 @@ impl ActionHandler for Undelegate {
         // These checks all formerly happened in the `check_historical` method,
         // if profiling shows that they cause a bottleneck we could (CAREFULLY)
         // move some of them back.
-
         let u = self;
-        let rate_data = state
-            .get_validator_rate(&u.validator_identity)
-            .await?
-            .ok_or_else(|| {
-                anyhow::anyhow!("unknown validator identity {}", u.validator_identity)
-            })?;
 
-        // Check whether the start epoch is correct first, to give a more helpful
-        // error message if it's wrong.
-        if u.start_epoch_index != rate_data.epoch_index {
+        // Check that the undelegation was prepared for the current epoch.
+        // This let us provide a more helpful error message if an epoch boundary was crossed.
+        // And it ensures that the unbonding delay is enforced correctly.
+        let current_epoch = state.get_current_epoch().await?;
+        let prepared_for_current_epoch = u.from_epoch == current_epoch;
+        if !prepared_for_current_epoch {
+            tracing::error!(
+                from = ?u.from_epoch,
+                current = ?current_epoch,
+                "undelegation was prepared for a different epoch",
+            );
             anyhow::bail!(
-                "undelegation was prepared for next epoch {} but the next epoch is {}",
-                u.start_epoch_index,
-                rate_data.epoch_index
+                "undelegation was prepared for epoch {} but the current epoch is {}",
+                u.from_epoch.index,
+                current_epoch.index
             );
         }
 
@@ -53,24 +55,35 @@ impl ActionHandler for Undelegate {
         //
         // should give approximately the same results, they may not give
         // exactly the same results.
+        let rate_data = state
+            .get_validator_rate(&u.validator_identity)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("unknown validator identity {}", u.validator_identity)
+            })?;
         let expected_unbonded_amount = rate_data.unbonded_amount(u.delegation_amount);
 
-        ensure!(
-            u.unbonded_amount == expected_unbonded_amount,
-            "undelegation amount {} does not match expected amount {}",
-            u.unbonded_amount,
-            expected_unbonded_amount,
-        );
+        if u.unbonded_amount != expected_unbonded_amount {
+            tracing::error!(
+                actual = %u.unbonded_amount,
+                expected = %expected_unbonded_amount,
+                "undelegation amount does not match expected amount",
+            );
+            anyhow::bail!(
+                "undelegation amount {} does not match expected amount {}",
+                u.unbonded_amount,
+                expected_unbonded_amount,
+            );
+        }
 
-        // (end of former check_historical impl)
+        /* ----- execution ------ */
+
+        // Register the undelegation's denom, so clients can look it up later.
+        state.register_denom(&self.unbonding_token().denom()).await;
 
         tracing::debug!(?self, "queuing undelegation for next epoch");
         state.push_undelegation(self.clone());
-        // Register the undelegation's denom, so clients can look it up later.
-        state
-            .register_denom(&self.unbonding_token().denom())
-            .await?;
-        // TODO: should we be tracking changes to token supply here or in end_epoch?
+
         state.record(event::undelegate(self));
 
         Ok(())

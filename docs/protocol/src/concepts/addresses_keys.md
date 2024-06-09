@@ -37,10 +37,10 @@ flowchart BT
 
 From bottom to top:
 
-- the *seed phrase* is the root key material. Multiple *accounts* - each with
+- the *seed phrase* is the root key material. Multiple *wallets* - each with
 separate spend authority - can be derived from this root seed phrase.
-- the *spending key* is the capability representing spending authority for a given account;
-- the *full viewing key* represents the capability to view all transactions related to the account;
+- the *spending key* is the capability representing spending authority for a given wallet;
+- the *full viewing key* represents the capability to view all transactions related to the wallet;
 - the *outgoing viewing key* represents the capability to view only outgoing transactions, and is used to recover information about previously sent transactions;
 - the *incoming viewing key* represents the capability to view only incoming transactions, and is used to scan the block chain for incoming transactions.
 
@@ -59,7 +59,10 @@ relevant transactions, as well as some amount of unrelated cover traffic.
 Unlike incoming viewing keys, detection keys are not shared between diversified
 addresses, allowing fine-grained control of delegation.
 
-
 This diagram shows only the user-visible parts of the key hierarchy.
 Internally, each of these keys has different components, described in detail in
-the [Addresses and Keys](../protocol/addresses_keys.md) chapter.
+the [Addresses and Keys](../addresses_keys.md) chapter.
+
+### Privacy Implications
+
+Users should be aware that giving out multiple detection keys to a detection entity can carry a subset of the privacy implications, described in [Addresses and Detection Keys](https://protocol.penumbra.zone/main/addresses_keys/addresses.html#detection-keys).

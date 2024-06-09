@@ -2,6 +2,7 @@
 //! creation.
 
 use anyhow::Result;
+use decaf377_fmd::Precision;
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -48,6 +49,12 @@ pub struct TransactionPlan {
 }
 
 impl TransactionPlan {
+    /// Sort the actions in [`TransactionPlan`] by type, using the protobuf field number in the [`ActionPlan`].
+    pub fn sort_actions(&mut self) {
+        self.actions
+            .sort_by_key(|action: &ActionPlan| action.variant_index());
+    }
+
     /// Computes the [`EffectHash`] for the [`Transaction`] described by this
     /// [`TransactionPlan`].
     ///
@@ -318,7 +325,9 @@ impl TransactionPlan {
 
     /// Convenience method to get all the destination addresses for each `OutputPlan`s.
     pub fn dest_addresses(&self) -> Vec<Address> {
-        self.output_plans().map(|plan| plan.dest_address).collect()
+        self.output_plans()
+            .map(|plan| plan.dest_address.clone())
+            .collect()
     }
 
     /// Convenience method to get the number of `OutputPlan`s in this transaction.
@@ -331,23 +340,39 @@ impl TransactionPlan {
         self.spend_plans().count()
     }
 
+    /// Convenience method to get the number of proofs in this transaction.
+    pub fn num_proofs(&self) -> usize {
+        self.actions
+            .iter()
+            .map(|action| match action {
+                ActionPlan::Spend(_) => 1,
+                ActionPlan::Output(_) => 1,
+                ActionPlan::Swap(_) => 1,
+                ActionPlan::SwapClaim(_) => 1,
+                ActionPlan::UndelegateClaim(_) => 1,
+                ActionPlan::DelegatorVote(_) => 1,
+                _ => 0,
+            })
+            .sum()
+    }
+
     /// Method to populate the detection data for this transaction plan.
     pub fn populate_detection_data<R: CryptoRng + Rng>(
         &mut self,
         mut rng: R,
-        precision_bits: usize,
+        precision: Precision,
     ) {
         // Add one clue per recipient.
         let mut clue_plans = vec![];
         for dest_address in self.dest_addresses() {
-            clue_plans.push(CluePlan::new(&mut rng, dest_address, precision_bits));
+            clue_plans.push(CluePlan::new(&mut rng, dest_address, precision));
         }
 
         // Now add dummy clues until we have one clue per output.
         let num_dummy_clues = self.num_outputs() - clue_plans.len();
         for _ in 0..num_dummy_clues {
             let dummy_address = Address::dummy(&mut rng);
-            clue_plans.push(CluePlan::new(&mut rng, dummy_address, precision_bits));
+            clue_plans.push(CluePlan::new(&mut rng, dummy_address, precision));
         }
 
         if !clue_plans.is_empty() {
@@ -355,6 +380,18 @@ impl TransactionPlan {
         } else {
             self.detection_data = None;
         }
+    }
+
+    /// A builder-style version of [`TransactionPlan::populate_detection_data()`].
+    ///
+    /// Populates the detection data for this transaction plan.
+    pub fn with_populated_detection_data<R: CryptoRng + Rng>(
+        mut self,
+        rng: R,
+        precision_bits: Precision,
+    ) -> Self {
+        self.populate_detection_data(rng, precision_bits);
+        self
     }
 
     /// Convenience method to grab the `MemoKey` from the plan.
@@ -476,13 +513,13 @@ mod tests {
                     .unwrap()
                     .id(),
             }),
-            addr,
+            addr.clone(),
         );
 
         let mut rng = OsRng;
 
         let memo_plaintext = MemoPlaintext::new(Address::dummy(&mut rng), "".to_string()).unwrap();
-        let plan = TransactionPlan {
+        let mut plan: TransactionPlan = TransactionPlan {
             // Put outputs first to check that the auth hash
             // computation is not affected by plan ordering.
             actions: vec![
@@ -505,10 +542,13 @@ mod tests {
                 chain_id: "penumbra-test".to_string(),
             },
             detection_data: Some(DetectionDataPlan {
-                clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
+                clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1.try_into().unwrap())],
             }),
-            memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
+            memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone())),
         };
+
+        // Sort actions within the transaction plan.
+        plan.sort_actions();
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
 

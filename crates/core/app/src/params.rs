@@ -1,4 +1,6 @@
+use penumbra_auction::params::AuctionParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
+use penumbra_dex::DexParameters;
 use penumbra_distributions::DistributionsParameters;
 use penumbra_fee::FeeParameters;
 use penumbra_funding::FundingParameters;
@@ -18,8 +20,10 @@ pub mod change;
 #[serde(try_from = "pb::AppParameters", into = "pb::AppParameters")]
 pub struct AppParameters {
     pub chain_id: String,
+    pub auction_params: AuctionParameters,
     pub community_pool_params: CommunityPoolParameters,
     pub distributions_params: DistributionsParameters,
+    pub dex_params: DexParameters,
     pub fee_params: FeeParameters,
     pub funding_params: FundingParameters,
     pub governance_params: GovernanceParameters,
@@ -39,6 +43,10 @@ impl TryFrom<pb::AppParameters> for AppParameters {
     fn try_from(msg: pb::AppParameters) -> anyhow::Result<Self> {
         Ok(AppParameters {
             chain_id: msg.chain_id,
+            auction_params: msg
+                .auction_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing auction params"))?
+                .try_into()?,
             community_pool_params: msg
                 .community_pool_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing community pool params"))?
@@ -75,6 +83,10 @@ impl TryFrom<pb::AppParameters> for AppParameters {
                 .stake_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing stake params"))?
                 .try_into()?,
+            dex_params: msg
+                .dex_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing dex params"))?
+                .try_into()?,
         })
     }
 }
@@ -83,6 +95,7 @@ impl From<AppParameters> for pb::AppParameters {
     fn from(params: AppParameters) -> Self {
         pb::AppParameters {
             chain_id: params.chain_id,
+            auction_params: Some(params.auction_params.into()),
             community_pool_params: Some(params.community_pool_params.into()),
             distributions_params: Some(params.distributions_params.into()),
             fee_params: Some(params.fee_params.into()),
@@ -92,6 +105,7 @@ impl From<AppParameters> for pb::AppParameters {
             sct_params: Some(params.sct_params.into()),
             shielded_pool_params: Some(params.shielded_pool_params.into()),
             stake_params: Some(params.stake_params.into()),
+            dex_params: Some(params.dex_params.into()),
         }
     }
 }

@@ -1,44 +1,136 @@
+use std::io::{IsTerminal, Read, Write};
+
 use anyhow::Result;
-use penumbra_custody::threshold::Terminal;
-use penumbra_transaction::TransactionPlan;
-use tokio::io::{self, AsyncBufReadExt};
+use penumbra_custody::threshold::{SigningRequest, Terminal};
+use termion::{color, input::TermRead};
 use tonic::async_trait;
+
+async fn read_password(prompt: &str) -> Result<String> {
+    fn get_possibly_empty_string(prompt: &str) -> Result<String> {
+        // The `rpassword` crate doesn't support reading from stdin, so we check
+        // for an interactive session. We must support non-interactive use cases,
+        // for integration with other tooling.
+        if std::io::stdin().is_terminal() {
+            Ok(rpassword::prompt_password(prompt)?)
+        } else {
+            Ok(std::io::stdin().lock().read_line()?.unwrap_or_default())
+        }
+    }
+
+    let mut string: String = Default::default();
+    while string.is_empty() {
+        // Keep trying until the user provides an input
+        string = get_possibly_empty_string(prompt)?;
+    }
+    Ok(string)
+}
 
 /// For threshold custody, we need to implement this weird terminal abstraction.
 ///
 /// This actually does stuff to stdin and stdout.
+#[derive(Clone)]
 pub struct ActualTerminal;
 
 #[async_trait]
 impl Terminal for ActualTerminal {
-    async fn confirm_transaction(&self, transaction: &TransactionPlan) -> Result<bool> {
-        println!("Do you approve this transaction?");
-        println!("{}", serde_json::to_string_pretty(transaction)?);
+    async fn confirm_request(&self, signing_request: &SigningRequest) -> Result<bool> {
+        let (description, json) = match signing_request {
+            SigningRequest::TransactionPlan(plan) => {
+                ("transaction", serde_json::to_string_pretty(plan)?)
+            }
+            SigningRequest::ValidatorDefinition(def) => {
+                ("validator definition", serde_json::to_string_pretty(def)?)
+            }
+            SigningRequest::ValidatorVote(vote) => {
+                ("validator vote", serde_json::to_string_pretty(vote)?)
+            }
+        };
+        println!("Do you approve this {description}?");
+        println!("{json}");
         println!("Press enter to continue");
-        self.next_response().await?;
+        self.read_line_raw().await?;
         Ok(true)
     }
 
-    async fn explain(&self, msg: &str) -> Result<()> {
-        println!("{}", msg);
+    fn explain(&self, msg: &str) -> Result<()> {
+        println!(
+            "{}{}{}",
+            color::Fg(color::Blue),
+            msg,
+            color::Fg(color::Reset)
+        );
         Ok(())
     }
 
     async fn broadcast(&self, data: &str) -> Result<()> {
-        println!("{}", data);
+        println!(
+            "\n{}{}{}\n",
+            color::Fg(color::Yellow),
+            data,
+            color::Fg(color::Reset)
+        );
         Ok(())
     }
 
-    async fn next_response(&self) -> Result<Option<String>> {
-        let stdin = io::stdin();
-        let mut stdin = io::BufReader::new(stdin);
+    async fn read_line_raw(&self) -> Result<String> {
+        // Use raw mode to allow reading more than 1KB/4KB of data at a time
+        // See https://unix.stackexchange.com/questions/204815/terminal-does-not-accept-pasted-or-typed-lines-of-more-than-1024-characters
+        use termion::raw::IntoRawMode;
+        tracing::debug!("about to enter raw mode for long pasted input");
 
-        let mut line = String::new();
-        stdin.read_line(&mut line).await?;
+        print!("{}", color::Fg(color::Red));
+        // In raw mode, the input is not mirrored into the terminal, so we need
+        // to read char-by-char and echo it back.
+        let mut stdout = std::io::stdout().into_raw_mode()?;
 
-        if line.is_empty() {
-            return Ok(None);
+        let mut bytes = Vec::with_capacity(8192);
+        for b in std::io::stdin().bytes() {
+            let b = b?;
+            // In raw mode, we need to handle control characters ourselves
+            if b == 3 || b == 4 {
+                // Ctrl-C or Ctrl-D
+                return Err(anyhow::anyhow!("aborted"));
+            }
+            // In raw mode, the enter key might generate \r or \n, check either.
+            if b == b'\n' || b == b'\r' {
+                break;
+            }
+            // Store the byte we read and print it back to the terminal.
+            bytes.push(b);
+            stdout.write_all(&[b]).expect("stdout write failed");
+            // Flushing may not be the most efficient but performance isn't critical here.
+            stdout.flush()?;
         }
-        Ok(Some(line))
+        // Drop _stdout to restore the terminal to normal mode
+        std::mem::drop(stdout);
+        // We consumed a newline of some kind but didn't echo it, now print
+        // one out so subsequent output is guaranteed to be on a new line.
+        println!("");
+        print!("{}", color::Fg(color::Reset));
+
+        tracing::debug!("exited raw mode and returned to cooked mode");
+
+        let line = String::from_utf8(bytes)?;
+        tracing::debug!(?line, "read response line");
+
+        Ok(line)
+    }
+
+    async fn get_password(&self) -> Result<String> {
+        read_password("Enter Password: ").await
+    }
+}
+
+impl ActualTerminal {
+    pub async fn get_confirmed_password(&self) -> Result<String> {
+        loop {
+            let password = read_password("Enter Password: ").await?;
+            let confirmed = read_password("Confirm Password: ").await?;
+            if password != confirmed {
+                println!("Password mismatch, please try again.");
+                continue;
+            }
+            return Ok(password);
+        }
     }
 }

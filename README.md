@@ -23,9 +23,13 @@ To join the test network as a full node, follow setup instructions for Penumbra 
 
 ## Current work and roadmap
 
-For a high-level view of current work-in-progress and future items, check out our [project board][Board].
+For a high-level view of current work-in-progress and future items, check out our:
 
-[Board]: https://github.com/orgs/penumbra-zone/projects/17
+- [Tracking issues][Tracking]
+- [Backlog][Backlog]
+
+[Tracking]: https://github.com/orgs/penumbra-zone/projects/23/views/4
+[Backlog]: https://github.com/orgs/penumbra-zone/projects/23/views/1
 [Discord]: https://discord.gg/hKvkrqa3zC
 [Penumbra]: https://penumbra.zone
 [protocol]: https://protocol.penumbra.zone
@@ -37,7 +41,13 @@ For a high-level view of current work-in-progress and future items, check out ou
 [protobuf]: https://buf.build/penumbra-zone/penumbra
 [tm-install]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/install.md#from-source
 
-# License
+
+## Security
+If you believe you've found a security-related issue with Penumbra,
+please disclose responsibly by contacting the Penumbra Labs team at
+security@penumbralabs.xyz.
+
+## License
 
 By contributing to penumbra you agree that your contributions will be licensed
 under the terms of both the [LICENSE-Apache-2.0](LICENSE-Apache-2.0) and the
@@ -46,4 +56,3 @@ under the terms of both the [LICENSE-Apache-2.0](LICENSE-Apache-2.0) and the
 If you're using penumbra you are free to choose one of the provided licenses:
 
 `SPDX-License-Identifier: MIT OR Apache-2.0`
-

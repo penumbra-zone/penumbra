@@ -1,5 +1,9 @@
 name: Rust CI
-on: pull_request
+on:
+  pull_request:
+    # Don't run Rust tests if only docs changed.
+    paths-ignore:
+      - 'docs/**'
 
 jobs:
   test:
@@ -9,18 +13,25 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+
+      # The `rust-toolchain.toml` file dictates which version of rust to setup.
+      - name: check rust version
+        run: rustc --version
+
       - name: Install nextest
         uses: taiki-e/install-action@nextest
+
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
+
       - name: Run cargo check, failing on warnings
         run: cargo check --release --all-targets
         env:
-          # The `-D warnings` option causes an error on warnings;
-          # we must duplicate the rustflags from `.cargo/config.toml`.
-          RUSTFLAGS: "-D warnings --cfg tokio_unstable"
+          # The `-D warnings` option causes an error on warnings.
+          RUSTFLAGS: "-D warnings"
+
+      - name: Check wasm compatibility
+        run: ./deployments/scripts/check-wasm-compat.sh
 
       # If a dependency was modified, Cargo.lock may flap if not committed.
       - name: Check for diffs
@@ -35,6 +46,7 @@ jobs:
           else
               echo "OK: no uncommitted changes detected"
           fi
+
       - name: Run tests with nextest
         run: cargo nextest run --release --features migration
         env:
@@ -42,31 +54,24 @@ jobs:
 
   fmt:
     name: Rustfmt
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
       - run: cargo fmt --all -- --check
 
-  docs:
-    # We use a custom script to generate the index page for https://rustdoc.penumbra.zone,
-    # and refactors to rust deps can break that generation. Let's ensure this script exits 0
-    # on PRs, but we'll still only deploy after merge into main.
-    name: Check that rustdocs build OK
+  check:
+    name: Check all crate features
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - name: Install rust toolchain
-        # The script for rustdoc build requires nightly toolchain.
-        uses: dtolnay/rust-toolchain@nightly
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
-      - name: Build rustdocs
-        run: ./deployments/scripts/rust-docs
+      - name: install cargo-hack
+        run: cargo install cargo-hack
+      # Build each crate separately, to validate that the feature-gating is working.
+      # This is a lighter-weight version of `cargo check-all-features --workspace --release`.
+      - run: ./deployments/scripts/check-crate-feature-sets

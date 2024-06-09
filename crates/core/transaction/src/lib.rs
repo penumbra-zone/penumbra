@@ -26,23 +26,24 @@ mod transaction;
 mod witness_data;
 
 pub mod action;
+pub mod action_list;
 pub mod gas;
 pub mod memo;
 pub mod plan;
 pub mod view;
 
 pub use action::Action;
+pub use action_list::ActionList;
 pub use auth_data::AuthorizationData;
 pub use detection_data::DetectionData;
 pub use error::Error;
 pub use is_action::IsAction;
 pub use parameters::TransactionParameters;
+pub use penumbra_txhash as txhash;
 pub use plan::{ActionPlan, TransactionPlan};
 pub use transaction::{Transaction, TransactionBody};
 pub use view::{ActionView, MemoPlaintextView, MemoView, TransactionPerspective, TransactionView};
 pub use witness_data::WitnessData;
-
-pub use penumbra_txhash as txhash;
 
 /// A compatibility wrapper for trait implementations that are temporarily duplicated
 /// in multiple crates as an orphan rule work around until we finish splitting crates (#2288).

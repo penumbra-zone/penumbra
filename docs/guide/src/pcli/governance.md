@@ -67,12 +67,16 @@ received when voting in real life at your polling place.
 ### Voting As A Validator
 
 If you are a validator who was active when the proposal started, you can vote on it using the
-`validator vote` subcommand of `pcli`. For example, if you wanted to vote "yes" on proposal 1, you
+`validator vote cast` subcommand of `pcli`. For example, if you wanted to vote "yes" on proposal 1, you
 would do:
 
 ```bash
-pcli validator vote yes --on 1
+pcli validator vote cast yes --on 1
 ```
+
+If your validator uses an airgap custody setup, you can separately sign and cast your vote using the
+`pcli validator vote sign` command to output your signature, and the `--signature` option on `pcli
+validator vote cast` to attach it and broadcast it.
 
 ### Eligibility And Voting Power
 
@@ -128,7 +132,7 @@ may be included to specify these changes.
 #### Emergency Proposals
 
 Emergency proposals are meant for when immediate action is required to address a crisis, and
-conclude early as soon as a 2/3 majority of all active voting power votes yes.
+conclude early as soon as a 1/3 majority of all active voting power votes yes.
 
 Emergency proposals have the power to optionally halt the chain when passed. If this occurs,
 off-chain coordination between validators will be required to restart the chain.
@@ -266,56 +270,3 @@ on the result of the vote: `proposal_N_passed`, `proposal_N_failed` or `proposal
 proposal was not slashed (that is, it passed _or_ failed), this action will also produce the
 original proposal deposit. Note that you _can_ claim a slashed proposal: you will receive the
 slashed proposal result NFT, but you will not receive the original proposal deposit.
-
-## Contributing To The Community Pool
-
-Anyone can contribute any amount of any denomination to the Penumbra Community Pool. To do this, use the
-command `pcli tx community-pool-deposit`, like so:
-
-```bash
-pcli tx community-pool-deposit 100penumbra
-```
-
-Funds contributed to the Community Pool cannot be withdrawn except by a successful Community Pool spend governance
-proposal.
-
-To query the current Community Pool balance, use `pcli query community-pool balance` with the **base denomination** of an
-asset or its asset ID (display denominations are not currently accepted). For example:
-
-```bash
-pcli query Community Pool balance upenumbra
-```
-
-Community Pool spend proposals are only accepted for voting if they would not overdraw the current funds in the
-Community Pool at the time the proposal is submitted, so it's worth checking this information before submitting
-such a proposal.
-
-### Sending Validator Funding Streams To The Community Pool
-
-A validator may non-custodially send funds to the Community Pool, similarly to any other funding stream. To do
-this, add a `[[funding_stream]]` section to your validator definition TOML file that declares the
-Community Pool as a recipient for a funding stream. For example, your definition might look like this:
-
-```toml
-sequence_number = 0
-enabled = true
-name = "My Validator"
-website = "https://example.com"
-description = "An example validator"
-identity_key = "penumbravalid1s6kgjgnphs99udwvyplwceh7phwt95dyn849je0jl0nptw78lcqqvcd65j"
-governance_key = "penumbragovern1s6kgjgnphs99udwvyplwceh7phwt95dyn849je0jl0nptw78lcqqhknap5"
-
-[consensus_key]
-type = "tendermint/PubKeyEd25519"
-value = "tDk3/k8zjEyDQjQC1jUyv8nJ1cC1B/MgrDzeWvBTGDM="
-
-# Send a 1% commission to this address:
-[[funding_stream]]
-recipient = "penumbrav2t1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2t66mk4n"
-rate_bps = 100
-
-# Send another 1% commission to the Community Pool:
-[[funding_stream]]
-recipient = "CommunityPool"
-rate_bps = 100
-```

@@ -3,7 +3,7 @@
 This page describes a quickstart method for running `pd`+`cometbft` to test
 changes during development.
 
-To start, you'll need to install a [specific version of CometBFT](../pd/install.md#installing-cometbft).
+To start, you'll need to install a [specific version of CometBFT](../node/pd/install.md#installing-cometbft).
 
 ## Generating configs
 
@@ -93,3 +93,9 @@ To run the smoke tests:
 ```shell
 PENUMBRA_NODE_PD_URL=http://127.0.0.1:8080 PCLI_UNLEASH_DANGER=yes cargo test --package pcli -- --ignored --test-threads 1
 ```
+
+Find the exact commands for each binary's smoke tests in `deployments/compose/process-compose-smoke-test.yml`.
+You can also run the entire smoke test suite end-to-end via `just smoke`, including setup and teardown of the network.
+If you want to execute the tests against an already-running devnet, however, use manual invocations like
+the `cargo test` example above. You'll need to install [process-compose](https://github.com/F1bonacc1/process-compose/)
+to use the automated setup.

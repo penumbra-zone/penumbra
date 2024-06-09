@@ -299,6 +299,34 @@ impl ::prost::Name for EpochByHeightResponse {
         ::prost::alloc::format!("penumbra.core.component.sct.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AnchorByHeightRequest {
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+}
+impl ::prost::Name for AnchorByHeightRequest {
+    const NAME: &'static str = "AnchorByHeightRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AnchorByHeightResponse {
+    #[prost(message, optional, tag = "1")]
+    pub anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::MerkleRoot,
+    >,
+}
+impl ::prost::Name for AnchorByHeightResponse {
+    const NAME: &'static str = "AnchorByHeightResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
@@ -386,6 +414,36 @@ pub mod query_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
+        pub async fn anchor_by_height(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AnchorByHeightRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::AnchorByHeightResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.sct.v1.QueryService/AnchorByHeight",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.sct.v1.QueryService",
+                        "AnchorByHeight",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
         pub async fn epoch_by_height(
             &mut self,
             request: impl tonic::IntoRequest<super::EpochByHeightRequest>,
@@ -426,6 +484,13 @@ pub mod query_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServiceServer.
     #[async_trait]
     pub trait QueryService: Send + Sync + 'static {
+        async fn anchor_by_height(
+            &self,
+            request: tonic::Request<super::AnchorByHeightRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::AnchorByHeightResponse>,
+            tonic::Status,
+        >;
         async fn epoch_by_height(
             &self,
             request: tonic::Request<super::EpochByHeightRequest>,
@@ -514,6 +579,52 @@ pub mod query_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
+                "/penumbra.core.component.sct.v1.QueryService/AnchorByHeight" => {
+                    #[allow(non_camel_case_types)]
+                    struct AnchorByHeightSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::AnchorByHeightRequest>
+                    for AnchorByHeightSvc<T> {
+                        type Response = super::AnchorByHeightResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AnchorByHeightRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::anchor_by_height(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AnchorByHeightSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/penumbra.core.component.sct.v1.QueryService/EpochByHeight" => {
                     #[allow(non_camel_case_types)]
                     struct EpochByHeightSvc<T: QueryService>(pub Arc<T>);

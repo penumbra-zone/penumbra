@@ -4,6 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_sct::{component::source::SourceContext, CommitmentSource};
+use penumbra_shielded_pool::component::ClueManager;
 use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
@@ -13,7 +14,9 @@ use super::AppActionHandler;
 mod stateful;
 mod stateless;
 
-use self::stateful::{claimed_anchor_is_valid, fee_greater_than_base_fee, fmd_parameters_valid};
+use self::stateful::{
+    claimed_anchor_is_valid, fmd_parameters_valid, tx_parameters_historical_check,
+};
 use stateless::{
     check_memo_exists_if_outputs_absent_if_not, num_clues_equal_to_num_outputs,
     valid_binding_signature,
@@ -56,14 +59,13 @@ impl AppActionHandler for Transaction {
     async fn check_historical<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let mut action_checks = JoinSet::new();
 
-        // TODO: these could be pushed into the action checks and run concurrently if needed
-
+        // SAFETY: Transaction parameters (chain id, expiry height, fee) against chain state
+        // that cannot change during transaction execution.
+        tx_parameters_historical_check(state.clone(), self).await?;
         // SAFETY: anchors are historical data and cannot change during transaction execution.
         claimed_anchor_is_valid(state.clone(), self).await?;
         // SAFETY: FMD parameters cannot change during transaction execution.
         fmd_parameters_valid(state.clone(), self).await?;
-        // SAFETY: gas prices cannot change during transaction execution.
-        fee_greater_than_base_fee(state.clone(), self).await?;
 
         // Currently, we need to clone the component actions so that the spawned
         // futures can have 'static lifetimes. In the future, we could try to
@@ -104,12 +106,26 @@ impl AppActionHandler for Transaction {
         // Delete the note source, in case someone else tries to read it.
         state.put_current_source(None);
 
+        // Record all the clues in this transaction
+        // To avoid recomputing a hash.
+        let id = self.id();
+        for clue in self
+            .transaction_body
+            .detection_data
+            .iter()
+            .flat_map(|x| x.fmd_clues.iter())
+        {
+            state.record_clue(clue.clone(), id.clone()).await?;
+        }
+
         Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+
     use anyhow::Result;
     use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
     use penumbra_fee::Fee;
@@ -163,10 +179,14 @@ mod tests {
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
                 SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
-                OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
+                OutputPlan::new(&mut OsRng, value, test_keys::ADDRESS_1.deref().clone()).into(),
             ],
             detection_data: Some(DetectionDataPlan {
-                clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
+                clue_plans: vec![CluePlan::new(
+                    &mut OsRng,
+                    test_keys::ADDRESS_1.deref().clone(),
+                    1.try_into().unwrap(),
+                )],
             }),
             memo: None,
         };
@@ -228,7 +248,7 @@ mod tests {
             },
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
-                OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
+                OutputPlan::new(&mut OsRng, value, test_keys::ADDRESS_1.deref().clone()).into(),
             ],
             detection_data: None,
             memo: None,

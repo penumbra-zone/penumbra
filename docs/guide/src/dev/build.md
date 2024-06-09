@@ -7,12 +7,14 @@ consider using [WSL] instead.
 
 ### Installing the Rust toolchain
 
-This requires that you install a recent (>= 1.73) stable version
+This requires that you install a recent (>= 1.75) stable version
 of the Rust compiler, installation instructions for which you can find
 [here](https://www.rust-lang.org/learn/get-started). Don't forget to reload your shell so that
 `cargo` is available in your `$PATH`!
 
-You can verify the rust compiler version by running `rustc --version` which should indicate version 1.73 or later.
+You can verify the rust compiler version by running `rustc --version` which should indicate version 1.75 or later.
+The project uses a `rust-toolchain.toml` file, which will ensure that your version of rust stays current enough
+to build the project from source.
 
 ### Installing build prerequisites
 
@@ -78,5 +80,58 @@ Then, build all the project binaries using `cargo`:
 cargo build --release
 ```
 
+### Linking Against RocksDB (Optional)
+
+Development builds can avoid the cost of recompiling RocksDB for storage libraries in the Cargo
+workspace. This manifests as a `librocksdb-sys(build)` message when building or testing crates
+in the monorepo.
+
+#### Building `librocksdb.a` from source
+
+First, clone the rocksdb repository:
+
+```sh
+# Clone the repository, and enter that directory.
+git clone git@github.com:facebook/rocksdb.git && cd rocksdb
+
+# Checkout the version of rocksdb used in `librocksdb-sys`.
+git checkout 6a43615
+
+# Add an environment variable pointing to this repository:
+ROCKSDB_LIB_DIR=`pwd`
+
+# Compile the static `librocksdb.a` library to link against:
+make static_lib
+```
+
+#### Building `libsnappy.a` from source
+
+next, clone the snappy repository and follow the
+[instructions][snappy-build] to build it:
+
+```
+# Clone the repository, and enter that directory.
+git clone git@github.com:google/snappy.git && cd snappy
+
+# Checkout the version of snappy used in `librocksdb-sys`.
+git checkout 2b63814
+
+# Initialize the submodules.
+git submodule update --init
+
+# Build snappy using cmake.
+mkdir build
+cd build && cmake .. && make
+
+# Add an environment variable pointing to the build/ directory.
+SNAPPY_LIB_DIR=`pwd`
+```
+
+### Building Penumbra
+
+Once you've built rocksdb and set the environment variable, the `librocksdb-sys` crate will search
+in that directory for the compiled `librocksdb.a` static library when it is rebuilt.
+
+[snappy-build]: https://github.com/google/snappy?tab=readme-ov-file#building
 [protoc-install]: https://grpc.io/docs/protoc-installation/
 [WSL]: https://learn.microsoft.com/en-us/windows/wsl/install

@@ -8,22 +8,19 @@ use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
 use rand_core::OsRng;
 
-//use crate::TempStorageExt;
-
+use crate::component::{SwapDataRead, SwapDataWrite};
 use crate::lp::action::PositionOpen;
+use crate::lp::{position, SellOrder};
+use crate::DexParameters;
 use crate::{
     component::{
         router::FillRoute,
-        router::{limit_buy, limit_sell, HandleBatchSwaps, RoutingParams},
+        router::{create_buy, create_sell, HandleBatchSwaps, RoutingParams},
         Arbitrage, PositionManager, PositionRead, StateReadExt, StateWriteExt,
     },
     lp::{position::Position, Reserves},
     BatchSwapOutputData, DirectedTradingPair, DirectedUnitPair,
 };
-
-// TODO: what's the right way to mock genesis? if component A needs component B,
-// do we need a way to mock B's genesis in A's tests? or should we only do unit
-// tests for A, integration tests for A+B?
 
 #[async_trait]
 pub trait TempStorageExt: Sized {
@@ -44,6 +41,7 @@ impl TempStorageExt for TempStorage {
                 start_height: 0,
             },
         );
+        state.put_dex_params(DexParameters::default());
 
         self.commit(state).await?;
 
@@ -54,7 +52,7 @@ impl TempStorageExt for TempStorage {
 #[tokio::test]
 /// Builds a simple order book with a single limit order, and tests different
 /// market order execution against it.
-async fn single_limit_order() -> anyhow::Result<()> {
+async fn single_close_on_fill() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
@@ -80,7 +78,7 @@ async fn single_limit_order() -> anyhow::Result<()> {
     );
 
     let position_1_id = position_1.id();
-    state_tx.put_position(position_1.clone()).await.unwrap();
+    state_tx.open_position(position_1.clone()).await.unwrap();
 
     let mut state_test_1 = state_tx.fork();
 
@@ -262,9 +260,62 @@ async fn single_limit_order() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+/// Builds a simple order book with a two orders, fills against them both,
+/// and checks that one of the orders is auto-closed.
+async fn check_close_on_fill() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let mut position_1 = SellOrder::parse_str("100gm@1gn")?.into_position(OsRng);
+    position_1.close_on_fill = true;
+    let position_2 = SellOrder::parse_str("100gm@1.1gn")?.into_position(OsRng);
+
+    let position_1_id = position_1.id();
+    let position_2_id = position_2.id();
+
+    state_tx.open_position(position_1.clone()).await.unwrap();
+    state_tx.open_position(position_2.clone()).await.unwrap();
+
+    // Now we have the following liquidity:
+    //
+    // 100gm@1gn (auto-closing)
+    // 100gm@1.1gn
+    //
+    // We therefore expect that trading 100gn + 110gn will exhaust both positions.
+    // Attempting to trade a bit more than that ensures we completely fill both,
+    // without worrying about rounding.
+    // Because we're just testing the DEX internals, we need to trigger fill_route manually.
+    let input = "220gn".parse::<Value>().unwrap();
+    let route = [gm.id()];
+    let execution = FillRoute::fill_route(&mut state_tx, input, &route, None).await?;
+
+    let unfilled = input.amount.checked_sub(&execution.input.amount).unwrap();
+
+    // Check that we got the execution we expected.
+    assert_eq!(unfilled, "10gn".parse::<Value>().unwrap().amount);
+    assert_eq!(execution.output, "200gm".parse::<Value>().unwrap());
+
+    // Now grab both position states:
+    let position_1_post_exec = state_tx.position_by_id(&position_1_id).await?.unwrap();
+    let position_2_post_exec = state_tx.position_by_id(&position_2_id).await?.unwrap();
+
+    dbg!(&position_1_post_exec);
+    dbg!(&position_2_post_exec);
+
+    // Check that position 1 was auto-closed but position 2 wasn't:
+    assert_eq!(position_1_post_exec.state, position::State::Closed);
+    assert_eq!(position_2_post_exec.state, position::State::Opened);
+
+    Ok(())
+}
+
+#[tokio::test]
 /// Try to execute against multiple positions, mainly testing that the order-book traversal
 /// is done correctly.
-async fn multiple_limit_orders() -> anyhow::Result<()> {
+async fn multiple_close_on_fills() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
@@ -330,9 +381,9 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
     let position_3_id = position_3.id();
 
     // The insertion order shouldn't matter.
-    state_tx.put_position(position_2.clone()).await.unwrap();
-    state_tx.put_position(position_1.clone()).await.unwrap();
-    state_tx.put_position(position_3.clone()).await.unwrap();
+    state_tx.open_position(position_2.clone()).await.unwrap();
+    state_tx.open_position(position_1.clone()).await.unwrap();
+    state_tx.open_position(position_3.clone()).await.unwrap();
 
     let mut full_orderbook_state = state_tx;
 
@@ -498,7 +549,7 @@ async fn position_create_and_retrieve() -> anyhow::Result<()> {
             r2: Amount::from(1u64) * price1 * gn.clone().unit_amount(),
         },
     );
-    state_tx.put_position(buy_1.clone()).await.unwrap();
+    state_tx.open_position(buy_1.clone()).await.unwrap();
     state_tx.apply();
 
     let stream = state.all_positions();
@@ -523,7 +574,7 @@ async fn position_create_and_retrieve() -> anyhow::Result<()> {
             r2: Amount::from(1u64) * price2 * gn.clone().unit_amount(),
         },
     );
-    state_tx.put_position(buy_2.clone()).await.unwrap();
+    state_tx.open_position(buy_2.clone()).await.unwrap();
     state_tx.apply();
 
     let stream = state.all_positions();
@@ -559,8 +610,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     let pair_gn_penumbra = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
-    let buy_1 = limit_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
-    state_tx.put_position(buy_1).await.unwrap();
+    let buy_1 = create_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
+    state_tx.open_position(buy_1).await.unwrap();
     state_tx.apply();
 
     // Now we should be able to fill a 1:1 gn:penumbra swap.
@@ -577,9 +628,12 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
         .unwrap()
-        .put_swap_flow(&trading_pair, swap_flow.clone());
+        .put_swap_flow(&trading_pair, swap_flow.clone())
+        .await
+        .unwrap();
+    let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0, 0, RoutingParams::default())
+        .handle_batch_swaps(trading_pair, swap_flow, 0, routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -631,7 +685,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
 
     // Sell 25 gn at 1 gm each.
     state_tx
-        .put_position(limit_sell(
+        .open_position(create_sell(
             DirectedUnitPair::new(gn.clone(), gm.clone()),
             25u64.into(),
             1u64.into(),
@@ -640,7 +694,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     // Buy 1 pusd at 20 gm each.
     state_tx
-        .put_position(limit_buy(
+        .open_position(create_buy(
             DirectedUnitPair::new(pusd.clone(), gm.clone()),
             1u64.into(),
             20u64.into(),
@@ -649,7 +703,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     // Buy 5 penumbra at 1 gm each.
     state_tx
-        .put_position(limit_buy(
+        .open_position(create_buy(
             DirectedUnitPair::new(penumbra.clone(), gm.clone()),
             5u64.into(),
             1u64.into(),
@@ -658,7 +712,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     // Sell 1pusd at 5 penumbra each.
     state_tx
-        .put_position(limit_sell(
+        .open_position(create_sell(
             DirectedUnitPair::new(pusd.clone(), penumbra.clone()),
             1u64.into(),
             5u64.into(),
@@ -682,15 +736,12 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
         .unwrap()
-        .put_swap_flow(&trading_pair, swap_flow.clone());
+        .put_swap_flow(&trading_pair, swap_flow.clone())
+        .await
+        .unwrap();
+    let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(
-            trading_pair,
-            swap_flow,
-            0u32.into(),
-            0,
-            RoutingParams::default(),
-        )
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -706,8 +757,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
             unfilled_1: 0u32.into(),
             unfilled_2: 0u32.into(),
             height: 0,
-            epoch_starting_height: 0,
             trading_pair,
+            sct_position_prefix: Default::default(),
         }
     );
 
@@ -762,7 +813,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
 
     // Sell 10 gn at 1 penumbra each.
     state_tx
-        .put_position(limit_sell(
+        .open_position(create_sell(
             DirectedUnitPair::new(gn.clone(), penumbra.clone()),
             10u64.into(),
             1u64.into(),
@@ -771,7 +822,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
         .unwrap();
     // Buy 100 gn at 2 gm each.
     state_tx
-        .put_position(limit_buy(
+        .open_position(create_buy(
             DirectedUnitPair::new(gn.clone(), gm.clone()),
             100u64.into(),
             2u64.into(),
@@ -780,7 +831,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
         .unwrap();
     // Sell 100 penumbra at 1 gm each.
     state_tx
-        .put_position(limit_sell(
+        .open_position(create_sell(
             DirectedUnitPair::new(penumbra.clone(), gm.clone()),
             100u64.into(),
             1u64.into(),
@@ -790,9 +841,12 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
     state_tx.apply();
 
     // Now we should be able to arb 10penumbra => 10gn => 20gm => 20penumbra.
-    state
-        .arbitrage(penumbra.id(), vec![penumbra.id(), gm.id(), gn.id()])
-        .await?;
+    let routing_params = RoutingParams {
+        max_hops: 4 + 2,
+        price_limit: Some(1u64.into()),
+        fixed_candidates: Arc::new(vec![penumbra.id(), gm.id(), gn.id()]),
+    };
+    state.arbitrage(penumbra.id(), routing_params).await?;
 
     let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
     assert_eq!(
@@ -813,6 +867,12 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
 /// The issue was that we did not treat the spill price as a strict
 /// upper bound, which is necessary to ensure that the arbitrage logic
 /// terminates.
+///
+/// This test also ensures that the created `SwapExecution` has the
+///
+/// *Arbitrage execution record bug:*
+/// This test also ensures that the created `SwapExecution` has the
+/// correct data. (See #3790).
 async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
@@ -861,18 +921,18 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
      *
      */
 
-    let mut buy_1 = limit_buy(penumbra_usd.clone(), 1u64.into(), 110u64.into());
+    let mut buy_1 = create_buy(penumbra_usd.clone(), 1u64.into(), 110u64.into());
     buy_1.nonce = [1; 32];
 
-    let mut buy_2 = limit_buy(penumbra_usd.clone(), 1u64.into(), 100u64.into());
+    let mut buy_2 = create_buy(penumbra_usd.clone(), 1u64.into(), 100u64.into());
     buy_2.nonce = [2; 32];
 
-    let mut sell_1 = limit_sell(penumbra_usd.clone(), 10u64.into(), 100u64.into());
+    let mut sell_1 = create_sell(penumbra_usd.clone(), 10u64.into(), 100u64.into());
     sell_1.nonce = [0; 32];
 
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
-    state_tx.put_position(sell_1).await.unwrap();
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
+    state_tx.open_position(sell_1).await.unwrap();
 
     state_tx.apply();
 
@@ -880,19 +940,207 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
 
     tracing::info!("we are triggering the arbitrage logic");
 
+    let routing_params = RoutingParams {
+        max_hops: 4 + 2,
+        price_limit: Some(1u64.into()),
+        fixed_candidates: Arc::new(vec![penumbra.id(), test_usd.id()]),
+    };
+
     let arb_profit = tokio::time::timeout(
         tokio::time::Duration::from_secs(2),
-        state.arbitrage(penumbra.id(), vec![penumbra.id(), test_usd.id()]),
+        state.arbitrage(penumbra.id(), routing_params),
     )
     .await??;
 
     tracing::info!(profit = ?arb_profit, "the arbitrage logic has concluded!");
-    // we should have made a profit of 0.01penumbra, with accuracy loss of 0.000002penumbra.
+    // we should have made a profit of 0.01penumbra, with precision loss of 0.000002penumbra.
     let profit: Value = "0.099998penumbra".parse().unwrap();
-    assert_eq!(arb_profit, profit);
+    assert_eq!(arb_profit, Some(profit));
 
     tracing::info!("fetching the `ArbExecution`");
     let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
     tracing::info!(?arb_execution, "fetched arb execution!");
+
+    // Validate that the arb execution has the correct data:
+    // Validate the traces.
+    assert_eq!(
+        arb_execution.traces,
+        vec![
+            vec![
+                penumbra.value(1u32.into()),
+                test_usd.value(110u32.into()),
+                Value {
+                    amount: 1099999u64.into(),
+                    asset_id: penumbra.id()
+                }
+            ],
+            vec![
+                penumbra.value(1u32.into()),
+                test_usd.value(100u32.into()),
+                Value {
+                    amount: 999999u64.into(),
+                    asset_id: penumbra.id()
+                }
+            ]
+        ]
+    );
+
+    // Validate the input/output of the arb execution:
+    assert_eq!(
+        arb_execution.input,
+        Value {
+            amount: 2000000u64.into(),
+            asset_id: penumbra.id(),
+        }
+    );
+    assert_eq!(
+        arb_execution.output,
+        Value {
+            amount: 2099998u64.into(),
+            asset_id: penumbra.id(),
+        }
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Confirms the ordering of routable assets returns the assets
+/// with the most liquidity first, as discovered in https://github.com/penumbra-zone/penumbra/issues/4189
+/// For the purposes of this test, it is important to remember
+/// that for a trade routing from A -> *, candidate liquidity is
+/// the amount of A purchaseable with the candidate assets, i.e. the amount of
+/// A in the reserves for any A <-> * positions.
+async fn check_routable_asset_ordering() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+    let test_usd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
+    let test_btc = asset::Cache::with_known_assets()
+        .get_unit("test_btc")
+        .unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let penumbra_usd = DirectedTradingPair::new(penumbra.id(), test_usd.id());
+
+    let reserves_1 = Reserves {
+        // 0 penumbra
+        r1: 0u64.into(),
+        // 120,000 test_usd
+        r2: 120_000u64.into(),
+    };
+
+    let position_1 = Position::new(
+        OsRng,
+        penumbra_usd,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_1,
+    );
+
+    state_tx.open_position(position_1).await.unwrap();
+
+    let penumbra_gn = DirectedTradingPair::new(penumbra.id(), gn.id());
+
+    let reserves_2 = Reserves {
+        // 130,000 penumbra
+        r1: 130_000u64.into(),
+        // 0 gn
+        r2: 0u64.into(),
+    };
+
+    let position_2 = Position::new(
+        OsRng,
+        penumbra_gn,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_2,
+    );
+
+    state_tx.open_position(position_2).await.unwrap();
+
+    let penumbra_btc = DirectedTradingPair::new(penumbra.id(), test_btc.id());
+
+    let reserves_3 = Reserves {
+        // 100,000 penumbra
+        r1: 100_000u64.into(),
+        // 50,000 test_btc
+        r2: 50_000u64.into(),
+    };
+
+    let position_3 = Position::new(
+        OsRng,
+        penumbra_btc,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_3,
+    );
+
+    state_tx.open_position(position_3).await.unwrap();
+
+    let btc_gm = DirectedTradingPair::new(test_btc.id(), gm.id());
+
+    let reserves_4 = Reserves {
+        // 100,000 test_btc
+        r1: 100_000u64.into(),
+        // 100,000 gm
+        r2: 100_000u64.into(),
+    };
+
+    let position_4 = Position::new(
+        OsRng,
+        btc_gm,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_4,
+    );
+
+    state_tx.open_position(position_4).await.unwrap();
+    state_tx.apply();
+
+    // Expected: GN reserves > BTC reserves, and USD/gm should not appear
+
+    // Find routable assets starting at the Penumbra asset.
+    let routable_assets: Vec<_> = state
+        .ordered_routable_assets(&penumbra.id())
+        .collect::<Vec<_>>()
+        .await;
+    let routable_assets = routable_assets
+        .into_iter()
+        .collect::<anyhow::Result<Vec<_>>>()?;
+
+    assert!(
+        routable_assets.len() == 2,
+        "expected 2 routable assets, got {}",
+        routable_assets.len()
+    );
+
+    let first = routable_assets[0];
+    let second = routable_assets[1];
+    assert!(
+        first == gn.id(),
+        "expected GN ({}) to be the first routable asset, got {}",
+        gn.id(),
+        first.clone()
+    );
+
+    assert!(
+        second == test_btc.id(),
+        "expected BTC ({}) to be the second routable asset, got {}",
+        test_btc.id(),
+        second.clone()
+    );
+
     Ok(())
 }

@@ -1,7 +1,9 @@
 use std::{pin::Pin, sync::Arc};
 
+use anyhow::Result;
 use async_stream::try_stream;
 use futures::{StreamExt, TryStreamExt};
+use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::instrument;
 
@@ -9,30 +11,34 @@ use cnidarium::{StateDelta, Storage};
 use penumbra_asset::{asset, Value};
 use penumbra_proto::{
     core::component::dex::v1::{
-        query_service_server::QueryService, simulate_trade_request::routing,
-        simulate_trade_request::routing::Setting, simulate_trade_request::Routing,
-        simulation_service_server::SimulationService, ArbExecutionRequest, ArbExecutionResponse,
-        ArbExecutionsRequest, ArbExecutionsResponse, BatchSwapOutputDataRequest,
-        BatchSwapOutputDataResponse, LiquidityPositionByIdRequest, LiquidityPositionByIdResponse,
-        LiquidityPositionsByIdRequest, LiquidityPositionsByIdResponse,
-        LiquidityPositionsByPriceRequest, LiquidityPositionsByPriceResponse,
-        LiquidityPositionsRequest, LiquidityPositionsResponse, SimulateTradeRequest,
-        SimulateTradeResponse, SpreadRequest, SpreadResponse, SwapExecutionRequest,
-        SwapExecutionResponse, SwapExecutionsRequest, SwapExecutionsResponse,
+        query_service_server::QueryService,
+        simulate_trade_request::{
+            routing::{self, Setting},
+            Routing,
+        },
+        simulation_service_server::SimulationService,
+        ArbExecutionRequest, ArbExecutionResponse, ArbExecutionsRequest, ArbExecutionsResponse,
+        BatchSwapOutputDataRequest, BatchSwapOutputDataResponse, CandlestickDataRequest,
+        CandlestickDataResponse, CandlestickDataStreamRequest, CandlestickDataStreamResponse,
+        LiquidityPositionByIdRequest, LiquidityPositionByIdResponse, LiquidityPositionsByIdRequest,
+        LiquidityPositionsByIdResponse, LiquidityPositionsByPriceRequest,
+        LiquidityPositionsByPriceResponse, LiquidityPositionsRequest, LiquidityPositionsResponse,
+        SimulateTradeRequest, SimulateTradeResponse, SpreadRequest, SpreadResponse,
+        SwapExecutionRequest, SwapExecutionResponse, SwapExecutionsRequest, SwapExecutionsResponse,
     },
     DomainType, StateReadProto,
 };
 
-use crate::ExecutionCircuitBreaker;
+use super::ExecutionCircuitBreaker;
 use crate::{
+    component::metrics,
     lp::position::{self, Position},
-    state_key, DirectedTradingPair, SwapExecution, TradingPair,
+    state_key, CandlestickData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 
-use super::{
-    router::{RouteAndFill, RoutingParams},
-    PositionRead, StateReadExt,
-};
+use super::{chandelier::CandlestickRead, router::RouteAndFill, PositionRead, StateReadExt};
+
+pub mod stub;
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {
@@ -66,6 +72,11 @@ impl QueryService for Server {
         Pin<Box<dyn futures::Stream<Item = Result<ArbExecutionsResponse, tonic::Status>> + Send>>;
     type SwapExecutionsStream =
         Pin<Box<dyn futures::Stream<Item = Result<SwapExecutionsResponse, tonic::Status>> + Send>>;
+    type CandlestickDataStreamStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<CandlestickDataStreamResponse, tonic::Status>> + Send,
+        >,
+    >;
 
     #[instrument(skip(self, request))]
     async fn arb_execution(
@@ -194,6 +205,92 @@ impl QueryService for Server {
             })),
             None => Err(Status::not_found("batch swap output data not found")),
         }
+    }
+
+    #[instrument(skip(self, request))]
+    async fn candlestick_data(
+        &self,
+        request: tonic::Request<CandlestickDataRequest>,
+    ) -> Result<tonic::Response<CandlestickDataResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        // Limit the number of candlesticks returned to 20,000 (approximately 1 day)
+        // to prevent the server from being overwhelmed by a single request.
+        let limit = std::cmp::min(request.get_ref().limit, 20_000u64);
+        let start_height = match request.get_ref().start_height {
+            0 => {
+                // If no start height is provided, go `limit` blocks back from now.
+                let current_height = state.version();
+                current_height.saturating_sub(limit)
+            }
+            start_height => start_height,
+        };
+
+        let pair: DirectedTradingPair = request
+            .get_ref()
+            .pair
+            .clone()
+            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
+
+        let candlesticks = state
+            .candlesticks(&pair, start_height, limit as usize)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        Ok(tonic::Response::new(CandlestickDataResponse {
+            data: candlesticks.into_iter().map(Into::into).collect(),
+        }))
+    }
+
+    async fn candlestick_data_stream(
+        &self,
+        request: tonic::Request<CandlestickDataStreamRequest>,
+    ) -> Result<tonic::Response<Self::CandlestickDataStreamStream>, Status> {
+        let pair: DirectedTradingPair = request
+            .get_ref()
+            .pair
+            .clone()
+            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
+
+        let (tx_candle, rx_candle) = mpsc::channel::<CandlestickData>(1);
+        let storage = self.storage.clone();
+        tokio::spawn(async move {
+            // could add metrics here
+            // let _guard = CandlestickDataStreamConnectionCounter::new();
+            let mut rx_state_snapshot = storage.subscribe();
+            loop {
+                rx_state_snapshot
+                    .changed()
+                    .await
+                    .expect("channel should be open");
+                let snapshot = rx_state_snapshot.borrow().clone();
+                let height = snapshot.version();
+                match snapshot.get_candlestick(&pair, height).await? {
+                    Some(candle) => tx_candle.send(candle).await?,
+                    None => {
+                        // If there's no candlestick data, might as well check that
+                        // tx_candle is still open in case the client has disconnected.
+                        if tx_candle.is_closed() {
+                            break;
+                        }
+                    }
+                }
+            }
+            Ok::<_, anyhow::Error>(())
+        });
+
+        Ok(tonic::Response::new(
+            tokio_stream::wrappers::ReceiverStream::new(rx_candle)
+                .map(|candle| {
+                    Ok(CandlestickDataStreamResponse {
+                        data: Some(candle.into()),
+                    })
+                })
+                .boxed(),
+        ))
     }
 
     #[instrument(skip(self, request))]
@@ -365,8 +462,12 @@ impl QueryService for Server {
                     anyhow::Ok(position)
                 }
             })
-            .map_ok(|position| LiquidityPositionsByPriceResponse {
-                data: Some(position.into()),
+            .map_ok(|position| {
+                let id = position.id();
+                LiquidityPositionsByPriceResponse {
+                    data: Some(position.into()),
+                    id: Some(id.into()),
+                }
             })
             .map_err(|e: anyhow::Error| {
                 tonic::Status::internal(format!("error retrieving positions: {:#}", e))
@@ -521,15 +622,19 @@ impl SimulationService for Server {
                 tonic::Status::invalid_argument(format!("error parsing output id: {:#}", e))
             })?;
 
-        let routing_params = match routing_strategy {
-            Setting::Default(_) => RoutingParams::default(),
-            Setting::SingleHop(_) => RoutingParams {
-                max_hops: 1,
-                ..RoutingParams::default()
-            },
-        };
-
+        let start_time = std::time::Instant::now();
         let state = self.storage.latest_snapshot();
+
+        let mut routing_params = state.routing_params().await.expect("routing params unset");
+        match routing_strategy {
+            Setting::SingleHop(_) => {
+                routing_params.max_hops = 1;
+            }
+            Setting::Default(_) => {
+                // no-op, use the default
+            }
+        }
+
         let mut state_tx = Arc::new(StateDelta::new(state));
         let execution_circuit_breaker = ExecutionCircuitBreaker::default();
         let swap_execution = state_tx
@@ -556,9 +661,15 @@ impl SimulationService for Server {
             asset_id: input.asset_id,
         };
 
-        Ok(tonic::Response::new(SimulateTradeResponse {
+        let rsp = tonic::Response::new(SimulateTradeResponse {
             unfilled: Some(unfilled.into()),
             output: Some(swap_execution.into()),
-        }))
+        });
+
+        let duration = start_time.elapsed();
+
+        metrics::histogram!(metrics::DEX_RPC_SIMULATE_TRADE_DURATION).record(duration);
+
+        Ok(rsp)
     }
 }

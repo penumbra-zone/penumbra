@@ -181,44 +181,33 @@ has been configured between the Osmosis testnet and the *current* Penumbra testn
 
 Penumbra aims to implement full IBC support for cross-chain asset transfers. For now, however,
 we're only running a relayer between the Penumbra testnet and the [Osmosis testnet] chains.
-For Testnet 64 Titan, the channel information is:
+For Testnet 69 Deimos, the channel is `0`:
 
 <!--
 To update the information below, update the Hermes config, then run:
-`pcli q ibc channels | jq '.[0]'` and confirm that output matches what Hermes emitted
+`pcli q ibc channels` and confirm that output matches what Hermes emitted
 during setup.
 -->
 
 ```
-{
-  "state": 3,
-  "ordering": 1,
-  "counterparty": {
-    "port_id": "transfer",
-    "channel_id": "channel-5077"
-  },
-  "connection_hops": [
-    "connection-6"
-  ],
-  "version": "ics20-1",
-  "port_id": "transfer",
-  "channel_id": "channel-2"
-}
++------------+----------+--------------+-------------------------+-------+-----------------+---------------+
+| Channel ID | Port     | Counterparty | Counterparty Channel ID | State | Client ID       | Client Height |
++==========================================================================================================+
+| 0          | transfer | osmo-test-5  | channel-6105            | OPEN  | 07-tendermint-4 | 5-5937586     |
++------------+----------+--------------+-------------------------+-------+-----------------+---------------+
 ```
 
-The output above shows that the IBC channel id on Penumbra is 2, and on Osmosis it's 5077.
-There's one more piece of information we need to make an IBC withdrawal: the appropriate IBC
-timeout height, which is composed of two values: `<counterparty_chain_id_revision>-<counterparty_chain_block_height>`.
-For the Osmosis testnet, as of 2023Q4, the chain id is `osmo-test-5`, meaning the chain id revision is `5`.
-So a value like `5-5000000` (i.e. revision 5 at height 5 million) will work.
+You can see this yourself by running `pcli query ibc channels` and comparing the output you see
+with what's shown above. It's possible the output will include mention of other chains.
 
+The output above shows that the IBC channel id on Penumbra is 0, and on Osmosis it's 6105.
 To initiate an IBC withdrawal from Penumbra testnet to Osmosis testnet:
 
 ```bash
-pcli tx withdraw --to <OSMOSIS_ADDRESS> --channel <CHANNEL_ID> 5gm --timeout-height 5-5000000
+pcli tx withdraw --to <OSMOSIS_ADDRESS> --channel <CHANNEL_ID> 5gm
 ```
 
-Unfortunately the CLI tooling for Osmosis is cumbersome. For now, use `rly` as a user agent
+Unfortunately the CLI tooling for Osmosis is cumbersome. For now, use `hermes` as a user agent
 for the Osmosis testnet, as described in the [IBC dev docs](../dev/ibc.md).
 
 [Osmosis testnet]: https://docs.osmosis.zone/overview/endpoints#testnet-networks

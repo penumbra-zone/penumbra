@@ -1,4 +1,4 @@
-/// Configuration for the
+/// Configuration for the summoner.
 #[derive(Clone, Copy)]
 pub struct Config {
     pub phase1_timeout_secs: u64,

@@ -62,6 +62,11 @@ message Metadata {
   AssetId penumbra_asset_id = 1984;
 
   repeated AssetImage images = 1985;
+
+  // An optional "score" used to prioritize token lists.
+  //
+  // This is solely for use in client-side registries.
+  uint64 priority_score = 1986;
 }
 
 // DenomUnit represents a struct that describes a given denomination unit of the basic token.

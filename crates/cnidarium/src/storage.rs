@@ -1,9 +1,9 @@
 use std::{path::PathBuf, sync::Arc};
-// use tokio_stream::wrappers::WatchStream;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
+use std::collections::HashMap;
 use tokio::sync::watch;
 use tracing::Span;
 
@@ -15,7 +15,7 @@ use crate::{
         substore::{SubstoreConfig, SubstoreSnapshot, SubstoreStorage},
     },
 };
-use crate::{snapshot_cache::SnapshotCache, StateDelta};
+use crate::{snapshot_cache::SnapshotCache, StagedWriteBatch, StateDelta};
 
 mod temp;
 pub use temp::TempStorage;
@@ -40,7 +40,6 @@ struct Inner {
     changes_rx: watch::Receiver<(jmt::Version, Arc<Cache>)>,
     snapshots: RwLock<SnapshotCache>,
     multistore_config: MultistoreConfig,
-    #[allow(dead_code)]
     /// A handle to the dispatcher task.
     /// This is used by `Storage::release` to wait for the task to terminate.
     jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
@@ -53,51 +52,49 @@ impl Storage {
         let span = Span::current();
         let db_path = path.clone();
         // initializing main storage instance.
-        let prefixes = tokio::task::Builder::new()
-            .name("config_rocksdb")
-            .spawn_blocking(move || {
-                span.in_scope(|| {
-                    let mut opts = Options::default();
-                    opts.create_if_missing(true);
-                    opts.create_missing_column_families(true);
-                    tracing::info!(?path, "opening rocksdb config column");
+        let prefixes = tokio::task::spawn_blocking(move || {
+            span.in_scope(|| {
+                let mut opts = Options::default();
+                opts.create_if_missing(true);
+                opts.create_missing_column_families(true);
+                tracing::info!(?path, "opening rocksdb config column");
 
-                    // Hack(erwan): RocksDB requires us to specify all the column families
-                    // that we want to use upfront. This is problematic when we are initializing
-                    // a new database, because the call to `DBCommon<T>::list_cf` will fail
-                    // if the database manifest is not found. To work around this, we ignore
-                    // the error and assume that the database is empty.
-                    // Tracked in: https://github.com/rust-rocksdb/rust-rocksdb/issues/608
-                    let mut columns = DB::list_cf(&opts, path.clone()).unwrap_or_default();
-                    if columns.is_empty() {
-                        columns.push("config".to_string());
+                // Hack(erwan): RocksDB requires us to specify all the column families
+                // that we want to use upfront. This is problematic when we are initializing
+                // a new database, because the call to `DBCommon<T>::list_cf` will fail
+                // if the database manifest is not found. To work around this, we ignore
+                // the error and assume that the database is empty.
+                // Tracked in: https://github.com/rust-rocksdb/rust-rocksdb/issues/608
+                let mut columns = DB::list_cf(&opts, path.clone()).unwrap_or_default();
+                if columns.is_empty() {
+                    columns.push("config".to_string());
+                }
+
+                let db = DB::open_cf(&opts, path, columns).expect("can open database");
+                let cf_config = db
+                    .cf_handle("config")
+                    .expect("config column family is created if missing");
+                let config_iter = db.iterator_cf(cf_config, rocksdb::IteratorMode::Start);
+                let mut prefixes = Vec::new();
+                tracing::info!("reading prefixes from config column family");
+                for i in config_iter {
+                    let (key, _) = i.expect("can read from iterator");
+                    prefixes.push(String::from_utf8(key.to_vec()).expect("prefix is utf8"));
+                }
+
+                for prefix in default_prefixes {
+                    if !prefixes.contains(&prefix) {
+                        db.put_cf(cf_config, prefix.as_bytes(), b"")
+                            .expect("can write to db");
+                        prefixes.push(prefix);
                     }
+                }
 
-                    let db = DB::open_cf(&opts, path, columns).expect("can open database");
-                    let cf_config = db
-                        .cf_handle("config")
-                        .expect("config column family is created if missing");
-                    let config_iter = db.iterator_cf(cf_config, rocksdb::IteratorMode::Start);
-                    let mut prefixes = Vec::new();
-                    tracing::info!("reading prefixes from config column family");
-                    for i in config_iter {
-                        let (key, _) = i.expect("can read from iterator");
-                        prefixes.push(String::from_utf8(key.to_vec()).expect("prefix is utf8"));
-                    }
-
-                    for prefix in default_prefixes {
-                        if !prefixes.contains(&prefix) {
-                            db.put_cf(cf_config, prefix.as_bytes(), b"")
-                                .expect("can write to db");
-                            prefixes.push(prefix);
-                        }
-                    }
-
-                    std::mem::drop(db);
-                    prefixes
-                })
-            })?
-            .await?;
+                std::mem::drop(db);
+                prefixes
+            })
+        })
+        .await?;
 
         Storage::init(db_path, prefixes).await
     }
@@ -113,9 +110,8 @@ impl Storage {
     pub async fn init(path: PathBuf, prefixes: Vec<String>) -> Result<Self> {
         let span = Span::current();
 
-        tokio::task::Builder::new()
-            .name("open_rocksdb")
-            .spawn_blocking(move || {
+        tokio::task
+            ::spawn_blocking(move || {
                 span.in_scope(|| {
                     let mut substore_configs = Vec::new();
                     tracing::info!("initializing global store config");
@@ -231,7 +227,7 @@ impl Storage {
                         db: shared_db,
                     })))
                 })
-            })?
+            })
             .await?
     }
 
@@ -272,45 +268,44 @@ impl Storage {
         self.0.snapshots.read().get(version)
     }
 
-    /// Commits the provided [`StateDelta`] to persistent storage as the latest
-    /// version of the chain state.
-    pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
+    /// Prepares a commit for the provided [`StateDelta`], returning a [`StagedWriteBatch`].
+    /// The batch can be committed to the database using the [`Storage::commit_batch`] method.
+    pub async fn prepare_commit(&self, delta: StateDelta<Snapshot>) -> Result<StagedWriteBatch> {
         // Extract the snapshot and the changes from the state delta
         let (snapshot, changes) = delta.flatten();
+        let prev_snapshot_version = snapshot.version();
 
         // We use wrapping_add here so that we can write `new_version = 0` by
         // overflowing `PRE_GENESIS_VERSION`.
-        let old_version = self.latest_version();
-        let new_version = old_version.wrapping_add(1);
-        tracing::debug!(old_version, new_version);
-        if old_version != snapshot.version() {
-            anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
-        }
+        let prev_storage_version = self.latest_version();
+        let next_storage_version = prev_storage_version.wrapping_add(1);
+        tracing::debug!(prev_storage_version, next_storage_version);
 
-        self.commit_inner(snapshot, changes, new_version, false)
+        ensure!(
+            prev_storage_version == prev_snapshot_version,
+            "trying to prepare a commit for a delta forked from version {}, but the latest version is {}",
+            prev_snapshot_version,
+            prev_storage_version
+        );
+
+        self.prepare_commit_inner(snapshot, changes, next_storage_version, false)
             .await
     }
 
-    /// Commits the supplied [`Cache`] to persistent storage.
-    ///
-    /// # Migrations
-    /// In the case of chain state migrations we need to commit the new state
-    /// without incrementing the version. If `perform_migration` is `true` the
-    /// snapshot will _not_ be written to the snapshot cache, and no subscribers
-    /// will be notified. Substore versions will not be updated.
-    async fn commit_inner(
+    async fn prepare_commit_inner(
         &self,
         snapshot: Snapshot,
         cache: Cache,
         version: jmt::Version,
         perform_migration: bool,
-    ) -> Result<crate::RootHash> {
-        tracing::debug!(new_jmt_version = ?version, "committing state delta");
+    ) -> Result<StagedWriteBatch> {
+        tracing::debug!(new_jmt_version = ?version, "preparing to commit state delta");
         // Save a copy of the changes to send to subscribers later.
         let changes = Arc::new(cache.clone_changes());
 
         let mut changes_by_substore = cache.shard_by_prefix(&self.0.multistore_config);
-        let mut substore_roots = Vec::new();
+        #[allow(clippy::disallowed_types)]
+        let mut substore_roots = HashMap::new();
         let mut multistore_versions =
             multistore::MultistoreCache::from_config(self.0.multistore_config.clone());
 
@@ -323,24 +318,27 @@ impl Storage {
         // its own changes to the batch, and we will commit it at the end.
         let mut write_batch = rocksdb::WriteBatch::default();
 
-        // Note(erwan): Here, we iterate over each substore, and spawn a task to
-        //  commit it. Since we know that the substore keyspace is disjoint, we
-        //  could consider rewriting this loop into a [`tokio::task::JoinSet`],
-        //  however consider that `rocksdb::WriteBatch` is _not_ thread-safe.
+        //  Note(erwan): Here, we spawn a commit task for each substore.
+        //  The substore keyspaces are disjoint, so conceptually it is
+        //  fine to rewrite it using a [`tokio::task::JoinSet`].
+        //  The reason this isn't done is because `rocksdb::WriteBatch`
+        //  is _not_ thread-safe.
         //
         //  This means that to spin-up N tasks, we would need to use a
         //  single batch wrapped in a mutex, or use N batches, and find
-        //  a way to commit to them atomically. Since that is not supported
-        //  by RocksDB, we would have to iterate over each entry in each
-        //  batch, and merge them together.
+        //  a way to commit to them atomically. This isn't supported by
+        //  RocksDB which leaves one option: to iterate over each entry
+        //  in each batch, and merge them together. At this point, this
+        //  is probably not worth it.
         //
         //  Another option is to trade atomicity for parallelism by producing
         //  N batches, and committing them in distinct atomic writes. This is
-        //  dangerous because it could leave the node in an inconsistent state.
+        //  potentially faster, but it is also more dangerous, because if one
+        //  of the writes fails, we are left with a partially committed state.
         //
-        //  Instead of doing that, we lean on the fact that the number of substores
-        //  is small, and that the synchronization overhead of a joinset would exceed
-        //  its benefits.
+        //  The current implementation leans on the fact that the number of
+        //  substores is small, and that the synchronization overhead of a joinset
+        //  would exceed its benefits. This works well for now.
         for config in self.0.multistore_config.iter() {
             tracing::debug!(substore_prefix = ?config.prefix, "processing substore");
             // If the substore is empty, we need to fetch its initialized version from the cache.
@@ -359,24 +357,24 @@ impl Storage {
                 continue;
             };
 
-            let version = if perform_migration {
+            let new_version = if perform_migration {
                 old_substore_version
             } else {
                 old_substore_version.wrapping_add(1)
             };
-            new_versions.push(version);
+            new_versions.push(new_version);
             let substore_snapshot = SubstoreSnapshot {
                 config: config.clone(),
                 rocksdb_snapshot: rocksdb_snapshot.clone(),
-                version,
+                version: new_version,
                 db: db.clone(),
             };
 
             let substore_storage = SubstoreStorage { substore_snapshot };
 
-            // Commit the substore and collect the root hash
+            // Commit the substore and collect its root hash
             let (root_hash, substore_batch) = substore_storage
-                .commit(changeset, write_batch, version)
+                .commit(changeset, write_batch, new_version, perform_migration)
                 .await?;
             write_batch = substore_batch;
 
@@ -386,10 +384,18 @@ impl Storage {
                 ?version,
                 "added substore to write batch"
             );
-            substore_roots.push((config.clone(), root_hash, version));
+            substore_roots.insert(config.clone(), (root_hash, new_version));
+
+            tracing::debug!(
+                ?root_hash,
+                prefix = ?config.prefix,
+                ?new_version,
+                "updating substore version"
+            );
+            multistore_versions.set_version(config.clone(), new_version);
         }
 
-        /* commit roots to main store */
+        // Add substore roots to the main store changeset
         let main_store_config = self.0.multistore_config.main_store.clone();
         let mut main_store_changes = changes_by_substore
             .remove(&main_store_config)
@@ -398,13 +404,13 @@ impl Storage {
                 Cache::default()
             });
 
-        for (config, root_hash, _) in substore_roots.iter() {
+        for (config, (root_hash, _)) in substore_roots.iter() {
             main_store_changes
                 .unwritten_changes
                 .insert(config.prefix.to_string(), Some(root_hash.0.to_vec()));
         }
 
-        /* commit main substore */
+        // Commit the main store and collect the global root hash
         let main_store_snapshot = SubstoreSnapshot {
             config: main_store_config.clone(),
             rocksdb_snapshot: snapshot.0.snapshot.clone(),
@@ -417,66 +423,163 @@ impl Storage {
         };
 
         let (global_root_hash, write_batch) = main_store_storage
-            .commit(main_store_changes, write_batch, version)
+            .commit(main_store_changes, write_batch, version, perform_migration)
             .await?;
         tracing::debug!(
             ?global_root_hash,
             ?version,
             "added main store to write batch"
         );
-        db.write(write_batch).expect("can write to db");
 
-        /* update multistore versions */
-        for (config, root_hash, new_version) in substore_roots {
-            tracing::debug!(
-                ?root_hash,
-                prefix = ?config.prefix,
-                ?new_version,
-                "updating substore version"
-            );
-            multistore_versions.set_version(config, new_version);
-        }
-
-        tracing::debug!(?global_root_hash, ?version, "updating main store version");
+        tracing::debug!(?global_root_hash, version = ?version, "updating main store version");
+        let main_store_config = self.0.multistore_config.main_store.clone();
         multistore_versions.set_version(main_store_config, version);
 
-        /* hydrate the snapshot cache */
-        if perform_migration {
-            tracing::debug!("skipping snapshot cache update");
-            return Ok(global_root_hash);
+        Ok(StagedWriteBatch {
+            write_batch,
+            version,
+            multistore_versions,
+            root_hash: global_root_hash,
+            substore_roots,
+            perform_migration,
+            changes,
+        })
+    }
+
+    /// Commits the provided [`StateDelta`] to persistent storage as the latest
+    /// version of the chain state.
+    pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
+        let batch = self.prepare_commit(delta).await?;
+        self.commit_batch(batch)
+    }
+
+    /// Commits the supplied [`StagedWriteBatch`] to persistent storage.
+    ///
+    /// # Migrations
+    /// In the case of chain state migrations we need to commit the new state
+    /// without incrementing the version. If `perform_migration` is `true` the
+    /// snapshot will _not_ be written to the snapshot cache, and no subscribers
+    /// will be notified. Substore versions will not be updated.
+    pub fn commit_batch(&self, batch: StagedWriteBatch) -> Result<crate::RootHash> {
+        let StagedWriteBatch {
+            write_batch,
+            version,
+            multistore_versions,
+            root_hash: global_root_hash,
+            substore_roots,
+            perform_migration,
+            changes,
+        } = batch;
+
+        let db = self.0.db.clone();
+
+        // check that the version of the batch being committed is the correct next version
+        let old_version = self.latest_version();
+        let expected_new_version = if perform_migration {
+            old_version
+        } else {
+            old_version.wrapping_add(1)
+        };
+
+        ensure!(
+            expected_new_version == version,
+            "new version mismatch: expected {} but got {}",
+            expected_new_version,
+            version
+        );
+
+        // also check that each of the substore versions are the correct next version
+        let snapshot = self.latest_snapshot();
+
+        // Warning: we MUST check version coherence for **every** substore.
+        // These checks are a second line of defense. They must consider
+        // the case when two deltas effect distinct substores.
+        //
+        // version: (m,   ss_1, ss_2)
+        // D_0:     (_,      1,    0) <- initial state
+        // D_1:     (A,      1,    1) <- multiwrite to ss_1 AND ss_2
+        // D_1*:    (A,      1,    0) <- isolate write to ss_1
+        //
+        // A comprehensive check lets us catch the stale write D_1* even if
+        // locally it does not directly effect the second substore at all.
+        // And even if the main version check passes (spuriously, or because of
+        // a migration).
+        for (substore_config, new_version) in &multistore_versions.substores {
+            if substore_config.prefix.is_empty() {
+                // this is the main store, ignore
+                continue;
+            }
+
+            let old_substore_version = snapshot
+                .substore_version(substore_config)
+                .expect("substores must be initialized at startup");
+
+            // if the substore exists in `substore_roots`, there have been updates to the substore.
+            // if `perform_migration` is false and there are updates, the next version should be previous + 1.
+            // otherwise, the version should remain the same.
+            let expected_substore_version =
+                if substore_roots.get(substore_config).is_some() && !perform_migration {
+                    old_substore_version.wrapping_add(1)
+                } else {
+                    old_substore_version
+                };
+
+            ensure!(
+                expected_substore_version == *new_version,
+                "substore new version mismatch for substore with prefix {}: expected {} but got {}",
+                substore_config.prefix,
+                expected_substore_version,
+                new_version
+            );
         }
 
-        tracing::debug!("updating snapshot cache");
+        tracing::debug!(new_jmt_version = ?batch.version, "committing batch to db");
 
-        let latest_snapshot = Snapshot::new(db.clone(), version, multistore_versions);
-        // Obtain a write lock to the snapshot cache, and push the latest snapshot
-        // available. The lock guard is implicitly dropped immediately.
-        self.0
-            .snapshots
-            .write()
-            .try_push(latest_snapshot.clone())
-            .expect("should process snapshots with consecutive jmt versions");
+        db.write(write_batch).expect("can write to db");
+        tracing::debug!(
+            ?global_root_hash,
+            ?version,
+            "committed main store and substores to db"
+        );
 
-        tracing::debug!(?version, "dispatching snapshot");
+        // If we're not performing a migration, we should update the snapshot cache
+        if !perform_migration {
+            tracing::debug!("updating snapshot cache");
 
-        // Send fails if the channel is closed (i.e., if there are no receivers);
-        // in this case, we should ignore the error, we have no one to notify.
-        let _ = self
-            .0
-            .dispatcher_tx
-            .send((latest_snapshot, (version, changes)));
+            let latest_snapshot = Snapshot::new(db.clone(), version, multistore_versions);
+            // Obtain a write lock to the snapshot cache, and push the latest snapshot
+            // available. The lock guard is implicitly dropped immediately.
+            self.0
+                .snapshots
+                .write()
+                .try_push(latest_snapshot.clone())
+                .expect("should process snapshots with consecutive jmt versions");
+
+            tracing::debug!(?version, "dispatching snapshot");
+
+            // Send fails if the channel is closed (i.e., if there are no receivers);
+            // in this case, we should ignore the error, we have no one to notify.
+            let _ = self
+                .0
+                .dispatcher_tx
+                .send((latest_snapshot, (version, changes)));
+        } else {
+            tracing::debug!("skipping snapshot cache update");
+        }
 
         Ok(global_root_hash)
     }
 
     #[cfg(feature = "migration")]
-    /// Commits the provided [`StateDelta`] to persistent storage without increasing the version
-    /// of the chain state.
+    /// Commit the provided [`StateDelta`] to persistent storage without increasing the version
+    /// of the chain state, and skips the snapshot cache update.
     pub async fn commit_in_place(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
         let (snapshot, changes) = delta.flatten();
         let old_version = self.latest_version();
-        self.commit_inner(snapshot, changes, old_version, true)
-            .await
+        let batch = self
+            .prepare_commit_inner(snapshot, changes, old_version, true)
+            .await?;
+        self.commit_batch(batch)
     }
 
     /// Returns the internal handle to RocksDB, this is useful to test adjacent storage crates.

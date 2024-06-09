@@ -151,7 +151,7 @@ impl ParticipantQueue {
         for (i, (participant, bid)) in participants.iter().enumerate() {
             let address = participant.address();
             match filter {
-                Some(f) if f != address => continue,
+                Some(ref f) if *f != address => continue,
                 _ => {}
             }
             // Ignore failures (besides logging), let pruning happen later.

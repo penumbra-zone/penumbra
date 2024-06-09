@@ -1,3 +1,74 @@
+/// Filters in an `AuctionsRequest` will be combined using `AND` logic -- that
+/// is, the more filters you add, the fewer responses you're likely to get.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuctionsRequest {
+    /// If present, filter balances to only include the account specified by the `AddressIndex`.
+    #[prost(message, optional, tag = "1")]
+    pub account_filter: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
+    /// If present, include inactive auctions as well as active ones.
+    #[prost(bool, tag = "2")]
+    pub include_inactive: bool,
+    /// If set, query a fullnode for the current state of the auctions.
+    #[prost(bool, tag = "3")]
+    pub query_latest_state: bool,
+    /// If present, filter to only include auctions whose IDs are in this array.
+    #[prost(message, repeated, tag = "4")]
+    pub auction_ids_filter: ::prost::alloc::vec::Vec<
+        super::super::core::component::auction::v1::AuctionId,
+    >,
+}
+impl ::prost::Name for AuctionsRequest {
+    const NAME: &'static str = "AuctionsRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuctionsResponse {
+    #[prost(message, optional, tag = "1")]
+    pub id: ::core::option::Option<
+        super::super::core::component::auction::v1::AuctionId,
+    >,
+    /// The state of the returned auction.
+    ///
+    /// Only present when `query_latest_state` was provided.
+    #[prost(message, optional, tag = "2")]
+    pub auction: ::core::option::Option<::pbjson_types::Any>,
+    /// The state of any DEX positions relevant to the returned auction.
+    ///
+    /// Only present when `query_latest_state` was provided.
+    /// Could be empty, depending on the auction state.
+    #[prost(message, repeated, tag = "3")]
+    pub positions: ::prost::alloc::vec::Vec<
+        super::super::core::component::dex::v1::Position,
+    >,
+    /// The note recording the auction NFT.
+    #[prost(message, optional, tag = "4")]
+    pub note_record: ::core::option::Option<SpendableNoteRecord>,
+    /// The sequence number of the auction state *as known to the local view
+    /// service*. Note that the local view service may lag behind the fullnode. For
+    /// example, if the chain hits an auction's `end_height`, but the user hasn't
+    /// yet exchanged their sequence-0 (opened) auction NFT for a sequence-1
+    /// (closed) auction NFT, the local view service will have a sequnce number of
+    /// 0.
+    ///
+    /// Dutch auctions move from:
+    /// 0 (opened) => 1 (closed) => n (withdrawn)
+    #[prost(uint64, tag = "5")]
+    pub local_seq: u64,
+}
+impl ::prost::Name for AuctionsResponse {
+    const NAME: &'static str = "AuctionsResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeAndBuildRequest {
@@ -208,6 +279,25 @@ pub struct TransactionPlannerRequest {
     pub position_withdraws: ::prost::alloc::vec::Vec<
         transaction_planner_request::PositionWithdraw,
     >,
+    #[prost(message, repeated, tag = "73")]
+    pub dutch_auction_schedule_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionSchedule,
+    >,
+    #[prost(message, repeated, tag = "74")]
+    pub dutch_auction_end_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionEnd,
+    >,
+    #[prost(message, repeated, tag = "75")]
+    pub dutch_auction_withdraw_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionWithdraw,
+    >,
+    /// The epoch index of the transaction being planned.
+    #[deprecated]
+    #[prost(uint64, tag = "200")]
+    pub epoch_index: u64,
+    /// The epoch of the transaction being planned.
+    #[prost(message, optional, tag = "201")]
+    pub epoch: ::core::option::Option<super::super::core::component::sct::v1::Epoch>,
     /// Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
     #[prost(oneof = "transaction_planner_request::FeeMode", tags = "100, 101")]
     pub fee_mode: ::core::option::Option<transaction_planner_request::FeeMode>,
@@ -334,6 +424,7 @@ pub mod transaction_planner_request {
             super::super::super::core::keys::v1::IdentityKey,
         >,
         /// The epoch in which unbonding began, used to verify the penalty.
+        #[deprecated]
         #[prost(uint64, tag = "2")]
         pub start_epoch_index: u64,
         /// The penalty applied to undelegation, in bps^2 (10e-8).
@@ -348,6 +439,9 @@ pub mod transaction_planner_request {
         pub unbonding_amount: ::core::option::Option<
             super::super::super::core::num::v1::Amount,
         >,
+        /// The height at which unbonding began.
+        #[prost(uint64, tag = "5")]
+        pub unbonding_start_height: u64,
     }
     impl ::prost::Name for UndelegateClaim {
         const NAME: &'static str = "UndelegateClaim";
@@ -418,6 +512,63 @@ pub mod transaction_planner_request {
     }
     impl ::prost::Name for PositionWithdraw {
         const NAME: &'static str = "PositionWithdraw";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ActionDutchAuctionSchedule {
+        /// The description of the auction to schedule.
+        #[prost(message, optional, tag = "1")]
+        pub description: ::core::option::Option<
+            super::super::super::core::component::auction::v1::DutchAuctionDescription,
+        >,
+    }
+    impl ::prost::Name for ActionDutchAuctionSchedule {
+        const NAME: &'static str = "ActionDutchAuctionSchedule";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ActionDutchAuctionEnd {
+        /// The unique id of the auction to close.
+        #[prost(message, optional, tag = "1")]
+        pub auction_id: ::core::option::Option<
+            super::super::super::core::component::auction::v1::AuctionId,
+        >,
+    }
+    impl ::prost::Name for ActionDutchAuctionEnd {
+        const NAME: &'static str = "ActionDutchAuctionEnd";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ActionDutchAuctionWithdraw {
+        /// The auction to withdraw funds from.
+        #[prost(message, optional, tag = "1")]
+        pub auction_id: ::core::option::Option<
+            super::super::super::core::component::auction::v1::AuctionId,
+        >,
+        /// The sequence number of the withdrawal.
+        #[prost(uint64, tag = "2")]
+        pub seq: u64,
+    }
+    impl ::prost::Name for ActionDutchAuctionWithdraw {
+        const NAME: &'static str = "ActionDutchAuctionWithdraw";
         const PACKAGE: &'static str = "penumbra.view.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
@@ -929,8 +1080,14 @@ impl ::prost::Name for GasPricesRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GasPricesResponse {
+    /// The current gas prices, in the preferred (native) token.
     #[prost(message, optional, tag = "1")]
     pub gas_prices: ::core::option::Option<
+        super::super::core::component::fee::v1::GasPrices,
+    >,
+    /// Other gas prices for other accepted tokens.
+    #[prost(message, repeated, tag = "2")]
+    pub alt_gas_prices: ::prost::alloc::vec::Vec<
         super::super::core::component::fee::v1::GasPrices,
     >,
 }
@@ -1347,6 +1504,191 @@ pub struct AssetMetadataByIdResponse {
 }
 impl ::prost::Name for AssetMetadataByIdResponse {
     const NAME: &'static str = "AssetMetadataByIdResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
+/// Requests `ValueView`s of delegation tokens for the given address index. The
+/// returned `ValueView`s will include the `ValidatorInfo` for the delegated
+/// validator in their `extended_metadata` fields.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DelegationsByAddressIndexRequest {
+    /// The address index to fetch delegation balances for.
+    #[prost(message, optional, tag = "1")]
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
+    #[prost(enumeration = "delegations_by_address_index_request::Filter", tag = "2")]
+    pub filter: i32,
+}
+/// Nested message and enum types in `DelegationsByAddressIndexRequest`.
+pub mod delegations_by_address_index_request {
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
+    #[repr(i32)]
+    pub enum Filter {
+        /// By default, returns delegations for all active validators. For validators
+        /// that the given address index has no delegation tokens for, a `ValueView`
+        /// with a balance of `0` will be returned.
+        Unspecified = 0,
+        /// Returns only delegations to active validators that the given address
+        /// index holds delegation tokens for.
+        AllActiveWithNonzeroBalances = 1,
+        /// Return delegations for all validators, whether active or not. For
+        /// validators that the given address index has no delegation tokens for, a
+        /// `ValueView` with a balance of `0` will be returned.
+        All = 2,
+    }
+    impl Filter {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Filter::Unspecified => "FILTER_UNSPECIFIED",
+                Filter::AllActiveWithNonzeroBalances => {
+                    "FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES"
+                }
+                Filter::All => "FILTER_ALL",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "FILTER_UNSPECIFIED" => Some(Self::Unspecified),
+                "FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES" => {
+                    Some(Self::AllActiveWithNonzeroBalances)
+                }
+                "FILTER_ALL" => Some(Self::All),
+                _ => None,
+            }
+        }
+    }
+}
+impl ::prost::Name for DelegationsByAddressIndexRequest {
+    const NAME: &'static str = "DelegationsByAddressIndexRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
+/// Contains a `ValueView` of delegation tokens for the requested address index.
+/// The `ValueView` includes the `ValidatorInfo` for the delegated validator in
+/// cits `extended_metadata` field.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DelegationsByAddressIndexResponse {
+    #[prost(message, optional, tag = "1")]
+    pub value_view: ::core::option::Option<super::super::core::asset::v1::ValueView>,
+}
+impl ::prost::Name for DelegationsByAddressIndexResponse {
+    const NAME: &'static str = "DelegationsByAddressIndexResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
+/// Requests unbonding tokens for a given address index, with optional filtering
+/// for whether the tokens are currently claimable.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UnbondingTokensByAddressIndexRequest {
+    #[prost(
+        enumeration = "unbonding_tokens_by_address_index_request::Filter",
+        tag = "1"
+    )]
+    pub filter: i32,
+    /// The address index to fetch unbonding tokens for.
+    #[prost(message, optional, tag = "2")]
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
+}
+/// Nested message and enum types in `UnbondingTokensByAddressIndexRequest`.
+pub mod unbonding_tokens_by_address_index_request {
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
+    #[repr(i32)]
+    pub enum Filter {
+        /// Return all unbonding tokens, regardless of whether they're claimable
+        /// right now.
+        Unspecified = 0,
+        /// Return all unbonding tokens that are currently claimable. This includes:
+        ///
+        /// * tokens that have passed the `unbonding_delay` (from `StakeParameters`)
+        /// * tokens for unbonded validators
+        Claimable = 1,
+        /// Return all unbonding tokens that are not yet claimable, because they are
+        /// still in the `unbonding_delay` (from `StakeParameters`) period.
+        NotYetClaimable = 2,
+    }
+    impl Filter {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Filter::Unspecified => "FILTER_UNSPECIFIED",
+                Filter::Claimable => "FILTER_CLAIMABLE",
+                Filter::NotYetClaimable => "FILTER_NOT_YET_CLAIMABLE",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "FILTER_UNSPECIFIED" => Some(Self::Unspecified),
+                "FILTER_CLAIMABLE" => Some(Self::Claimable),
+                "FILTER_NOT_YET_CLAIMABLE" => Some(Self::NotYetClaimable),
+                _ => None,
+            }
+        }
+    }
+}
+impl ::prost::Name for UnbondingTokensByAddressIndexRequest {
+    const NAME: &'static str = "UnbondingTokensByAddressIndexRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
+/// Returns unbonding tokens for the given address index, optionally filtered by
+/// whether the tokens are currently claimable.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UnbondingTokensByAddressIndexResponse {
+    /// A `ValueView` representing the amount of the given unbonding token.
+    #[prost(message, optional, tag = "1")]
+    pub value_view: ::core::option::Option<super::super::core::asset::v1::ValueView>,
+    /// Whether the unbonding token is currently claimable. This will only be
+    /// `true` if the `unbonding_delay` (from `StakeParameters`) has passed or the
+    /// validator has unbonded.
+    #[prost(bool, tag = "2")]
+    pub claimable: bool,
+}
+impl ::prost::Name for UnbondingTokensByAddressIndexResponse {
+    const NAME: &'static str = "UnbondingTokensByAddressIndexResponse";
     const PACKAGE: &'static str = "penumbra.view.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
@@ -2191,6 +2533,102 @@ pub mod view_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Get delegation tokens for a given address index. Each delegation token will
+        /// be represented by a `ValueView` with the given address index's balance of
+        /// that token. Each `ValueView`'s `extended_metadata` field will contain the
+        /// `ValidatorInfo` of the delegated validator.
+        pub async fn delegations_by_address_index(
+            &mut self,
+            request: impl tonic::IntoRequest<super::DelegationsByAddressIndexRequest>,
+        ) -> std::result::Result<
+            tonic::Response<
+                tonic::codec::Streaming<super::DelegationsByAddressIndexResponse>,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/DelegationsByAddressIndex",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "DelegationsByAddressIndex",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
+        /// Get unbonding tokens for the given address index, optionally filtered by
+        /// whether the tokens are currently claimable.
+        pub async fn unbonding_tokens_by_address_index(
+            &mut self,
+            request: impl tonic::IntoRequest<super::UnbondingTokensByAddressIndexRequest>,
+        ) -> std::result::Result<
+            tonic::Response<
+                tonic::codec::Streaming<super::UnbondingTokensByAddressIndexResponse>,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/UnbondingTokensByAddressIndex",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "UnbondingTokensByAddressIndex",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
+        /// Gets the auctions controlled by the user's wallet.
+        pub async fn auctions(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AuctionsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::AuctionsResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/Auctions",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "Auctions"));
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -2501,6 +2939,55 @@ pub mod view_service_server {
             tonic::Response<Self::BroadcastTransactionStream>,
             tonic::Status,
         >;
+        /// Server streaming response type for the DelegationsByAddressIndex method.
+        type DelegationsByAddressIndexStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::DelegationsByAddressIndexResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        /// Get delegation tokens for a given address index. Each delegation token will
+        /// be represented by a `ValueView` with the given address index's balance of
+        /// that token. Each `ValueView`'s `extended_metadata` field will contain the
+        /// `ValidatorInfo` of the delegated validator.
+        async fn delegations_by_address_index(
+            &self,
+            request: tonic::Request<super::DelegationsByAddressIndexRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::DelegationsByAddressIndexStream>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the UnbondingTokensByAddressIndex method.
+        type UnbondingTokensByAddressIndexStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::UnbondingTokensByAddressIndexResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        /// Get unbonding tokens for the given address index, optionally filtered by
+        /// whether the tokens are currently claimable.
+        async fn unbonding_tokens_by_address_index(
+            &self,
+            request: tonic::Request<super::UnbondingTokensByAddressIndexRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::UnbondingTokensByAddressIndexStream>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the Auctions method.
+        type AuctionsStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::AuctionsResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        /// Gets the auctions controlled by the user's wallet.
+        async fn auctions(
+            &self,
+            request: tonic::Request<super::AuctionsRequest>,
+        ) -> std::result::Result<tonic::Response<Self::AuctionsStream>, tonic::Status>;
     }
     /// The view RPC is used by a view client, who wants to do some
     /// transaction-related actions, to request data from a view service, which is
@@ -3793,6 +4280,161 @@ pub mod view_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = BroadcastTransactionSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/DelegationsByAddressIndex" => {
+                    #[allow(non_camel_case_types)]
+                    struct DelegationsByAddressIndexSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::DelegationsByAddressIndexRequest,
+                    > for DelegationsByAddressIndexSvc<T> {
+                        type Response = super::DelegationsByAddressIndexResponse;
+                        type ResponseStream = T::DelegationsByAddressIndexStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::DelegationsByAddressIndexRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::delegations_by_address_index(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = DelegationsByAddressIndexSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/UnbondingTokensByAddressIndex" => {
+                    #[allow(non_camel_case_types)]
+                    struct UnbondingTokensByAddressIndexSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::UnbondingTokensByAddressIndexRequest,
+                    > for UnbondingTokensByAddressIndexSvc<T> {
+                        type Response = super::UnbondingTokensByAddressIndexResponse;
+                        type ResponseStream = T::UnbondingTokensByAddressIndexStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::UnbondingTokensByAddressIndexRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::unbonding_tokens_by_address_index(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = UnbondingTokensByAddressIndexSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/Auctions" => {
+                    #[allow(non_camel_case_types)]
+                    struct AuctionsSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::AuctionsRequest>
+                    for AuctionsSvc<T> {
+                        type Response = super::AuctionsResponse;
+                        type ResponseStream = T::AuctionsStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AuctionsRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::auctions(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AuctionsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

@@ -36,20 +36,38 @@ pub fn register_metrics() {
         "The time spent filling routes while executing trades within the DEX"
     );
     describe_histogram!(
-        DEX_SWAP_DURATION,
+        DEX_RPC_SIMULATE_TRADE_DURATION,
         Unit::Seconds,
-        "The time spent processing swaps within the DEX"
+        "The time spent processing a SimulateTrade RPC request"
     );
 }
 
 // We configure buckets for the DEX routing times manually, in order to ensure
 // Prometheus metrics are structured as a Histogram, rather than as a Summary.
-// These values are loosely based on the initial Summary output, and may need to be
-// updated over time.
-pub const DEX_BUCKETS: &[f64; 5] = &[0.00001, 0.0001, 0.001, 0.01, 0.1];
+// These values may need to be updated over time.
+// These values are logarithmically spaced from 5ms to 250ms.
+pub const DEX_BUCKETS: &[f64; 16] = &[
+    0.005,
+    0.00648985018,
+    0.00842363108,
+    0.01093362074,
+    0.01419151211,
+    0.01842015749,
+    0.02390881249,
+    0.03103292223,
+    0.0402798032,
+    0.05228197763,
+    0.06786044041,
+    0.08808081833,
+    0.11432626298,
+    0.14839206374,
+    0.1926084524,
+    0.250,
+];
 
 pub const DEX_PATH_SEARCH_DURATION: &str = "penumbra_dex_path_search_duration_seconds";
 pub const DEX_ROUTE_FILL_DURATION: &str = "penumbra_dex_route_fill_duration_seconds";
 pub const DEX_ARB_DURATION: &str = "penumbra_dex_arb_duration_seconds";
 pub const DEX_BATCH_DURATION: &str = "penumbra_dex_batch_duration_seconds";
-pub const DEX_SWAP_DURATION: &str = "penumbra_dex_swap_duration_seconds";
+pub const DEX_RPC_SIMULATE_TRADE_DURATION: &str =
+    "penumbra_dex_rpc_simulate_trade_duration_seconds";

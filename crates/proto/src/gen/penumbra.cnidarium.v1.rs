@@ -1,4 +1,69 @@
-/// Performs a key-value query, either by key or by key hash.
+/// Performs a key-value query against the nonverifiable storage,
+/// using a byte-encoded key.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NonVerifiableKeyValueRequest {
+    #[prost(message, optional, tag = "1")]
+    pub key: ::core::option::Option<non_verifiable_key_value_request::Key>,
+}
+/// Nested message and enum types in `NonVerifiableKeyValueRequest`.
+pub mod non_verifiable_key_value_request {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Key {
+        #[prost(bytes = "vec", tag = "1")]
+        pub inner: ::prost::alloc::vec::Vec<u8>,
+    }
+    impl ::prost::Name for Key {
+        const NAME: &'static str = "Key";
+        const PACKAGE: &'static str = "penumbra.cnidarium.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.cnidarium.v1.NonVerifiableKeyValueRequest.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for NonVerifiableKeyValueRequest {
+    const NAME: &'static str = "NonVerifiableKeyValueRequest";
+    const PACKAGE: &'static str = "penumbra.cnidarium.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.cnidarium.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NonVerifiableKeyValueResponse {
+    /// The value corresponding to the specified key, if it was found.
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<non_verifiable_key_value_response::Value>,
+}
+/// Nested message and enum types in `NonVerifiableKeyValueResponse`.
+pub mod non_verifiable_key_value_response {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Value {
+        #[prost(bytes = "vec", tag = "1")]
+        pub value: ::prost::alloc::vec::Vec<u8>,
+    }
+    impl ::prost::Name for Value {
+        const NAME: &'static str = "Value";
+        const PACKAGE: &'static str = "penumbra.cnidarium.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.cnidarium.v1.NonVerifiableKeyValueResponse.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for NonVerifiableKeyValueResponse {
+    const NAME: &'static str = "NonVerifiableKeyValueResponse";
+    const PACKAGE: &'static str = "penumbra.cnidarium.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.cnidarium.v1.{}", Self::NAME)
+    }
+}
+/// Performs a key-value query against the JMT, either by key or by key hash.
 ///
 /// Proofs are only supported by key.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -296,6 +361,38 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// General-purpose key-value state query API, that can be used to query
+        /// arbitrary keys in the non-verifiable storage.
+        pub async fn non_verifiable_key_value(
+            &mut self,
+            request: impl tonic::IntoRequest<super::NonVerifiableKeyValueRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::NonVerifiableKeyValueResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.cnidarium.v1.QueryService/NonVerifiableKeyValue",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.cnidarium.v1.QueryService",
+                        "NonVerifiableKeyValue",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
         /// General-purpose prefixed key-value state query API, that can be used to query
         /// arbitrary prefixes in the JMT storage.
         pub async fn prefix_value(
@@ -368,6 +465,15 @@ pub mod query_service_server {
             request: tonic::Request<super::KeyValueRequest>,
         ) -> std::result::Result<
             tonic::Response<super::KeyValueResponse>,
+            tonic::Status,
+        >;
+        /// General-purpose key-value state query API, that can be used to query
+        /// arbitrary keys in the non-verifiable storage.
+        async fn non_verifiable_key_value(
+            &self,
+            request: tonic::Request<super::NonVerifiableKeyValueRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::NonVerifiableKeyValueResponse>,
             tonic::Status,
         >;
         /// Server streaming response type for the PrefixValue method.
@@ -507,6 +613,56 @@ pub mod query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = KeyValueSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.cnidarium.v1.QueryService/NonVerifiableKeyValue" => {
+                    #[allow(non_camel_case_types)]
+                    struct NonVerifiableKeyValueSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::NonVerifiableKeyValueRequest>
+                    for NonVerifiableKeyValueSvc<T> {
+                        type Response = super::NonVerifiableKeyValueResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::NonVerifiableKeyValueRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::non_verifiable_key_value(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = NonVerifiableKeyValueSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

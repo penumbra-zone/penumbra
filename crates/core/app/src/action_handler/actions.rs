@@ -3,7 +3,6 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_ibc::component::StateReadExt as _;
 use penumbra_shielded_pool::component::Ics20Transfer;
 use penumbra_transaction::Action;
 use penumbra_txhash::TransactionContext;
@@ -21,11 +20,9 @@ impl AppActionHandler for Action {
 
     async fn check_stateless(&self, context: TransactionContext) -> Result<()> {
         match self {
-            // These actions require a context
             Action::SwapClaim(action) => action.check_stateless(context).await,
             Action::Spend(action) => action.check_stateless(context).await,
             Action::DelegatorVote(action) => action.check_stateless(context).await,
-            // These actions don't require a context
             Action::Delegate(action) => action.check_stateless(()).await,
             Action::Undelegate(action) => action.check_stateless(()).await,
             Action::UndelegateClaim(action) => action.check_stateless(()).await,
@@ -50,6 +47,9 @@ impl AppActionHandler for Action {
             Action::CommunityPoolSpend(action) => action.check_stateless(()).await,
             Action::CommunityPoolOutput(action) => action.check_stateless(()).await,
             Action::CommunityPoolDeposit(action) => action.check_stateless(()).await,
+            Action::ActionDutchAuctionSchedule(action) => action.check_stateless(()).await,
+            Action::ActionDutchAuctionEnd(action) => action.check_stateless(()).await,
+            Action::ActionDutchAuctionWithdraw(action) => action.check_stateless(()).await,
         }
     }
 
@@ -72,22 +72,19 @@ impl AppActionHandler for Action {
             Action::Spend(action) => action.check_historical(state).await,
             Action::Output(action) => action.check_historical(state).await,
             Action::IbcRelay(action) => {
-                // SAFETY: this is safe to check in parallel because IBC enablement cannot
-                // change during transaction execution.
-                if !state.get_ibc_params().await?.ibc_enabled {
-                    anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
-                }
-
                 action
                     .clone()
                     .with_handler::<Ics20Transfer, PenumbraHost>()
-                    .check_stateful(state)
+                    .check_historical(state)
                     .await
             }
             Action::Ics20Withdrawal(action) => action.check_historical(state).await,
             Action::CommunityPoolSpend(action) => action.check_historical(state).await,
             Action::CommunityPoolOutput(action) => action.check_historical(state).await,
             Action::CommunityPoolDeposit(action) => action.check_historical(state).await,
+            Action::ActionDutchAuctionSchedule(action) => action.check_historical(state).await,
+            Action::ActionDutchAuctionEnd(action) => action.check_historical(state).await,
+            Action::ActionDutchAuctionWithdraw(action) => action.check_historical(state).await,
         }
     }
 
@@ -113,13 +110,16 @@ impl AppActionHandler for Action {
                 action
                     .clone()
                     .with_handler::<Ics20Transfer, PenumbraHost>()
-                    .execute(state)
+                    .check_and_execute(state)
                     .await
             }
             Action::Ics20Withdrawal(action) => action.check_and_execute(state).await,
             Action::CommunityPoolSpend(action) => action.check_and_execute(state).await,
             Action::CommunityPoolOutput(action) => action.check_and_execute(state).await,
             Action::CommunityPoolDeposit(action) => action.check_and_execute(state).await,
+            Action::ActionDutchAuctionSchedule(action) => action.check_and_execute(state).await,
+            Action::ActionDutchAuctionEnd(action) => action.check_and_execute(state).await,
+            Action::ActionDutchAuctionWithdraw(action) => action.check_and_execute(state).await,
         }
     }
 }

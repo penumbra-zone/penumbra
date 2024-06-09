@@ -39,6 +39,12 @@ pub struct CompactBlock {
     /// Updated gas prices, if they have changed.
     #[prost(message, optional, tag = "10")]
     pub gas_prices: ::core::option::Option<super::super::fee::v1::GasPrices>,
+    /// Updated gas prices for alternative fee tokens, if they have changed.
+    #[prost(message, repeated, tag = "100")]
+    pub alt_gas_prices: ::prost::alloc::vec::Vec<super::super::fee::v1::GasPrices>,
+    /// The epoch index
+    #[prost(uint64, tag = "11")]
+    pub epoch_index: u64,
 }
 impl ::prost::Name for CompactBlock {
     const NAME: &'static str = "CompactBlock";

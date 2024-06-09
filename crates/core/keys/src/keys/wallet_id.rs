@@ -1,12 +1,16 @@
 use serde::{Deserialize, Serialize};
 
 use penumbra_proto::core::keys::v1;
-use penumbra_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str};
+use penumbra_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str, DomainType};
 
 /// The hash of a full viewing key, used as an account identifier.
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(try_from = "pb::WalletId", into = "pb::WalletId")]
 pub struct WalletId(pub [u8; 32]);
+
+impl DomainType for WalletId {
+    type Proto = pb::WalletId;
+}
 
 impl TryFrom<v1::WalletId> for WalletId {
     type Error = anyhow::Error;

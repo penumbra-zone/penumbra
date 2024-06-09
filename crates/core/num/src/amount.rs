@@ -63,6 +63,12 @@ impl Amount {
             .map(|inner| Self { inner })
     }
 
+    pub fn checked_mul(&self, rhs: &Self) -> Option<Self> {
+        self.inner
+            .checked_mul(rhs.inner)
+            .map(|inner| Self { inner })
+    }
+
     pub fn saturating_add(&self, rhs: &Self) -> Self {
         Self {
             inner: self.inner.saturating_add(rhs.inner),
@@ -73,6 +79,14 @@ impl Amount {
         Self {
             inner: self.inner.saturating_sub(rhs.inner),
         }
+    }
+}
+
+impl ops::Not for Amount {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Self { inner: !self.inner }
     }
 }
 
@@ -340,6 +354,22 @@ impl From<u32> for Amount {
     }
 }
 
+impl From<u16> for Amount {
+    fn from(amount: u16) -> Amount {
+        Amount {
+            inner: amount as u128,
+        }
+    }
+}
+
+impl From<u8> for Amount {
+    fn from(amount: u8) -> Amount {
+        Amount {
+            inner: amount as u128,
+        }
+    }
+}
+
 impl From<Amount> for f64 {
     fn from(amount: Amount) -> f64 {
         amount.inner as f64
@@ -375,6 +405,12 @@ impl ops::Sub<Amount> for Amount {
         Amount {
             inner: self.inner - rhs.inner,
         }
+    }
+}
+
+impl ops::SubAssign<Amount> for Amount {
+    fn sub_assign(&mut self, rhs: Amount) {
+        self.inner -= rhs.inner;
     }
 }
 

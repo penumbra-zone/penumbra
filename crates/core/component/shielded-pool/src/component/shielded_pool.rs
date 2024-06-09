@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use super::fmd::ClueManagerInternal as _;
+use crate::fmd::should_update_fmd_params;
 use crate::params::ShieldedPoolParameters;
 use crate::{fmd, genesis, state_key};
 use anyhow::anyhow;
@@ -13,7 +15,7 @@ use penumbra_sct::CommitmentSource;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use super::{NoteManager, SupplyWrite};
+use super::{AssetRegistry, NoteManager};
 
 pub struct ShieldedPool {}
 
@@ -41,10 +43,7 @@ impl Component for ShieldedPool {
                         "Genesis allocations contain empty note",
                     );
 
-                    state
-                        .register_denom(&allocation.denom())
-                        .await
-                        .expect("able to register denom for genesis allocation");
+                    state.register_denom(&allocation.denom()).await;
                     state
                         .mint_note(
                             allocation.value(),
@@ -65,11 +64,40 @@ impl Component for ShieldedPool {
     ) {
     }
 
-    #[instrument(name = "shielded_pool", skip(_state, _end_block))]
+    #[instrument(name = "shielded_pool", skip_all)]
     async fn end_block<S: StateWrite + 'static>(
-        _state: &mut Arc<S>,
-        _end_block: &abci::request::EndBlock,
+        state: &mut Arc<S>,
+        end_block: &abci::request::EndBlock,
     ) {
+        let height: u64 = end_block
+            .height
+            .try_into()
+            .expect("height should not be negative");
+        let state = Arc::get_mut(state).expect("the state should not be shared");
+        let meta_params = state
+            .get_shielded_pool_params()
+            .await
+            .expect("should be able to read state")
+            .fmd_meta_params;
+        if should_update_fmd_params(meta_params.fmd_grace_period_blocks, height) {
+            let old = state
+                .get_current_fmd_parameters()
+                .await
+                .expect("should be able to read state");
+            let clue_count_delta = state
+                .flush_clue_count()
+                .await
+                .expect("should be able to read state");
+            let algorithm_state = state
+                .get_fmd_algorithm_state()
+                .await
+                .expect("should be able to read state");
+            let (new, algorithm_state) =
+                meta_params.updated_fmd_params(&old, algorithm_state, height, clue_count_delta);
+            state.put_previous_fmd_parameters(old);
+            state.put_current_fmd_parameters(new);
+            state.put_fmd_algorithm_state(algorithm_state);
+        }
     }
 
     async fn end_epoch<S: StateWrite + 'static>(mut _state: &mut Arc<S>) -> Result<()> {
@@ -98,9 +126,11 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow!("Missing ShieldedPoolParameters"))
     }
 
-    fn shielded_pool_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::shielded_pool_params_updated())
-            .is_some()
+    async fn get_fmd_algorithm_state(&self) -> Result<fmd::MetaParametersAlgorithmState> {
+        Ok(self
+            .get(fmd::state_key::meta_parameters::algorithm_state())
+            .await?
+            .unwrap_or_default())
     }
 }
 
@@ -110,14 +140,11 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
     fn put_shielded_pool_params(&mut self, params: ShieldedPoolParameters) {
-        self.object_put(crate::state_key::shielded_pool_params_updated(), ());
         self.put(crate::state_key::shielded_pool_params().into(), params)
     }
 
     /// Writes the current FMD parameters to the JMT.
     fn put_current_fmd_parameters(&mut self, params: fmd::Parameters) {
-        // MERGEBLOCK(erwan): read through the update mechanism for FMD params
-        // do we need to flag that shielded pool params were updated?
         self.put(fmd::state_key::parameters::current().into(), params)
     }
 
@@ -125,6 +152,13 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     fn put_previous_fmd_parameters(&mut self, params: fmd::Parameters) {
         self.put(fmd::state_key::parameters::previous().into(), params)
     }
+
+    fn put_fmd_algorithm_state(&mut self, state: fmd::MetaParametersAlgorithmState) {
+        self.put(
+            fmd::state_key::meta_parameters::algorithm_state().into(),
+            state,
+        )
+    }
 }
 
-impl<T: StateWrite> StateWriteExt for T {}
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}

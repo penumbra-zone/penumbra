@@ -94,7 +94,7 @@ impl ::prost::Name for DetectionData {
 pub struct Action {
     #[prost(
         oneof = "action::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 200"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 200"
     )]
     pub action: ::core::option::Option<action::Action>,
 }
@@ -164,6 +164,19 @@ pub mod action {
         CommunityPoolDeposit(
             super::super::super::component::governance::v1::CommunityPoolDeposit,
         ),
+        /// Dutch auctions
+        #[prost(message, tag = "53")]
+        ActionDutchAuctionSchedule(
+            super::super::super::component::auction::v1::ActionDutchAuctionSchedule,
+        ),
+        #[prost(message, tag = "54")]
+        ActionDutchAuctionEnd(
+            super::super::super::component::auction::v1::ActionDutchAuctionEnd,
+        ),
+        #[prost(message, tag = "55")]
+        ActionDutchAuctionWithdraw(
+            super::super::super::component::auction::v1::ActionDutchAuctionWithdraw,
+        ),
         #[prost(message, tag = "200")]
         Ics20Withdrawal(super::super::super::component::ibc::v1::Ics20Withdrawal),
     }
@@ -207,6 +220,21 @@ pub struct TransactionPerspective {
     pub extended_metadata: ::prost::alloc::vec::Vec<
         transaction_perspective::ExtendedMetadataById,
     >,
+    #[prost(message, repeated, tag = "40")]
+    pub creation_transaction_ids_by_nullifier: ::prost::alloc::vec::Vec<
+        transaction_perspective::CreationTransactionIdByNullifier,
+    >,
+    #[prost(message, repeated, tag = "50")]
+    pub nullification_transaction_ids_by_commitment: ::prost::alloc::vec::Vec<
+        transaction_perspective::NullificationTransactionIdByCommitment,
+    >,
+    /// Any relevant BatchSwapOutputData to the transaction.
+    ///
+    /// This can be used to fill in information about swap outputs.
+    #[prost(message, repeated, tag = "60")]
+    pub batch_swap_output_data: ::prost::alloc::vec::Vec<
+        super::super::component::dex::v1::BatchSwapOutputData,
+    >,
 }
 /// Nested message and enum types in `TransactionPerspective`.
 pub mod transaction_perspective {
@@ -220,6 +248,56 @@ pub mod transaction_perspective {
     }
     impl ::prost::Name for ExtendedMetadataById {
         const NAME: &'static str = "ExtendedMetadataById";
+        const PACKAGE: &'static str = "penumbra.core.transaction.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.transaction.v1.TransactionPerspective.{}", Self::NAME
+            )
+        }
+    }
+    /// Associates a nullifier with the transaction ID that created the nullified state commitment.
+    ///
+    /// Note: this is *not* the transaction ID that revealed the nullifier.
+    ///
+    /// Allows walking backwards from a spend to the transaction that created the note.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct CreationTransactionIdByNullifier {
+        #[prost(message, optional, tag = "1")]
+        pub nullifier: ::core::option::Option<
+            super::super::super::component::sct::v1::Nullifier,
+        >,
+        #[prost(message, optional, tag = "2")]
+        pub transaction_id: ::core::option::Option<
+            super::super::super::txhash::v1::TransactionId,
+        >,
+    }
+    impl ::prost::Name for CreationTransactionIdByNullifier {
+        const NAME: &'static str = "CreationTransactionIdByNullifier";
+        const PACKAGE: &'static str = "penumbra.core.transaction.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.transaction.v1.TransactionPerspective.{}", Self::NAME
+            )
+        }
+    }
+    /// Associates a commitment with the transaction ID that eventually nullified it.
+    ///
+    /// Allows walking forwards from an output to the transaction that spent the note.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct NullificationTransactionIdByCommitment {
+        #[prost(message, optional, tag = "1")]
+        pub commitment: ::core::option::Option<
+            super::super::super::super::crypto::tct::v1::StateCommitment,
+        >,
+        #[prost(message, optional, tag = "2")]
+        pub transaction_id: ::core::option::Option<
+            super::super::super::txhash::v1::TransactionId,
+        >,
+    }
+    impl ::prost::Name for NullificationTransactionIdByCommitment {
+        const NAME: &'static str = "NullificationTransactionIdByCommitment";
         const PACKAGE: &'static str = "penumbra.core.transaction.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
@@ -322,7 +400,7 @@ impl ::prost::Name for TransactionBodyView {
 pub struct ActionView {
     #[prost(
         oneof = "action_view::ActionView",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 43, 200"
+        tags = "1, 2, 3, 4, 21, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 200"
     )]
     pub action_view: ::core::option::Option<action_view::ActionView>,
 }
@@ -340,6 +418,8 @@ pub mod action_view {
         Swap(super::super::super::component::dex::v1::SwapView),
         #[prost(message, tag = "4")]
         SwapClaim(super::super::super::component::dex::v1::SwapClaimView),
+        #[prost(message, tag = "21")]
+        DelegatorVote(super::super::super::component::governance::v1::DelegatorVoteView),
         /// Action types without visible/opaque variants
         #[prost(message, tag = "16")]
         ValidatorDefinition(
@@ -356,8 +436,6 @@ pub mod action_view {
         ),
         #[prost(message, tag = "20")]
         ValidatorVote(super::super::super::component::governance::v1::ValidatorVote),
-        #[prost(message, tag = "21")]
-        DelegatorVote(super::super::super::component::governance::v1::DelegatorVoteView),
         #[prost(message, tag = "22")]
         ProposalDepositClaim(
             super::super::super::component::governance::v1::ProposalDepositClaim,
@@ -388,6 +466,19 @@ pub mod action_view {
         #[prost(message, tag = "52")]
         CommunityPoolDeposit(
             super::super::super::component::governance::v1::CommunityPoolDeposit,
+        ),
+        /// Dutch auctions
+        #[prost(message, tag = "53")]
+        ActionDutchAuctionSchedule(
+            super::super::super::component::auction::v1::ActionDutchAuctionScheduleView,
+        ),
+        #[prost(message, tag = "54")]
+        ActionDutchAuctionEnd(
+            super::super::super::component::auction::v1::ActionDutchAuctionEnd,
+        ),
+        #[prost(message, tag = "55")]
+        ActionDutchAuctionWithdraw(
+            super::super::super::component::auction::v1::ActionDutchAuctionWithdrawView,
         ),
         /// TODO: we have no way to recover the opening of the undelegate_claim's
         /// balance commitment, and can only infer the value from looking at the rest
@@ -503,7 +594,7 @@ impl ::prost::Name for DetectionDataPlan {
 pub struct ActionPlan {
     #[prost(
         oneof = "action_plan::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55"
     )]
     pub action: ::core::option::Option<action_plan::Action>,
 }
@@ -578,6 +669,19 @@ pub mod action_plan {
         #[prost(message, tag = "52")]
         CommunityPoolDeposit(
             super::super::super::component::governance::v1::CommunityPoolDeposit,
+        ),
+        /// Dutch auctions
+        #[prost(message, tag = "53")]
+        ActionDutchAuctionSchedule(
+            super::super::super::component::auction::v1::ActionDutchAuctionSchedule,
+        ),
+        #[prost(message, tag = "54")]
+        ActionDutchAuctionEnd(
+            super::super::super::component::auction::v1::ActionDutchAuctionEnd,
+        ),
+        #[prost(message, tag = "55")]
+        ActionDutchAuctionWithdraw(
+            super::super::super::component::auction::v1::ActionDutchAuctionWithdrawPlan,
         ),
     }
 }

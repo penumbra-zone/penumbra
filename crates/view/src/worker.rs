@@ -5,31 +5,32 @@ use std::{
 };
 
 use anyhow::Context;
+use penumbra_auction::auction::AuctionNft;
 use penumbra_compact_block::CompactBlock;
 use penumbra_dex::lp::{position, LpNft};
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::{
-    self as proto,
-    core::{
-        app::v1::query_service_client::QueryServiceClient as AppQueryServiceClient,
-        component::{
-            compact_block::v1::{
-                query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
-                CompactBlockRangeRequest,
-            },
-            shielded_pool::v1::{
-                query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
-                AssetMetadataByIdRequest,
-            },
+use penumbra_proto::core::{
+    app::v1::{
+        query_service_client::QueryServiceClient as AppQueryServiceClient,
+        TransactionsByHeightRequest,
+    },
+    component::{
+        compact_block::v1::{
+            query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
+            CompactBlockRangeRequest,
+        },
+        shielded_pool::v1::{
+            query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
+            AssetMetadataByIdRequest,
         },
     },
 };
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_transaction::Transaction;
-use proto::core::app::v1::TransactionsByHeightRequest;
+use tap::Tap;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
-use url::Url;
+use tracing::instrument;
 
 use crate::{
     sync::{scan_block, FilteredBlock},
@@ -44,7 +45,6 @@ pub struct Worker {
     sync_height_tx: watch::Sender<u64>,
     /// Tonic channel used to create GRPC clients.
     channel: Channel,
-    node: Url,
 }
 
 impl Worker {
@@ -54,9 +54,10 @@ impl Worker {
     /// - a shared, in-memory SCT instance;
     /// - a shared error slot;
     /// - a channel for notifying the client of sync progress.
+    #[instrument(skip_all)]
     pub async fn new(
         storage: Storage,
-        node: Url,
+        channel: Channel,
     ) -> Result<
         (
             Self,
@@ -66,7 +67,12 @@ impl Worker {
         ),
         anyhow::Error,
     > {
-        let fvk = storage.full_viewing_key().await?;
+        tracing::trace!("constructing view server worker");
+        let fvk = storage
+            .full_viewing_key()
+            .await
+            .context("failed to retrieve full viewing key from storage")?
+            .tap(|_| tracing::debug!("retrieved full viewing key"));
 
         // Create a shared, in-memory SCT.
         let sct = Arc::new(RwLock::new(storage.state_commitment_tree().await?));
@@ -78,12 +84,6 @@ impl Worker {
         // Mark the current height as seen, since it's not new.
         sync_height_rx.borrow_and_update();
 
-        let channel = Channel::from_shared(node.to_string())
-            .with_context(|| "could not parse node URI")?
-            .connect()
-            .await
-            .with_context(|| "could not connect to grpc server")?;
-
         Ok((
             Self {
                 storage,
@@ -92,7 +92,6 @@ impl Worker {
                 error_slot: error_slot.clone(),
                 sync_height_tx,
                 channel,
-                node,
             },
             sct,
             error_slot,
@@ -257,7 +256,6 @@ impl Worker {
                                 let position_id = position_open.position.id();
 
                                 // Record every possible permutation.
-
                                 let lp_nft = LpNft::new(position_id, position::State::Opened);
                                 let _id = lp_nft.asset_id();
                                 let denom = lp_nft.denom();
@@ -303,6 +301,46 @@ impl Worker {
                                 // Update the position record
                                 self.storage.update_position(position_id, state).await?;
                             }
+                            penumbra_transaction::Action::ActionDutchAuctionSchedule(
+                                schedule_da,
+                            ) => {
+                                let auction_id = schedule_da.description.id();
+                                let auction_nft_opened = AuctionNft::new(auction_id, 0);
+                                let nft_metadata_opened = auction_nft_opened.metadata.clone();
+
+                                self.storage.record_asset(nft_metadata_opened).await?;
+
+                                self.storage
+                                    .record_auction_with_state(
+                                        schedule_da.description.id(),
+                                        0u64, // Opened
+                                    )
+                                    .await?;
+                            }
+                            penumbra_transaction::Action::ActionDutchAuctionEnd(end_da) => {
+                                let auction_id = end_da.auction_id;
+                                let auction_nft_closed = AuctionNft::new(auction_id, 1);
+                                let nft_metadata_closed = auction_nft_closed.metadata.clone();
+
+                                self.storage.record_asset(nft_metadata_closed).await?;
+
+                                self.storage
+                                    .record_auction_with_state(end_da.auction_id, 1)
+                                    .await?;
+                            }
+                            penumbra_transaction::Action::ActionDutchAuctionWithdraw(
+                                withdraw_da,
+                            ) => {
+                                let auction_id = withdraw_da.auction_id;
+                                let auction_nft_withdrawn =
+                                    AuctionNft::new(auction_id, withdraw_da.seq);
+                                let nft_metadata_withdrawn = auction_nft_withdrawn.metadata.clone();
+
+                                self.storage.record_asset(nft_metadata_withdrawn).await?;
+                                self.storage
+                                    .record_auction_with_state(auction_id, withdraw_da.seq)
+                                    .await?;
+                            }
                             _ => (),
                         };
                     }
@@ -310,14 +348,25 @@ impl Worker {
 
                 // Record any new assets we detected.
                 for note_record in filtered_block.new_notes.values() {
-                    // If the asset is already known, skip it.
-
-                    if self
+                    // If the asset is already known, skip it, unless there's useful information
+                    // to cross-reference.
+                    if let Some(note_denom) = self
                         .storage
                         .asset_by_id(&note_record.note.asset_id())
                         .await?
-                        .is_some()
                     {
+                        // If the asset metata is for an auction, we record the associated note commitment
+                        // in the auction state table to cross reference with SNRs.
+                        if note_denom.is_auction_nft() {
+                            let note_commitment = note_record.note_commitment;
+                            let auction_nft: AuctionNft = note_denom.try_into()?;
+                            self.storage
+                                .update_auction_with_note_commitment(
+                                    auction_nft.id,
+                                    note_commitment,
+                                )
+                                .await?;
+                        }
                         continue;
                     } else {
                         // If the asset is unknown, we may be able to query for its denom metadata and store that.
@@ -336,24 +385,18 @@ impl Worker {
                                 .record_asset(denom_metadata.try_into()?)
                                 .await?;
                         } else {
-                            // Otherwise we are dealing with an unknown/novel asset ID, but we don't have the original raw denom field naming the asset.
-                            // For now, we can just record the asset ID with the denom value as "Unknown".
-
-                            self.storage
-                                .record_unknown_asset(note_record.note.asset_id())
-                                .await?;
+                            tracing::warn!(asset_id = ?note_record.note.asset_id(), "received unknown asset ID with no available metadata");
                         }
                     }
                 }
 
                 // Commit the block to the database.
-
                 self.storage
                     .record_block(
                         filtered_block.clone(),
                         transactions,
                         &mut sct_guard,
-                        self.node.clone(),
+                        self.channel.clone(),
                     )
                     .await?;
                 // Notify all watchers of the new height we just recorded.
@@ -440,6 +483,7 @@ async fn sct_divergence_check(
     let value = client
         .key_value(penumbra_proto::cnidarium::v1::KeyValueRequest {
             key: sct_state_key::tree::anchor_by_height(height),
+            proof: false,
             ..Default::default()
         })
         .await?

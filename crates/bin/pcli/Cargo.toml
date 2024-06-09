@@ -21,6 +21,7 @@ parallel = [
     "penumbra-proof-params/parallel",
     "decaf377/parallel",
     "penumbra-shielded-pool/parallel",
+    "penumbra-auction/parallel",
     "penumbra-dex/parallel",
     "penumbra-governance/parallel",
     "penumbra-stake/parallel",
@@ -31,6 +32,7 @@ parallel = [
 
 [dependencies]
 anyhow = {workspace = true}
+pbjson-types = { workspace = true }
 ark-ff = {workspace = true, default-features = false}
 async-stream = {workspace = true}
 base64 = {workspace = true}
@@ -40,7 +42,7 @@ bytes = {workspace = true}
 camino = {workspace = true}
 clap = {workspace = true, features = ["derive", "env"]}
 colored = "2.1.0"
-colored_json = "2.1"
+colored_json = "4.1"
 comfy-table = "5"
 decaf377 = {workspace = true, default-features = true}
 decaf377-rdsa = {workspace = true}
@@ -51,6 +53,7 @@ ed25519-consensus = {workspace = true}
 futures = {workspace = true}
 hex = {workspace = true}
 http-body = {workspace = true}
+humantime = {workspace = true}
 ibc-proto = {workspace = true, default-features = true}
 ibc-types = {workspace = true, features = ["std", "with_serde"], default-features = true}
 indicatif = {workspace = true}
@@ -62,6 +65,7 @@ penumbra-asset = {workspace = true, default-features = false}
 penumbra-community-pool = {workspace = true, default-features = false}
 penumbra-compact-block = {workspace = true, default-features = false}
 penumbra-custody = {workspace = true}
+penumbra-auction = {workspace = true, default-features = false}
 penumbra-dex = {workspace = true, default-features = false}
 penumbra-fee = {workspace = true, default-features = false}
 penumbra-governance = {workspace = true, default-features = false}
@@ -81,6 +85,7 @@ pin-project = {workspace = true}
 rand = {workspace = true}
 rand_chacha = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
+rand_distr = "0.4.3"
 regex = {workspace = true}
 rpassword = "7"
 serde = {workspace = true, features = ["derive"]}
@@ -96,6 +101,7 @@ tokio-util = {workspace = true}
 toml = {workspace = true, features = ["preserve_order"]}
 tonic = {workspace = true, features = ["tls-webpki-roots", "tls"]}
 tower = {workspace = true, features = ["full"]}
+termion = {workspace = true}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true, features = ["env-filter", "ansi"]}
 url = {workspace = true, features = ["serde"]}

@@ -4,6 +4,8 @@
 use crate::testnet::config::{get_testnet_dir, TestnetTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
 use penumbra_app::params::AppParameters;
+use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
+use penumbra_fee::genesis::Content as FeeContent;
 use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_keys::{keys::SpendKey, Address};
 use penumbra_sct::genesis::Content as SctContent;
@@ -35,7 +37,7 @@ pub struct TestnetConfig {
     /// The name of the network
     pub name: String,
     /// The Tendermint genesis for initial chain state.
-    pub genesis: Genesis<penumbra_genesis::AppState>,
+    pub genesis: Genesis<penumbra_app::genesis::AppState>,
     /// Path to local directory where config files will be written to
     pub testnet_dir: PathBuf,
     /// Set of validators at genesis. Uses the convenient wrapper type
@@ -67,8 +69,9 @@ impl TestnetConfig {
         tendermint_timeout_commit: Option<tendermint::Timeout>,
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
-        unbonding_epochs: Option<u64>,
+        unbonding_delay: Option<u64>,
         proposal_voting_blocks: Option<u64>,
+        gas_price_simple: Option<u64>,
     ) -> anyhow::Result<TestnetConfig> {
         let external_addresses = external_addresses.unwrap_or_default();
 
@@ -96,8 +99,9 @@ impl TestnetConfig {
             validators.to_vec(),
             active_validator_limit,
             epoch_duration,
-            unbonding_epochs,
+            unbonding_delay,
             proposal_voting_blocks,
+            gas_price_simple,
         )?;
         let genesis = Self::make_genesis(app_state)?;
 
@@ -184,9 +188,10 @@ impl TestnetConfig {
         validators: Vec<Validator>,
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
-        unbonding_epochs: Option<u64>,
+        unbonding_delay: Option<u64>,
         proposal_voting_blocks: Option<u64>,
-    ) -> anyhow::Result<penumbra_genesis::Content> {
+        gas_price_simple: Option<u64>,
+    ) -> anyhow::Result<penumbra_app::genesis::Content> {
         let default_gov_params = penumbra_governance::params::GovernanceParameters::default();
 
         let gov_params = penumbra_governance::params::GovernanceParameters {
@@ -198,16 +203,45 @@ impl TestnetConfig {
         // Look up default app params, so we can fill in defaults.
         let default_app_params = AppParameters::default();
 
-        let app_state = penumbra_genesis::Content {
+        let gas_price_simple = gas_price_simple.unwrap_or_default();
+
+        let app_state = penumbra_app::genesis::Content {
             chain_id: chain_id.to_string(),
             stake_content: StakeContent {
                 validators: validators.into_iter().map(Into::into).collect(),
                 stake_params: StakeParameters {
                     active_validator_limit: active_validator_limit
                         .unwrap_or(default_app_params.stake_params.active_validator_limit),
-                    unbonding_epochs: unbonding_epochs
-                        .unwrap_or(default_app_params.stake_params.unbonding_epochs),
+                    unbonding_delay: unbonding_delay
+                        .unwrap_or(default_app_params.stake_params.unbonding_delay),
                     ..Default::default()
+                },
+            },
+            fee_content: FeeContent {
+                fee_params: penumbra_fee::params::FeeParameters {
+                    fixed_gas_prices: penumbra_fee::GasPrices {
+                        block_space_price: gas_price_simple,
+                        compact_block_space_price: gas_price_simple,
+                        verification_price: gas_price_simple,
+                        execution_price: gas_price_simple,
+                        asset_id: *STAKING_TOKEN_ASSET_ID,
+                    },
+                    fixed_alt_gas_prices: vec![
+                        penumbra_fee::GasPrices {
+                            block_space_price: 10 * gas_price_simple,
+                            compact_block_space_price: 10 * gas_price_simple,
+                            verification_price: 10 * gas_price_simple,
+                            execution_price: 10 * gas_price_simple,
+                            asset_id: asset::REGISTRY.parse_unit("gm").id(),
+                        },
+                        penumbra_fee::GasPrices {
+                            block_space_price: 10 * gas_price_simple,
+                            compact_block_space_price: 10 * gas_price_simple,
+                            verification_price: 10 * gas_price_simple,
+                            execution_price: 10 * gas_price_simple,
+                            asset_id: asset::REGISTRY.parse_unit("gn").id(),
+                        },
+                    ],
                 },
             },
             governance_content: GovernanceContent {
@@ -230,8 +264,8 @@ impl TestnetConfig {
 
     /// Build Tendermint genesis data, based on Penumbra initial application state.
     pub(crate) fn make_genesis(
-        app_state: penumbra_genesis::Content,
-    ) -> anyhow::Result<Genesis<penumbra_genesis::AppState>> {
+        app_state: penumbra_app::genesis::Content,
+    ) -> anyhow::Result<Genesis<penumbra_app::genesis::AppState>> {
         // Use now as genesis time
         let genesis_time = Time::from_unix_timestamp(
             SystemTime::now()
@@ -248,7 +282,7 @@ impl TestnetConfig {
             chain_id: app_state
                 .chain_id
                 .parse::<tendermint::chain::Id>()
-                .context("failed to parseto create chain ID")?,
+                .context("failed to parse chain ID")?,
             initial_height: 0,
             consensus_params: tendermint::consensus::Params {
                 abci: AbciParams::default(),
@@ -272,7 +306,7 @@ impl TestnetConfig {
             },
             // always empty in genesis json
             app_hash: tendermint::AppHash::default(),
-            app_state: penumbra_genesis::AppState::Content(app_state),
+            app_state: penumbra_app::genesis::AppState::Content(app_state),
             // Set empty validator set for Tendermint config, which falls back to reading
             // validators from the AppState, via ResponseInitChain:
             // https://docs.tendermint.com/v0.32/tendermint-core/using-tendermint.html
@@ -282,12 +316,12 @@ impl TestnetConfig {
     }
 
     pub(crate) fn make_checkpoint(
-        genesis: Genesis<penumbra_genesis::AppState>,
+        genesis: Genesis<penumbra_app::genesis::AppState>,
         checkpoint: Option<Vec<u8>>,
-    ) -> Genesis<penumbra_genesis::AppState> {
+    ) -> Genesis<penumbra_app::genesis::AppState> {
         match checkpoint {
             Some(checkpoint) => Genesis {
-                app_state: penumbra_genesis::AppState::Checkpoint(checkpoint),
+                app_state: penumbra_app::genesis::AppState::Checkpoint(checkpoint),
                 ..genesis
             },
             None => genesis,
@@ -343,12 +377,13 @@ pub fn testnet_generate(
     active_validator_limit: Option<u64>,
     tendermint_timeout_commit: Option<tendermint::Timeout>,
     epoch_duration: Option<u64>,
-    unbonding_epochs: Option<u64>,
+    unbonding_delay: Option<u64>,
     peer_address_template: Option<String>,
     external_addresses: Vec<TendermintAddress>,
     validators_input_file: Option<PathBuf>,
     allocations_input_file: Option<PathBuf>,
     proposal_voting_blocks: Option<u64>,
+    gas_price_simple: Option<u64>,
 ) -> anyhow::Result<()> {
     tracing::info!(?chain_id, "Generating network config");
     let t = TestnetConfig::generate(
@@ -361,8 +396,9 @@ pub fn testnet_generate(
         tendermint_timeout_commit,
         active_validator_limit,
         epoch_duration,
-        unbonding_epochs,
+        unbonding_delay,
         proposal_voting_blocks,
+        gas_price_simple,
     )?;
     tracing::info!(
         n_validators = t.validators.len(),
@@ -457,7 +493,7 @@ impl TestnetValidator {
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());
 
-        let identity_key: IdentityKey = IdentityKey(fvk.spend_verification_key().clone());
+        let identity_key: IdentityKey = IdentityKey(fvk.spend_verification_key().clone().into());
         let delegation_denom = DelegationToken::from(&identity_key).denom();
         Ok(Allocation {
             address: dest,
@@ -540,7 +576,7 @@ impl TryFrom<&TestnetValidator> for Validator {
             // Currently there's no way to set validator keys beyond
             // manually editing the genesis.json. Otherwise they
             // will be randomly generated keys.
-            identity_key: IdentityKey(tv.keys.validator_id_vk),
+            identity_key: IdentityKey(tv.keys.validator_id_vk.into()),
             governance_key: GovernanceKey(tv.keys.validator_id_vk),
             consensus_key: tv.keys.validator_cons_pk,
             name: tv.name.clone(),
@@ -668,11 +704,12 @@ mod tests {
             None,
             None,
             None,
+            None,
         )?;
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
         // No external address template was given, so only 1 validator will be present.
-        let penumbra_genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
+        let penumbra_app::genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
         else {
             unimplemented!("TODO: support checkpointed app state")
         };
@@ -697,10 +734,11 @@ mod tests {
             None,
             None,
             None,
+            None,
         )?;
         assert_eq!(testnet_config.name, "test-chain-4567");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
-        let penumbra_genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
+        let penumbra_app::genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
         else {
             unimplemented!("TODO: support checkpointed app state")
         };

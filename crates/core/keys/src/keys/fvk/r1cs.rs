@@ -89,7 +89,11 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for AuthorizationKeyVar {
                     .vartime_decompress()
                     .map_err(|_| SynthesisError::MalformedVerifyingKey)?;
                 let ak_element_var: ElementVar =
-                    AllocVar::<Element, Fq>::new_witness(cs, || Ok(ak_point))?;
+                    AllocVar::<Element, Fq>::new_witness(cs.clone(), || Ok(ak_point))?;
+
+                // The ak must never be identity.
+                let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
+                identity.enforce_not_equal(&ak_element_var)?;
                 Ok(Self {
                     inner: ak_element_var,
                 })

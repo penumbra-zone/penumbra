@@ -1,12 +1,10 @@
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
-use penumbra_proto::StateWriteProto as _;
 
 use crate::{
-    component::{PositionManager, PositionRead},
-    event,
+    component::{PositionManager, StateReadExt},
     lp::{action::PositionOpen, position},
 };
 
@@ -15,7 +13,6 @@ use crate::{
 impl ActionHandler for PositionOpen {
     type CheckStatelessContext = ();
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        // TODO(chris, erwan, henry): brainstorm safety on `TradingFunction`.
         // Check:
         //  + reserves are at most 80 bits wide,
         //  + the trading function coefficients are at most 80 bits wide.
@@ -31,10 +28,15 @@ impl ActionHandler for PositionOpen {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        // Validate that the position ID doesn't collide
-        state.check_position_id_unused(&self.position.id()).await?;
-        state.put_position(self.position.clone()).await?;
-        state.record_proto(event::position_open(self));
+        // Only open the position if the dex is enabled in the dex params.
+        let dex_params = state.get_dex_params().await?;
+
+        ensure!(
+            dex_params.is_enabled,
+            "Dex MUST be enabled to open positions."
+        );
+
+        state.open_position(self.position.clone()).await?;
         Ok(())
     }
 }

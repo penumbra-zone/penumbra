@@ -338,6 +338,8 @@ impl Opt {
                     .add_service(tonic_web::enable(stake_query_proxy))
                     .add_service(tonic_web::enable(compact_block_query_proxy))
                     .add_service(tonic_web::enable(tendermint_proxy_proxy))
+                    // TODO: should we add the IBC services here as well? they will appear
+                    // in reflection but not be available.
                     .add_service(tonic_web::enable(
                         tonic_reflection::server::Builder::configure()
                             .register_encoded_file_descriptor_set(

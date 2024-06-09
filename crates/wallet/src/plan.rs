@@ -1,118 +1,17 @@
 use std::collections::BTreeMap;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
 use ark_std::UniformRand;
 use decaf377::Fq;
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
 
-use penumbra_asset::Value;
 use penumbra_dex::swap_claim::SwapClaimPlan;
-use penumbra_fee::Fee;
-use penumbra_governance::{proposal_state, Proposal, ValidatorVote};
-use penumbra_keys::{keys::AddressIndex, Address};
-use penumbra_num::Amount;
+use penumbra_keys::keys::AddressIndex;
 use penumbra_proto::view::v1::NotesRequest;
-use penumbra_stake::rate::RateData;
-use penumbra_stake::validator;
-use penumbra_transaction::{memo::MemoPlaintext, TransactionParameters, TransactionPlan};
+use penumbra_transaction::{TransactionParameters, TransactionPlan};
 pub use penumbra_view::Planner;
 use penumbra_view::{SpendableNoteRecord, ViewClient};
-
-pub async fn validator_definition<V, R>(
-    view: &mut V,
-    rng: R,
-    new_validator: validator::Definition,
-    fee: Fee,
-    source_address: AddressIndex,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .validator_definition(new_validator)
-        .plan(view, source_address)
-        .await
-        .context("can't build validator definition plan")
-}
-
-pub async fn validator_vote<V, R>(
-    view: &mut V,
-    rng: R,
-    vote: ValidatorVote,
-    fee: Fee,
-    source_address: AddressIndex,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .validator_vote(vote)
-        .plan(view, source_address)
-        .await
-        .context("can't build validator vote plan")
-}
-
-/// Generate a new transaction plan delegating stake
-#[instrument(skip(view, rng, rate_data, unbonded_amount, fee, source_address))]
-pub async fn delegate<V, R>(
-    view: &mut V,
-    rng: R,
-    rate_data: RateData,
-    unbonded_amount: Amount,
-    fee: Fee,
-    source_address: AddressIndex,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .delegate(unbonded_amount, rate_data)
-        .plan(view, source_address)
-        .await
-        .context("can't build delegate plan")
-}
-
-#[allow(clippy::too_many_arguments)]
-#[instrument(skip(view, rng, values, fee, dest_address, source_address_index, tx_memo))]
-pub async fn send<V, R>(
-    view: &mut V,
-    rng: R,
-    values: &[Value],
-    fee: Fee,
-    dest_address: Address,
-    source_address_index: AddressIndex,
-    tx_memo: Option<MemoPlaintext>,
-) -> anyhow::Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    tracing::debug!(
-        ?values,
-        ?fee,
-        ?dest_address,
-        ?source_address_index,
-        ?tx_memo
-    );
-    let mut planner = Planner::new(rng);
-    planner.fee(fee);
-    for value in values.iter().cloned() {
-        planner.output(value, dest_address);
-    }
-    let source_address = view.address_by_index(source_address_index).await?;
-    planner
-        .memo(tx_memo.unwrap_or_else(|| MemoPlaintext::blank_memo(source_address)))?
-        .plan(view, source_address_index)
-        .await
-        .context("can't build send transaction")
-}
 
 #[instrument(skip(view, rng))]
 pub async fn sweep<V, R>(view: &mut V, mut rng: R) -> anyhow::Result<Vec<TransactionPlan>>
@@ -153,7 +52,7 @@ where
     let unclaimed_swaps = view.unclaimed_swaps().await?;
 
     for swap in unclaimed_swaps {
-        // We found an unspent swap NFT, so we can claim it.
+        // We found an unclaimed swap, so we can claim it.
         let swap_plaintext = swap.swap;
 
         let output_data = swap.output_data;
@@ -192,6 +91,8 @@ where
 {
     const SWEEP_COUNT: usize = 8;
 
+    let gas_prices = view.gas_prices().await?;
+
     let all_notes = view
         .notes(NotesRequest {
             ..Default::default()
@@ -224,8 +125,7 @@ where
             // chunks, ignoring the biggest notes in the remainder.
             for group in records.chunks_exact(SWEEP_COUNT) {
                 let mut planner = Planner::new(&mut rng);
-                let sender_addr = view.address_by_index(index).await?;
-                planner.memo(MemoPlaintext::blank_memo(sender_addr))?;
+                planner.set_gas_prices(gas_prices);
 
                 for record in group {
                     planner.spend(record.note.clone(), record.position);
@@ -243,75 +143,4 @@ where
     }
 
     Ok(plans)
-}
-
-#[instrument(skip(view, rng))]
-pub async fn proposal_submit<V, R>(
-    view: &mut V,
-    rng: R,
-    proposal: Proposal,
-    fee: Fee,
-    source_address: AddressIndex,
-) -> anyhow::Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .proposal_submit(
-            proposal,
-            view.app_params()
-                .await?
-                .governance_params
-                .proposal_deposit_amount,
-        )
-        .plan(view, source_address)
-        .await
-        .context("can't build proposal submit transaction")
-}
-
-#[allow(clippy::too_many_arguments)]
-#[instrument(skip(view, rng))]
-pub async fn proposal_withdraw<V, R>(
-    view: &mut V,
-    rng: R,
-    proposal_id: u64,
-    reason: String,
-    fee: Fee,
-    source_address: AddressIndex,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .proposal_withdraw(proposal_id, reason)
-        .plan(view, source_address)
-        .await
-        .context("can't build proposal withdraw transaction")
-}
-
-#[allow(clippy::too_many_arguments)]
-#[instrument(skip(view, rng))]
-pub async fn proposal_deposit_claim<V, R>(
-    view: &mut V,
-    rng: R,
-    proposal_id: u64,
-    deposit_amount: Amount,
-    outcome: proposal_state::Outcome<()>,
-    fee: Fee,
-    source_address: AddressIndex,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .proposal_deposit_claim(proposal_id, deposit_amount, outcome)
-        .plan(view, source_address)
-        .await
-        .context("can't build proposal withdraw transaction")
 }

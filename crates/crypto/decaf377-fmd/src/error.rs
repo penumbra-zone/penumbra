@@ -5,7 +5,7 @@ use thiserror::Error;
 pub enum Error {
     /// Clue creation for larger than maximum precision was requested.
     #[error("Precision {0} is larger than `MAX_PRECISION` or current key expansion.")]
-    PrecisionTooLarge(usize),
+    PrecisionTooLarge(u64),
     /// An address encoding was invalid.
     #[error("Invalid address.")]
     InvalidAddress,

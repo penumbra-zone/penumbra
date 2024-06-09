@@ -240,6 +240,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
     let ivk_recipient = fvk_recipient.incoming();
     let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
     let nk = *sk_recipient.nullifier_key();
+    let ak = *fvk_recipient.spend_verification_key();
 
     let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
     let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
@@ -277,7 +278,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
         unfilled_2: Amount::from(50u64),
         height: height.into(),
         trading_pair: swap_plaintext.trading_pair,
-        epoch_starting_height: (epoch_duration * position.epoch()).into(),
+        sct_position_prefix: position,
     };
     let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
@@ -299,6 +300,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
     let private = SwapClaimProofPrivate {
         swap_plaintext,
         state_commitment_proof,
+        ak,
         nk,
         lambda_1,
         lambda_2,
@@ -423,11 +425,11 @@ fn undelegate_claim_parameters_vs_current_undelegate_claim_circuit() {
         let balance_blinding = Fr::from(1u8);
         let value1_amount = 1u64;
         let penalty_amount = 1u64;
-        let validator_identity = IdentityKey((&sk).into());
+        let validator_identity = IdentityKey(VerificationKey::from(&sk).into());
         let unbonding_amount = Amount::from(value1_amount);
 
-        let start_epoch_index = 1;
-        let unbonding_token = UnbondingToken::new(validator_identity, start_epoch_index);
+        let start_height = 1;
+        let unbonding_token = UnbondingToken::new(validator_identity, start_height);
         let unbonding_id = unbonding_token.id();
         let penalty = Penalty::from_bps_squared(penalty_amount);
         let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);

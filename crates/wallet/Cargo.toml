@@ -31,6 +31,7 @@ penumbra-num = {workspace = true, default-features = true}
 penumbra-proto = {workspace = true, default-features = true}
 penumbra-stake = {workspace = true, default-features = true}
 penumbra-tct = {workspace = true, default-features = true}
+penumbra-sct = {workspace = true, default-features = false}
 penumbra-transaction = {workspace = true, default-features = true}
 penumbra-view = {workspace = true}
 pin-project = {workspace = true}

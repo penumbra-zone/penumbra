@@ -16,8 +16,15 @@ done
 echo "Pulling proto dependencies from BSR..."
 pushd "${repo_root}/proto/"
 # Make sure the lockfile is up to date.
-buf mod update penumbra
+buf dep update penumbra
+
+# Pull our vendored cosmos/IBC proto defs so we can get reflection for service definitions.
+# The penumbra dependencies will override some of these.
+buf export buf.build/cosmos/cosmos-sdk:e7a85cef453e4b999ad9aff8714ae05f --output rust-vendored/
+buf export buf.build/cosmos/ibc:7ab44ae956a0488ea04e04511efa5f70 --output rust-vendored/
+
 buf export penumbra --output rust-vendored/
+
 # Remove the re-exported Penumbra proto defs, since we version control
 # those directly in this repo, and don't need to duplicate them as output.
 rm -rf rust-vendored/penumbra/

@@ -19,6 +19,11 @@ use {
 
 impl Builder {
     /// Consumes this builder, using the provided consensus service.
+    ///
+    /// This function returns an error if the builder was not fully initialized, or if the
+    /// application could not successfully perform the chain initialization.
+    ///
+    /// See [`TestNode`] for more information on the consensus service.
     pub async fn init_chain<C>(self, mut consensus: C) -> Result<TestNode<C>, anyhow::Error>
     where
         C: Service<ConsensusRequest, Response = ConsensusResponse, Error = BoxError>
@@ -32,6 +37,8 @@ impl Builder {
 
         let Self {
             app_state: Some(app_state),
+            keyring,
+            on_block,
         } = self
         else {
             bail!("builder was not fully initialized")
@@ -62,6 +69,8 @@ impl Builder {
             consensus,
             height: block::Height::from(0_u8),
             last_app_hash: app_hash.as_bytes().to_owned(),
+            keyring,
+            on_block,
         })
     }
 

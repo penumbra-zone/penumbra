@@ -8,10 +8,7 @@ use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use base64::{engine::general_purpose, Engine as _};
-use decaf377::{
-    r1cs::{ElementVar, FqVar},
-    Bls12_377, FieldExt, Fq, Fr,
-};
+use decaf377::{r1cs::FqVar, Bls12_377, FieldExt, Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_asset::{
     balance::{self, commitment::BalanceCommitmentVar, Commitment},
@@ -38,7 +35,7 @@ use tap::Tap;
 pub struct DelegatorVoteProofPublic {
     /// the merkle root of the state commitment tree.
     pub anchor: tct::Root,
-    /// value commitment of the note to be spent.
+    /// balance commitment of the note to be spent.
     pub balance_commitment: balance::Commitment,
     /// nullifier of the note to be spent.
     pub nullifier: Nullifier,
@@ -55,7 +52,7 @@ pub struct DelegatorVoteProofPrivate {
     pub state_commitment_proof: tct::Proof,
     /// The note being spent.
     pub note: Note,
-    /// The blinding factor used for generating the value commitment.
+    /// The blinding factor used for generating the balance commitment.
     pub v_blinding: Fr,
     /// The randomizer used for generating the randomized spend auth key.
     pub spend_auth_randomizer: Fr,
@@ -153,6 +150,7 @@ pub struct DelegatorVoteCircuit {
 impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
+        // Note: In the allocation of the address on `NoteVar` we check the diversified base is not identity.
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.private.note.clone()))?;
         let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
             Ok(self.private.state_commitment_proof.commitment())
@@ -172,6 +170,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         let spend_auth_randomizer_var = SpendAuthRandomizerVar::new_witness(cs.clone(), || {
             Ok(self.private.spend_auth_randomizer)
         })?;
+        // Note: in the allocation of `AuthorizationKeyVar` we check it is not identity.
         let ak_element_var: AuthorizationKeyVar =
             AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.private.ak))?;
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
@@ -216,11 +215,6 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         // Check integrity of balance commitment.
         let balance_commitment = note_var.value().commit(v_blinding_vars)?;
         balance_commitment.enforce_equal(&claimed_balance_commitment_var)?;
-
-        // Check elements were not identity.
-        let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-        identity.enforce_not_equal(&note_var.diversified_generator())?;
-        identity.enforce_not_equal(&ak_element_var.inner)?;
 
         // Additionally, check that the start position has a zero commitment index, since this is
         // the only sensible start time for a vote.
@@ -453,7 +447,7 @@ mod tests {
                 asset_id: asset::Id(Fq::from(asset_id64)),
             };
             let note = Note::from_parts(
-                sender,
+                sender.clone(),
                 value_to_send,
                 Rseed(rseed_randomness),
             ).expect("should be able to create note");
@@ -469,7 +463,7 @@ mod tests {
             for i in 0..num_commitments {
                 // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
                 let rseed = Rseed([i as u8; 32]);
-                let dummy_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
+                let dummy_note_commitment = Note::from_parts(sender.clone(), value_to_send, rseed).expect("can create note").commit();
                 sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("can insert note commitment into SCT");
             }
 
@@ -480,7 +474,7 @@ mod tests {
             // All proposals should have a position commitment index of zero, so we need to end the epoch
             // and get the position that corresponds to the first commitment in the new epoch.
             sct.end_epoch().expect("should be able to end an epoch");
-            let first_note_commitment = Note::from_parts(sender, value_to_send, Rseed([u8::MAX; 32])).expect("can create note").commit();
+            let first_note_commitment = Note::from_parts(sender.clone(), value_to_send, Rseed([u8::MAX; 32])).expect("can create note").commit();
             sct.insert(tct::Witness::Keep, first_note_commitment).expect("can insert note commitment into SCT");
             let start_position = sct.witness(first_note_commitment).expect("can witness note commitment").position();
 
@@ -529,7 +523,7 @@ mod tests {
                 asset_id: asset::Id(Fq::from(asset_id64)),
             };
             let note = Note::from_parts(
-                sender,
+                sender.clone(),
                 value_to_send,
                 Rseed(rseed_randomness),
             ).expect("should be able to create note");
@@ -545,7 +539,7 @@ mod tests {
             for i in 0..num_commitments {
                 // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
                 let rseed = Rseed([i as u8; 32]);
-                let dummy_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
+                let dummy_note_commitment = Note::from_parts(sender.clone(), value_to_send, rseed).expect("can create note").commit();
                 sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("can insert note commitment into SCT");
             }
 

@@ -1,22 +1,27 @@
 use anyhow::{anyhow, Context, Result};
 
-mod shielded_pool;
-use colored_json::ToColoredJson;
-use shielded_pool::ShieldedPool;
-mod tx;
-use tx::Tx;
+pub(crate) mod auction;
 mod chain;
-use chain::ChainCmd;
-mod dex;
-use dex::DexCmd;
-mod governance;
-use governance::GovernanceCmd;
 mod community_pool;
-use community_pool::CommunityPoolCmd;
-mod validator;
-pub(super) use validator::ValidatorCmd;
+mod dex;
+mod governance;
 mod ibc_query;
+mod shielded_pool;
+mod tx;
+mod validator;
+
+use auction::AuctionCmd;
+use base64::prelude::*;
+use chain::ChainCmd;
+use colored_json::ToColoredJson;
+use community_pool::CommunityPoolCmd;
+use dex::DexCmd;
+use governance::GovernanceCmd;
 use ibc_query::IbcCmd;
+use penumbra_proto::cnidarium::v1::non_verifiable_key_value_request::Key as NVKey;
+use shielded_pool::ShieldedPool;
+use tx::Tx;
+pub(super) use validator::ValidatorCmd;
 
 use crate::App;
 
@@ -37,7 +42,18 @@ pub enum QueryCmd {
     /// Queries an arbitrary key.
     Key {
         /// The key to query.
+        ///
+        /// When querying the JMT, keys are plain string values.
+        ///
+        /// When querying nonverifiable storage, keys should be base64-encoded strings.
         key: String,
+        /// The storage backend to query.
+        ///
+        /// Valid arguments are "jmt" and "nonverifiable".
+        ///
+        /// Defaults to the JMT.
+        #[clap(long, default_value = "jmt")]
+        storage_backend: String,
     },
     /// Queries shielded pool data.
     #[clap(subcommand)]
@@ -75,6 +91,9 @@ pub enum QueryCmd {
         #[clap(long, default_value = "")]
         nv_key_regex: String,
     },
+    /// Queries information about a Dutch auction.
+    #[clap(subcommand)]
+    Auction(AuctionCmd),
 }
 
 impl QueryCmd {
@@ -116,6 +135,10 @@ impl QueryCmd {
             return ibc.exec(app).await;
         }
 
+        if let QueryCmd::Auction(auction) = self {
+            return auction.exec(app).await;
+        }
+
         // TODO: this is a hack; we should replace all raw state key uses with RPC methods.
         if let QueryCmd::ShieldedPool(ShieldedPool::CompactBlock { height }) = self {
             use penumbra_proto::core::component::compact_block::v1::{
@@ -135,7 +158,7 @@ impl QueryCmd {
             return Ok(());
         }
 
-        let key = match self {
+        let (key, storage_backend) = match self {
             QueryCmd::Tx(_)
             | QueryCmd::Chain(_)
             | QueryCmd::Validator(_)
@@ -143,31 +166,65 @@ impl QueryCmd {
             | QueryCmd::Governance(_)
             | QueryCmd::CommunityPool(_)
             | QueryCmd::Watch { .. }
+            | QueryCmd::Auction { .. }
             | QueryCmd::Ibc(_) => {
                 unreachable!("query handled in guard");
             }
-            QueryCmd::ShieldedPool(p) => p.key().clone(),
-            QueryCmd::Key { key } => key.clone(),
+            QueryCmd::ShieldedPool(p) => (p.key().clone(), "jmt".to_string()),
+            QueryCmd::Key {
+                key,
+                storage_backend,
+            } => (key.clone(), storage_backend.clone()),
         };
 
         use penumbra_proto::cnidarium::v1::query_service_client::QueryServiceClient;
         let mut client = QueryServiceClient::new(app.pd_channel().await?);
 
-        let req = penumbra_proto::cnidarium::v1::KeyValueRequest {
-            key: key.clone(),
-            ..Default::default()
+        // Using an enum in the clap arguments was annoying; this is workable:
+        match storage_backend.as_str() {
+            "nonverifiable" => {
+                let key_bytes = BASE64_STANDARD
+                    .decode(&key)
+                    .map_err(|e| anyhow::anyhow!(format!("invalid base64: {}", e)))?;
+
+                let req = penumbra_proto::cnidarium::v1::NonVerifiableKeyValueRequest {
+                    key: Some(NVKey { inner: key_bytes }),
+                    ..Default::default()
+                };
+
+                tracing::debug!(?req);
+
+                let value = client
+                    .non_verifiable_key_value(req)
+                    .await?
+                    .into_inner()
+                    .value
+                    .context(format!("key not found! key={}", key))?;
+
+                self.display_value(&value.value)?;
+            }
+            // Default to JMT
+            "jmt" | _ => {
+                let req = penumbra_proto::cnidarium::v1::KeyValueRequest {
+                    key: key.clone(),
+                    // Command-line queries don't have a reason to include proofs as of now.
+                    proof: false,
+                    ..Default::default()
+                };
+
+                tracing::debug!(?req);
+
+                let value = client
+                    .key_value(req)
+                    .await?
+                    .into_inner()
+                    .value
+                    .context(format!("key not found! key={}", key))?;
+
+                self.display_value(&value.value)?;
+            }
         };
 
-        tracing::debug!(?req);
-
-        let value = client
-            .key_value(req)
-            .await?
-            .into_inner()
-            .value
-            .context(format!("key not found! key={}", key))?;
-
-        self.display_value(&value.value)?;
         Ok(())
     }
 
@@ -181,6 +238,7 @@ impl QueryCmd {
             | QueryCmd::Governance { .. }
             | QueryCmd::Key { .. }
             | QueryCmd::Watch { .. }
+            | QueryCmd::Auction { .. }
             | QueryCmd::Ibc(_) => true,
         }
     }
@@ -198,6 +256,7 @@ impl QueryCmd {
             | QueryCmd::Governance { .. }
             | QueryCmd::CommunityPool { .. }
             | QueryCmd::Watch { .. }
+            | QueryCmd::Auction { .. }
             | QueryCmd::Ibc(_) => {
                 unreachable!("query is special cased")
             }

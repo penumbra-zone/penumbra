@@ -68,13 +68,14 @@ impl<S: StateRead + 'static> Path<S> {
     async fn extend_to_inner(mut self, new_end: asset::Id) -> Result<Option<Path<S>>> {
         let target_pair = DirectedTradingPair::new(*self.end(), new_end);
         let Some(best_price_position) = self.state.best_position(&target_pair).await? else {
-            tracing::debug!("no best position, failing to extend path");
+            tracing::trace!("no best position, failing to extend path");
             return Ok(None);
         };
         // Deindex the position we "consumed" in this and all descendant state forks,
         // ensuring we don't double-count liquidity while traversing cycles.
-        use super::super::position_manager::Inner as _;
-        self.state.deindex_position_by_price(&best_price_position);
+        use crate::component::position_manager::price_index::PositionByPriceIndex;
+        self.state
+            .deindex_position_by_price(&best_price_position, &best_price_position.id());
 
         // Compute the effective price of a trade in the direction self.end()=>new_end
         let hop_price = best_price_position

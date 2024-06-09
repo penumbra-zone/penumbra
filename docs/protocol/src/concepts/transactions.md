@@ -53,23 +53,23 @@ description leaves the value balance unchanged.
 #### Trading
 
 - **Swap** descriptions perform the first phase of
-[ZSwap](../zswap.md), consuming tokens of one type from a
+a swap, consuming tokens of one type from a
 transaction's value balance, burning them, and producing a swap commitment for
 use in the second stage;
 
 - **SwapClaim** descriptions perform the second phase of
-[ZSwap](../zswap.md), allowing a user who burned tokens of one
+a swap, allowing a user who burned tokens of one
 type to mint tokens of the other type at the chain-specified clearing price, and
 adding the new tokens to a transaction's value balance;
 
 #### Market-making
 
-- **OpenPosition** descriptions open [concentrated liquidity
-positions](../zswap.md#concentrated-liquidity), consuming value of the traded types from the
+- **OpenPosition** descriptions open concentrated liquidity
+positions, consuming value of the traded types from the
 transaction's value balance and adding the specified position to the AMM state;
 
-- **ClosePosition** descriptions close [concentrated liquidity
-positions](../zswap.md#concentrated-liquidity), removing the specified position to the AMM
+- **ClosePosition** descriptions close concentrated liquidity
+positions, removing the specified position to the AMM
 state and adding the value of the position, plus any accumulated fees or
 liquidity rewards, to the transaction's value balance.
 

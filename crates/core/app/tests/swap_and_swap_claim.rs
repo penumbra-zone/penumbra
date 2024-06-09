@@ -58,7 +58,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     let delta_1 = Amount::from(100_000u64);
     let delta_2 = Amount::from(0u64);
     let fee = Fee::default();
-    let claim_address: Address = *test_keys::ADDRESS_0;
+    let claim_address: Address = test_keys::ADDRESS_0.deref().clone();
 
     let plaintext =
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
@@ -86,13 +86,13 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    state_tx.finish_block(false).await.unwrap();
+    state_tx.finish_block().await.unwrap();
 
     state_tx.apply();
 
     // 6. Create a SwapClaim action
 
-    // To do this, we need to have an auth path for the swap nft note, which
+    // To do this, we need to have an auth path for the swap, which
     // means we have to synchronize a client's view of the test chain's SCT
     // state.
     let epoch_duration = state.get_epoch_duration_parameter().await?;
@@ -295,7 +295,7 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
     let delta_1 = Amount::from(100_000u64);
     let delta_2 = Amount::from(0u64);
     let fee = Fee::from_staking_token_amount(Amount::from(1u64));
-    let claim_address: Address = *test_keys::ADDRESS_0;
+    let claim_address: Address = test_keys::ADDRESS_0.deref().clone();
 
     let plaintext =
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
@@ -323,7 +323,7 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    state_tx.finish_block(false).await.unwrap();
+    state_tx.finish_block().await.unwrap();
 
     state_tx.apply();
 

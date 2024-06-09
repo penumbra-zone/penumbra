@@ -2,8 +2,10 @@ syntax = "proto3";
 
 package penumbra.view.v1;
 
+import "google/protobuf/any.proto";
 import "penumbra/core/app/v1/app.proto";
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/auction/v1/auction.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/ibc/v1/ibc.proto";
@@ -130,6 +132,57 @@ service ViewService {
   //
   // This method streams status updates to the caller before finally returning confirmation.
   rpc BroadcastTransaction(BroadcastTransactionRequest) returns (stream BroadcastTransactionResponse);
+
+  // Get delegation tokens for a given address index. Each delegation token will
+  // be represented by a `ValueView` with the given address index's balance of
+  // that token. Each `ValueView`'s `extended_metadata` field will contain the
+  // `ValidatorInfo` of the delegated validator.
+  rpc DelegationsByAddressIndex(DelegationsByAddressIndexRequest) returns (stream DelegationsByAddressIndexResponse);
+
+  // Get unbonding tokens for the given address index, optionally filtered by
+  // whether the tokens are currently claimable.
+  rpc UnbondingTokensByAddressIndex(UnbondingTokensByAddressIndexRequest) returns (stream UnbondingTokensByAddressIndexResponse);
+
+  // Gets the auctions controlled by the user's wallet.
+  rpc Auctions(AuctionsRequest) returns (stream AuctionsResponse);
+}
+
+// Filters in an `AuctionsRequest` will be combined using `AND` logic -- that
+// is, the more filters you add, the fewer responses you're likely to get.
+message AuctionsRequest {
+  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  core.keys.v1.AddressIndex account_filter = 1;
+  // If present, include inactive auctions as well as active ones.
+  bool include_inactive = 2;
+  // If set, query a fullnode for the current state of the auctions.
+  bool query_latest_state = 3;
+  // If present, filter to only include auctions whose IDs are in this array.
+  repeated core.component.auction.v1.AuctionId auction_ids_filter = 4;
+}
+
+message AuctionsResponse {
+  core.component.auction.v1.AuctionId id = 1;
+  // The state of the returned auction.
+  //
+  // Only present when `query_latest_state` was provided.
+  google.protobuf.Any auction = 2;
+  // The state of any DEX positions relevant to the returned auction.
+  //
+  // Only present when `query_latest_state` was provided.
+  // Could be empty, depending on the auction state.
+  repeated core.component.dex.v1.Position positions = 3;
+  // The note recording the auction NFT.
+  SpendableNoteRecord note_record = 4;
+  // The sequence number of the auction state _as known to the local view
+  // service_. Note that the local view service may lag behind the fullnode. For
+  // example, if the chain hits an auction's `end_height`, but the user hasn't
+  // yet exchanged their sequence-0 (opened) auction NFT for a sequence-1
+  // (closed) auction NFT, the local view service will have a sequnce number of
+  // 0.
+  //
+  // Dutch auctions move from:
+  // 0 (opened) => 1 (closed) => n (withdrawn)
+  uint64 local_seq = 5;
 }
 
 message AuthorizeAndBuildRequest {
@@ -204,6 +257,9 @@ message TransactionPlannerRequest {
   repeated PositionOpen position_opens = 70;
   repeated PositionClose position_closes = 71;
   repeated PositionWithdraw position_withdraws = 72;
+  repeated ActionDutchAuctionSchedule dutch_auction_schedule_actions = 73;
+  repeated ActionDutchAuctionEnd dutch_auction_end_actions = 74;
+  repeated ActionDutchAuctionWithdraw dutch_auction_withdraw_actions = 75;
 
   // Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
   oneof fee_mode {
@@ -211,7 +267,13 @@ message TransactionPlannerRequest {
     core.component.fee.v1.FeeTier auto_fee = 100;
     // A manually set fee, rather than automatically computing a fee based on gas use.
     core.component.fee.v1.Fee manual_fee = 101;
-  };
+  }
+
+  // The epoch index of the transaction being planned.
+  uint64 epoch_index = 200 [deprecated = true];
+
+  // The epoch of the transaction being planned.
+  penumbra.core.component.sct.v1.Epoch epoch = 201;
 
   // Request message subtypes
   message Output {
@@ -248,13 +310,15 @@ message TransactionPlannerRequest {
     // The identity key of the validator to finish undelegating from.
     core.keys.v1.IdentityKey validator_identity = 1;
     // The epoch in which unbonding began, used to verify the penalty.
-    uint64 start_epoch_index = 2;
+    uint64 start_epoch_index = 2 [deprecated = true];
     // The penalty applied to undelegation, in bps^2 (10e-8).
     // In the happy path (no slashing), this is 0.
     core.component.stake.v1.Penalty penalty = 3;
     // The amount of unbonding tokens to claim.
     // This is a bare number because its denom is determined by the preceding data.
     core.num.v1.Amount unbonding_amount = 4;
+    // The height at which unbonding began.
+    uint64 unbonding_start_height = 5;
   }
   message PositionOpen {
     // Contains the data defining the position, sufficient to compute its `PositionId`.
@@ -274,6 +338,23 @@ message TransactionPlannerRequest {
     core.component.dex.v1.Reserves reserves = 2;
     // The trading pair of the position.
     core.component.dex.v1.TradingPair trading_pair = 3;
+  }
+
+  message ActionDutchAuctionSchedule {
+    // The description of the auction to schedule.
+    core.component.auction.v1.DutchAuctionDescription description = 1;
+  }
+
+  message ActionDutchAuctionEnd {
+    // The unique id of the auction to close.
+    core.component.auction.v1.AuctionId auction_id = 1;
+  }
+
+  message ActionDutchAuctionWithdraw {
+    // The auction to withdraw funds from.
+    core.component.auction.v1.AuctionId auction_id = 1;
+    // The sequence number of the withdrawal.
+    uint64 seq = 2;
   }
 }
 
@@ -455,7 +536,10 @@ message AppParametersResponse {
 message GasPricesRequest {}
 
 message GasPricesResponse {
+  // The current gas prices, in the preferred (native) token.
   core.component.fee.v1.GasPrices gas_prices = 1;
+  // Other gas prices for other accepted tokens.
+  repeated core.component.fee.v1.GasPrices alt_gas_prices = 2;
 }
 
 // Requests the current FMD parameters from the view service.
@@ -596,4 +680,73 @@ message AssetMetadataByIdResponse {
   //
   // If the requested asset was unknown, this field will not be present.
   core.asset.v1.Metadata denom_metadata = 1;
+}
+
+// Requests `ValueView`s of delegation tokens for the given address index. The
+// returned `ValueView`s will include the `ValidatorInfo` for the delegated
+// validator in their `extended_metadata` fields.
+message DelegationsByAddressIndexRequest {
+  // The address index to fetch delegation balances for.
+  core.keys.v1.AddressIndex address_index = 1;
+
+  enum Filter {
+    // By default, returns delegations for all active validators. For validators
+    // that the given address index has no delegation tokens for, a `ValueView`
+    // with a balance of `0` will be returned.
+    FILTER_UNSPECIFIED = 0;
+
+    // Returns only delegations to active validators that the given address
+    // index holds delegation tokens for.
+    FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES = 1;
+
+    // Return delegations for all validators, whether active or not. For
+    // validators that the given address index has no delegation tokens for, a
+    // `ValueView` with a balance of `0` will be returned.
+    FILTER_ALL = 2;
+  }
+
+  Filter filter = 2;
+}
+
+// Contains a `ValueView` of delegation tokens for the requested address index.
+// The `ValueView` includes the `ValidatorInfo` for the delegated validator in
+// cits `extended_metadata` field.
+message DelegationsByAddressIndexResponse {
+  core.asset.v1.ValueView value_view = 1;
+}
+
+// Requests unbonding tokens for a given address index, with optional filtering
+// for whether the tokens are currently claimable.
+message UnbondingTokensByAddressIndexRequest {
+  enum Filter {
+    // Return all unbonding tokens, regardless of whether they're claimable
+    // right now.
+    FILTER_UNSPECIFIED = 0;
+
+    // Return all unbonding tokens that are currently claimable. This includes:
+    // - tokens that have passed the `unbonding_delay` (from `StakeParameters`)
+    // - tokens for unbonded validators
+    FILTER_CLAIMABLE = 1;
+
+    // Return all unbonding tokens that are not yet claimable, because they are
+    // still in the `unbonding_delay` (from `StakeParameters`) period.
+    FILTER_NOT_YET_CLAIMABLE = 2;
+  }
+
+  Filter filter = 1;
+
+  // The address index to fetch unbonding tokens for.
+  core.keys.v1.AddressIndex address_index = 2;
+}
+
+// Returns unbonding tokens for the given address index, optionally filtered by
+// whether the tokens are currently claimable.
+message UnbondingTokensByAddressIndexResponse {
+  // A `ValueView` representing the amount of the given unbonding token.
+  core.asset.v1.ValueView value_view = 1;
+
+  // Whether the unbonding token is currently claimable. This will only be
+  // `true` if the `unbonding_delay` (from `StakeParameters`) has passed or the
+  // validator has unbonded.
+  bool claimable = 2;
 }

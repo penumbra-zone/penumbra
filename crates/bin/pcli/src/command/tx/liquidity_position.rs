@@ -19,25 +19,25 @@ pub enum PositionCmd {
     Order(OrderCmd),
     /// Debits an all opened position NFTs associated with a specific source and credits closed position NFTs.
     CloseAll {
-        /// Only spend funds originally received by the given address index.
+        /// Only spend fugdnds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
         /// Only close positions for the given trading pair.
         #[clap(long)]
         trading_pair: Option<TradingPair>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
-    /// Debits an opened position NFT and credits a closed position NFT.
+    /// Debits opened position NFTs and credits closed position NFTs.
     Close {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
-        /// The [`position::Id`] of the position to close.
-        position_id: position::Id,
+        /// The list of [`position::Id`] of the positions to close.
+        position_ids: Vec<position::Id>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Debits all closed position NFTs associated with a specific account and credits withdrawn position NFTs and the final reserves.
@@ -49,18 +49,18 @@ pub enum PositionCmd {
         #[clap(long)]
         trading_pair: Option<TradingPair>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
-    /// Debits a closed position NFT and credits a withdrawn position NFT and the final reserves.
+    /// Debits closed position NFTs and credits withdrawn position NFTs and the final reserves.
     Withdraw {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
-        /// The [`position::Id`] of the position to withdraw.
-        position_id: position::Id,
+        /// The list of [`position::Id`] of the positions to withdraw.
+        position_ids: Vec<position::Id>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
 
@@ -98,11 +98,11 @@ pub enum OrderCmd {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
-        /// When set, tags the position as being a limit-sell order.
+        /// When set, tags the position as an auto-closing buy.
         #[clap(long)]
-        limit_order: bool,
+        auto_close: bool,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     Sell {
@@ -115,11 +115,11 @@ pub enum OrderCmd {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
-        /// When set, tags the position as being a limit-sell order.
+        /// When set, tags the position as an auto-closing sell.
         #[clap(long)]
-        limit_order: bool,
+        auto_close: bool,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
 }
@@ -139,10 +139,10 @@ impl OrderCmd {
         }
     }
 
-    pub fn limit_order(&self) -> bool {
+    pub fn is_auto_closing(&self) -> bool {
         match self {
-            OrderCmd::Buy { limit_order, .. } => *limit_order,
-            OrderCmd::Sell { limit_order, .. } => *limit_order,
+            OrderCmd::Buy { auto_close, .. } => *auto_close,
+            OrderCmd::Sell { auto_close, .. } => *auto_close,
         }
     }
 
@@ -166,7 +166,7 @@ impl OrderCmd {
         };
         tracing::info!(?position);
 
-        if self.limit_order() {
+        if self.is_auto_closing() {
             position.close_on_fill = true;
         }
 

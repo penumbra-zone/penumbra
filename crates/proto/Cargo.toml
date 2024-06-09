@@ -10,12 +10,20 @@ anyhow = "1"
 rpc = ["dep:tonic", "ibc-proto/client"]
 box-grpc = ["dep:http-body", "dep:tonic", "dep:tower"]
 cnidarium = ["dep:cnidarium"]
+tendermint = [
+    "dep:chrono",
+    "dep:tendermint-proto",
+    "dep:tendermint-rpc",
+    "dep:thiserror",
+    "dep:tonic",
+]
 
 [dependencies]
 anyhow = {workspace = true}
 async-trait = {workspace = true}
 bech32 = {workspace = true}
 bytes = {workspace = true, features = ["serde"]}
+chrono = {workspace = true, optional = true, default-features = false, features = ["serde"]}
 cnidarium = {workspace = true, optional = true, default-features = true}
 decaf377-fmd = {workspace = true}
 decaf377-rdsa = {workspace = true}
@@ -32,6 +40,9 @@ serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
 subtle-encoding = "0.5"
 tendermint = {workspace = true}
+tendermint-proto = {workspace = true, optional = true}
+tendermint-rpc = {workspace = true, optional = true, features = ["http-client"]}
+thiserror = {workspace = true, optional = true}
 tonic = {workspace = true, optional = true}
 tower = {workspace = true, features = ["full"], optional = true}
 tracing = {workspace = true}

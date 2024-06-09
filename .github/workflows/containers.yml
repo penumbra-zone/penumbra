@@ -23,32 +23,29 @@ jobs:
           lfs: true
 
       - name: Log in to the Docker Hub container registry (for pulls)
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Log in to the GitHub container registry (for pushes)
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ghcr.io/penumbra-zone/penumbra
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64
@@ -69,13 +66,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Log in to the Docker Hub container registry (for pulls)
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Log in to the GitHub container registry (for pushes)
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -83,12 +80,12 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ghcr.io/penumbra-zone/grafana
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64
@@ -96,27 +93,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-  osiris:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    needs:
-      - penumbra
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      # We use the GHA Repository Dispatch functionality to trigger a container
-      # build in the penumbra-zone/osiris repo.
-      - name: Trigger remote build
-        shell: bash
-        env:
-          GITHUB_PAT: ${{ secrets.GH_PAT }}
-        run: |-
-          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
-          cd deployments/
-          ./scripts/gha-repository-dispatch penumbra-zone/osiris
 
   galileo:
     runs-on: ubuntu-latest
@@ -145,42 +121,3 @@ jobs:
           fi
           cd deployments/
           ./scripts/gha-repository-dispatch penumbra-zone/galileo
-
-  relayer:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to the Docker Hub container registry (for pulls)
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Log in to the GitHub container registry (for pushes)
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ghcr.io/penumbra-zone/relayer
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          platforms: linux/amd64
-          file: deployments/containerfiles/Dockerfile-relayer
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}

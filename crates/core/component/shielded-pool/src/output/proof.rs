@@ -5,7 +5,6 @@ use anyhow::Result;
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::uint8::UInt8;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use decaf377::r1cs::ElementVar;
 use decaf377::FieldExt;
 use decaf377::{Bls12_377, Fq, Fr};
 use decaf377_fmd as fmd;
@@ -89,13 +88,13 @@ fn check_circuit_satisfaction(
 }
 
 /// Public:
-/// * vcm (value commitment)
+/// * vcm (balance commitment)
 /// * ncm (note commitment)
 ///
 /// Witnesses:
 /// * g_d (point)
 /// * pk_d (point)
-/// * v (u64 value plus asset ID (scalar))
+/// * v (u128 value plus asset ID (scalar))
 /// * vblind (Fr)
 /// * nblind (Fq)
 #[derive(Clone, Debug)]
@@ -113,6 +112,7 @@ impl OutputCircuit {
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
+        // Note: In the allocation of the address on `NoteVar`, we check the diversified base is not identity.
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.private.note.clone()))?;
         let balance_blinding_arr: [u8; 32] = self.private.balance_blinding.to_bytes();
         let balance_blinding_vars = UInt8::new_witness_vec(cs.clone(), &balance_blinding_arr)?;
@@ -122,11 +122,6 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
             StateCommitmentVar::new_input(cs.clone(), || Ok(self.public.note_commitment))?;
         let claimed_balance_commitment =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.public.balance_commitment))?;
-
-        // Check the diversified base is not identity.
-        let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-        identity
-            .conditional_enforce_not_equal(&note_var.diversified_generator(), &Boolean::TRUE)?;
 
         // Check integrity of balance commitment.
         let balance_commitment =

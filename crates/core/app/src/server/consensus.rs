@@ -22,10 +22,10 @@ pub type ConsensusService = tower_actor::Actor<Request, Response, BoxError>;
 
 fn trace_events(events: &[Event]) {
     for event in events {
-        let span = tracing::info_span!("event", kind = ?event.kind);
+        let span = tracing::debug_span!("event", kind = ?event.kind);
         span.in_scope(|| {
             for attr in &event.attributes {
-                tracing::info!(k = ?attr.key, v=?attr.value);
+                tracing::debug!(k = ?attr.key, v=?attr.value);
             }
         })
     }
@@ -36,27 +36,21 @@ impl Consensus {
 
     pub fn new(storage: Storage) -> ConsensusService {
         tower_actor::Actor::new(Self::QUEUE_SIZE, |queue: _| {
-            let storage = storage.clone();
-            async move {
-                Consensus::new_inner(storage.clone(), queue)
-                    .await?
-                    .run()
-                    .await
-            }
+            Consensus::new_inner(storage, queue).run()
         })
     }
 
-    async fn new_inner(
+    fn new_inner(
         storage: Storage,
         queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
-    ) -> Result<Self> {
-        let app = App::new(storage.latest_snapshot()).await?;
+    ) -> Self {
+        let app = App::new(storage.latest_snapshot());
 
-        Ok(Self {
+        Self {
             queue,
             storage,
             app,
-        })
+        }
     }
 
     async fn run(mut self) -> Result<(), tower::BoxError> {
@@ -85,12 +79,9 @@ impl Consensus {
                 Request::DeliverTx(deliver_tx) => {
                     Response::DeliverTx(self.deliver_tx(deliver_tx).instrument(span.clone()).await)
                 }
-                Request::EndBlock(end_block) => Response::EndBlock(
-                    self.end_block(end_block)
-                        .instrument(span)
-                        .await
-                        .expect("end_block must succeed"),
-                ),
+                Request::EndBlock(end_block) => {
+                    Response::EndBlock(self.end_block(end_block).instrument(span).await)
+                }
                 Request::Commit => Response::Commit(
                     self.commit()
                         .instrument(span)
@@ -120,7 +111,7 @@ impl Consensus {
     /// the database.
     async fn init_chain(&mut self, init_chain: request::InitChain) -> Result<response::InitChain> {
         // Note that errors cannot be handled in InitChain, the application must crash.
-        let app_state: penumbra_genesis::AppState =
+        let app_state: crate::genesis::AppState =
             serde_json::from_slice(&init_chain.app_state_bytes)
                 .expect("can parse app_state in genesis file");
 
@@ -135,13 +126,13 @@ impl Consensus {
         let validators = self.app.tendermint_validator_updates();
 
         let app_hash = match &app_state {
-            penumbra_genesis::AppState::Checkpoint(h) => {
+            crate::genesis::AppState::Checkpoint(h) => {
                 tracing::info!(?h, "genesis state is a checkpoint");
                 // If we're starting from a checkpoint, we just need to forward the app hash
                 // back to CometBFT.
                 self.storage.latest_snapshot().root_hash().await?
             }
-            penumbra_genesis::AppState::Content(_) => {
+            crate::genesis::AppState::Content(_) => {
                 tracing::info!("genesis state is a full configuration");
                 // Check that we haven't got a duplicated InitChain message for some reason:
                 if self.storage.latest_version() != u64::MAX {
@@ -218,7 +209,7 @@ impl Consensus {
         }
     }
 
-    async fn end_block(&mut self, end_block: request::EndBlock) -> Result<response::EndBlock> {
+    async fn end_block(&mut self, end_block: request::EndBlock) -> response::EndBlock {
         tracing::info!(height = ?end_block.height, "ending block");
         let events = self.app.end_block(&end_block).await;
         trace_events(&events);
@@ -234,11 +225,11 @@ impl Consensus {
             "sending validator updates to tendermint"
         );
 
-        Ok(response::EndBlock {
+        response::EndBlock {
             validator_updates,
             consensus_param_updates: None,
             events,
-        })
+        }
     }
 
     async fn commit(&mut self) -> Result<response::Commit> {

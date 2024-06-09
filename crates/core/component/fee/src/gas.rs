@@ -1,9 +1,15 @@
-use std::{iter::Sum, ops::Add};
+use std::{
+    iter::Sum,
+    ops::{Add, AddAssign},
+};
 
+use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use serde::{Deserialize, Serialize};
 
 use penumbra_num::Amount;
 use penumbra_proto::{core::component::fee::v1 as pb, DomainType};
+
+use crate::Fee;
 
 /// Represents the different resources that a transaction can consume,
 /// for purposes of calculating multidimensional fees based on real
@@ -40,6 +46,12 @@ impl Add for Gas {
     }
 }
 
+impl AddAssign for Gas {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
 impl Sum for Gas {
     fn sum<I: Iterator<Item = Gas>>(iter: I) -> Gas {
         iter.fold(Gas::zero(), |acc, x| acc + x)
@@ -51,13 +63,26 @@ impl Sum for Gas {
 /// These prices have an implicit denominator of 1,000 relative to the base unit
 /// of the staking token, so gas price 1,000 times 1 unit of gas is 1 base unit
 /// of staking token.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "pb::GasPrices", into = "pb::GasPrices")]
 pub struct GasPrices {
+    pub asset_id: asset::Id,
     pub block_space_price: u64,
     pub compact_block_space_price: u64,
     pub verification_price: u64,
     pub execution_price: u64,
+}
+
+impl Default for GasPrices {
+    fn default() -> Self {
+        Self {
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+            block_space_price: 0,
+            compact_block_space_price: 0,
+            verification_price: 0,
+            execution_price: 0,
+        }
+    }
 }
 
 impl GasPrices {
@@ -66,13 +91,18 @@ impl GasPrices {
     }
 
     /// Use these gas prices to calculate the fee for a given gas vector.
-    pub fn fee(&self, gas: &Gas) -> Amount {
-        Amount::from(
+    pub fn fee(&self, gas: &Gas) -> Fee {
+        let amount = Amount::from(
             (self.block_space_price * gas.block_space) / 1_000
                 + (self.compact_block_space_price * gas.compact_block_space) / 1_000
                 + (self.verification_price * gas.verification) / 1_000
                 + (self.execution_price * gas.execution) / 1_000,
-        )
+        );
+
+        Fee(Value {
+            asset_id: self.asset_id,
+            amount,
+        })
     }
 }
 
@@ -83,6 +113,12 @@ impl DomainType for GasPrices {
 impl From<GasPrices> for pb::GasPrices {
     fn from(prices: GasPrices) -> Self {
         pb::GasPrices {
+            // Skip serializing the asset ID if it's the staking token.
+            asset_id: if prices.asset_id == *STAKING_TOKEN_ASSET_ID {
+                None
+            } else {
+                Some(prices.asset_id.into())
+            },
             block_space_price: prices.block_space_price,
             compact_block_space_price: prices.compact_block_space_price,
             verification_price: prices.verification_price,
@@ -100,6 +136,11 @@ impl TryFrom<pb::GasPrices> for GasPrices {
             compact_block_space_price: proto.compact_block_space_price,
             verification_price: proto.verification_price,
             execution_price: proto.execution_price,
+            asset_id: proto
+                .asset_id
+                .map(TryInto::try_into)
+                .transpose()?
+                .unwrap_or_else(|| *STAKING_TOKEN_ASSET_ID),
         })
     }
 }

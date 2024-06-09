@@ -9,7 +9,7 @@ use penumbra_num::fixpoint::U128x128;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
-use crate::component::PositionManager;
+use crate::component::PositionRead as _;
 
 use super::{Path, PathCache, PathEntry, RoutingParams, SharedPathCache};
 
@@ -18,7 +18,7 @@ pub trait PathSearch: StateRead + Clone + 'static {
     /// Find the best route from `src` to `dst` with estimated price strictly less
     /// than `params.price_limit`, also returning the spill price for the next-best
     /// route, if one exists.
-    #[instrument(skip(self, src, dst, params), fields(max_hops = params.max_hops))]
+    #[instrument(skip(self, params), fields(max_hops = params.max_hops), level = "debug", ret)]
     async fn path_search(
         &self,
         src: asset::Id,
@@ -43,7 +43,7 @@ pub trait PathSearch: StateRead + Clone + 'static {
         let cache = PathCache::begin(src, state);
         for i in 0..max_hops {
             relax_active_paths(cache.clone(), fixed_candidates.clone()).await?;
-            tracing::debug!(i, "finished relaxing all active paths");
+            tracing::trace!(i, "finished relaxing all active paths");
         }
 
         let entry = cache.lock().0.remove(&dst);
@@ -76,13 +76,14 @@ pub trait PathSearch: StateRead + Clone + 'static {
 
 impl<S> PathSearch for S where S: StateRead + Clone + 'static {}
 
+#[instrument(skip_all)]
 async fn relax_active_paths<S: StateRead + 'static>(
     cache: SharedPathCache<S>,
     fixed_candidates: Arc<Vec<asset::Id>>,
 ) -> Result<()> {
     let active_paths = cache.lock().extract_active();
     let mut js = JoinSet::new();
-    tracing::debug!(
+    tracing::trace!(
         active_paths_len = active_paths.len(),
         "relaxing active paths"
     );
@@ -107,7 +108,7 @@ async fn relax_path<S: StateRead + 'static>(
         .instrument(path.span.clone());
 
     path.span.in_scope(|| {
-        tracing::debug!("relaxing path");
+        tracing::trace!("relaxing path");
     });
 
     let mut js = JoinSet::new();

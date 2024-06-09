@@ -1,6 +1,7 @@
 use penumbra_asset::{Balance, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
+use penumbra_sct::epoch::Epoch;
 use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
@@ -12,9 +13,9 @@ use crate::{DelegationToken, IdentityKey, UnbondingToken};
 pub struct Undelegate {
     /// The identity key of the validator to undelegate from.
     pub validator_identity: IdentityKey,
-    /// The index of the epoch in which this undelegation was performed.
+    /// The epoch at which the undelegation was performed.
     /// The undelegation takes effect after the unbonding period.
-    pub start_epoch_index: u64,
+    pub from_epoch: Epoch,
     /// The amount to undelegate, in units of unbonding tokens.
     pub unbonded_amount: Amount,
     /// The amount of delegation tokens produced by this action.
@@ -35,26 +36,41 @@ impl EffectingData for Undelegate {
 impl Undelegate {
     /// Return the balance after consuming delegation tokens, and producing unbonding tokens.
     pub fn balance(&self) -> Balance {
-        let stake = Balance::from(Value {
-            amount: self.unbonded_amount,
-            asset_id: self.unbonding_token().id(),
-        });
+        let undelegation: Balance = self.unbonded_value().into();
+        let delegation: Balance = self.delegation_value().into();
 
-        let delegation = Balance::from(Value {
-            amount: self.delegation_amount,
-            asset_id: self.delegation_token().id(),
-        });
-
-        // We consume the delegation tokens and produce the staking tokens.
-        stake - delegation
+        // We consume the delegation tokens and produce the undelegation tokens.
+        undelegation - delegation
     }
 
     pub fn unbonding_token(&self) -> UnbondingToken {
-        UnbondingToken::new(self.validator_identity.clone(), self.start_epoch_index)
+        // We produce undelegation tokens at a rate of 1:1 with the unbonded
+        // value of the delegated stake. When these tokens are claimed, we
+        // apply penalties that accumulated during the unbonding window.
+        UnbondingToken::new(
+            self.validator_identity.clone(),
+            self.from_epoch.start_height,
+        )
+    }
+
+    /// Returns the [`Value`] of the unbonded [`Amount`].
+    pub fn unbonded_value(&self) -> Value {
+        Value {
+            amount: self.unbonded_amount,
+            asset_id: self.unbonding_token().id(),
+        }
     }
 
     pub fn delegation_token(&self) -> DelegationToken {
         DelegationToken::new(self.validator_identity.clone())
+    }
+
+    /// Returns the [`Value`] of the delegation [`Amount`].
+    pub fn delegation_value(&self) -> Value {
+        Value {
+            amount: self.delegation_amount,
+            asset_id: self.delegation_token().id(),
+        }
     }
 }
 
@@ -63,12 +79,14 @@ impl DomainType for Undelegate {
 }
 
 impl From<Undelegate> for pb::Undelegate {
+    #[allow(deprecated)]
     fn from(d: Undelegate) -> Self {
         pb::Undelegate {
             validator_identity: Some(d.validator_identity.into()),
-            start_epoch_index: d.start_epoch_index,
             unbonded_amount: Some(d.unbonded_amount.into()),
             delegation_amount: Some(d.delegation_amount.into()),
+            from_epoch: Some(d.from_epoch.into()),
+            start_epoch_index: 0,
         }
     }
 }
@@ -79,16 +97,19 @@ impl TryFrom<pb::Undelegate> for Undelegate {
         Ok(Self {
             validator_identity: d
                 .validator_identity
-                .ok_or_else(|| anyhow::anyhow!("missing validator identity"))?
+                .ok_or_else(|| anyhow::anyhow!("missing validator_identity"))?
                 .try_into()?,
-            start_epoch_index: d.start_epoch_index,
+            from_epoch: d
+                .from_epoch
+                .ok_or_else(|| anyhow::anyhow!("missing from_epoch"))?
+                .try_into()?,
             unbonded_amount: d
                 .unbonded_amount
-                .ok_or_else(|| anyhow::anyhow!("missing unbonded amount"))?
+                .ok_or_else(|| anyhow::anyhow!("missing unbonded_amount"))?
                 .try_into()?,
             delegation_amount: d
                 .delegation_amount
-                .ok_or_else(|| anyhow::anyhow!("missing delegation amount"))?
+                .ok_or_else(|| anyhow::anyhow!("missing delegation_amount"))?
                 .try_into()?,
         })
     }

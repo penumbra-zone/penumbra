@@ -17,7 +17,7 @@ use penumbra_sct::{
     component::{clock::EpochRead, tree::SctRead},
     Nullifier,
 };
-use penumbra_shielded_pool::component::SupplyRead;
+use penumbra_shielded_pool::component::AssetRegistryRead;
 use penumbra_stake::{
     component::{validator_handler::ValidatorDataRead, ConsensusIndexRead},
     DelegationToken, GovernanceKey, IdentityKey,
@@ -29,9 +29,11 @@ use tracing::instrument;
 use penumbra_stake::{rate::RateData, validator};
 
 use crate::{
+    change::ParameterChange,
     params::GovernanceParameters,
-    proposal::{ChangedAppParameters, ChangedAppParametersSet, Proposal, ProposalPayload},
+    proposal::{Proposal, ProposalPayload},
     proposal_state::State as ProposalState,
+    state_key::persistent_flags,
     validator_vote::action::ValidatorVoteReason,
     vote::Vote,
 };
@@ -42,7 +44,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// Returns true if the next height is an upgrade height.
     /// We look-ahead to the next height because we want to halt the chain immediately after
     /// committing the block.
-    async fn is_upgrade_height(&self) -> Result<bool> {
+    async fn is_pre_upgrade_height(&self) -> Result<bool> {
         let Some(next_upgrade_height) = self
             .nonverifiable_get_raw(state_key::upgrades::next_upgrade().as_bytes())
             .await?
@@ -54,12 +56,6 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
 
         let current_height = self.get_block_height().await?;
         Ok(current_height.saturating_add(1) == next_upgrade_height)
-    }
-
-    /// Indicates if the governance parameters have been updated in this block.
-    fn governance_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::governance_params_updated())
-            .is_some()
     }
 
     /// Gets the governance parameters from the JMT.
@@ -272,13 +268,13 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// Look up the validator for a given asset ID, if it is a delegation token.
     async fn validator_by_delegation_asset(&self, asset_id: asset::Id) -> Result<IdentityKey> {
         // Attempt to find the denom for the asset ID of the specified value
-        let Some(denom) = self.denom_by_asset(&asset_id).await? else {
+        let Some(denom_metadata) = self.denom_metadata_by_asset(&asset_id).await else {
             anyhow::bail!("asset ID {} does not correspond to a known denom", asset_id);
         };
 
         // Attempt to find the validator identity for the specified denom, failing if it is not a
         // delegation token
-        let validator_identity = DelegationToken::try_from(denom)?.validator();
+        let validator_identity = DelegationToken::try_from(denom_metadata)?.validator();
 
         Ok(validator_identity)
     }
@@ -555,22 +551,9 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         Ok(tally)
     }
 
-    /// Get the pending app parameters, if any.
-    async fn pending_app_parameters(&self) -> Result<Option<ChangedAppParametersSet>> {
-        Ok(self
-            .get(&state_key::change_app_params_at_height(
-                self.get_block_height().await?,
-            ))
-            .await?)
-    }
-
-    /// Get the next block's pending app parameters, if any.
-    async fn next_block_pending_app_parameters(&self) -> Result<Option<ChangedAppParametersSet>> {
-        Ok(self
-            .get(&state_key::change_app_params_at_height(
-                self.get_block_height().await? + 1,
-            ))
-            .await?)
+    /// Gets the parameter changes scheduled for the given height, if any.
+    async fn param_changes_for_height(&self, height: u64) -> Result<Option<ParameterChange>> {
+        self.get(&state_key::param_changes_for_height(height)).await
     }
 
     /// Check if any proposal is started in this block.
@@ -579,19 +562,11 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
             .is_some()
     }
 
-    async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
-        Ok(total_halt_count
-            < self
-                .get_proto(state_key::halt::halt_count())
-                .await?
-                .unwrap_or_default())
-    }
-
-    async fn halt_count(&self) -> Result<u64> {
-        Ok(self
-            .get_proto(state_key::halt::halt_count())
-            .await?
-            .unwrap_or_default())
+    async fn is_chain_halted(&self) -> bool {
+        self.nonverifiable_get_proto(state_key::persistent_flags::halt_bit().as_bytes())
+            .await
+            .expect("no deserialization errors")
+            .unwrap_or_default()
     }
 }
 
@@ -601,9 +576,6 @@ impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWriteExt {
     /// Writes the provided governance parameters to the JMT.
     fn put_governance_params(&mut self, params: GovernanceParameters) {
-        // Note that the governance params have been updated:
-        self.object_put(state_key::governance_params_updated(), ());
-
         // Change the governance parameters:
         self.put(state_key::governance_params().into(), params)
     }
@@ -896,19 +868,25 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                     // Print an informational message and signal to the consensus worker to halt the
                     // process after the state is committed
                     tracing::info!("emergency proposal passed calling for immediate chain halt");
-                    self.signal_halt().await?;
+                    self.signal_halt();
                 }
             }
-            ProposalPayload::ParameterChange { old, new } => {
+            ProposalPayload::ParameterChange(change) => {
+                let current_height = self.get_block_height().await?;
+                // The parameter change should take effect in the next block.
+                let change_height = current_height + 1;
                 tracing::info!(
-                    "parameter change proposal passed, attempting to schedule app parameters update"
+                    change_height,
+                    ?change,
+                    "parameter change proposal passed, scheduling for next block"
                 );
-
-                // Signal that the app should validate the parameter change.
-                self.schedule_app_param_update(*old.clone(), *new.clone())
-                    .await?;
-
-                tracing::info!("app parameters update scheduled successfully");
+                // Note: if two parameter changes are scheduled for the same height by two
+                // passing proposals that were submitted in exactly the same block, one will
+                // clobber the other. This is undesirable but seems unlikely to happen in practice.
+                self.put(
+                    state_key::param_changes_for_height(change_height),
+                    change.clone(),
+                );
             }
             ProposalPayload::CommunityPoolSpend {
                 transaction_plan: _,
@@ -958,37 +936,6 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
         Ok(())
     }
 
-    async fn schedule_app_param_update(
-        &mut self,
-        old_chain_params: ChangedAppParameters,
-        new_chain_params: ChangedAppParameters,
-    ) -> Result<()> {
-        // Schedule the validation for this block
-        let validation_height = self.get_block_height().await?;
-
-        tracing::info!(%validation_height, "scheduling app parameters to be validated by app at end of this block and enacted at the beginning of next block");
-
-        self.put(
-            // Validation happens in this block, and the change height is the next block.
-            state_key::change_app_params_at_height(validation_height + 1),
-            ChangedAppParametersSet {
-                old: old_chain_params,
-                new: new_chain_params,
-            },
-        );
-        Ok(())
-    }
-
-    /// Cancel the next block's pending app parameters.
-    async fn cancel_next_block_pending_app_parameters(&mut self) -> Result<()> {
-        let next_height = self.get_block_height().await? + 1;
-
-        tracing::info!(%next_height, "canceling pending app parameters for next block");
-
-        self.delete(state_key::change_app_params_at_height(next_height));
-        Ok(())
-    }
-
     /// Records the next upgrade height.
     /// After commititng the height, the chain should halt and wait for an upgrade.
     /// It re-uses the same mechanism as emergency halting that prevents the chain from
@@ -1001,13 +948,18 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
         Ok(())
     }
 
-    /// Signals to the consensus worker to halt after the next commit.
-    async fn signal_halt(&mut self) -> Result<()> {
-        let halt_count = self.halt_count().await?;
+    /// Sets the application `halt_bit` to `true`, signaling that
+    /// the chain should be halted, and preventing restarts until
+    /// a migration is ran.
+    fn signal_halt(&mut self) {
+        self.nonverifiable_put_proto(persistent_flags::halt_bit().as_bytes().to_vec(), true);
+    }
 
-        self.put_proto(state_key::halt::halt_count().to_string(), halt_count + 1);
-        Ok(())
+    /// Sets the application `halt_bit` to `false`, signaling that
+    /// the chain can resume, and the application is ready to start.
+    fn ready_to_start(&mut self) {
+        self.nonverifiable_put_proto(persistent_flags::halt_bit().as_bytes().to_vec(), false);
     }
 }
 
-impl<T: StateWrite + StateReadExt> StateWriteExt for T {}
+impl<T: StateWrite + StateReadExt + ?Sized> StateWriteExt for T {}

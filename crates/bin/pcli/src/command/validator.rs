@@ -4,25 +4,25 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use base64::{engine::general_purpose::URL_SAFE, Engine as _};
+use decaf377_rdsa::{Signature, SpendAuth};
+use penumbra_view::Planner;
 use rand_core::OsRng;
 use serde_json::Value;
 
-use penumbra_fee::Fee;
 use penumbra_governance::{
     ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, Vote, MAX_VALIDATOR_VOTE_REASON_LENGTH,
 };
-use penumbra_keys::keys::AddressIndex;
-use penumbra_proto::{
-    core::component::stake::v1::Validator as ProtoValidator, DomainType, Message,
-};
+use penumbra_proto::{view::v1::GasPricesRequest, DomainType};
 use penumbra_stake::{
     validator,
     validator::{Validator, ValidatorToml},
-    FundingStream, FundingStreams, GovernanceKey, IdentityKey,
+    FundingStream, FundingStreams, IdentityKey,
 };
-use penumbra_wallet::plan;
 
-use crate::{config::CustodyConfig, App};
+use crate::App;
+
+use penumbra_fee::FeeTier;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
@@ -32,14 +32,25 @@ pub enum ValidatorCmd {
         #[clap(long)]
         base64: bool,
     },
+    /// Display the validator's governance subkey derived from this wallet's governance seed.
+    GovernanceKey {
+        /// Use Base64 encoding for the governance key, rather than the default of Bech32.
+        #[clap(long)]
+        base64: bool,
+    },
     /// Manage your validator's definition.
     #[clap(subcommand)]
     Definition(DefinitionCmd),
-    /// Cast a vote on a proposal in your capacity as a validator (see also: `pcli tx vote`).
-    Vote {
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0", global = true, display_order = 200)]
-        fee: u64,
+    /// Submit and sign votes in your capacity as a validator.
+    #[clap(subcommand)]
+    Vote(VoteCmd),
+}
+
+#[derive(Debug, clap::Subcommand)]
+pub enum VoteCmd {
+    /// Cast a vote on a proposal in your capacity as a validator (see also: `pcli tx vote` for
+    /// delegator voting).
+    Cast {
         /// Optional. Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", global = true, display_order = 300)]
         source: u32,
@@ -49,22 +60,70 @@ pub enum ValidatorCmd {
         /// A comment or justification of the vote. Limited to 1 KB.
         #[clap(long, default_value = "", global = true, display_order = 400)]
         reason: String,
+        /// Use an externally-provided signature to authorize the vote.
+        ///
+        /// This is useful for offline signing, e.g. in an airgap setup. The signature for the
+        /// vote may be generated using the `pcli validator vote sign` command.
+        #[clap(long, global = true, display_order = 500)]
+        signature: Option<String>,
+        /// Vote on behalf of a particular validator.
+        ///
+        /// This must be specified when the custody backend does not match the validator identity
+        /// key, i.e. when using a separate governance key on another wallet.
+        #[clap(long, global = true, display_order = 600)]
+        validator: Option<IdentityKey>,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, default_value_t)]
+        fee_tier: FeeTier,
+    },
+    /// Sign a vote on a proposal in your capacity as a validator, for submission elsewhere.
+    Sign {
+        /// The vote to sign.
+        #[clap(subcommand)]
+        vote: super::tx::VoteCmd,
+        /// A comment or justification of the vote. Limited to 1 KB.
+        #[clap(long, default_value = "", global = true, display_order = 400)]
+        reason: String,
+        /// The file to write the signature to [default: stdout].
+        #[clap(long, global = true, display_order = 500)]
+        signature_file: Option<String>,
+        /// Vote on behalf of a particular validator.
+        ///
+        /// This must be specified when the custody backend does not match the validator identity
+        /// key, i.e. when using a separate governance key on another wallet.
+        #[clap(long, global = true, display_order = 600)]
+        validator: Option<IdentityKey>,
     },
 }
 
 #[derive(Debug, clap::Subcommand)]
 pub enum DefinitionCmd {
-    /// Create a ValidatorDefinition transaction to create or update a validator.
+    /// Submit a ValidatorDefinition transaction to create or update a validator.
     Upload {
         /// The TOML file containing the ValidatorDefinition to upload.
         #[clap(long)]
         file: String,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
         /// Optional. Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
+        /// Use an externally-provided signature to authorize the validator definition.
+        ///
+        /// This is useful for offline signing, e.g. in an airgap setup. The signature for the
+        /// definition may be generated using the `pcli validator definition sign` command.
+        #[clap(long)]
+        signature: Option<String>,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, default_value_t)]
+        fee_tier: FeeTier,
+    },
+    /// Sign a validator definition offline for submission elsewhere.
+    Sign {
+        /// The TOML file containing the ValidatorDefinition to sign.
+        #[clap(long)]
+        file: String,
+        /// The file to write the signature to [default: stdout].
+        #[clap(long)]
+        signature_file: Option<String>,
     },
     /// Generates a template validator definition for editing.
     ///
@@ -82,7 +141,7 @@ pub enum DefinitionCmd {
         #[clap(short = 'k', long)]
         tendermint_validator_keyfile: Option<camino::Utf8PathBuf>,
     },
-    /// Fetches the definition for your validator.
+    /// Fetches the definition for your validator
     Fetch {
         /// The JSON file to write the definition to [default: stdout].
         #[clap(long)]
@@ -94,94 +153,152 @@ impl ValidatorCmd {
     pub fn offline(&self) -> bool {
         match self {
             ValidatorCmd::Identity { .. } => true,
-            ValidatorCmd::Definition(DefinitionCmd::Upload { .. }) => false,
+            ValidatorCmd::GovernanceKey { .. } => true,
             ValidatorCmd::Definition(
-                DefinitionCmd::Template { .. } | DefinitionCmd::Fetch { .. },
+                DefinitionCmd::Template { .. } | DefinitionCmd::Sign { .. },
             ) => true,
-            ValidatorCmd::Vote { .. } => false,
+            ValidatorCmd::Definition(
+                DefinitionCmd::Upload { .. } | DefinitionCmd::Fetch { .. },
+            ) => false,
+            ValidatorCmd::Vote(VoteCmd::Sign { .. }) => true,
+            ValidatorCmd::Vote(VoteCmd::Cast { .. }) => false,
         }
     }
 
-    // TODO: move use of sk into custody service
     pub async fn exec(&self, app: &mut App) -> Result<()> {
-        let sk = match &app.config.custody {
-            CustodyConfig::SoftKms(config) => config.spend_key.clone(),
-            _ => {
-                anyhow::bail!("Validator commands require SoftKMS backend");
-            }
-        };
         let fvk = app.config.full_viewing_key.clone();
 
         match self {
             ValidatorCmd::Identity { base64 } => {
-                let ik = IdentityKey(fvk.spend_verification_key().clone());
+                let ik = IdentityKey(fvk.spend_verification_key().clone().into());
 
                 if *base64 {
                     use base64::{display::Base64Display, engine::general_purpose::STANDARD};
-                    println!("{}", Base64Display::new(&ik.0.to_bytes(), &STANDARD));
+                    println!("{}", Base64Display::new(ik.0.as_ref(), &STANDARD));
                 } else {
                     println!("{ik}");
                 }
             }
-            ValidatorCmd::Definition(DefinitionCmd::Upload { file, fee, source }) => {
-                // The definitions are stored in a JSON document,
-                // however for ease of use it's best for us to generate
-                // the signature here based on the configured wallet.
-                //
-                // TODO: eventually we'll probably want to support defining the
-                // identity key in the JSON file.
-                //
-                // We could also support defining multiple validators in a single
-                // file.
-                let mut definition_file =
-                    File::open(file).with_context(|| format!("cannot open file {file:?}"))?;
-                let mut definition: String = String::new();
-                definition_file
-                    .read_to_string(&mut definition)
-                    .with_context(|| format!("failed to read file {file:?}"))?;
-                let new_validator: ValidatorToml =
-                    toml::from_str(&definition).context("Unable to parse validator definition")?;
-                let new_validator: Validator = new_validator
-                    .try_into()
-                    .context("Unable to parse validator definition")?;
-                let fee = Fee::from_staking_token_amount((*fee).into());
+            ValidatorCmd::GovernanceKey { base64 } => {
+                let gk = app.config.governance_key();
 
-                // Sign the validator definition with the wallet's spend key.
-                let protobuf_serialized: ProtoValidator = new_validator.clone().into();
-                let v_bytes = protobuf_serialized.encode_to_vec();
-                let auth_sig = sk.spend_auth_key().sign(OsRng, &v_bytes);
+                if *base64 {
+                    use base64::{display::Base64Display, engine::general_purpose::STANDARD};
+                    println!("{}", Base64Display::new(&gk.0.to_bytes(), &STANDARD));
+                } else {
+                    println!("{gk}");
+                }
+            }
+            ValidatorCmd::Definition(DefinitionCmd::Sign {
+                file,
+                signature_file,
+            }) => {
+                let new_validator = read_validator_toml(file)?;
+
+                let input_file_path = std::fs::canonicalize(file)
+                    .with_context(|| format!("invalid path: {file:?}"))?;
+                let input_file_name = input_file_path
+                    .file_name()
+                    .with_context(|| format!("invalid path: {file:?}"))?;
+
+                let signature = app.sign_validator_definition(new_validator.clone()).await?;
+
+                if let Some(output_file) = signature_file {
+                    let output_file_path = std::fs::canonicalize(output_file)
+                        .with_context(|| format!("invalid path: {output_file:?}"))?;
+                    let output_file_name = output_file_path
+                        .file_name()
+                        .with_context(|| format!("invalid path: {output_file:?}"))?;
+                    File::create(output_file)
+                        .with_context(|| format!("cannot create file {output_file:?}"))?
+                        .write_all(URL_SAFE.encode(signature.encode_to_vec()).as_bytes())
+                        .with_context(|| format!("could not write file {output_file:?}"))?;
+                    println!(
+                        "Signed validator definition #{} for {}\nWrote signature to {output_file_path:?}",
+                        new_validator.sequence_number,
+                        new_validator.identity_key,
+                    );
+                    println!(
+                        "To upload the definition, use the below command with the exact same definition file:\n\n  $ pcli validator definition upload --file {:?} --signature - < {:?}",
+                        input_file_name,
+                        output_file_name,
+                    );
+                } else {
+                    println!(
+                        "Signed validator defintion #{} for {}\nTo upload the definition, use the below command with the exact same definition file:\n\n  $ pcli validator definition upload --file {:?} \\\n      --signature {}",
+                        new_validator.sequence_number,
+                        new_validator.identity_key,
+                        input_file_name,
+                        URL_SAFE.encode(signature.encode_to_vec())
+                    );
+                }
+            }
+            ValidatorCmd::Definition(DefinitionCmd::Upload {
+                file,
+                source,
+                signature,
+                fee_tier,
+            }) => {
+                let gas_prices = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?
+                    .gas_prices(GasPricesRequest {})
+                    .await?
+                    .into_inner()
+                    .gas_prices
+                    .expect("gas prices must be available")
+                    .try_into()?;
+
+                let new_validator = read_validator_toml(file)?;
+
+                // Sign the validator definition with the wallet's spend key, or instead attach the
+                // provided signature if present.
+                let auth_sig = if let Some(signature) = signature {
+                    // The user can specify `-` to read the signature from stdin.
+                    let mut signature = signature.clone();
+                    if signature == "-" {
+                        let mut buf = String::new();
+                        std::io::stdin().read_to_string(&mut buf)?;
+                        signature = buf;
+                    }
+                    <Signature<SpendAuth> as penumbra_proto::DomainType>::decode(
+                        &URL_SAFE
+                            .decode(signature)
+                            .context("unable to decode signature as base64")?[..],
+                    )
+                    .context("unable to parse decoded signature")?
+                } else {
+                    app.sign_validator_definition(new_validator.clone()).await?
+                };
                 let vd = validator::Definition {
                     validator: new_validator,
                     auth_sig,
                 };
                 // Construct a new transaction and include the validator definition.
 
-                let plan = plan::validator_definition(
-                    app.view
-                        .as_mut()
-                        .context("view service must be initialized")?,
-                    OsRng,
-                    vd,
-                    fee,
-                    AddressIndex::new(*source),
-                )
-                .await?;
+                let plan = Planner::new(OsRng)
+                    .validator_definition(vd)
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
+                    .plan(app.view(), source.into())
+                    .await?;
+
                 app.build_and_submit_transaction(plan).await?;
                 // Only commit the state if the transaction was submitted
                 // successfully, so that we don't store pending notes that will
                 // never appear on-chain.
                 println!("Uploaded validator definition");
             }
-            ValidatorCmd::Vote {
-                fee,
-                source,
+            ValidatorCmd::Vote(VoteCmd::Sign {
                 vote,
                 reason,
-            } => {
-                // TODO: support submitting a separate governance key.
-                let identity_key = IdentityKey(*sk.full_viewing_key().spend_verification_key());
-                // Currently this is always just copied from the identity key
-                let governance_key = GovernanceKey(identity_key.0);
+                signature_file,
+                validator,
+            }) => {
+                let identity_key = validator
+                    .unwrap_or_else(|| IdentityKey(fvk.spend_verification_key().clone().into()));
+                let governance_key = app.config.governance_key();
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
 
@@ -198,28 +315,96 @@ impl ValidatorCmd {
                     reason: ValidatorVoteReason(reason.clone()),
                 };
 
-                // TODO: support signing with a separate governance key
-                let governance_auth_key = sk.spend_auth_key();
+                let signature = app.sign_validator_vote(body).await?;
 
-                // Generate an authorizing signature with the governance key for the vote body
-                let body_bytes = body.encode_to_vec();
-                let auth_sig = governance_auth_key.sign(OsRng, &body_bytes);
+                if let Some(signature_file) = signature_file {
+                    File::create(signature_file)
+                        .with_context(|| format!("cannot create file {signature_file:?}"))?
+                        .write_all(URL_SAFE.encode(signature.encode_to_vec()).as_bytes())
+                        .context("could not write file")?;
+                    let output_file_path = std::fs::canonicalize(signature_file)
+                        .with_context(|| format!("invalid path: {signature_file:?}"))?;
+                    println!(
+                        "Signed validator vote {vote} on proposal #{proposal} by {identity_key}\nWrote signature to {output_file_path:?}",
+                    );
+                    println!(
+                        "To cast the vote, use the below command:\n\n  $ pcli validator vote cast {vote} --on {proposal} --reason {reason:?} --signature - < {signature_file:?}",
+                    );
+                } else {
+                    println!(
+                        "Signed validator vote {vote} on proposal #{proposal} by {identity_key}\nTo cast the vote, use the below command:\n\n  $ pcli validator vote cast {vote} --on {proposal} --reason {reason:?} \\\n      --signature {}",
+                        URL_SAFE.encode(signature.encode_to_vec())
+                    );
+                }
+            }
+            ValidatorCmd::Vote(VoteCmd::Cast {
+                source,
+                vote,
+                reason,
+                signature,
+                validator,
+                fee_tier,
+            }) => {
+                let gas_prices = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?
+                    .gas_prices(GasPricesRequest {})
+                    .await?
+                    .into_inner()
+                    .gas_prices
+                    .expect("gas prices must be available")
+                    .try_into()?;
+
+                let identity_key = validator
+                    .unwrap_or_else(|| IdentityKey(fvk.spend_verification_key().clone().into()));
+                let governance_key = app.config.governance_key();
+
+                let (proposal, vote): (u64, Vote) = (*vote).into();
+
+                if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
+                    anyhow::bail!("validator vote reason is too long, max 1024 bytes");
+                }
+
+                // Construct the vote body
+                let body = ValidatorVoteBody {
+                    proposal,
+                    vote,
+                    identity_key,
+                    governance_key,
+                    reason: ValidatorVoteReason(reason.clone()),
+                };
+
+                // If the user specified a signature, use it. Otherwise, generate a new signature
+                // using local custody
+                let auth_sig = if let Some(signature) = signature {
+                    // The user can specify `-` to read the signature from stdin.
+                    let mut signature = signature.clone();
+                    if signature == "-" {
+                        let mut buf = String::new();
+                        std::io::stdin().read_to_string(&mut buf)?;
+                        signature = buf;
+                    }
+                    <Signature<SpendAuth> as penumbra_proto::DomainType>::decode(
+                        &URL_SAFE
+                            .decode(signature)
+                            .context("unable to decode signature as base64")?[..],
+                    )
+                    .context("unable to parse decoded signature")?
+                } else {
+                    app.sign_validator_vote(body.clone()).await?
+                };
 
                 let vote = ValidatorVote { body, auth_sig };
 
                 // Construct a new transaction and include the validator definition.
-                let fee = Fee::from_staking_token_amount((*fee).into());
+                let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
+                    .validator_vote(vote)
+                    .plan(app.view(), source.into())
+                    .await?;
 
-                let plan = plan::validator_vote(
-                    app.view
-                        .as_mut()
-                        .context("view service must be initialized")?,
-                    OsRng,
-                    vote,
-                    fee,
-                    AddressIndex::new(*source),
-                )
-                .await?;
                 app.build_and_submit_transaction(plan).await?;
 
                 println!("Cast validator vote");
@@ -229,11 +414,11 @@ impl ValidatorCmd {
                 tendermint_validator_keyfile,
             }) => {
                 let (address, _dtk) = fvk.incoming().payment_address(0u32.into());
-                let identity_key = IdentityKey(fvk.spend_verification_key().clone());
+                let identity_key = IdentityKey(fvk.spend_verification_key().clone().into());
                 // By default, the template sets the governance key to the same verification key as
                 // the identity key, but a validator can change this if they want to use different
                 // key material.
-                let governance_key = GovernanceKey(identity_key.0);
+                let governance_key = app.config.governance_key();
 
                 // Honor the filepath to `priv_validator_key.json`, if set. Otherwise, generate
                 // a random pubkey and emit a warning about it.
@@ -317,7 +502,7 @@ impl ValidatorCmd {
                 }
             }
             ValidatorCmd::Definition(DefinitionCmd::Fetch { file }) => {
-                let identity_key = IdentityKey(fvk.spend_verification_key().clone());
+                let identity_key = IdentityKey(fvk.spend_verification_key().clone().into());
                 super::query::ValidatorCmd::Definition {
                     file: file.clone(),
                     identity_key: identity_key.to_string(),
@@ -337,4 +522,20 @@ fn generate_new_tendermint_keypair() -> anyhow::Result<tendermint::PrivateKey> {
     let slice_signing_key = signing_key.as_bytes().as_slice();
     let priv_consensus_key = tendermint::PrivateKey::Ed25519(slice_signing_key.try_into()?);
     Ok(priv_consensus_key)
+}
+
+/// Parse a validator definition TOML file and return the parsed definition.
+fn read_validator_toml(file: &str) -> Result<Validator> {
+    let mut definition_file =
+        File::open(file).with_context(|| format!("cannot open file {file:?}"))?;
+    let mut definition: String = String::new();
+    definition_file
+        .read_to_string(&mut definition)
+        .with_context(|| format!("failed to read file {file:?}"))?;
+    let new_validator: ValidatorToml =
+        toml::from_str(&definition).context("unable to parse validator definition")?;
+    let new_validator: Validator = new_validator
+        .try_into()
+        .context("unable to parse validator definition")?;
+    Ok(new_validator)
 }

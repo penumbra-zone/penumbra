@@ -437,9 +437,10 @@ impl BareTradingFunction {
     /// Since the fee `f` is bound by `0 <= < 5_000`, we have `1/2 <= gamma <= 1`.
     ///
     /// ## Examples:
-    ///     * A fee of 0% (0 bps) results in a discount factor of 1.
-    ///     * A fee of 30 bps (30 bps) results in a discount factor of 0.997.
-    ///     * A fee of 100% (10_000bps) results in a discount factor of 0.
+    ///
+    /// * A fee of 0% (0 bps) results in a discount factor of 1.
+    /// * A fee of 30 bps (30 bps) results in a discount factor of 0.997.
+    /// * A fee of 100% (10_000bps) results in a discount factor of 0.
     pub fn gamma(&self) -> U128x128 {
         (U128x128::from(10_000 - self.fee) / U128x128::from(10_000u64)).expect("10_000 != 0")
     }

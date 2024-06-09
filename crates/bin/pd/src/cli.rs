@@ -9,9 +9,6 @@ use {
 #[derive(Debug, Parser)]
 #[clap(name = "pd", about = "The Penumbra daemon.", version)]
 pub struct Opt {
-    /// Enable Tokio Console support.
-    #[clap(long)]
-    pub tokio_console: bool,
     /// Command to run.
     #[clap(subcommand)]
     pub cmd: RootCommand,
@@ -113,23 +110,40 @@ pub enum RootCommand {
         /// The home directory of the full node.
         #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
         home: PathBuf,
-        /// The directory that the exported state will be written to.
+        /// The directory where the exported node state will be written.
+        #[clap(long, display_order = 200, alias = "export-path")]
+        export_directory: PathBuf,
+        /// An optional filepath for a compressed archive containing the exported
+        /// node state, e.g. ~/pd-backup.tar.gz.
         #[clap(long, display_order = 200)]
-        export_path: PathBuf,
+        export_archive: Option<PathBuf>,
         /// Whether to prune the JMT tree.
         #[clap(long, display_order = 300)]
         prune: bool,
     },
-    /// Run a migration on the exported storage state of the full node,
-    /// and create a genesis file.
+    /// Run a migration before resuming post-upgrade.
     Migrate {
-        /// The directory containing exported state to which the upgrade will be applied.
+        /// The home directory of the full node.
+        ///
+        /// Migration is performed in-place on the home directory.
+        #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
+        home: Option<PathBuf>,
+        /// If set, also migrate the CometBFT state located in this home directory.
+        /// If both `--home` and `--comet-home` are unset, will attempt to migrate
+        /// CometBFT state alongside the auto-located `pd` state.
+        // Note: this does _NOT_ use an env var because we are trying to
+        // get explicit consent to muck around in another daemon's state.
         #[clap(long, display_order = 200)]
-        target_dir: PathBuf,
-        #[clap(long, display_order = 300)]
-        /// Timestamp of the genesis file in RFC3339 format. If unset, defaults to the current time,
-        /// unless the migration logic overrides it.
-        genesis_start: Option<tendermint::time::Time>,
+        comet_home: Option<PathBuf>,
+        /// If set, force a migration to occur even if the chain is not halted.
+        #[clap(long, display_order = 1000)]
+        force: bool,
+        /// If set, edit local state to to permit the node to start, despite
+        /// a pre-existing halt order, e.g. via governance. This option
+        /// can be useful for relayer operators, to run a temporary archive node
+        /// across upgrade boundaries.
+        #[clap(long, display_order = 1000)]
+        ready_to_start: bool,
     },
 }
 
@@ -144,9 +158,9 @@ pub enum TestnetCommand {
         /// Number of blocks per epoch.
         #[clap(long)]
         epoch_duration: Option<u64>,
-        /// Number of epochs before unbonding stake is released.
+        /// Number of blocks that must elapse before unbonding stake is released.
         #[clap(long)]
-        unbonding_epochs: Option<u64>,
+        unbonding_delay: Option<u64>,
         /// Maximum number of validators in the consensus set.
         #[clap(long)]
         active_validator_limit: Option<u64>,
@@ -166,6 +180,13 @@ pub enum TestnetCommand {
         /// can be voted on.
         #[clap(long)]
         proposal_voting_blocks: Option<u64>,
+        /// The fixed gas price for all transactions on the network.
+        /// Described as "simple" because the single value will be reused
+        /// for all gas price types: block space, compact block space, verification, and execution.
+        /// The numeric value is one-thousandths of the base unit of the fee token,
+        /// so `--gas-price-simple=1000` means all resources will have a cost of 1upenumbra.
+        #[clap(long)]
+        gas_price_simple: Option<u64>,
         /// Base hostname for a validator's p2p service. If multiple validators
         /// exist in the genesis, e.g. via `--validators-input-file`, then
         /// numeric suffixes are automatically added, e.g. "-0", "-1", etc.
@@ -197,6 +218,13 @@ pub enum TestnetCommand {
             default_value = "https://rpc.testnet.penumbra.zone"
         )]
         node: Url,
+
+        /// Optional URL of archived node state in .tar.gz format. The archive will be
+        /// downloaded and extracted locally, allowing the node to join a network at a block height
+        /// higher than 0.
+        #[clap(long, env = "PENUMBRA_PD_ARCHIVE_URL")]
+        archive_url: Option<Url>,
+
         /// Human-readable name to identify node on network
         // Default: 'node-#'
         #[clap(long, env = "PENUMBRA_PD_TM_MONIKER")]

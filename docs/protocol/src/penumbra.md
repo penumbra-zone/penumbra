@@ -19,7 +19,7 @@ Press `s` or use the magnifying glass icon for full-text search.
 
 If you're interested in technical discussion about the project, why not
 
-- join [the discord](https://discord.gg/hKvkrqa3zC), 
+- join [the discord](https://discord.gg/hKvkrqa3zC),
 - check out [the repo and issue tracker](https://github.com/penumbra-zone/penumbra),
 - view the [roadmap goals](https://github.com/orgs/penumbra-zone/projects),
 - or [follow the project on Twitter](https://twitter.com/penumbrazone) for updates.
@@ -29,7 +29,7 @@ If you're interested in technical discussion about the project, why not
 Penumbra records all value in a single multi-asset shielded pool based on the
 Zcash Sapling design, but allows private transactions in any kind of IBC
 asset.  Inbound IBC transfers shield value as it moves into the zone, while
-outbound IBC transfers unshield value.  
+outbound IBC transfers unshield value.
 
 Unlike Zcash, Penumbra has no notion of transparent transactions or a
 transparent value pool; instead, inbound IBC transfers are analogous to `t2z`
@@ -94,15 +94,11 @@ encrypted votes and decrypt only the per-epoch totals.
 
 ## Private DEX
 
-Penumbra provides private, sealed-bid batch swaps using
-[ZSwap](./zswap.md).  ZSwap allows users to privately swap between any
-pair of assets.  Individual swaps do not reveal trade amounts.  Instead, all
-swaps in each block are executed in a single batch.  Only the total amount in
-each batch is revealed, and only after the batch has been finalized. This
-prevents front-running and provides better execution, but also provides
-long-term privacy for individual swaps.  Users can also provide liquidity by
-anonymously creating concentrated liquidity positions.  These
+Penumbra provides private batch swaps using [ZSwap](./dex.md).
+ZSwap allows users to privately swap between any pair of assets.  Individual
+swaps publically burn their input notes and privately mint their output notes.
+All swaps in each block are executed in a single batch.  Users can also provide
+liquidity by anonymously creating concentrated liquidity positions.  These
 positions reveal the amount of liquidity and the bounds in which it is
-concentrated, but are not otherwise linked to any identity, so that (with some
-care) users can privately approximate arbitrary trading functions without
-revealing their specific views about prices.
+concentrated, but are not otherwise linked to any identity, so that (with some care) users can privately approximate arbitrary
+trading functions without revealing their specific views about prices.

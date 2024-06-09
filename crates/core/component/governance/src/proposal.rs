@@ -1,18 +1,10 @@
 use anyhow::Context;
 use bytes::Bytes;
-use penumbra_funding::FundingParameters;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use crate::params::GovernanceParameters;
-use penumbra_community_pool::params::CommunityPoolParameters;
-use penumbra_distributions::params::DistributionsParameters;
-use penumbra_fee::params::FeeParameters;
-use penumbra_ibc::params::IBCParameters;
+use crate::change::ParameterChange;
 use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
-use penumbra_sct::params::SctParameters;
-use penumbra_shielded_pool::params::ShieldedPoolParameters;
-use penumbra_stake::params::StakeParameters;
 
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -56,11 +48,8 @@ impl From<Proposal> for pb::Proposal {
             ProposalPayload::Emergency { halt_chain } => {
                 Some(Payload::Emergency(pb::proposal::Emergency { halt_chain }))
             }
-            ProposalPayload::ParameterChange { old, new } => {
-                Some(Payload::ParameterChange(pb::proposal::ParameterChange {
-                    old_parameters: Some((*old).into()),
-                    new_parameters: Some((*new).into()),
-                }))
+            ProposalPayload::ParameterChange(change) => {
+                Some(Payload::ParameterChange(change.into()))
             }
             ProposalPayload::CommunityPoolSpend { transaction_plan } => Some(
                 Payload::CommunityPoolSpend(pb::proposal::CommunityPoolSpend {
@@ -112,20 +101,9 @@ impl TryFrom<pb::Proposal> for Proposal {
                 Payload::Emergency(emergency) => ProposalPayload::Emergency {
                     halt_chain: emergency.halt_chain,
                 },
-                Payload::ParameterChange(parameter_change) => ProposalPayload::ParameterChange {
-                    old: Box::new(
-                        parameter_change
-                            .old_parameters
-                            .ok_or_else(|| anyhow::anyhow!("missing old parameters"))?
-                            .try_into()?,
-                    ),
-                    new: Box::new(
-                        parameter_change
-                            .new_parameters
-                            .ok_or_else(|| anyhow::anyhow!("missing new parameters"))?
-                            .try_into()?,
-                    ),
-                },
+                Payload::ParameterChange(change) => {
+                    ProposalPayload::ParameterChange(change.try_into()?)
+                }
                 Payload::CommunityPoolSpend(community_pool_spend) => {
                     ProposalPayload::CommunityPoolSpend {
                         transaction_plan: {
@@ -262,28 +240,16 @@ pub enum ProposalPayload {
         /// An optional commit hash for code that this proposal refers to.
         commit: Option<String>,
     },
-    /// An emergency proposal is immediately passed when 2/3 of all validators approve it, without
+    /// An emergency proposal is immediately passed when 1/3 of all validators approve it, without
     /// waiting for the voting period to conclude.
     Emergency {
         /// If `halt_chain == true`, then the chain will immediately halt when the proposal is
         /// passed.
         halt_chain: bool,
     },
-    /// A parameter change proposal describes a replacement of the app parameters, which should
+    /// A parameter change proposal describes a change to the app parameters, which should
     /// take effect when the proposal is passed.
-    ParameterChange {
-        /// The old app parameters to be replaced.
-        ///
-        /// Even if the proposal passes, the update will not be applied if the app parameters have
-        /// changed *at all* from these app parameters. Usually, this should be set to the current
-        /// app parameters at time of proposal.
-        old: Box<ChangedAppParameters>,
-        /// The new app parameters to be set.
-        ///
-        /// The *entire* app parameters will be replaced with these at the time the proposal is
-        /// passed.
-        new: Box<ChangedAppParameters>,
-    },
+    ParameterChange(ParameterChange),
     /// A Community Pool spend proposal describes proposed transaction(s) to be executed or cancelled at
     /// specific heights, with the spend authority of the Community Pool.
     CommunityPoolSpend {
@@ -313,28 +279,13 @@ pub enum ProposalPayload {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ProposalPayloadToml {
-    Signaling {
-        commit: Option<String>,
-    },
-    Emergency {
-        halt_chain: bool,
-    },
-    ParameterChange {
-        old: Box<ChangedAppParameters>,
-        new: Box<ChangedAppParameters>,
-    },
-    CommunityPoolSpend {
-        transaction: String,
-    },
-    UpgradePlan {
-        height: u64,
-    },
-    FreezeIbcClient {
-        client_id: String,
-    },
-    UnfreezeIbcClient {
-        client_id: String,
-    },
+    Signaling { commit: Option<String> },
+    Emergency { halt_chain: bool },
+    ParameterChange(ParameterChange),
+    CommunityPoolSpend { transaction: String },
+    UpgradePlan { height: u64 },
+    FreezeIbcClient { client_id: String },
+    UnfreezeIbcClient { client_id: String },
 }
 
 impl TryFrom<ProposalPayloadToml> for ProposalPayload {
@@ -346,8 +297,8 @@ impl TryFrom<ProposalPayloadToml> for ProposalPayload {
             ProposalPayloadToml::Emergency { halt_chain } => {
                 ProposalPayload::Emergency { halt_chain }
             }
-            ProposalPayloadToml::ParameterChange { old, new } => {
-                ProposalPayload::ParameterChange { old, new }
+            ProposalPayloadToml::ParameterChange(change) => {
+                ProposalPayload::ParameterChange(change)
             }
             ProposalPayloadToml::CommunityPoolSpend { transaction } => {
                 ProposalPayload::CommunityPoolSpend {
@@ -379,8 +330,8 @@ impl From<ProposalPayload> for ProposalPayloadToml {
             ProposalPayload::Emergency { halt_chain } => {
                 ProposalPayloadToml::Emergency { halt_chain }
             }
-            ProposalPayload::ParameterChange { old, new } => {
-                ProposalPayloadToml::ParameterChange { old, new }
+            ProposalPayload::ParameterChange(change) => {
+                ProposalPayloadToml::ParameterChange(change)
             }
             ProposalPayload::CommunityPoolSpend { transaction_plan } => {
                 ProposalPayloadToml::CommunityPoolSpend {
@@ -421,116 +372,5 @@ impl ProposalPayload {
 
     pub fn is_community_pool_spend(&self) -> bool {
         matches!(self, ProposalPayload::CommunityPoolSpend { .. })
-    }
-}
-
-/// Indicates which app parameters have changed during the
-/// current block.
-///
-/// Note: must be kept in sync with
-/// `penumbra_app::params::AppParameters`.
-#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
-#[serde(
-    try_from = "pb::ChangedAppParameters",
-    into = "pb::ChangedAppParameters"
-)]
-pub struct ChangedAppParameters {
-    pub community_pool_params: Option<CommunityPoolParameters>,
-    pub distributions_params: Option<DistributionsParameters>,
-    pub ibc_params: Option<IBCParameters>,
-    pub fee_params: Option<FeeParameters>,
-    pub funding_params: Option<FundingParameters>,
-    pub governance_params: Option<GovernanceParameters>,
-    pub sct_params: Option<SctParameters>,
-    pub shielded_pool_params: Option<ShieldedPoolParameters>,
-    pub stake_params: Option<StakeParameters>,
-}
-
-impl DomainType for ChangedAppParameters {
-    type Proto = pb::ChangedAppParameters;
-}
-
-impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
-    type Error = anyhow::Error;
-
-    fn try_from(msg: pb::ChangedAppParameters) -> anyhow::Result<Self> {
-        Ok(ChangedAppParameters {
-            community_pool_params: msg
-                .community_pool_params
-                .map(TryInto::try_into)
-                .transpose()?,
-            distributions_params: msg
-                .distributions_params
-                .map(TryInto::try_into)
-                .transpose()?,
-            fee_params: msg.fee_params.map(TryInto::try_into).transpose()?,
-            funding_params: msg.funding_params.map(TryInto::try_into).transpose()?,
-            governance_params: msg.governance_params.map(TryInto::try_into).transpose()?,
-            ibc_params: msg.ibc_params.map(TryInto::try_into).transpose()?,
-            sct_params: msg.sct_params.map(TryInto::try_into).transpose()?,
-            shielded_pool_params: msg
-                .shielded_pool_params
-                .map(TryInto::try_into)
-                .transpose()?,
-            stake_params: msg.stake_params.map(TryInto::try_into).transpose()?,
-        })
-    }
-}
-
-impl From<ChangedAppParameters> for pb::ChangedAppParameters {
-    fn from(params: ChangedAppParameters) -> Self {
-        pb::ChangedAppParameters {
-            community_pool_params: params.community_pool_params.map(Into::into),
-            distributions_params: params.distributions_params.map(Into::into),
-            fee_params: params.fee_params.map(Into::into),
-            funding_params: params.funding_params.map(Into::into),
-            governance_params: params.governance_params.map(Into::into),
-            ibc_params: params.ibc_params.map(Into::into),
-            sct_params: params.sct_params.map(Into::into),
-            shielded_pool_params: params.shielded_pool_params.map(Into::into),
-            stake_params: params.stake_params.map(Into::into),
-        }
-    }
-}
-
-/// Bundles together an "old" and "new" `ChangedAppParameters`
-/// for storing in the JMT.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(
-    try_from = "pb::ChangedAppParametersSet",
-    into = "pb::ChangedAppParametersSet"
-)]
-pub struct ChangedAppParametersSet {
-    pub old: ChangedAppParameters,
-    pub new: ChangedAppParameters,
-}
-
-impl DomainType for ChangedAppParametersSet {
-    type Proto = pb::ChangedAppParametersSet;
-}
-
-impl TryFrom<pb::ChangedAppParametersSet> for ChangedAppParametersSet {
-    type Error = anyhow::Error;
-
-    fn try_from(msg: pb::ChangedAppParametersSet) -> anyhow::Result<Self> {
-        Ok(ChangedAppParametersSet {
-            old: msg
-                .old
-                .ok_or_else(|| anyhow::anyhow!("missing old parameters"))?
-                .try_into()?,
-            new: msg
-                .new
-                .ok_or_else(|| anyhow::anyhow!("missing new parameters"))?
-                .try_into()?,
-        })
-    }
-}
-
-impl From<ChangedAppParametersSet> for pb::ChangedAppParametersSet {
-    fn from(params: ChangedAppParametersSet) -> Self {
-        pb::ChangedAppParametersSet {
-            old: Some(params.old.into()),
-            new: Some(params.new.into()),
-        }
     }
 }

@@ -79,7 +79,6 @@ criterion = {workspace = true, features = ["html_reports"]}
 decaf377-fmd = {workspace = true}
 decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
-penumbra-community-pool = {workspace = true, default-features = true}
 penumbra-dex = {workspace = true, default-features = true}
 penumbra-fee = {workspace = true, default-features = true}
 penumbra-governance = {workspace = true, default-features = true}

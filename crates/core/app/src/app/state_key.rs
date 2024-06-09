@@ -20,9 +20,3 @@ pub mod cometbft_data {
         )
     }
 }
-
-pub mod counters {
-    pub fn halt_count() -> &'static str {
-        "application/counters/halt_count"
-    }
-}

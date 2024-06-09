@@ -6,4 +6,4 @@ However, the notes themselves are never published to the chain.  Instead, the sh
 
 To prevent double-spending, each note has a unique serial number, called a _nullifier_.  Each `Spend` action reveals the nullifier of the spent note, and the chain checks that the nullifier has not already been revealed in a previous transaction.  Because the nullifier can only be derived using the keys that control the note, third parties cannot link spends and outputs.
 
-The note and its contents are described in further detail in [*Note Plaintexts*](./protocol/notes/note_plaintexts.md). Note commitments are described in [*Note Commitments*](./protocol/notes/note_commitments.md).
+The note and its contents are described in further detail in [*Note Plaintexts*](./shielded_pool/note_plaintexts.md). Note commitments are described in [*Note Commitments*](./shielded_pool/note_commitments.md).

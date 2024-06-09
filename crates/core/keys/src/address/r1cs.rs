@@ -36,13 +36,17 @@ impl AllocVar<Address, Fq> for AddressVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let address: Address = *f()?.borrow();
+        let address: Address = f()?.borrow().to_owned();
 
         let diversified_generator: ElementVar = AllocVar::<Element, Fq>::new_variable(
             cs.clone(),
             || Ok(address.diversified_generator()),
             mode,
         )?;
+        // Check the diversified base is not identity.
+        let identity = ElementVar::new_constant(cs.clone(), decaf377::Element::default())?;
+        identity.enforce_not_equal(&diversified_generator)?;
+
         let element_transmission_key = decaf377::Encoding(address.transmission_key().0)
             .vartime_decompress()
             .map_err(|_| SynthesisError::AssignmentMissing)?;

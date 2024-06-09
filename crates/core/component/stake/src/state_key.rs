@@ -2,10 +2,6 @@ pub mod parameters {
     pub fn key() -> &'static str {
         "staking/parameters"
     }
-
-    pub fn updated_flag() -> &'static str {
-        "staking/parameters/updated"
-    }
 }
 
 pub mod validators {
@@ -63,15 +59,30 @@ pub mod validators {
             format!("staking/validators/data/power/{id}")
         }
     }
-    pub mod bonding_state {
-        pub fn by_id(id: &crate::IdentityKey) -> String {
-            format!("staking/validators/data/bonding_state/{id}")
+
+    pub mod pool {
+        pub mod balance {
+            pub fn by_id(id: &crate::IdentityKey) -> String {
+                format!("staking/validators/data/pool/balance/{id}")
+            }
+        }
+
+        pub mod bonding_state {
+            pub fn by_id(id: &crate::IdentityKey) -> String {
+                format!("staking/validators/data/pool/bonding_state/{id}")
+            }
         }
     }
 
     pub mod uptime {
         pub fn by_id(id: &crate::IdentityKey) -> String {
             format!("staking/validators/data/uptime/{id}")
+        }
+    }
+
+    pub mod last_disabled {
+        pub fn by_id(id: &crate::IdentityKey) -> String {
+            format!("staking/validators/data/last_disabled/{id}")
         }
     }
 
@@ -93,6 +104,10 @@ pub mod chain {
         pub fn previous() -> &'static str {
             "staking/chain/base_rate/previous"
         }
+    }
+
+    pub fn total_bonded() -> &'static str {
+        "staking/chain/total_bonded"
     }
 
     pub mod delegation_changes {
@@ -149,8 +164,8 @@ mod tests {
 
     #[test]
     fn penalty_in_epoch_padding() {
-        let sk = rdsa::SigningKey::new(OsRng);
-        let ik = IdentityKey((&sk).into());
+        let vk = rdsa::VerificationKey::from(rdsa::SigningKey::new(OsRng));
+        let ik = IdentityKey(vk.into());
 
         assert_eq!(
             penalty::for_id_in_epoch(&ik, 791),
@@ -161,8 +176,8 @@ mod tests {
 
     #[test]
     fn penalty_in_epoch_sorting() {
-        let sk = rdsa::SigningKey::new(OsRng);
-        let ik = IdentityKey((&sk).into());
+        let vk = rdsa::VerificationKey::from(rdsa::SigningKey::new(OsRng));
+        let ik = IdentityKey(vk.into());
 
         let k791 = penalty::for_id_in_epoch(&ik, 791);
         let k792 = penalty::for_id_in_epoch(&ik, 792);

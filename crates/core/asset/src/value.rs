@@ -189,7 +189,7 @@ impl TryFrom<pb::Value> for Value {
                 .try_into()?,
             asset_id: value
                 .asset_id
-                .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?
+                .ok_or_else(|| anyhow::anyhow!("missing balance commitment"))?
                 .try_into()?,
         })
     }

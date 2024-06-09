@@ -84,6 +84,11 @@ pub struct Metadata {
     pub penumbra_asset_id: ::core::option::Option<AssetId>,
     #[prost(message, repeated, tag = "1985")]
     pub images: ::prost::alloc::vec::Vec<AssetImage>,
+    /// An optional "score" used to prioritize token lists.
+    ///
+    /// This is solely for use in client-side registries.
+    #[prost(uint64, tag = "1986")]
+    pub priority_score: u64,
 }
 impl ::prost::Name for Metadata {
     const NAME: &'static str = "Metadata";

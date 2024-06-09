@@ -18,8 +18,8 @@ pub enum State {
     Unbonded,
     /// The validator has been removed from the active set.
     ///
-    /// All delegations to the validator will be unbonded at `unbonds_at_epoch`.
-    Unbonding { unbonds_at_epoch: u64 },
+    /// All delegations to the validator will be unbonded at `unbonds_at_height`.
+    Unbonding { unbonds_at_height: u64 },
 }
 
 impl std::fmt::Display for State {
@@ -27,10 +27,8 @@ impl std::fmt::Display for State {
         match self {
             State::Bonded => write!(f, "Bonded"),
             State::Unbonded => write!(f, "Unbonded"),
-            State::Unbonding {
-                unbonds_at_epoch: unbonding_epoch,
-            } => {
-                write!(f, "Unbonding (end epoch: {unbonding_epoch})")
+            State::Unbonding { unbonds_at_height } => {
+                write!(f, "Unbonding (until height: {unbonds_at_height})")
             }
         }
     }
@@ -41,6 +39,7 @@ impl DomainType for State {
 }
 
 impl From<State> for pb::BondingState {
+    #[allow(deprecated)]
     fn from(v: State) -> Self {
         pb::BondingState {
             state: match v {
@@ -48,8 +47,9 @@ impl From<State> for pb::BondingState {
                 State::Unbonded => pb::bonding_state::BondingStateEnum::Unbonded as i32,
                 State::Unbonding { .. } => pb::bonding_state::BondingStateEnum::Unbonding as i32,
             },
-            unbonds_at_epoch: match v {
-                State::Unbonding { unbonds_at_epoch } => unbonds_at_epoch,
+            unbonds_at_epoch: 0,
+            unbonds_at_height: match v {
+                State::Unbonding { unbonds_at_height } => unbonds_at_height,
                 _ => 0,
             },
         }
@@ -66,12 +66,12 @@ impl TryFrom<pb::BondingState> for State {
             pb::bonding_state::BondingStateEnum::Bonded => Ok(State::Bonded),
             pb::bonding_state::BondingStateEnum::Unbonded => Ok(State::Unbonded),
             pb::bonding_state::BondingStateEnum::Unbonding => {
-                let unbonds_at_epoch = if v.unbonds_at_epoch > 0 {
-                    v.unbonds_at_epoch
+                let unbonds_at_height = if v.unbonds_at_height > 0 {
+                    v.unbonds_at_height
                 } else {
                     anyhow::bail!("unbonding epoch should be set for unbonding state")
                 };
-                Ok(State::Unbonding { unbonds_at_epoch })
+                Ok(State::Unbonding { unbonds_at_height })
             }
             pb::bonding_state::BondingStateEnum::Unspecified => {
                 Err(anyhow::anyhow!("unspecified bonding state!"))

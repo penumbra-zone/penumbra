@@ -1,12 +1,12 @@
+use crate::Value;
 use ark_ff::{fields::PrimeField, ToConstraintField};
 use ark_serialize::CanonicalDeserialize;
+use base64::Engine;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use penumbra_num::Amount;
 use penumbra_proto::{penumbra::core::asset::v1 as pb, serializers::bech32str, DomainType};
 use serde::{Deserialize, Serialize};
-
-use crate::Value;
 
 /// An identifier for an IBC asset type.
 ///
@@ -95,6 +95,7 @@ impl std::fmt::Debug for Id {
 }
 
 impl std::fmt::Display for Id {
+    // IMPORTANT: Changing this is state-breaking.
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.write_str(&bech32str::encode(
             &self.0.to_bytes(),
@@ -132,7 +133,7 @@ pub static VALUE_GENERATOR_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 });
 
 impl Id {
-    /// Compute the value commitment generator for this asset.
+    /// Compute the value generator for this asset, used for computing balance commitments.
     pub fn value_generator(&self) -> decaf377::Element {
         decaf377::Element::encode_to_curve(&poseidon377::hash_1(
             &VALUE_GENERATOR_DOMAIN_SEP,
@@ -162,12 +163,16 @@ impl Id {
                 .as_bytes(),
         ))
     }
+
+    /// Returns the base64 encoded string of the inner bytes.
+    pub fn to_base64(&self) -> String {
+        base64::engine::general_purpose::STANDARD.encode(self.to_bytes())
+    }
 }
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn asset_id_encoding() {

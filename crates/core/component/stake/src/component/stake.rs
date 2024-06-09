@@ -1,9 +1,11 @@
+pub mod address;
+
 use crate::params::StakeParameters;
 use crate::rate::BaseRateData;
 use crate::validator::{self, Validator};
 use crate::{
-    state_key, CurrentConsensusKeys, Delegate, DelegationChanges, DelegationToken, FundingStreams,
-    IdentityKey, Penalty, Undelegate,
+    state_key, CurrentConsensusKeys, Delegate, DelegationChanges, FundingStreams, IdentityKey,
+    Penalty, Undelegate,
 };
 use anyhow::Context;
 use anyhow::{anyhow, Result};
@@ -14,19 +16,22 @@ use futures::{StreamExt, TryStreamExt};
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead;
-use penumbra_shielded_pool::component::SupplyRead;
-use sha2::{Digest, Sha256};
 use std::pin::Pin;
 use std::str::FromStr;
 use std::{collections::BTreeMap, sync::Arc};
-use tap::Tap;
+use tap::{Tap, TapFallible, TapOptional};
 use tendermint::v0_37::abci;
 use tendermint::validator::Update;
 use tendermint::{block, PublicKey};
-use tracing::{instrument, trace};
+use tracing::{error, instrument, trace};
 
 use crate::component::epoch_handler::EpochHandler;
-use crate::component::validator_handler::{ValidatorDataRead, ValidatorManager};
+use crate::component::validator_handler::{
+    ValidatorDataRead, ValidatorManager, ValidatorUptimeTracker,
+};
+
+#[cfg(test)]
+mod tests;
 
 pub struct Staking {}
 
@@ -133,24 +138,23 @@ impl Component for Staking {
             .expect("should be able to track uptime");
     }
 
+    /// Writes the delegation changes for this block.
     #[instrument(name = "staking", skip(state, end_block))]
     async fn end_block<S: StateWrite + 'static>(
         state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {
         let state = Arc::get_mut(state).expect("state should be unique");
-        // Write the delegation changes for this block.
-        state
-            .set_delegation_changes(
-                end_block
-                    .height
-                    .try_into()
-                    .expect("should be able to convert i64 into block height"),
-                state.get_delegation_changes_tally().clone(),
-            )
-            .await;
+        let height = end_block
+            .height
+            .try_into()
+            .expect("should be able to convert i64 into block height");
+        let changes = state.get_delegation_changes_tally();
+
+        state.set_delegation_changes(height, changes).await;
     }
 
+    /// Writes validator updates for this block.
     #[instrument(name = "staking", skip(state))]
     async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> anyhow::Result<()> {
         let state = Arc::get_mut(state).context("state should be unique")?;
@@ -158,7 +162,10 @@ impl Component for Staking {
             .get_current_epoch()
             .await
             .context("should be able to get current epoch during end_epoch")?;
-        state.end_epoch(epoch_ending).await?;
+        state
+            .end_epoch(epoch_ending)
+            .await
+            .context("should be able to write end_epoch")?;
         // Since we only update the validator set at epoch boundaries,
         // we only need to build the validator set updates here in end_epoch.
         state
@@ -197,57 +204,67 @@ impl<T: StateWrite + ?Sized> ConsensusUpdateWrite for T {}
 #[async_trait]
 pub trait StateReadExt: StateRead {
     /// Gets the stake parameters from the JMT.
+    #[instrument(skip(self), level = "trace")]
     async fn get_stake_params(&self) -> Result<StakeParameters> {
         self.get(state_key::parameters::key())
             .await
+            .tap_err(|err| error!(?err, "could not deserialize stake parameters"))
             .expect("no deserialization error should happen")
+            .tap_none(|| error!("could not find stake parameters"))
             .ok_or_else(|| anyhow!("Missing StakeParameters"))
     }
 
-    /// Indicates if the stake parameters have been updated in this block.
-    fn stake_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::parameters::updated_flag())
-            .is_some()
-    }
-
+    #[instrument(skip(self), level = "trace")]
     async fn signed_blocks_window_len(&self) -> Result<u64> {
-        Ok(self.get_stake_params().await?.signed_blocks_window_len)
+        self.get_stake_params()
+            .await
+            .map(|p| p.signed_blocks_window_len)
     }
 
+    #[instrument(skip(self), level = "trace")]
     async fn missed_blocks_maximum(&self) -> Result<u64> {
-        Ok(self.get_stake_params().await?.missed_blocks_maximum)
+        self.get_stake_params()
+            .await
+            .map(|p| p.missed_blocks_maximum)
     }
 
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
+    #[instrument(skip(self), level = "trace")]
     fn get_delegation_changes_tally(&self) -> DelegationChanges {
         self.object_get(state_key::chain::delegation_changes::key())
             .unwrap_or_default()
     }
 
+    #[instrument(skip(self), level = "trace")]
     async fn get_current_base_rate(&self) -> Result<BaseRateData> {
         self.get(state_key::chain::base_rate::current())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
+    #[instrument(skip(self), level = "trace")]
     fn get_previous_base_rate(&self) -> Option<BaseRateData> {
         self.object_get(state_key::chain::base_rate::previous())
     }
 
     /// Returns the funding queue from object storage (end-epoch).
+    #[instrument(skip(self), level = "trace")]
     fn get_funding_queue(&self) -> Option<Vec<(IdentityKey, FundingStreams, Amount)>> {
         self.object_get(state_key::validators::rewards::staking())
     }
 
+    /// Returns the [`DelegationChanges`] at the given [`Height`][block::Height].
+    #[instrument(skip(self), level = "trace")]
     async fn get_delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
-        Ok(self
-            .get(&state_key::chain::delegation_changes::by_height(
-                height.value(),
-            ))
-            .await?
-            .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))?)
+        self.get(&state_key::chain::delegation_changes::by_height(
+            height.value(),
+        ))
+        .await
+        .tap_err(|err| error!(?err, "delegation changes for block exist but are invalid"))?
+        .tap_none(|| error!("could not find delegation changes for block"))
+        .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))
     }
 }
 
@@ -258,9 +275,6 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided stake parameters to the JMT.
     fn put_stake_params(&mut self, params: StakeParameters) {
-        // Note that the stake params have been updated:
-        self.object_put(state_key::parameters::updated_flag(), ());
-
         // Change the stake parameters:
         self.put(state_key::parameters::key().into(), params)
     }
@@ -300,25 +314,17 @@ pub trait StateWriteExt: StateWrite {
         )
     }
 
-    async fn register_consensus_key(
-        &mut self,
-        identity_key: &IdentityKey,
-        consensus_key: &PublicKey,
-    ) {
-        /// Translates from consensus keys to the truncated sha256 hashes in last_commit_info
-        /// This should really be a refined type upstream, but we can't currently upstream
-        /// to tendermint-rs, for process reasons, and shouldn't do our own tendermint data
-        /// modeling, so this is an interim hack.
-        fn validator_address(ck: &PublicKey) -> [u8; 20] {
-            let ck_bytes = ck.to_bytes();
-            let addr: [u8; 20] = Sha256::digest(ck_bytes).as_slice()[0..20]
-                .try_into()
-                .expect("Sha256 digest should be 20-bytes long");
-
-            addr
-        }
-
-        let address = validator_address(consensus_key);
+    /// Register a [consensus key][`PublicKey`] in the state, via two verifiable indices:
+    /// 1. CometBFT address -> [`PublicKey`]
+    /// 2. [`PublicKey`] -> [`IdentityKey`]
+    ///
+    /// # Important note
+    /// We do not delete obsolete entries on purpose. This is so that
+    /// the staking component can do evidence attribution even if a byzantine validator
+    /// has changed the consensus key that was used at the time of the misbehavior.
+    #[instrument(skip_all)]
+    fn register_consensus_key(&mut self, identity_key: &IdentityKey, consensus_key: &PublicKey) {
+        let address = self::address::validator_address(consensus_key);
         tracing::debug!(?identity_key, ?consensus_key, hash = ?hex::encode(address), "registering consensus key");
         self.put(
             state_key::validators::lookup_by::cometbft_address(&address),
@@ -367,10 +373,15 @@ pub trait SlashingData: StateRead {
     async fn compounded_penalty_over_range(
         &self,
         id: &IdentityKey,
-        start: u64,
-        end: u64,
+        epoch_index_start: u64,
+        epoch_index_end: u64,
     ) -> Result<Penalty> {
-        let range = self.get_penalty_for_range(id, start, end).await;
+        if epoch_index_start > epoch_index_end {
+            anyhow::bail!("invalid penalty window")
+        }
+        let range = self
+            .get_penalty_for_range(id, epoch_index_start, epoch_index_end)
+            .await;
         let compounded_penalty = Self::compute_compounded_penalty(range);
         Ok(compounded_penalty)
     }
@@ -401,9 +412,14 @@ pub(crate) trait InternalStakingData: StateRead {
             }
 
             let delegation_token_supply = self
-                .token_supply(&DelegationToken::from(validator_identity).id())
-                .await?
-                .expect("delegation token should be known");
+                .get_validator_pool_size(&validator_identity)
+                .await
+                .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "validator delegation pool not found for {}",
+                    validator_identity
+                )
+            })?;
 
             let validator_rate = self
                 .get_validator_rate(&validator_identity)
@@ -427,7 +443,7 @@ pub(crate) trait InternalStakingData: StateRead {
 impl<T: StateRead + ?Sized> InternalStakingData for T {}
 
 #[async_trait]
-pub trait RateDataWrite: StateWrite {
+pub(crate) trait RateDataWrite: StateWrite {
     #[instrument(skip(self))]
     fn set_base_rate(&mut self, rate_data: BaseRateData) {
         tracing::debug!("setting base rate");
@@ -463,11 +479,19 @@ pub trait RateDataWrite: StateWrite {
         );
     }
 
+    #[tracing::instrument(
+        level = "trace",
+        skip_all,
+        fields(
+            %height,
+            delegations = ?changes.delegations,
+            undelegations = ?changes.undelegations,
+        )
+    )]
     async fn set_delegation_changes(&mut self, height: block::Height, changes: DelegationChanges) {
-        self.put(
-            state_key::chain::delegation_changes::by_height(height.value()),
-            changes,
-        );
+        let key = state_key::chain::delegation_changes::by_height(height.value());
+        tracing::trace!(%key, "setting delegation changes");
+        self.put(key, changes);
     }
 }
 
@@ -497,7 +521,15 @@ pub trait ConsensusIndexRead: StateRead {
             .boxed())
     }
 
-    /// Returns whether the given validator should be indexed in the consensus set.
+    /// Returns the [`IdentityKey`]s of validators that are currently in the consensus set.
+    async fn get_consensus_set(&self) -> anyhow::Result<Vec<IdentityKey>> {
+        use futures::TryStreamExt;
+        self.consensus_set_stream()?.try_collect().await
+    }
+
+    /// Returns whether a validator should be indexed in the consensus set.
+    /// Here, "consensus set" refers to the set of active validators as well as
+    /// the "inactive" validators which could be promoted during a view change.
     #[instrument(level = "error", skip(self))]
     async fn belongs_in_index(&self, validator_id: &IdentityKey) -> bool {
         let Some(state) = self

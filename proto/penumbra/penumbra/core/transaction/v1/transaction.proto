@@ -3,6 +3,7 @@ package penumbra.core.transaction.v1;
 
 import "google/protobuf/any.proto";
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/auction/v1/auction.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/governance/v1/governance.proto";
@@ -96,6 +97,11 @@ message Action {
     component.governance.v1.CommunityPoolOutput community_pool_output = 51;
     component.governance.v1.CommunityPoolDeposit community_pool_deposit = 52;
 
+    // Dutch auctions
+    component.auction.v1.ActionDutchAuctionSchedule action_dutch_auction_schedule = 53;
+    component.auction.v1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
+    component.auction.v1.ActionDutchAuctionWithdraw action_dutch_auction_withdraw = 55;
+
     component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
   }
 }
@@ -124,6 +130,31 @@ message TransactionPerspective {
   }
   // Any relevant extended metadata, indexed by asset id.
   repeated ExtendedMetadataById extended_metadata = 30;
+
+  // Associates a nullifier with the transaction ID that created the nullified state commitment.
+  //
+  // Note: this is _not_ the transaction ID that revealed the nullifier.
+  //
+  // Allows walking backwards from a spend to the transaction that created the note.
+  message CreationTransactionIdByNullifier {
+    component.sct.v1.Nullifier nullifier = 1;
+    txhash.v1.TransactionId transaction_id = 2;
+  }
+  repeated CreationTransactionIdByNullifier creation_transaction_ids_by_nullifier = 40;
+
+  // Associates a commitment with the transaction ID that eventually nullified it.
+  //
+  // Allows walking forwards from an output to the transaction that spent the note.
+  message NullificationTransactionIdByCommitment {
+    crypto.tct.v1.StateCommitment commitment = 1;
+    txhash.v1.TransactionId transaction_id = 2;
+  }
+  repeated NullificationTransactionIdByCommitment nullification_transaction_ids_by_commitment = 50;
+
+  // Any relevant BatchSwapOutputData to the transaction.
+  //
+  // This can be used to fill in information about swap outputs.
+  repeated component.dex.v1.BatchSwapOutputData batch_swap_output_data = 60;
 }
 
 message PayloadKeyWithCommitment {
@@ -168,6 +199,7 @@ message ActionView {
     component.shielded_pool.v1.OutputView output = 2;
     component.dex.v1.SwapView swap = 3;
     component.dex.v1.SwapClaimView swap_claim = 4;
+    component.governance.v1.DelegatorVoteView delegator_vote = 21;
 
     // Action types without visible/opaque variants
     component.stake.v1.ValidatorDefinition validator_definition = 16;
@@ -177,7 +209,6 @@ message ActionView {
     component.governance.v1.ProposalSubmit proposal_submit = 18;
     component.governance.v1.ProposalWithdraw proposal_withdraw = 19;
     component.governance.v1.ValidatorVote validator_vote = 20;
-    component.governance.v1.DelegatorVoteView delegator_vote = 21;
     component.governance.v1.ProposalDepositClaim proposal_deposit_claim = 22;
 
     component.dex.v1.PositionOpen position_open = 30;
@@ -191,6 +222,10 @@ message ActionView {
     component.governance.v1.CommunityPoolSpend community_pool_spend = 50;
     component.governance.v1.CommunityPoolOutput community_pool_output = 51;
     component.governance.v1.CommunityPoolDeposit community_pool_deposit = 52;
+    // Dutch auctions
+    component.auction.v1.ActionDutchAuctionScheduleView action_dutch_auction_schedule = 53;
+    component.auction.v1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
+    component.auction.v1.ActionDutchAuctionWithdrawView action_dutch_auction_withdraw = 55;
 
     // TODO: we have no way to recover the opening of the undelegate_claim's
     // balance commitment, and can only infer the value from looking at the rest
@@ -284,6 +319,11 @@ message ActionPlan {
     component.governance.v1.CommunityPoolSpend community_pool_spend = 50;
     component.governance.v1.CommunityPoolOutput community_pool_output = 51;
     component.governance.v1.CommunityPoolDeposit community_pool_deposit = 52;
+
+    // Dutch auctions
+    component.auction.v1.ActionDutchAuctionSchedule action_dutch_auction_schedule = 53;
+    component.auction.v1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
+    component.auction.v1.ActionDutchAuctionWithdrawPlan action_dutch_auction_withdraw = 55;
   }
 }
 

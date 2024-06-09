@@ -12,12 +12,10 @@ use penumbra_num::{
     fixpoint::{Error, U128x128},
     Amount,
 };
-use penumbra_proto::StateWriteProto as _;
 use tracing::instrument;
 
 use crate::{
     component::{metrics, PositionManager, PositionRead},
-    event,
     lp::{
         position::{self, Position},
         Reserves,
@@ -255,7 +253,16 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     tracing::debug!(?swap_execution, "returning swap execution of filled route");
 
     // Apply the state transaction now that we've reached the end without errors.
-    this.apply();
+    //
+    // We have to manually extract events and push them down to the state to avoid losing them.
+    // TODO: in a commit not intended to be cherry-picked, we should fix this hazardous API:
+    // - rename `StateDelta::apply` to `StateDelta::apply_extracting_events`
+    // - add `StateDelta::apply_with_events` that pushes the events down.
+    // - go through all uses of `apply_extracting_events` and determine what behavior is correct
+    let (mut state, events) = this.apply();
+    for event in events {
+        state.record(event);
+    }
 
     let fill_elapsed = fill_start.elapsed();
     metrics::histogram!(metrics::DEX_ROUTE_FILL_DURATION).record(fill_elapsed);
@@ -402,12 +409,14 @@ impl<S: StateRead + StateWrite> Frontier<S> {
     }
 
     async fn save(&mut self) -> Result<()> {
+        let context = DirectedTradingPair {
+            start: self.pairs.first().expect("pairs is nonempty").start,
+            end: self.pairs.last().expect("pairs is nonempty").end,
+        };
         for position in &self.positions {
-            self.state.put_position(position.clone()).await?;
-
-            // Create an ABCI event signaling that the position was executed against
             self.state
-                .record_proto(event::position_execution(position.clone()));
+                .position_execution(position.clone(), context.clone())
+                .await?;
         }
         Ok(())
     }
@@ -482,10 +491,20 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         // discard it, so write its updated reserves before we replace it on the
         // frontier.  The other positions will be written out either when
         // they're fully consumed, or when we finish filling.
-        self.state
-            .put_position(self.positions[index].clone())
+        let context = DirectedTradingPair {
+            start: self.pairs.first().expect("pairs is nonempty").start,
+            end: self.pairs.last().expect("pairs is nonempty").end,
+        };
+        let updated_position = self
+            .state
+            .position_execution(self.positions[index].clone(), context)
             .await
             .expect("writing to storage should not fail");
+
+        // We update the frontier cache with the updated state of the position we
+        // want to discard. This protects us from cache incoherency in case we do not
+        // find a suitable replacement for that position.
+        self.positions[index] = updated_position;
 
         loop {
             let pair = &self.pairs[index];

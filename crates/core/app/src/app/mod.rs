@@ -1,4 +1,6 @@
+use std::process;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -6,17 +8,17 @@ use cnidarium::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, S
 use cnidarium_component::Component;
 use ibc_types::core::connection::ChainId;
 use jmt::RootHash;
+use penumbra_auction::component::{Auction, StateReadExt as _, StateWriteExt as _};
 use penumbra_community_pool::component::{CommunityPool, StateWriteExt as _};
 use penumbra_community_pool::StateReadExt as _;
 use penumbra_compact_block::component::CompactBlockManager;
-use penumbra_dex::component::Dex;
+use penumbra_dex::component::StateReadExt as _;
+use penumbra_dex::component::{Dex, StateWriteExt as _};
 use penumbra_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_funding::component::Funding;
 use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
-use penumbra_genesis::AppState;
-use penumbra_governance::component::{Governance, StateReadExt as _};
-use penumbra_governance::StateWriteExt as _;
+use penumbra_governance::component::{Governance, StateReadExt as _, StateWriteExt as _};
 use penumbra_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1::TransactionsByHeightResponse;
@@ -35,9 +37,12 @@ use tendermint::abci::{self, Event};
 
 use tendermint::v0_37::abci::{request, response};
 use tendermint::validator::Update;
-use tracing::Instrument;
+use tokio::time::sleep;
+use tracing::{instrument, Instrument};
 
 use crate::action_handler::AppActionHandler;
+use crate::genesis::AppState;
+use crate::params::change::ParameterChangeExt as _;
 use crate::params::AppParameters;
 use crate::{CommunityPoolStateReadExt, PenumbraHost};
 
@@ -56,22 +61,26 @@ pub struct App {
 }
 
 impl App {
-    pub async fn new(snapshot: Snapshot) -> Result<Self> {
+    /// Constructs a new application, using the provided [`Snapshot`].
+    /// Callers should ensure that [`App::is_ready`]) returns `true`, but this is not enforced.
+    #[instrument(skip_all)]
+    pub fn new(snapshot: Snapshot) -> Self {
         tracing::debug!("initializing App instance");
 
         // We perform the `Arc` wrapping of `State` here to ensure
         // there should be no unexpected copies elsewhere.
         let state = Arc::new(StateDelta::new(snapshot));
 
-        // If the state says that the chain is halted, we should not proceed. This is a safety check
-        // to ensure that automatic restarts by software like systemd do not cause the chain to come
-        // back up again after a halt.
-        if state.is_chain_halted(TOTAL_HALT_COUNT).await? {
-            tracing::error!("chain is halted, refusing to restart!");
-            anyhow::bail!("chain is halted, refusing to restart");
-        }
+        Self { state }
+    }
 
-        Ok(Self { state })
+    /// Returns whether the application is ready to start.
+    #[instrument(skip_all, ret)]
+    pub async fn is_ready(state: Snapshot) -> bool {
+        // If the chain is halted, we are not ready to start the application.
+        // This is a safety mechanism to prevent the chain from starting if it
+        // is in a halted state.
+        !state.is_chain_halted().await
     }
 
     // StateDelta::apply only works when the StateDelta wraps an underlying
@@ -116,7 +125,8 @@ impl App {
                 )
                 .await;
                 Ibc::init_chain(&mut state_tx, Some(&genesis.ibc_content)).await;
-                Dex::init_chain(&mut state_tx, Some(&())).await;
+                Auction::init_chain(&mut state_tx, Some(&genesis.auction_content)).await;
+                Dex::init_chain(&mut state_tx, Some(&genesis.dex_content)).await;
                 CommunityPool::init_chain(&mut state_tx, Some(&genesis.community_pool_content))
                     .await;
                 Governance::init_chain(&mut state_tx, Some(&genesis.governance_content)).await;
@@ -124,7 +134,7 @@ impl App {
                 Funding::init_chain(&mut state_tx, Some(&genesis.funding_content)).await;
 
                 state_tx
-                    .finish_block(state_tx.app_params_updated())
+                    .finish_block()
                     .await
                     .expect("must be able to finish compact block");
             }
@@ -148,6 +158,13 @@ impl App {
         &mut self,
         proposal: request::PrepareProposal,
     ) -> response::PrepareProposal {
+        if self.state.is_chain_halted().await {
+            // If we find ourselves preparing a proposal for a halted chain
+            // we stop abruptly to prevent any progress.
+            // The persistent halt mechanism will prevent restarts until we are ready.
+            process::exit(0);
+        }
+
         let mut included_txs = Vec::new();
         let num_candidate_txs = proposal.txs.len();
         tracing::debug!(
@@ -171,9 +188,9 @@ impl App {
         //   the target, presuming that some transactions might be yanked.
         // For more details, see the specification:
         // - Adapting existing applications to use ABCI+:
-        //  https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
+        //  https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
         // - Application requirements:
-        // https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_app_requirements
+        // https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_app_requirements
         for tx in proposal.txs {
             let tx_len_bytes = tx.len() as u64;
             proposal_size_bytes = proposal_size_bytes.saturating_add(tx_len_bytes);
@@ -202,43 +219,34 @@ impl App {
     pub async fn begin_block(&mut self, begin_block: &request::BeginBlock) -> Vec<abci::Event> {
         let mut state_tx = StateDelta::new(self.state.clone());
 
-        // If a app parameter change is scheduled for this block, apply it here, before any other
-        // component has executed. This ensures that app parameter changes are consistently
-        // applied precisely at the boundary between blocks:
-        if let Some(app_params) = state_tx
-            .pending_app_parameters()
+        // If a app parameter change is scheduled for this block, apply it here,
+        // before any other component has executed. This ensures that app
+        // parameter changes are consistently applied precisely at the boundary
+        // between blocks.
+        //
+        // Note that because _nothing_ has executed yet, we need to get the
+        // current height from the begin_block request, rather than from the
+        // state (it will be set by the SCT component, which executes first).
+        if let Some(change) = state_tx
+            .param_changes_for_height(begin_block.header.height.into())
             .await
-            .expect("app params should always be readable")
+            .expect("param changes should always be readable, even if unset")
         {
-            tracing::info!(?app_params, "applying pending app parameters");
-            // The app parameters are sparse so only those which are `Some` need
-            // updating here
-            if let Some(community_pool_params) = app_params.new.community_pool_params {
-                state_tx.put_community_pool_params(community_pool_params);
-            }
-            if let Some(distributions_params) = app_params.new.distributions_params {
-                state_tx.put_distributions_params(distributions_params);
-            }
-            if let Some(fee_params) = app_params.new.fee_params {
-                state_tx.put_fee_params(fee_params);
-            }
-            if let Some(funding_params) = app_params.new.funding_params {
-                state_tx.put_funding_params(funding_params);
-            }
-            if let Some(governance_params) = app_params.new.governance_params {
-                state_tx.put_governance_params(governance_params);
-            }
-            if let Some(ibc_params) = app_params.new.ibc_params {
-                state_tx.put_ibc_params(ibc_params);
-            }
-            if let Some(shielded_pool_params) = app_params.new.shielded_pool_params {
-                state_tx.put_shielded_pool_params(shielded_pool_params);
-            }
-            if let Some(sct_params) = app_params.new.sct_params {
-                state_tx.put_sct_params(sct_params);
-            }
-            if let Some(stake_params) = app_params.new.stake_params {
-                state_tx.put_stake_params(stake_params);
+            let old_params = state_tx
+                .get_app_params()
+                .await
+                .expect("must be able to read app params");
+            match change.apply_changes(old_params) {
+                Ok(new_params) => {
+                    tracing::info!(?change, "applied app parameter change");
+                    state_tx.put_app_params(new_params);
+                }
+                Err(e) => {
+                    // N.B. this is an "info" rather than "warn" because it does not report
+                    // a problem with _this instance of the application_, but rather is an expected
+                    // behavior.
+                    tracing::info!(?change, ?e, "failed to apply approved app parameter change");
+                }
             }
         }
 
@@ -252,6 +260,8 @@ impl App {
             begin_block,
         )
         .await;
+        Auction::begin_block(&mut arc_state_tx, begin_block).await;
+        Dex::begin_block(&mut arc_state_tx, begin_block).await;
         CommunityPool::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
@@ -371,13 +381,17 @@ impl App {
         Ok(state_tx.apply().1)
     }
 
+    #[tracing::instrument(skip_all, fields(height = %end_block.height))]
     pub async fn end_block(&mut self, end_block: &request::EndBlock) -> Vec<abci::Event> {
         let state_tx = StateDelta::new(self.state.clone());
 
+        tracing::debug!("running app components' `end_block` hooks");
         let mut arc_state_tx = Arc::new(state_tx);
+        Sct::end_block(&mut arc_state_tx, end_block).await;
         ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
         Distributions::end_block(&mut arc_state_tx, end_block).await;
         Ibc::end_block(&mut arc_state_tx, end_block).await;
+        Auction::end_block(&mut arc_state_tx, end_block).await;
         Dex::end_block(&mut arc_state_tx, end_block).await;
         CommunityPool::end_block(&mut arc_state_tx, end_block).await;
         Governance::end_block(&mut arc_state_tx, end_block).await;
@@ -386,65 +400,7 @@ impl App {
         Funding::end_block(&mut arc_state_tx, end_block).await;
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
-
-        // Since governance proposals can affect the entirety of application state, and the governance component
-        // does not have access to the types defined in this crate so we need to handle validating them here.
-        //
-        // If a proposal was passed in this block, then `schedule_app_params_change` was called which will set `next_block_pending_app_parameters`.
-        //
-        // If any validation here fails, the `next_block_pending_app_parameters` will be cleared, and no change will be enacted during the next
-        // block's `begin_block`.
-        if let Some(params) = self
-            .state
-            .next_block_pending_app_parameters()
-            .await
-            .expect("should be able to read next block pending app parameters")
-        {
-            // If there has been a chain upgrade while the proposal was pending, the stateless
-            // verification criteria for the parameter change proposal could have changed, so we
-            // should check them again here, just to be sure:
-            // `old_app_params` should be complete and represent the state of all app parameters
-            // at the time the proposal was created.
-            let old_app_params = AppParameters::from_changed_params(&params.old, None)
-                .expect("should be able to parse old app params");
-            // `new_app_params` should be sparse and only the components whose parameters were changed
-            // by the proposal should be `Some`.
-            let new_app_params =
-                AppParameters::from_changed_params(&params.new, Some(&old_app_params))
-                    .expect("should be able to parse new app params");
-            if old_app_params.check_valid_update(&new_app_params).is_err() {
-                // An error occurred validating the parameter change, we do not want to enact it.
-                // Wipe the next block pending app parameters so the change doesn't get applied.
-                tracing::warn!(
-                    ?new_app_params,
-                    "parameter change proposal failed validation, wiping pending parameters"
-                );
-                state_tx
-                    .cancel_next_block_pending_app_parameters()
-                    .await
-                    .expect("able to cancel next block pending app parameters");
-            } else {
-                // This was a valid change.
-                //
-                // Check that the old parameters are an exact match for the current parameters, or
-                // else abort the update.
-                let current = self
-                    .state
-                    .get_app_params()
-                    .await
-                    .expect("able to fetch app params");
-
-                // The current parameters have to match the old parameters specified in the
-                // proposal, exactly. This prevents updates from clashing.
-                if old_app_params != current {
-                    tracing::warn!("current chain parameters do not match the old parameters in the proposal, canceling proposal enactment");
-                    state_tx
-                        .cancel_next_block_pending_app_parameters()
-                        .await
-                        .expect("able to cancel next block pending app parameters");
-                }
-            }
-        }
+        tracing::debug!("finished app components' `end_block` hooks");
 
         let current_height = state_tx
             .get_block_height()
@@ -463,24 +419,30 @@ impl App {
                 .expect("able to get epoch duration in end_block"),
         ) || state_tx.is_epoch_ending_early().await;
 
-        // If a chain upgrade is scheduled for this block, we trigger an early epoch change
+        // If a chain upgrade is scheduled for the next block, we trigger an early epoch change
         // so that the upgraded chain starts at a clean epoch boundary.
         let is_chain_upgrade = state_tx
-            .is_upgrade_height()
+            .is_pre_upgrade_height()
             .await
             .expect("able to detect upgrade heights");
 
         if is_end_epoch || is_chain_upgrade {
-            tracing::info!(?current_height, "ending epoch");
+            tracing::info!(%is_end_epoch, %is_chain_upgrade, ?current_height, "ending epoch");
 
             let mut arc_state_tx = Arc::new(state_tx);
 
+            Sct::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Sct component");
             Distributions::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Distributions component");
             Ibc::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on IBC component");
+            Auction::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on auction component");
             Dex::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on dex component");
@@ -507,7 +469,7 @@ impl App {
                 .expect("components did not retain copies of shared state");
 
             state_tx
-                .finish_epoch(state_tx.app_params_updated())
+                .finish_epoch()
                 .await
                 .expect("must be able to finish compact block");
 
@@ -531,7 +493,7 @@ impl App {
             );
 
             state_tx
-                .finish_block(state_tx.app_params_updated())
+                .finish_block()
                 .await
                 .expect("must be able to finish compact block");
 
@@ -551,24 +513,19 @@ impl App {
             .expect("we have exclusive ownership of the State at commit()");
 
         // Check if an emergency halt has been signaled.
-        let should_halt = state
-            .is_chain_halted(TOTAL_HALT_COUNT)
-            .await
-            .expect("must be able to read halt flag");
+        let should_halt = state.is_chain_halted().await;
 
-        let is_upgrade_height = state
-            .is_upgrade_height()
+        let is_pre_upgrade_height = state
+            .is_pre_upgrade_height()
             .await
             .expect("must be able to read upgrade height");
 
-        if is_upgrade_height {
-            tracing::info!("upgrade height reached, signaling halt");
-            // If we are about to reach an upgrade height, we want to increase the
-            // halt counter to prevent the chain from restarting without manual intervention.
-            state
-                .signal_halt()
-                .await
-                .expect("must be able to signal halt");
+        // If the next height is an upgrade height, we signal a halt and turn
+        // a `halt_bit` on which will prevent the chain from restarting without
+        // running a migration.
+        if is_pre_upgrade_height {
+            tracing::info!("pre-upgrade height reached, signaling halt");
+            state.signal_halt();
         }
 
         // Commit the pending writes, clearing the state.
@@ -577,15 +534,16 @@ impl App {
             .await
             .expect("must be able to successfully commit to storage");
 
-        // If we should halt, we should end the process here.
-        if should_halt {
-            tracing::info!("committed block when a chain halt was signaled; exiting now");
-            std::process::exit(0);
-        }
-
-        if is_upgrade_height {
-            tracing::info!("committed block at upgrade height; exiting now");
-            std::process::exit(0);
+        // We want to halt the node, but not before we submit an ABCI `Commit`
+        // response to `CometBFT`. To do this, we schedule a process exit in `2s`,
+        // assuming a `5s` timeout.
+        // See #4443 for more context.
+        if should_halt || is_pre_upgrade_height {
+            tokio::spawn(async move {
+                sleep(Duration::from_secs(2)).await;
+                tracing::info!("halt signal recorded, exiting process");
+                std::process::exit(0);
+            });
         }
 
         tracing::debug!(?jmt_root, "finished committing state");
@@ -605,27 +563,8 @@ impl App {
     }
 }
 
-/// The total number of times the chain has been halted.
-///
-/// Increment this manually after fixing the root cause for a chain halt: updated nodes will then be
-/// able to proceed past the block height of the halt.
-const TOTAL_HALT_COUNT: u64 = 0;
-
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Returns true if the app parameters have been changed in this block.
-    fn app_params_updated(&self) -> bool {
-        self.community_pool_params_updated()
-            || self.distributions_params_updated()
-            || self.ibc_params_updated()
-            || self.fee_params_updated()
-            || self.funding_params_updated()
-            || self.governance_params_updated()
-            || self.sct_params_updated()
-            || self.shielded_pool_params_updated()
-            || self.stake_params_updated()
-    }
-
     async fn get_chain_id(&self) -> Result<String> {
         let raw_chain_id = self
             .get_raw(state_key::data::chain_id())
@@ -675,9 +614,12 @@ pub trait StateReadExt: StateRead {
         let sct_params = self.get_sct_params().await?;
         let shielded_pool_params = self.get_shielded_pool_params().await?;
         let stake_params = self.get_stake_params().await?;
+        let dex_params = self.get_dex_params().await?;
+        let auction_params = self.get_auction_params().await?;
 
         Ok(AppParameters {
             chain_id,
+            auction_params,
             community_pool_params,
             distributions_params,
             fee_params,
@@ -687,6 +629,7 @@ pub trait StateReadExt: StateRead {
             sct_params,
             shielded_pool_params,
             stake_params,
+            dex_params,
         })
     }
 
@@ -755,6 +698,46 @@ pub trait StateWriteExt: StateWrite {
             transactions_response.encode_to_vec(),
         );
         Ok(())
+    }
+
+    /// Writes the app parameters to the state.
+    ///
+    /// Each component stores its own parameters separately, so this method
+    /// splits up the provided parameters structure and writes it out to each component.
+    fn put_app_params(&mut self, params: AppParameters) {
+        // To make sure we don't forget to write any parts, destructure the entire params
+        let AppParameters {
+            chain_id,
+            auction_params,
+            community_pool_params,
+            distributions_params,
+            fee_params,
+            funding_params,
+            governance_params,
+            ibc_params,
+            sct_params,
+            shielded_pool_params,
+            stake_params,
+            dex_params,
+        } = params;
+
+        // Ignore writes to the chain_id
+        // TODO(erwan): we are momentarily not supporting chain_id changes
+        // until the IBC host chain changes land.
+        // See: https://github.com/penumbra-zone/penumbra/issues/3617#issuecomment-1917708221
+        std::mem::drop(chain_id);
+
+        self.put_auction_params(auction_params);
+        self.put_community_pool_params(community_pool_params);
+        self.put_distributions_params(distributions_params);
+        self.put_fee_params(fee_params);
+        self.put_funding_params(funding_params);
+        self.put_governance_params(governance_params);
+        self.put_ibc_params(ibc_params);
+        self.put_sct_params(sct_params);
+        self.put_shielded_pool_params(shielded_pool_params);
+        self.put_stake_params(stake_params);
+        self.put_dex_params(dex_params);
     }
 }
 

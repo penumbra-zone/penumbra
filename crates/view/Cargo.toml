@@ -51,6 +51,7 @@ penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
 penumbra-tct = {workspace = true, default-features = true}
 penumbra-transaction = {workspace = true, default-features = true}
+penumbra-auction = {workspace = true, default-features = true}
 prost = {workspace = true}
 r2d2 = {workspace = true}
 r2d2_sqlite = {workspace = true, features = ["bundled"]}
@@ -59,6 +60,7 @@ rand_core = {workspace = true, features = ["getrandom"]}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
 sha2 = {workspace = true}
+tap = {workspace = true}
 tendermint = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 tokio-stream = {workspace = true, features = ["sync"]}
@@ -66,3 +68,4 @@ tonic = {workspace = true}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true}
 url = {workspace = true}
+pbjson-types = { workspace = true }

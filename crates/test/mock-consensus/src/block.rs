@@ -1,10 +1,9 @@
 //! [`Builder`] facilities for constructing [`Block`]s.
 //!
-//! Builders are acquired by calling [`TestNode::block()`].
+//! Builders are acquired by calling [`TestNode::block()`], see [`TestNode`] for more information.
 
 use {
     crate::TestNode,
-    anyhow::bail,
     tap::Tap,
     tendermint::{
         account,
@@ -14,30 +13,46 @@ use {
         AppHash, Hash,
     },
     tower::{BoxError, Service},
-    tracing::{info, instrument},
+    tracing::{instrument, trace},
 };
 
-/// A builder, used to prepare and instantiate a new [`Block`].
+/// Interfaces for generating commit signatures.
+mod signature;
+
+/// A block builder.
 ///
-/// These are acquired by calling [`TestNode::block()`].
+/// A block builder can be used to prepare and instantiate a new [`Block`]. A block builder is
+/// acquired by calling [`TestNode::block()`]. This builder holds an exclusive reference to a
+/// [`TestNode`], so only one block may be built at once.
+///
+/// This builder can be consumed, executing the block against the [`TestNode`]'s consensus service,
+/// by calling [`Builder::execute()`].
 pub struct Builder<'e, C> {
     /// A unique reference to the test node.
     test_node: &'e mut TestNode<C>,
-
     /// Transaction data.
-    data: Option<Vec<Vec<u8>>>,
-
+    data: Vec<Vec<u8>>,
     /// Evidence of malfeasance.
     evidence: evidence::List,
+    /// The list of signatures.
+    signatures: Vec<block::CommitSig>,
 }
+
+// === impl TestNode ===
 
 impl<C> TestNode<C> {
     /// Returns a new [`Builder`].
-    pub fn block<'e>(&'e mut self) -> Builder<'e, C> {
+    ///
+    /// By default, signatures for all of the validators currently within the keyring will be
+    /// included in the block. Use [`Builder::with_signatures()`] to set a different set of
+    /// validator signatures.
+    pub fn block(&mut self) -> Builder<'_, C> {
+        let signatures = self.generate_signatures().collect();
         Builder {
             test_node: self,
             data: Default::default(),
             evidence: Default::default(),
+            signatures,
         }
     }
 }
@@ -47,10 +62,22 @@ impl<C> TestNode<C> {
 impl<'e, C> Builder<'e, C> {
     /// Sets the data for this block.
     pub fn with_data(self, data: Vec<Vec<u8>>) -> Self {
-        Self {
-            data: Some(data),
-            ..self
+        let Self { data: prev, .. } = self;
+
+        if !prev.is_empty() {
+            tracing::warn!(
+                count = %prev.len(),
+                "block builder overwriting transaction data, this may be a bug!"
+            );
         }
+
+        Self { data, ..self }
+    }
+
+    /// Appends the given tx to this block's data.
+    pub fn add_tx(mut self, tx: Vec<u8>) -> Self {
+        self.data.push(tx);
+        self
     }
 
     /// Sets the evidence [`List`][evidence::List] for this block.
@@ -58,8 +85,10 @@ impl<'e, C> Builder<'e, C> {
         Self { evidence, ..self }
     }
 
-    // TODO(kate): add more `with_` setters for fields in the header.
-    // TODO(kate): set some fields using state in the test node.
+    /// Sets the [`CommitSig`][block::CommitSig] commit signatures for this block.
+    pub fn with_signatures(self, signatures: Vec<block::CommitSig>) -> Self {
+        Self { signatures, ..self }
+    }
 }
 
 impl<'e, C> Builder<'e, C>
@@ -82,23 +111,27 @@ where
             header,
             data,
             evidence: _,
-            last_commit: _,
+            last_commit,
             ..
-        } = block.tap(|block| {
+        } = block.clone().tap(|block| {
             tracing::span::Span::current()
                 .record("height", block.header.height.value())
                 .record("time", block.header.time.unix_timestamp());
         });
+        let last_commit_info = Self::last_commit_info(last_commit);
 
-        info!("sending block");
-        test_node.begin_block(header).await?;
+        trace!("sending block");
+        test_node.begin_block(header, last_commit_info).await?;
         for tx in data {
             let tx = tx.into();
             test_node.deliver_tx(tx).await?;
         }
         test_node.end_block().await?;
         test_node.commit().await?;
-        info!("finished sending block");
+        trace!("finished sending block");
+
+        // If an `on_block` callback was set, call it now.
+        test_node.on_block.as_mut().map(move |f| f(block));
 
         Ok(())
     }
@@ -112,17 +145,15 @@ where
     fn finish(self) -> Result<(&'e mut TestNode<C>, Block), anyhow::Error> {
         tracing::trace!("building block");
         let Self {
-            data: Some(data),
+            data,
             evidence,
             test_node,
-        } = self
-        else {
-            bail!("builder was not fully initialized")
-        };
+            signatures,
+        } = self;
 
         let height = {
             let height = test_node.height.increment();
-            test_node.height = height.clone();
+            test_node.height = height;
             tracing::Span::current().record("height", height.value());
             height
         };
@@ -136,7 +167,7 @@ where
                 height,
                 round: Round::default(),
                 block_id,
-                signatures: Vec::default(),
+                signatures,
             })
         } else {
             None // The first block has no previous commit to speak of.

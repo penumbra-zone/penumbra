@@ -23,52 +23,109 @@ else
     exit 2
 fi
 
-# Additional sanity-check to ensure we're running in the proper CI context.
-if ! getent passwd | grep -q "^penumbra:" ; then
-    >&2 echo "ERROR: 'penumbra' user not found."
-    >&2 echo "This script should only be run within a dedicated CI box."
-    exit 3
-fi
+# Determine whether the version to be deployed constitutes a semver "patch" release,
+# e.g. 0.1.2 -> 0.1.3.
+function is_patch_release() {
+    local v
+    v="${1:-}"
+    shift 1
+    # Ensure version format is semver, otherwise fail.
+    if ! echo "$v" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+' ; then
+        return 1
+    fi
+    # Split on '.', inspect final field.
+    z="$(perl -F'\.' -lanE 'print $F[-1]' <<< "$v")"
+    # If "z" in x.y.z is 0, then it's a minor release. (Or a major release,
+    # but we don't need to worry about that yet.)
+    if [[ $z = "0" ]] ; then
+        return 2
+    else
+        return 0
+    fi
+}
 
-# Take down running service prior to maintenance.
-sudo systemctl stop cometbft penumbra
+function install_pd() {
+    # Pluck out recently built `pd` from packaged container.
+    # We reuse existing build artifacts to ensure what's deployed it what was built,
+    # and it has the nice benefit of being faster, because we don't have to rebuild
+    # the same gitref on a slower remote host.
+    echo "Fetching latest version of pd..."
+    container_img="ghcr.io/penumbra-zone/penumbra:${PENUMBRA_VERSION}"
+    podman pull "$container_img"
+    container_id="$(podman run --detach "$container_img" sleep infinity)"
+    f="$(mktemp)"
+    podman cp "${container_id}:/usr/bin/pd" "$f"
+    podman kill "$container_id"
+    sudo mv -v -f "$f" /usr/local/bin/pd
 
-# Pluck out recently built `pd` from packaged container.
-# We reuse existing build artifacts to ensure what's deployed it what was built,
-# and it has the nice benefit of being faster, because we don't have to rebuild
-# the same gitref on a slower remote host.
-# TODO: local container storage will grow indefinitely; only a problem for preview, but handle it.
-container_img="ghcr.io/penumbra-zone/penumbra:${PENUMBRA_VERSION}"
-podman pull "$container_img"
-container_id="$(podman run "$container_img" sleep infinity)"
-f="$(mktemp)"
-podman cp "${container_id}:/usr/bin/pd" "$f"
-podman kill "$container_id"
-sudo mv -v -f "$f" /usr/local/bin/pd
+    # Clean up container storage, which will grow indefinitely; mostly only a problem for preview,
+    # but we still don't want to fill up disks.
+    podman system prune --force
+}
 
-# Back up ACME dir, so we don't hit ratelimit requesting new certs.
-acme_cache="/home/penumbra/.penumbra/testnet_data/node0/pd/tokio_rustls_acme_cache"
-if [[ -d "$acme_cache" ]]; then
+# Reset pd and join a fresh network. This is mostly useful for deploying to preview.
+# For point-releases, we'll skip this logic. For chain upgrades, there's not yet
+# any special migration path, so the reset logic will still run then.
+function reset_pd_state() {
+    # Back up ACME dir, so we don't hit ratelimit requesting new certs.
     sudo rm -rf /opt/penumbra-ci
-    sudo mkdir -p /opt/penumbra-ci
-    sudo mv "$acme_cache" /opt/penumbra-ci/
-else
-    >&2 echo "ERROR: ACME cache directory not found: $acme_cache"
-    exit 4
-fi
+    acme_cache="/home/penumbra/.penumbra/testnet_data/node0/pd/tokio_rustls_acme_cache"
+    acme_cache_backup="/opt/penumbra-ci/$(basename "$acme_cache")"
+    if [[ -d "$acme_cache" ]]; then
+        echo "Backing up ACME certificate directory..."
+        sudo mkdir -p /opt/penumbra-ci
+        sudo mv "$acme_cache" "$acme_cache_backup"
+    else
+        >&2 echo "WARNING: ACME cache directory not found: $acme_cache"
+        # don't exit
+        # exit 4
+    fi
 
-# The pd operations must be run specifically as "penumbra" user.
-# Nuke state, rejoin.
-sudo -u penumbra pd testnet unsafe-reset-all
-sudo -u penumbra pd testnet join "$pd_bootstrap_url"
-# Restore ACME dir prior to service start
-sudo mv -v "/opt/penumbra-ci/$(basename "$acme_cache")" "$acme_cache"
-sudo chown -R penumbra: /home/penumbra/.penumbra
+    # The pd operations must be run specifically as "penumbra" user.
+    # Nuke state, rejoin.
+    echo "Resetting node state..."
+    sudo -u penumbra pd testnet unsafe-reset-all
+    # Using "oumuamua" has moniker to connote that this node is "out there", i.e. separate
+    # from the standard fullnode deployments, and also it's cutely technically a celestial body.
+    sudo -u penumbra pd testnet join --moniker oumuamua "$pd_bootstrap_url"
 
-# Bring service back up.
-sudo systemctl daemon-reload
-sudo systemctl restart penumbra cometbft
-# Verify that the services are in fact running, else exit non-zero.
-sleep 5
-sudo systemctl is-active penumbra
-sudo systemctl is-active cometbft
+    # ACME cache dir may not be present, e.g. on a first deploy.
+    if [[ -d "$acme_cache_backup" ]] ; then
+        echo "Restoring ACME dir prior to service start..."
+        sudo mv -v "$acme_cache_backup" "$acme_cache"
+    fi
+}
+
+function main() {
+    # Additional sanity-check to ensure we're running in the proper CI context.
+    if ! getent passwd | grep -q "^penumbra:" ; then
+        >&2 echo "ERROR: 'penumbra' user not found."
+        >&2 echo "This script should only be run within a dedicated CI box."
+        exit 3
+    fi
+
+    # Take down running service prior to maintenance.
+    echo "Stopping running services..."
+    sudo systemctl stop cometbft penumbra
+
+    install_pd
+
+    if ! is_patch_release "$PENUMBRA_VERSION" ; then
+        reset_pd_state
+    fi
+    sudo chown -R penumbra: /home/penumbra/.penumbra
+
+    # Bring service back up.
+    echo "Bringing services back up..."
+    sudo systemctl daemon-reload
+    sudo systemctl restart penumbra cometbft
+    echo "Verifying that the services are running:"
+    sleep 5
+    printf 'penumbra: '
+    sudo systemctl is-active penumbra
+    printf 'cometbft: '
+    sudo systemctl is-active cometbft
+}
+
+main
+exit 0

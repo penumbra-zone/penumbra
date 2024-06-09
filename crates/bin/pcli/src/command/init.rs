@@ -12,14 +12,14 @@ use url::Url;
 
 use crate::{
     command::utils::display_string_discreetly,
-    config::{CustodyConfig, PcliConfig},
+    config::{CustodyConfig, GovernanceCustodyConfig, PcliConfig},
     terminal::ActualTerminal,
 };
 
 #[derive(Debug, clap::Parser)]
 pub struct InitCmd {
     #[clap(subcommand)]
-    pub subcmd: InitSubCmd,
+    pub subcmd: InitTopSubCmd,
     /// The GRPC URL that will be used in the generated config.
     #[clap(
             long,
@@ -32,28 +32,50 @@ pub struct InitCmd {
             parse(try_from_str = Url::parse),
         )]
     grpc_url: Url,
+    /// For configs with spend authority, this will enable password encryption.
+    ///
+    /// This has no effect on a view only service.
+    #[clap(long, action)]
+    encrypted: bool,
 }
 
-#[derive(Debug, clap::Subcommand)]
-pub enum InitSubCmd {
-    /// Initialize `pcli` with a basic, file-based custody backend.
-    #[clap(subcommand, display_order = 100)]
-    SoftKms(SoftKmsInitCmd),
-    /// Initialize `pcli` with a manual threshold signing backend.
-    #[clap(subcommand, display_order = 150)]
-    Threshold(ThresholdInitCmd),
+#[derive(Debug, Clone, clap::Subcommand)]
+pub enum InitTopSubCmd {
+    #[clap(flatten)]
+    Spend(InitSubCmd),
     /// Initialize `pcli` in view-only mode, without spending keys.
     #[clap(display_order = 200)]
     ViewOnly {
         /// The full viewing key for the wallet to view.
         full_viewing_key: String,
     },
+    /// Initialize a separate validator governance key for an existing `pcli` configuration (this
+    /// option is only meaningful for validators).
+    #[clap(subcommand, display_order = 300)]
+    ValidatorGovernanceSubkey(InitSubCmd),
     /// Wipe all `pcli` configuration and data, INCLUDING KEYS.
     #[clap(display_order = 900)]
     UnsafeWipe {},
 }
 
-#[derive(Debug, clap::Subcommand)]
+#[derive(Debug, Clone, clap::Subcommand)]
+pub enum InitSubCmd {
+    /// Initialize using a basic, file-based custody backend.
+    #[clap(subcommand, display_order = 100)]
+    SoftKms(SoftKmsInitCmd),
+    /// Initialize using a manual threshold signing backend.
+    #[clap(subcommand, display_order = 150)]
+    Threshold(ThresholdInitCmd),
+    // This is not accessible directly by the user, because it's impermissible to initialize the
+    // governance subkey as view-only.
+    #[clap(skip, display_order = 200)]
+    ViewOnly { full_viewing_key: String },
+    /// If relevant, change the current config to an encrypted config, with a password.
+    #[clap(display_order = 800)]
+    ReEncrypt,
+}
+
+#[derive(Debug, Clone, clap::Subcommand)]
 pub enum SoftKmsInitCmd {
     /// Generate a new seed phrase and import its corresponding key.
     #[clap(display_order = 100)]
@@ -76,21 +98,25 @@ pub enum SoftKmsInitCmd {
 }
 
 impl SoftKmsInitCmd {
-    fn spend_key(&self) -> Result<SpendKey> {
+    fn spend_key(&self, init_type: InitType) -> Result<SpendKey> {
         Ok(match self {
             SoftKmsInitCmd::Generate { display_discreetly } => {
                 let seed_phrase = SeedPhrase::generate(OsRng);
-
                 if *display_discreetly {
                     display_string_discreetly(
                         &seed_phrase.to_string(),
                         "\n\n### SAVE YOUR PRIVATE SEED PHRASE IN A SAFE PLACE! DO NOT SHARE WITH ANYONE! PRESS ANY KEY TO COMPLETE. ###",
                     )?;
                 } else {
-                    // xxx: Something better should be done here, this is in danger of being
+                    // TODO: Something better should be done here, this is in danger of being
                     // shared by users accidentally in log output.
                     println!(
-                        "YOUR PRIVATE SEED PHRASE:\n{seed_phrase}\nSave this in a safe place!\nDO NOT SHARE WITH ANYONE!"
+                        "YOUR PRIVATE {}SEED PHRASE:\n\n  {seed_phrase}\n\nSave this in a safe place!\nDO NOT SHARE WITH ANYONE!\n",
+                        if let InitType::SpendKey = init_type {
+                            ""
+                        } else {
+                            "GOVERNANCE "
+                        },
                     );
                 }
 
@@ -129,7 +155,7 @@ impl SoftKmsInitCmd {
     }
 }
 
-#[derive(Debug, clap::Subcommand)]
+#[derive(Debug, Clone, clap::Subcommand)]
 pub enum ThresholdInitCmd {
     /// Use a centralized dealer to create config files for each signer.
     ///
@@ -158,93 +184,258 @@ pub enum ThresholdInitCmd {
     },
 }
 
-fn exec_deal(threshold: u16, home: Vec<Utf8PathBuf>, grpc_url: Url) -> Result<()> {
+fn exec_deal(
+    init_type: InitType,
+    threshold: u16,
+    home: Vec<Utf8PathBuf>,
+    grpc_url: Url,
+) -> Result<()> {
     if threshold < 2 {
         anyhow::bail!("threshold must be >= 2");
     }
     let n = home.len() as u16;
+
+    // Check before doing anything to make sure that files don't exist (spend key case) or that the
+    // governance key is missing in all of them (governance key case) -- we do this check first so
+    // that we don't write partial results if we would fail partway through (though we *also* check
+    // partway through to reduce chances of a race where we'd overwrite data)
+    for config_path in home.iter() {
+        let config_path = config_path.join(crate::CONFIG_FILE_NAME);
+        if let InitType::GovernanceKey = init_type {
+            let config = PcliConfig::load(&config_path)?;
+            if config.governance_custody.is_some() {
+                anyhow::bail!(
+                    "governance key already exists in config file at {:?}; refusing to overwrite it",
+                    config_path
+                );
+            }
+        } else if config_path.exists() {
+            anyhow::bail!(
+                "config file already exists at {:?}; refusing to overwrite it",
+                config_path
+            );
+        }
+    }
+
     println!("Generating {}-of-{} threshold config.", threshold, n);
     let configs = threshold::Config::deal(&mut OsRng, threshold, n)?;
     println!("Writing dealt config files...");
-    for (i, (config, path)) in configs.into_iter().zip(home.iter()).enumerate() {
+    for (i, (config, config_path)) in configs.into_iter().zip(home.iter()).enumerate() {
         let full_viewing_key = config.fvk().clone();
-        let config = PcliConfig {
-            custody: CustodyConfig::Threshold(config),
-            full_viewing_key,
-            grpc_url: grpc_url.clone(),
-            view_url: None,
-            disable_warning: false,
+
+        let config = if let InitType::SpendKey = init_type {
+            PcliConfig {
+                custody: CustodyConfig::Threshold(config),
+                full_viewing_key,
+                grpc_url: grpc_url.clone(),
+                view_url: None,
+                disable_warning: false,
+                governance_custody: None,
+            }
+        } else {
+            let mut pcli_config = PcliConfig::load(config_path.join(crate::CONFIG_FILE_NAME))?;
+            if pcli_config.governance_custody.is_some() {
+                anyhow::bail!(
+                    "governance key already exists in config file at {:?}; refusing to overwrite it",
+                    config_path
+                );
+            }
+            pcli_config.governance_custody = Some(GovernanceCustodyConfig::Threshold(config));
+            pcli_config
         };
-        println!("  Writing signer {} config to {}", i, path);
-        std::fs::create_dir_all(path)?;
-        config.save(path.join(crate::CONFIG_FILE_NAME))?;
+
+        println!("  Writing signer {} config to {}", i, config_path);
+        std::fs::create_dir_all(config_path)?;
+        config.save(config_path.join(crate::CONFIG_FILE_NAME))?;
     }
     Ok(())
 }
 
+/// Which kind of initialization are we doing?
+#[derive(Clone, Copy)]
+enum InitType {
+    /// Initialize from scratch with a spend key.
+    SpendKey,
+    /// Add a governance key to an existing configuration.
+    GovernanceKey,
+}
+
 impl InitCmd {
     pub async fn exec(&self, home_dir: impl AsRef<camino::Utf8Path>) -> Result<()> {
-        if let InitSubCmd::Threshold(ThresholdInitCmd::Deal { threshold, home }) = &self.subcmd {
-            exec_deal(threshold.clone(), home.clone(), self.grpc_url.clone())?;
+        let (init_type, subcmd) = match self.subcmd.clone() {
+            InitTopSubCmd::Spend(subcmd) => (InitType::SpendKey, subcmd),
+            InitTopSubCmd::ValidatorGovernanceSubkey(subcmd) => (InitType::GovernanceKey, subcmd),
+            InitTopSubCmd::ViewOnly { full_viewing_key } => (
+                InitType::SpendKey,
+                InitSubCmd::ViewOnly { full_viewing_key },
+            ),
+            InitTopSubCmd::UnsafeWipe {} => {
+                println!("Deleting all data in {}...", home_dir.as_ref());
+                std::fs::remove_dir_all(home_dir.as_ref())?;
+                return Ok(());
+            }
+        };
+
+        if let InitSubCmd::Threshold(ThresholdInitCmd::Deal { threshold, home }) = &subcmd {
+            exec_deal(
+                init_type,
+                threshold.clone(),
+                home.clone(),
+                self.grpc_url.clone(),
+            )?;
             return Ok(());
         }
         let home_dir = home_dir.as_ref();
 
-        match &self.subcmd {
-            InitSubCmd::UnsafeWipe {} => {
-                println!("Deleting all data in {}...", home_dir);
-                std::fs::remove_dir_all(home_dir)?;
-                return Ok(());
+        let existing_config = {
+            let config_path = home_dir.join(crate::CONFIG_FILE_NAME);
+            if config_path.exists() {
+                Some(PcliConfig::load(config_path)?)
+            } else {
+                None
             }
-            _ => {
-                // Check that the data_dir is empty before running init:
-                if home_dir.exists() && home_dir.read_dir()?.next().is_some() {
-                    anyhow::bail!(
-                        "home directory {:?} is not empty; refusing to initialize",
-                        home_dir
-                    );
-                }
-            }
-        }
+        };
+        let relevant_config_exists = match &init_type {
+            InitType::SpendKey => existing_config.is_some(),
+            InitType::GovernanceKey => existing_config
+                .as_ref()
+                .is_some_and(|x| x.governance_custody.is_some()),
+        };
 
-        let (full_viewing_key, custody) = match &self.subcmd {
-            InitSubCmd::UnsafeWipe {} => unreachable!("this case is handled above"),
-            InitSubCmd::SoftKms(cmd) => {
-                let spend_key = cmd.spend_key()?;
+        let (full_viewing_key, custody) = match (&init_type, &subcmd, relevant_config_exists) {
+            (_, InitSubCmd::SoftKms(cmd), false) => {
+                let spend_key = cmd.spend_key(init_type)?;
                 (
                     spend_key.full_viewing_key().clone(),
-                    CustodyConfig::SoftKms(spend_key.into()),
+                    if self.encrypted {
+                        let password = ActualTerminal.get_confirmed_password().await?;
+                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                            &password,
+                            penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key.into()),
+                        )?)
+                    } else {
+                        CustodyConfig::SoftKms(spend_key.into())
+                    },
                 )
             }
-            InitSubCmd::Threshold(ThresholdInitCmd::Dkg {
-                threshold,
-                num_participants,
-            }) => {
+            (
+                _,
+                InitSubCmd::Threshold(ThresholdInitCmd::Dkg {
+                    threshold,
+                    num_participants,
+                }),
+                false,
+            ) => {
                 let config = threshold::dkg(*threshold, *num_participants, &ActualTerminal).await?;
-                (config.fvk().clone(), CustodyConfig::Threshold(config))
+                let fvk = config.fvk().clone();
+                let custody_config = if self.encrypted {
+                    let password = ActualTerminal.get_confirmed_password().await?;
+                    CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                        &password,
+                        penumbra_custody::encrypted::InnerConfig::Threshold(config),
+                    )?)
+                } else {
+                    CustodyConfig::Threshold(config)
+                };
+                (fvk, custody_config)
             }
-            InitSubCmd::Threshold(ThresholdInitCmd::Deal { .. }) => {
-                panic!("this should already have been handled above")
+            (_, InitSubCmd::Threshold(ThresholdInitCmd::Deal { .. }), _) => {
+                unreachable!("this should already have been handled above")
             }
-            InitSubCmd::ViewOnly { full_viewing_key } => {
+            (InitType::SpendKey, InitSubCmd::ViewOnly { full_viewing_key }, false) => {
                 let full_viewing_key = full_viewing_key.parse()?;
                 (full_viewing_key, CustodyConfig::ViewOnly)
             }
+            (InitType::GovernanceKey, InitSubCmd::ViewOnly { .. }, false) => {
+                unreachable!("governance keys can't be initialized in view-only mode")
+            }
+            (typ, InitSubCmd::ReEncrypt, true) => {
+                let config = existing_config.expect("the config should exist in this branch");
+                let fvk = config.full_viewing_key;
+                let custody = match typ {
+                    InitType::SpendKey => config.custody,
+                    InitType::GovernanceKey => match config
+                        .governance_custody
+                        .expect("the governence custody should exist in this branch")
+                    {
+                        GovernanceCustodyConfig::SoftKms(c) => CustodyConfig::SoftKms(c),
+                        GovernanceCustodyConfig::Threshold(c) => CustodyConfig::Threshold(c),
+                        GovernanceCustodyConfig::Encrypted { config, .. } => {
+                            CustodyConfig::Encrypted(config)
+                        }
+                    },
+                };
+                let custody = match custody {
+                    x @ CustodyConfig::ViewOnly => x,
+                    x @ CustodyConfig::Encrypted(_) => x,
+                    CustodyConfig::SoftKms(spend_key) => {
+                        let password = ActualTerminal.get_confirmed_password().await?;
+                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                            &password,
+                            penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key),
+                        )?)
+                    }
+                    CustodyConfig::Threshold(c) => {
+                        let password = ActualTerminal.get_confirmed_password().await?;
+                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                            &password,
+                            penumbra_custody::encrypted::InnerConfig::Threshold(c),
+                        )?)
+                    }
+                };
+                (fvk, custody)
+            }
+            (_, InitSubCmd::ReEncrypt, false) => {
+                anyhow::bail!("re-encrypt requires existing config to exist",);
+            }
+            (InitType::SpendKey, _, true) => {
+                anyhow::bail!(
+                    "home directory {:?} is not empty; refusing to initialize",
+                    home_dir
+                );
+            }
+            (InitType::GovernanceKey, _, true) => {
+                anyhow::bail!(
+                        "governance key already exists in config file at {:?}; refusing to overwrite it",
+                        home_dir
+                    );
+            }
         };
 
-        let config = PcliConfig {
-            custody,
-            full_viewing_key,
-            grpc_url: self.grpc_url.clone(),
-            view_url: None,
-            disable_warning: false,
+        let config = if let InitType::SpendKey = init_type {
+            PcliConfig {
+                custody,
+                full_viewing_key,
+                grpc_url: self.grpc_url.clone(),
+                view_url: None,
+                disable_warning: false,
+                governance_custody: None,
+            }
+        } else {
+            let config_path = home_dir.join(crate::CONFIG_FILE_NAME);
+            let mut config = PcliConfig::load(config_path)?;
+            let governance_custody = match custody {
+                CustodyConfig::SoftKms(config) => GovernanceCustodyConfig::SoftKms(config),
+                CustodyConfig::Threshold(config) => GovernanceCustodyConfig::Threshold(config),
+                CustodyConfig::Encrypted(config) => GovernanceCustodyConfig::Encrypted {
+                    fvk: full_viewing_key,
+                    config,
+                },
+                _ => unreachable!("governance keys can't be initialized in view-only mode"),
+            };
+            config.governance_custody = Some(governance_custody);
+            config
         };
-
-        // Create the config directory, if
 
         let config_path = home_dir.join(crate::CONFIG_FILE_NAME);
-        println!("Writing generated configs to {}", config_path);
+        println!("Writing generated config to {}", config_path);
         config.save(config_path)?;
+
+        if let InitType::GovernanceKey = init_type {
+            println!("\nIf you defined a validator on-chain before initializing this separate governance subkey, you need to update its definition to use your new public governance key:\n");
+            println!("  governance_key = \"{}\"", config.governance_key());
+            println!("\nUntil you do this, your validator will not be able to vote on governance proposals, so it's best to do it at your earliest convenience.")
+        }
 
         Ok(())
     }

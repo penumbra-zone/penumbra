@@ -1,14 +1,16 @@
-use anyhow::{Context, Result};
+use crate::{
+    component::{
+        action_handler::ActionHandler, validator_handler::ValidatorDataRead,
+        validator_handler::ValidatorManager,
+    },
+    rate::RateData,
+    validator,
+};
+use anyhow::{ensure, Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_sct::component::clock::EpochRead;
-
+use decaf377_rdsa::VerificationKey;
 use penumbra_proto::DomainType;
-
-use crate::{
-    component::action_handler::ActionHandler, component::validator_handler::ValidatorDataRead,
-    component::validator_handler::ValidatorManager, rate::RateData, validator,
-};
 
 #[async_trait]
 impl ActionHandler for validator::Definition {
@@ -33,12 +35,19 @@ impl ActionHandler for validator::Definition {
             anyhow::bail!("validators can declare at most 8 funding streams")
         }
 
+        // This prevents an attacker who compromises a validator identity signing key from locking
+        // the validator in an enabled state permanently, instead making it so that the original
+        // operator always has the option of disabling the validator permanently, regardless of what
+        // the attacker does. This reduces the incentive to steal compromise validator signing keys,
+        // because it reduces the expected payoff of such a compromise.
+        if self.validator.sequence_number == u32::MAX && self.validator.enabled {
+            anyhow::bail!("validators must be disabled when their lifetime is over")
+        }
+
         // Then, we check the signature:
         let definition_bytes = self.validator.encode_to_vec();
-        self.validator
-            .identity_key
-            .0
-            .verify(&definition_bytes, &self.auth_sig)
+        VerificationKey::try_from(self.validator.identity_key.0)
+            .and_then(|vk| vk.verify(&definition_bytes, &self.auth_sig))
             .context("validator definition signature failed to verify")?;
 
         let total_funding_bps = self
@@ -59,88 +68,77 @@ impl ActionHandler for validator::Definition {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        // These checks all formerly happened in the `check_historical` method,
+        // These checks all formerly happened in the `check_stateful` method,
         // if profiling shows that they cause a bottleneck we could (CAREFULLY)
         // move some of them back.
-
-        let v = self;
+        let new_validator = &self.validator;
 
         // Check that the sequence numbers of the updated validators is correct...
         // Check whether we are redefining an existing validator.
-        if let Some(existing_v) = state
-            .get_validator_definition(&v.validator.identity_key)
-            .await?
-        {
+        let prev_definition = state
+            .get_validator_definition(&new_validator.identity_key)
+            .await?;
+
+        if let Some(prev_validator) = &prev_definition {
             // Ensure that the highest existing sequence number is less than
             // the new sequence number.
-            let current_seq = existing_v.sequence_number;
-            if v.validator.sequence_number <= current_seq {
-                anyhow::bail!(
-                    "expected sequence numbers to be increasing: current sequence number is {}",
-                    current_seq
-                );
-            }
+            // Ensure that the sequence number keeps increasing.
+            let old_seq = prev_validator.sequence_number;
+            let new_seq = new_validator.sequence_number;
+            ensure!(
+                new_seq > old_seq,
+                "definition sequence number must increase (given {}, but previous definition sequence number is {})",
+                new_seq,
+                old_seq,
+            );
         }
 
-        // Check whether the consensus key has already been used by another validator.
-        if let Some(existing_v) = state
-            .get_validator_by_consensus_key(&v.validator.consensus_key)
+        // Check if the consensus key is known, and if so, that it is by the
+        // validator that declares it in this definition.
+        if let Some(ck_owner) = state
+            .get_validator_definition_by_consensus_key(&new_validator.consensus_key)
             .await?
         {
-            if v.validator.identity_key != existing_v.identity_key {
-                // This is a new validator definition, but the consensus key it declares
-                // is used by another validator. We MUST reject this definition:
-                //
-                // 1. It prevents someone from declaring an (app-level) validator that
-                // "piggybacks" on the actual behavior of someone else's validator.
-                //
-                // 2. If we submit a validator update to Tendermint that
-                // includes duplicate consensus keys, Tendermint gets confused
-                // and hangs.
-                anyhow::bail!(
-                    "consensus key {:?} is already in use by validator {}",
-                    v.validator.consensus_key,
-                    existing_v.identity_key,
-                );
-            }
+            // If we detect that the new definition tries to squat someone else's
+            // consensus key, we MUST reject this definition:
+            //
+            // 1. It prevents someone from declaring an (app-level) validator that
+            // "piggybacks" on the actual behavior of someone else's validator.
+            //
+            // 2. If we submit a validator update to CometBFT that
+            // includes duplicate consensus keys, CometBFT gets confused
+            // and hangs.
+            ensure!(
+                ck_owner.identity_key == new_validator.identity_key,
+                "consensus key {:?} is already in use by validator {}",
+                new_validator.consensus_key,
+                ck_owner.identity_key,
+            );
         }
 
-        // (end of former check_historical impl)
-
-        let v = self;
-
-        let current_epoch = state
-            .get_current_epoch()
-            .await
-            .context("should be able to get current epoch during validator definition execution")?;
-
-        let validator_exists = state
-            .get_validator_definition(&v.validator.identity_key)
-            .await
-            .context("should be able to fetch validator during validator definition execution")?
-            .is_some();
-
-        if validator_exists {
+        /* ------------ execution ----------- */
+        // If the validator is already defined, we update the definition.
+        // Otherwise, we add the new validator and "prime" its state.
+        if prev_definition.is_some() {
             state
-                .update_validator_definition(v.validator.clone())
+                .update_validator_definition(new_validator.clone())
                 .await
                 .context(
                     "should be able to update validator during validator definition execution",
                 )?;
         } else {
-            // This is a new validator definition. We prime the validator's
-            // rate data with an initial exchange rate of 1:1.
-            let validator_key = v.validator.identity_key;
+            let validator_key = new_validator.identity_key;
 
+            // The validator starts with a reward rate of 0 and an exchange rate
+            // of 1, expressed in bps^2 (i.e. 1_0000_0000 is 1.0).
             let initial_rate_data = RateData {
                 identity_key: validator_key,
-                epoch_index: current_epoch.index,
                 validator_reward_rate: 0u128.into(),
-                validator_exchange_rate: 1_0000_0000u128.into(), // 1 represented as 1e8
+                validator_exchange_rate: 1_0000_0000u128.into(),
             };
 
             state
-                .add_validator(v.validator.clone(), initial_rate_data)
+                .add_validator(new_validator.clone(), initial_rate_data)
                 .await
                 .context("should be able to add validator during validator definition execution")?;
         }

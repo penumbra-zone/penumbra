@@ -1,0 +1,222 @@
+syntax = "proto3";
+package penumbra.core.component.auction.v1;
+
+import "google/protobuf/any.proto";
+import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/dex/v1/dex.proto";
+import "penumbra/core/num/v1/num.proto";
+
+// The configuration parameters for the auction component.
+message AuctionParameters {}
+
+// Genesis data for the auction component.
+message GenesisContent {
+  // The configuration parameters for the auction component at genesis.
+  AuctionParameters params = 1;
+}
+
+// Query operations for the auction component.
+service QueryService {
+  // Get the current state of an auction by ID.
+  rpc AuctionStateById(AuctionStateByIdRequest) returns (AuctionStateByIdResponse);
+  // Get the current state of a group of auctions by ID.
+  rpc AuctionStateByIds(AuctionStateByIdsRequest) returns (stream AuctionStateByIdsResponse);
+}
+
+message AuctionStateByIdRequest {
+  AuctionId id = 1;
+}
+
+message AuctionStateByIdResponse {
+  // If present, the state of the auction. If not present, no such auction is known.
+  google.protobuf.Any auction = 2;
+  // The state of any DEX positions relevant to the returned auction.
+  //
+  // Could be empty, depending on the auction state.
+  repeated core.component.dex.v1.Position positions = 3;
+}
+
+message AuctionStateByIdsRequest {
+  // The auction IDs to request. Only known IDs will be returned in the response.
+  repeated AuctionId id = 1;
+}
+
+message AuctionStateByIdsResponse {
+  // The auction ID of the returned auction.
+  AuctionId id = 1;
+  // The state of the returned auction.
+  DutchAuctionState auction = 2;
+  // The state of any DEX positions relevant to the returned auction.
+  //
+  // Could be empty, depending on the auction state.
+  repeated core.component.dex.v1.Position positions = 3;
+}
+
+// A unique identifier for an auction, obtained from hashing a domain separator
+// along with the immutable part of an auction description.
+message AuctionId {
+  bytes inner = 1;
+}
+
+// A bearer NFT tracking ownership of an auction and its proceeds.
+message AuctionNft {
+  AuctionId id = 1;
+  uint64 seq = 2;
+}
+
+// Describes a Dutch auction using programmatic liquidity on the DEX.
+message DutchAuctionDescription {
+  // The value the seller wishes to auction.
+  asset.v1.Value input = 1;
+  // The asset ID of the target asset the seller wishes to acquire.
+  asset.v1.AssetId output_id = 2;
+  // The maximum output the seller can receive.
+  //
+  // This implicitly defines the starting price for the auction.
+  num.v1.Amount max_output = 3;
+  // The minimum output the seller is willing to receive.
+  //
+  // This implicitly defines the ending price for the auction.
+  num.v1.Amount min_output = 4;
+  // The block height at which the auction begins.
+  //
+  // This allows the seller to schedule an auction at a future time.
+  uint64 start_height = 5;
+  // The block height at which the auction ends.
+  //
+  // Together with `start_height`, `max_output`, and `min_output`,
+  // this implicitly defines the speed of the auction.
+  uint64 end_height = 6;
+  // The number of discrete price steps to use for the auction.
+  //
+  // `end_height - start_height` must be a multiple of `step_count`.
+  uint64 step_count = 7;
+  // A random nonce used to allow identical auctions to have
+  // distinct auction IDs.
+  bytes nonce = 8;
+}
+
+message DutchAuctionState {
+  // The sequence number of the auction state.
+  //
+  // Dutch auctions move from:
+  // 0 (opened) => 1 (closed) => n (withdrawn)
+  uint64 seq = 1;
+  // If present, the current position controlled by this auction.
+  dex.v1.PositionId current_position = 2;
+  // If present, the next trigger height to step down the price.
+  uint64 next_trigger = 3;
+  // The amount of the input asset directly owned by the auction.
+  //
+  // The auction may also own the input asset indirectly,
+  // via the reserves of `current_position` if it exists.
+  num.v1.Amount input_reserves = 4;
+  // The amount of the output asset directly owned by the auction.
+  //
+  // The auction may also own the output asset indirectly,
+  // via the reserves of `current_position` if it exists.
+  num.v1.Amount output_reserves = 5;
+}
+
+message DutchAuction {
+  // The immutable data describing the auction and its auction ID.
+  DutchAuctionDescription description = 1;
+  // The mutable data describing the auction's execution.
+  DutchAuctionState state = 2;
+}
+
+// Initiates a Dutch auction using protocol-controlled liquidity.
+message ActionDutchAuctionSchedule {
+  DutchAuctionDescription description = 1;
+}
+
+// Terminate the auction associated with the specified `auction_id`
+message ActionDutchAuctionEnd {
+  // The auction to end.
+  AuctionId auction_id = 1;
+}
+
+// Withdraw funds from the ended auction associated with the specified `auction_id`
+message ActionDutchAuctionWithdraw {
+  // The auction to withdraw funds from.
+  AuctionId auction_id = 1;
+  // The sequence number of the withdrawal.
+  uint64 seq = 2;
+  // A transparent (zero blinding factor) commitment to the
+  // auction's final reserves.
+  //
+  // The chain will check this commitment by recomputing it
+  // with the on-chain state.
+  asset.v1.BalanceCommitment reserves_commitment = 3;
+}
+
+// A plan to a `ActionDutchAuctionWithdraw` which contains both private and public data.
+message ActionDutchAuctionWithdrawPlan {
+  AuctionId auction_id = 1;
+  uint64 seq = 2;
+  asset.v1.Value reserves_input = 3;
+  asset.v1.Value reserves_output = 4;
+}
+
+// An `ActionDutchAuctionSchedule` augmented with additional metadata.
+message ActionDutchAuctionScheduleView {
+  ActionDutchAuctionSchedule action = 1;
+  AuctionId auction_id = 2;
+  asset.v1.Metadata input_metadata = 3;
+  asset.v1.Metadata output_metadata = 4;
+}
+
+// An `ActionDutchAuctionWithdraw` augmented with additional metadata.
+message ActionDutchAuctionWithdrawView {
+  ActionDutchAuctionWithdraw action = 1;
+  // A sequence of values that sum together to the provided
+  // reserves commitment.
+  repeated asset.v1.ValueView reserves = 2;
+}
+
+message EventDutchAuctionScheduled {
+  AuctionId auction_id = 1;
+  DutchAuctionDescription description = 2;
+}
+
+message EventDutchAuctionUpdated {
+  AuctionId auction_id = 1;
+  DutchAuctionState state = 2;
+}
+
+message EventDutchAuctionEnded {
+  // The reason the auction ended.
+  enum Reason {
+    REASON_UNSPECIFIED = 0;
+    // The auction ended due to reaching its terminal height.
+    REASON_EXPIRED = 1;
+    // The auction ran out of reserves.
+    REASON_FILLED = 2;
+    // The auction ended was terminated by the initiator.
+    REASON_CLOSED_BY_OWNER = 3;
+  }
+
+  AuctionId auction_id = 1;
+  DutchAuctionState state = 2;
+  Reason reason = 3;
+}
+
+// A message emitted when value flows *into* the auction component.
+message EventValueCircuitBreakerCredit {
+  // The asset ID being deposited into the Auction component.
+  asset.v1.AssetId asset_id = 1;
+  // The previous balance of the asset in the Auction component.
+  num.v1.Amount previous_balance = 2;
+  // The new balance of the asset in the Auction component.
+  num.v1.Amount new_balance = 3;
+}
+
+// A message emitted when value flows *out* of the auction component.
+message EventValueCircuitBreakerDebit {
+  // The asset ID being deposited into the Auction component.
+  asset.v1.AssetId asset_id = 1;
+  // The previous balance of the asset in the Auction component.
+  num.v1.Amount previous_balance = 2;
+  // The new balance of the asset in the Auction component.
+  num.v1.Amount new_balance = 3;
+}

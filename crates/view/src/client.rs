@@ -2,6 +2,8 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
+use pbjson_types::Any;
+use penumbra_auction::auction::AuctionId;
 use tonic::{codegen::Bytes, Streaming};
 use tracing::instrument;
 
@@ -11,7 +13,7 @@ use penumbra_asset::{
     ValueView,
 };
 use penumbra_dex::{
-    lp::position::{self},
+    lp::position::{self, Position},
     TradingPair,
 };
 use penumbra_fee::GasPrices;
@@ -48,6 +50,29 @@ pub(crate) type BroadcastStatusStream = Pin<
 ///   enforce that it is a tower `Service`.
 #[allow(clippy::type_complexity)]
 pub trait ViewClient {
+    /// Query the auction state
+    fn auctions(
+        &mut self,
+        account_filter: Option<AddressIndex>,
+        include_inactive: bool,
+        query_latest_state: bool,
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = Result<
+                        Vec<(
+                            AuctionId,
+                            SpendableNoteRecord,
+                            u64,
+                            Option<Any>,
+                            Vec<Position>,
+                        )>,
+                    >,
+                > + Send
+                + 'static,
+        >,
+    >;
+
     /// Get the current status of chain sync.
     fn status(
         &mut self,
@@ -301,6 +326,13 @@ pub trait ViewClient {
         &mut self,
         address_index: AddressIndex,
     ) -> Pin<Box<dyn Future<Output = Result<Address>> + Send + 'static>>;
+
+    /// Queries for the index of a provided address, returning `None` if not
+    /// controlled by the view service's FVK.
+    fn index_by_address(
+        &mut self,
+        address: Address,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<AddressIndex>>> + Send + 'static>>;
 
     /// Queries for unclaimed Swaps.
     fn unclaimed_swaps(
@@ -844,6 +876,26 @@ where
         .boxed()
     }
 
+    fn index_by_address(
+        &mut self,
+        address: Address,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<AddressIndex>>> + Send + 'static>> {
+        let mut self2 = self.clone();
+        async move {
+            let index = self2.index_by_address(tonic::Request::new(pb::IndexByAddressRequest {
+                address: Some(address.into()),
+            }));
+            let index = index
+                .await?
+                .into_inner()
+                .address_index
+                .map(|index| index.try_into())
+                .transpose()?;
+            Ok(index)
+        }
+        .boxed()
+    }
+
     fn witness_and_build(
         &mut self,
         transaction_plan: TransactionPlan,
@@ -912,6 +964,89 @@ where
                     }
                 })
                 .collect()
+        }
+        .boxed()
+    }
+
+    fn auctions(
+        &mut self,
+        account_filter: Option<AddressIndex>,
+        include_inactive: bool,
+        query_latest_state: bool,
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = Result<
+                        Vec<(
+                            AuctionId,
+                            SpendableNoteRecord,
+                            u64,
+                            Option<Any>,
+                            Vec<Position>,
+                        )>,
+                    >,
+                > + Send
+                + 'static,
+        >,
+    > {
+        let mut client = self.clone();
+        async move {
+            let request = tonic::Request::new(pb::AuctionsRequest {
+                account_filter: account_filter.map(Into::into),
+                include_inactive,
+                query_latest_state,
+                auction_ids_filter: Vec::new(), // TODO: Support `auction_ids_filter`
+            });
+
+            let auctions: Vec<pb::AuctionsResponse> =
+                ViewServiceClient::auctions(&mut client, request)
+                    .await?
+                    .into_inner()
+                    .try_collect()
+                    .await?;
+
+            let resp: Vec<(
+                AuctionId,
+                SpendableNoteRecord,
+                u64,
+                Option<Any>,
+                Vec<Position>,
+            )> = auctions
+                .into_iter()
+                .map(|auction_rsp| {
+                    let pb_id = auction_rsp
+                        .id
+                        .ok_or_else(|| anyhow::anyhow!("missing auction id"))?;
+                    let auction_id: AuctionId = pb_id.try_into()?;
+                    let snr: SpendableNoteRecord = auction_rsp
+                        .note_record
+                        .ok_or_else(|| anyhow::anyhow!("missing SNR from auction response"))?
+                        .try_into()?;
+
+                    let local_seq = auction_rsp.local_seq;
+
+                    let auction = auction_rsp.auction;
+                    let lps: Vec<Position> = auction_rsp
+                        .positions
+                        .into_iter()
+                        .map(TryInto::try_into)
+                        .collect::<Result<Vec<_>>>()?;
+
+                    Ok::<
+                        (
+                            AuctionId,
+                            SpendableNoteRecord,
+                            u64, /* the local sequence number */
+                            Option<Any>, /* the auction state if it was requested */
+                            Vec<Position>, /* associated liquidity positions if we queried the latest state */
+                        ),
+                        anyhow::Error,
+                    >((auction_id, snr, local_seq, auction, lps))
+                })
+                .filter_map(|res| res.ok()) // TODO: scrap this later.
+                .collect();
+
+            Ok(resp)
         }
         .boxed()
     }

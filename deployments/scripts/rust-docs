@@ -38,11 +38,13 @@ cargo +nightly doc --no-deps \
   -p penumbra-dex \
   -p penumbra-distributions \
   -p penumbra-fee \
-  -p penumbra-genesis \
   -p penumbra-governance \
   -p penumbra-ibc \
   -p penumbra-keys \
   -p penumbra-measure \
+  -p penumbra-mock-consensus \
+  -p penumbra-mock-tendermint-proxy \
+  -p penumbra-mock-client \
   -p penumbra-num \
   -p penumbra-proof-params \
   -p penumbra-proof-setup \

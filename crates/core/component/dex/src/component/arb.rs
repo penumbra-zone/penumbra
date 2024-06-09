@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::component::metrics;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateDelta, StateWrite};
@@ -8,42 +9,33 @@ use penumbra_proto::StateWriteProto as _;
 use penumbra_sct::component::clock::EpochRead;
 use tracing::instrument;
 
-use crate::{event, ExecutionCircuitBreaker, SwapExecution};
-
-use super::{
-    router::{RouteAndFill, RoutingParams},
-    StateWriteExt,
+use crate::{
+    component::{ExecutionCircuitBreaker, InternalDexWrite, ValueCircuitBreaker},
+    event, SwapExecution,
 };
+
+use super::router::{RouteAndFill, RoutingParams};
 
 #[async_trait]
 pub trait Arbitrage: StateWrite + Sized {
     /// Attempts to extract as much as possible of the `arb_token` from the available
     /// liquidity positions, and returns the amount of `arb_token` extracted.
-    #[instrument(skip(self, arb_token, fixed_candidates))]
+    #[instrument(skip(self, arb_token, routing_params))]
     async fn arbitrage(
         self: &mut Arc<Self>,
         arb_token: asset::Id,
-        fixed_candidates: Vec<asset::Id>,
-    ) -> Result<Value>
+        routing_params: RoutingParams,
+    ) -> Result<Option<Value>>
     where
         Self: 'static,
     {
-        tracing::debug!(?arb_token, ?fixed_candidates, "beginning arb search");
+        tracing::debug!(?arb_token, ?routing_params, "beginning arb search");
         let arb_start = std::time::Instant::now();
 
         // Work in a new `StateDelta`, so we can transactionally apply any state
         // changes, and roll them back if we fail (e.g., if for some reason we
         // discover at the end that the arb wasn't profitable).
         let mut this = Arc::new(StateDelta::new(self.clone()));
-
-        // TODO: Build an extended candidate set with:
-        // - both ends of all trading pairs for which there were swaps in the block
-        // - both ends of all trading pairs for which positions were opened
-        let params = RoutingParams {
-            max_hops: 5,
-            price_limit: Some(1u64.into()),
-            fixed_candidates: Arc::new(fixed_candidates),
-        };
 
         // Create a flash-loan 2^64 of the arb token to ourselves.
         let flash_loan = Value {
@@ -57,7 +49,7 @@ pub trait Arbitrage: StateWrite + Sized {
                 arb_token,
                 arb_token,
                 flash_loan.amount,
-                params,
+                routing_params,
                 execution_circuit_breaker,
             )
             .await?;
@@ -67,6 +59,11 @@ pub trait Arbitrage: StateWrite + Sized {
             .amount
             .checked_sub(&filled_input)
             .expect("filled input should always be <= flash loan amount");
+
+        // Record the duration of the arb execution now, since we've computed it
+        // and we might return early if it's zero-valued, but in that case we still
+        // want to record how long we spent looking for it.
+        metrics::histogram!(metrics::DEX_ARB_DURATION).record(arb_start.elapsed());
 
         // Because we're trading the arb token to itself, the total output is the
         // output from the route-and-fill, plus the unfilled input.
@@ -78,28 +75,22 @@ pub trait Arbitrage: StateWrite + Sized {
             // guarantees about forward progress over precise application of
             // price limits, it technically could occur.
             tracing::debug!("mis-estimation in route-and-fill led to unprofitable arb, discarding");
-            return Ok(Value {
-                amount: 0u64.into(),
-                asset_id: arb_token,
-            });
+            return Ok(None);
         };
 
         if arb_profit == 0u64.into() {
             // If we didn't make any profit, we don't need to do anything,
             // and we can just discard the state delta entirely.
             tracing::debug!("found 0-profit arb, discarding");
-            return Ok(Value {
-                amount: 0u64.into(),
-                asset_id: arb_token,
-            });
+            return Ok(None);
         } else {
-            tracing::info!(
+            tracing::debug!(
                 ?filled_input,
                 ?output,
                 ?unfilled_input,
                 ?total_output,
                 ?arb_profit,
-                "arbitrage successful"
+                "arb search detected surplus!"
             );
         }
 
@@ -123,19 +114,26 @@ pub trait Arbitrage: StateWrite + Sized {
                 amount: filled_input,
             },
             output: Value {
-                amount: arb_profit,
+                amount: filled_input + arb_profit,
                 asset_id: arb_token,
             },
         };
         self_mut.set_arb_execution(height, se.clone());
+
+        // Deduct the input surplus from the dex's VCB.
+        self_mut
+            .dex_vcb_debit(Value {
+                amount: arb_profit,
+                asset_id: arb_token,
+            })
+            .await?;
+
         // Emit an ABCI event detailing the arb execution.
         self_mut.record_proto(event::arb_execution(height, se));
-        metrics::histogram!(crate::component::metrics::DEX_ARB_DURATION)
-            .record(arb_start.elapsed());
-        return Ok(Value {
+        return Ok(Some(Value {
             amount: arb_profit,
             asset_id: arb_token,
-        });
+        }));
     }
 }
 

@@ -2,12 +2,12 @@
 
 use {
     super::TestNode,
-    anyhow::anyhow,
+    anyhow::{anyhow, Context},
     bytes::Bytes,
     tap::{Tap, TapFallible},
     tendermint::{
         abci::types::CommitInfo,
-        block::{Header, Round},
+        block::Header,
         v0_37::abci::{request, response, ConsensusRequest, ConsensusResponse},
     },
     tower::{BoxError, Service},
@@ -41,14 +41,12 @@ where
     pub async fn begin_block(
         &mut self,
         header: Header,
+        last_commit_info: CommitInfo,
     ) -> Result<response::BeginBlock, anyhow::Error> {
         let request = ConsensusRequest::BeginBlock(request::BeginBlock {
             hash: tendermint::Hash::None,
             header,
-            last_commit_info: CommitInfo {
-                round: Round::from(1_u8),
-                votes: Default::default(),
-            },
+            last_commit_info,
             byzantine_validators: Default::default(),
         });
         let service = self.service().await?;
@@ -110,7 +108,13 @@ where
     /// Sends a [`ConsensusRequest::EndBlock`] request to the ABCI application.
     #[instrument(level = "debug", skip_all)]
     pub async fn end_block(&mut self) -> Result<response::EndBlock, anyhow::Error> {
-        let request = ConsensusRequest::EndBlock(request::EndBlock { height: 1 });
+        let height = self
+            .height
+            .value()
+            .try_into()
+            .context("converting height into `i64`")?;
+        let request = ConsensusRequest::EndBlock(request::EndBlock { height });
+
         let service = self.service().await?;
         match service
             .call(request)

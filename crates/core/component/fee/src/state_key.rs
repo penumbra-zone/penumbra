@@ -9,7 +9,3 @@ pub fn gas_prices() -> &'static str {
 pub fn gas_prices_changed() -> &'static str {
     "fee/gas_prices_changed"
 }
-
-pub fn fee_params_updated() -> &'static str {
-    "fee/fee_params_updated"
-}

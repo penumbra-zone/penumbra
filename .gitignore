@@ -5,12 +5,21 @@ wallet-next/pwalletd-db.sqlite-wal
 
 *.DS_STORE
 
-book
+# mdbook docs builds
+docs/*/book/*
+# firebase config
 .firebase/
-# For some reason mdbook dumps this here because the main page is ../README.md
-#index.html
-# Used for deployments
-firebase-tmp/
+firebase-debug.log
+docs/*/firebase-tmp/
+# ignore auto-generated rust-docs index
+docs/rustdoc/index.html
+
+# Nix build output goes here
+result
+
+# Direnv files
+.envrc
+.direnv
 
 ## Rust / Cargo
 # will have compiled files and executables
@@ -40,8 +49,11 @@ tools/parameter-setup/Cargo.lock
 # Relayer config referencing local devnet, will always be unique
 # to current host env.
 deployments/relayer/configs/penumbra-local.json
-# Log files from smoke tests
+
+# Logs, and other files from smoke tests
 deployments/logs/
+crates/bin/pcli/proposal.toml
+phase1.bin
 
 # Memory profiler, via bytehound or otherwise
 *.dat

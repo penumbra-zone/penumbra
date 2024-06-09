@@ -1,11 +1,15 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
+use penumbra_stake::GovernanceKey;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use url::Url;
 
-use penumbra_custody::{soft_kms::Config as SoftKmsConfig, threshold::Config as ThresholdConfig};
+use penumbra_custody::{
+    encrypted::Config as EncryptedConfig, soft_kms::Config as SoftKmsConfig,
+    threshold::Config as ThresholdConfig,
+};
 use penumbra_keys::FullViewingKey;
 
 /// Configuration data for `pcli`.
@@ -24,6 +28,8 @@ pub struct PcliConfig {
     pub full_viewing_key: FullViewingKey,
     /// The custody backend to use.
     pub custody: CustodyConfig,
+    /// The governance custody backend to use.
+    pub governance_custody: Option<GovernanceCustodyConfig>,
 }
 
 impl PcliConfig {
@@ -40,6 +46,18 @@ impl PcliConfig {
         std::fs::write(path, contents)?;
         Ok(())
     }
+
+    pub fn governance_key(&self) -> GovernanceKey {
+        let fvk = match &self.governance_custody {
+            Some(GovernanceCustodyConfig::SoftKms(SoftKmsConfig { spend_key, .. })) => {
+                spend_key.full_viewing_key()
+            }
+            Some(GovernanceCustodyConfig::Threshold(threshold_config)) => threshold_config.fvk(),
+            Some(GovernanceCustodyConfig::Encrypted { fvk, .. }) => fvk,
+            None => &self.full_viewing_key,
+        };
+        GovernanceKey(fvk.spend_verification_key().clone())
+    }
 }
 
 /// The custody backend to use.
@@ -53,6 +71,24 @@ pub enum CustodyConfig {
     SoftKms(SoftKmsConfig),
     /// A manual threshold custody service.
     Threshold(ThresholdConfig),
+    /// An encrypted custody service.
+    Encrypted(EncryptedConfig),
+}
+
+/// The governance custody backend to use.
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[serde(tag = "backend")]
+#[allow(clippy::large_enum_variant)]
+pub enum GovernanceCustodyConfig {
+    /// A software key management service.
+    SoftKms(SoftKmsConfig),
+    /// A manual threshold custody service.
+    Threshold(ThresholdConfig),
+    /// An encrypted custody service.
+    Encrypted {
+        fvk: FullViewingKey,
+        config: EncryptedConfig,
+    },
 }
 
 impl Default for CustodyConfig {
@@ -86,6 +122,7 @@ mod tests {
             custody: CustodyConfig::SoftKms(SoftKmsConfig::from(
                 penumbra_keys::test_keys::SPEND_KEY.clone(),
             )),
+            governance_custody: None,
         };
 
         let mut config2 = config.clone();

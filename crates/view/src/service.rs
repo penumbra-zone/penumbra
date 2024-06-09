@@ -9,9 +9,11 @@ use ark_std::UniformRand;
 use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;
-use futures::stream::{StreamExt, TryStreamExt};
+use futures::stream::{self, StreamExt, TryStreamExt};
+use penumbra_auction::auction::dutch::actions::view::ActionDutchAuctionWithdrawView;
 use rand::Rng;
 use rand_core::OsRng;
+use tap::{Tap, TapFallible};
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
 use tonic::{async_trait, transport::Channel, Request, Response, Status};
@@ -37,7 +39,7 @@ use penumbra_num::Amount;
 use penumbra_proto::{
     util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
-        GetStatusRequest,
+        GetStatusRequest, GetStatusResponse, SyncInfo,
     },
     view::v1::{
         self as pb,
@@ -90,14 +92,27 @@ pub struct ViewServer {
 
 impl ViewServer {
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
+    #[instrument(
+        skip_all,
+        fields(
+            path = ?storage_path.as_ref().map(|p| p.as_ref().as_str()),
+            url = %node,
+        )
+    )]
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {
-        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone()).await?;
+        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone())
+            .tap(|_| tracing::trace!("loading or initializing storage"))
+            .await?
+            .tap(|_| tracing::debug!("storage is ready"));
 
-        Self::new(storage, node).await
+        Self::new(storage, node)
+            .tap(|_| tracing::trace!("constructing view server"))
+            .await
+            .tap(|_| tracing::debug!("constructed view server"))
     }
 
     /// Constructs a new [`ViewService`], spawning a sync task internally.
@@ -107,56 +122,60 @@ impl ViewServer {
     /// To create multiple [`ViewService`]s, clone the [`ViewService`] returned
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
+    #[instrument(skip_all)]
     pub async fn new(storage: Storage, node: Url) -> anyhow::Result<Self> {
-        let (worker, sct, error_slot, sync_height_rx) =
-            Worker::new(storage.clone(), node.clone()).await?;
+        let channel = Channel::from_shared(node.to_string())
+            .with_context(|| "could not parse node URI")?
+            .connect()
+            .await
+            .with_context(|| "could not connect to grpc server")
+            .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
 
-        tokio::spawn(worker.run());
+        let (worker, state_commitment_tree, error_slot, sync_height_rx) =
+            Worker::new(storage.clone(), channel)
+                .tap(|_| tracing::trace!("constructing view server worker"))
+                .await?
+                .tap(|_| tracing::debug!("constructed view server worker"));
+
+        tokio::spawn(worker.run()).tap(|_| tracing::debug!("spawned view server worker"));
 
         Ok(Self {
             storage,
             error_slot,
             sync_height_rx,
-            state_commitment_tree: sct,
+            state_commitment_tree,
             node,
         })
     }
 
+    /// Checks if the view server worker has encountered an error.
+    ///
+    /// This function returns a gRPC [`tonic::Status`] containing the view server worker error if
+    /// any exists, otherwise it returns `Ok(())`.
+    #[instrument(level = "debug", skip_all)]
     async fn check_worker(&self) -> Result<(), tonic::Status> {
         // If the shared error slot is set, then an error has occurred in the worker
         // that we should bubble up.
-        if self
+        tracing::debug!("checking view server worker");
+        if let Some(error) = self
             .error_slot
             .lock()
+            .tap_err(|error| tracing::error!(?error, "unable to lock worker error slot"))
             .map_err(|e| {
                 tonic::Status::unavailable(format!("unable to lock worker error slot {:#}", e))
             })?
-            .is_some()
+            .as_ref()
         {
             return Err(tonic::Status::new(
                 tonic::Code::Internal,
-                format!(
-                    "Worker failed: {}",
-                    self.error_slot
-                        .lock()
-                        .map_err(|e| {
-                            tonic::Status::unavailable(format!(
-                                "unable to lock worker error slot {:#}",
-                                e
-                            ))
-                        })?
-                        .as_ref()
-                        .ok_or_else(|| {
-                            tonic::Status::unavailable("unable to get ref to worker error slot")
-                        })?
-                ),
+                format!("Worker failed: {error}"),
             ));
         }
 
         // TODO: check whether the worker is still alive, else fail, when we have a way to do that
         // (if the worker is to crash without setting the error_slot, the service should die as well)
 
-        Ok(())
+        Ok(()).tap(|_| tracing::trace!("view server worker is healthy"))
     }
 
     #[instrument(skip(self, transaction), fields(id = %transaction.id()))]
@@ -271,12 +290,15 @@ impl ViewServer {
             }.boxed()
     }
 
+    #[instrument(level = "trace", skip(self))]
     async fn tendermint_proxy_client(
         &self,
     ) -> anyhow::Result<TendermintProxyServiceClient<Channel>> {
-        let client = TendermintProxyServiceClient::connect(self.node.to_string()).await?;
-
-        Ok(client)
+        TendermintProxyServiceClient::connect(self.node.to_string())
+            .tap(|_| tracing::debug!("connecting to tendermint proxy"))
+            .await
+            .tap_err(|error| tracing::error!(?error, "failed to connect to tendermint proxy"))
+            .map_err(anyhow::Error::from)
     }
 
     /// Return the latest block height known by the fullnode or its peers, as
@@ -285,17 +307,19 @@ impl ViewServer {
     pub async fn latest_known_block_height(&self) -> anyhow::Result<(u64, bool)> {
         let mut client = self.tendermint_proxy_client().await?;
 
-        let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
+        let GetStatusResponse { sync_info, .. } = client
+            .get_status(GetStatusRequest {})
+            .tap(|_| tracing::debug!("querying current status"))
+            .await
+            .tap_err(|error| tracing::debug!(?error, "failed to query current status"))?
+            .into_inner();
 
-        //tracing::debug!("{:#?}", rsp);
-
-        let sync_info = rsp
-            .sync_info
+        let SyncInfo {
+            latest_block_height,
+            catching_up,
+            ..
+        } = sync_info
             .ok_or_else(|| anyhow::anyhow!("could not parse sync_info in gRPC response"))?;
-
-        let latest_block_height = sync_info.latest_block_height;
-
-        let node_catching_up = sync_info.catching_up;
 
         // There is a `max_peer_block_height` available in TM 0.35, however it should not be used
         // as it does not seem to reflect the consensus height. Since clients use `latest_known_block_height`
@@ -305,11 +329,12 @@ impl ViewServer {
 
         tracing::debug!(
             ?latest_block_height,
-            ?node_catching_up,
-            ?latest_known_block_height
+            ?catching_up,
+            ?latest_known_block_height,
+            "found latest known block height"
         );
 
-        Ok((latest_known_block_height, node_catching_up))
+        Ok((latest_known_block_height, catching_up))
     }
 
     #[instrument(skip(self))]
@@ -374,7 +399,94 @@ impl ViewService for ViewServer {
             dyn futures::Stream<Item = Result<pb::AuthorizeAndBuildResponse, tonic::Status>> + Send,
         >,
     >;
+    type DelegationsByAddressIndexStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<pb::DelegationsByAddressIndexResponse, tonic::Status>>
+                + Send,
+        >,
+    >;
+    type UnbondingTokensByAddressIndexStream = Pin<
+        Box<
+            dyn futures::Stream<
+                    Item = Result<pb::UnbondingTokensByAddressIndexResponse, tonic::Status>,
+                > + Send,
+        >,
+    >;
+    type AuctionsStream =
+        Pin<Box<dyn futures::Stream<Item = Result<pb::AuctionsResponse, tonic::Status>> + Send>>;
 
+    #[instrument(skip_all, level = "trace")]
+    async fn auctions(
+        &self,
+        request: tonic::Request<pb::AuctionsRequest>,
+    ) -> Result<tonic::Response<Self::AuctionsStream>, tonic::Status> {
+        use penumbra_proto::core::component::auction::v1 as pb_auction;
+        use penumbra_proto::core::component::auction::v1::query_service_client::QueryServiceClient as AuctionQueryServiceClient;
+
+        let parameters = request.into_inner();
+        let query_latest_state = parameters.query_latest_state;
+        let include_inactive = parameters.include_inactive;
+
+        let account_filter = parameters
+            .account_filter
+            .to_owned()
+            .map(AddressIndex::try_from)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|_| tonic::Status::invalid_argument("invalid account filter"))?;
+
+        let all_auctions = self
+            .storage
+            .fetch_auctions_by_account(account_filter, include_inactive)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        let client = if query_latest_state {
+            Some(
+                AuctionQueryServiceClient::connect(self.node.to_string())
+                    .await
+                    .map_err(|e| tonic::Status::internal(e.to_string()))?,
+            )
+        } else {
+            None
+        };
+
+        let responses = futures::future::join_all(all_auctions.into_iter().map(
+            |(auction_id, note_record, local_seq)| {
+                let maybe_client = client.clone();
+                async move {
+                    let (any_state, positions) = if let Some(mut client2) = maybe_client {
+                        let extra_data = client2
+                            .auction_state_by_id(pb_auction::AuctionStateByIdRequest {
+                                id: Some(auction_id.into()),
+                            })
+                            .await
+                            .map_err(|e| tonic::Status::internal(e.to_string()))?
+                            .into_inner();
+                        (extra_data.auction, extra_data.positions)
+                    } else {
+                        (None, vec![])
+                    };
+
+                    Result::<_, tonic::Status>::Ok(pb::AuctionsResponse {
+                        id: Some(auction_id.into()),
+                        note_record: Some(note_record.into()),
+                        auction: any_state,
+                        positions,
+                        local_seq,
+                    })
+                }
+            },
+        ))
+        .await;
+
+        let stream = stream::iter(responses)
+            .map_err(|e| tonic::Status::internal(format!("error getting auction: {e}")))
+            .boxed();
+
+        Ok(Response::new(stream))
+    }
+
+    #[instrument(skip_all, level = "trace")]
     async fn broadcast_transaction(
         &self,
         request: tonic::Request<pb::BroadcastTransactionRequest>,
@@ -395,6 +507,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(stream))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn transaction_planner(
         &self,
         request: tonic::Request<pb::TransactionPlannerRequest>,
@@ -509,6 +622,25 @@ impl ViewService for ViewServer {
             });
         }
 
+        let current_epoch = if prq.undelegations.is_empty() && prq.delegations.is_empty() {
+            None
+        } else {
+            Some(
+                prq.epoch
+                    .ok_or_else(|| {
+                        tonic::Status::invalid_argument(
+                            "Missing current epoch in TransactionPlannerRequest",
+                        )
+                    })?
+                    .try_into()
+                    .map_err(|e| {
+                        tonic::Status::invalid_argument(format!(
+                            "Could not parse current epoch: {e:#}"
+                        ))
+                    })?,
+            )
+        };
+
         for delegation in prq.delegations {
             let amount: Amount = delegation
                 .amount
@@ -526,7 +658,11 @@ impl ViewService for ViewServer {
                     tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
                 })?;
 
-            planner.delegate(amount, rate_data);
+            planner.delegate(
+                current_epoch.expect("checked that current epoch is present"),
+                amount,
+                rate_data,
+            );
         }
 
         for undelegation in prq.undelegations {
@@ -546,7 +682,11 @@ impl ViewService for ViewServer {
                     tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
                 })?;
 
-            planner.undelegate(value.amount, rate_data);
+            planner.undelegate(
+                current_epoch.expect("checked that current epoch is present"),
+                value.amount,
+                rate_data,
+            );
         }
 
         for position_open in prq.position_opens {
@@ -639,6 +779,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn address_by_index(
         &self,
         request: tonic::Request<pb::AddressByIndexRequest>,
@@ -662,6 +803,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn index_by_address(
         &self,
         request: tonic::Request<pb::IndexByAddressRequest>,
@@ -685,6 +827,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn ephemeral_address(
         &self,
         request: tonic::Request<pb::EphemeralAddressRequest>,
@@ -708,6 +851,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn transaction_info_by_hash(
         &self,
         request: tonic::Request<pb::TransactionInfoByHashRequest>,
@@ -816,12 +960,12 @@ impl ViewService for ViewServer {
             match action_view {
                 ActionView::Spend(SpendView::Visible { note, .. }) => {
                     let address = note.address();
-                    address_views.insert(address, fvk.view_address(address));
+                    address_views.insert(address.clone(), fvk.view_address(address));
                     asset_ids.insert(note.asset_id());
                 }
                 ActionView::Output(OutputView::Visible { note, .. }) => {
                     let address = note.address();
-                    address_views.insert(address, fvk.view_address(address));
+                    address_views.insert(address.clone(), fvk.view_address(address.clone()));
                     asset_ids.insert(note.asset_id());
 
                     // Also add an AddressView for the return address in the memo.
@@ -831,8 +975,8 @@ impl ViewService for ViewServer {
                     address_views.insert(memo.return_address(), fvk.view_address(address));
                 }
                 ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
-                    let address = swap_plaintext.claim_address;
-                    address_views.insert(address, fvk.view_address(address));
+                    let address = swap_plaintext.claim_address.clone();
+                    address_views.insert(address.clone(), fvk.view_address(address));
                     asset_ids.insert(swap_plaintext.trading_pair.asset_1());
                     asset_ids.insert(swap_plaintext.trading_pair.asset_2());
                 }
@@ -841,14 +985,19 @@ impl ViewService for ViewServer {
                 }) => {
                     // Both will be sent to the same address so this only needs to be added once
                     let address = output_1.address();
-                    address_views.insert(address, fvk.view_address(address));
+                    address_views.insert(address.clone(), fvk.view_address(address));
                     asset_ids.insert(output_1.asset_id());
                     asset_ids.insert(output_2.asset_id());
                 }
                 ActionView::DelegatorVote(DelegatorVoteView::Visible { note, .. }) => {
                     let address = note.address();
-                    address_views.insert(address, fvk.view_address(address));
+                    address_views.insert(address.clone(), fvk.view_address(address));
                     asset_ids.insert(note.asset_id());
+                }
+                ActionView::ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawView {
+                    action: _,
+                    reserves: _,
+                }) => { /* no-op for now - i'm not totally sure we have all the necessary data to attribute specific note openings to this view */
                 }
                 _ => {}
             }
@@ -886,6 +1035,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(response))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn swap_by_commitment(
         &self,
         request: tonic::Request<pb::SwapByCommitmentRequest>,
@@ -1011,6 +1161,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn note_by_commitment(
         &self,
         request: tonic::Request<pb::NoteByCommitmentRequest>,
@@ -1041,6 +1192,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn nullifier_status(
         &self,
         request: tonic::Request<pb::NullifierStatusRequest>,
@@ -1064,6 +1216,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn status(
         &self,
         _: tonic::Request<pb::StatusRequest>,
@@ -1075,14 +1228,23 @@ impl ViewService for ViewServer {
         })?))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn status_stream(
         &self,
         _: tonic::Request<pb::StatusStreamRequest>,
     ) -> Result<tonic::Response<Self::StatusStreamStream>, tonic::Status> {
         self.check_worker().await?;
 
-        let (latest_known_block_height, _) =
-            self.latest_known_block_height().await.map_err(|e| {
+        let (latest_known_block_height, _) = self
+            .latest_known_block_height()
+            .await
+            .tap_err(|error| {
+                tracing::debug!(
+                    ?error,
+                    "unable to fetch latest known block height from fullnode"
+                )
+            })
+            .map_err(|e| {
                 tonic::Status::unknown(format!(
                     "unable to fetch latest known block height from fullnode: {e}"
                 ))
@@ -1107,6 +1269,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(stream.boxed()))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn notes(
         &self,
         request: tonic::Request<pb::NotesRequest>,
@@ -1158,6 +1321,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn notes_for_voting(
         &self,
         request: tonic::Request<pb::NotesForVotingRequest>,
@@ -1198,6 +1362,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn assets(
         &self,
         request: tonic::Request<pb::AssetsRequest>,
@@ -1266,6 +1431,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn transaction_info(
         &self,
         request: tonic::Request<pb::TransactionInfoRequest>,
@@ -1313,6 +1479,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn witness(
         &self,
         request: tonic::Request<pb::WitnessRequest>,
@@ -1393,6 +1560,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(witness_response))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn witness_and_build(
         &self,
         request: tonic::Request<pb::WitnessAndBuildRequest>,
@@ -1459,6 +1627,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn app_parameters(
         &self,
         _request: tonic::Request<pb::AppParametersRequest>,
@@ -1477,6 +1646,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(response))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn gas_prices(
         &self,
         _request: tonic::Request<pb::GasPricesRequest>,
@@ -1490,11 +1660,13 @@ impl ViewService for ViewServer {
 
         let response = GasPricesResponse {
             gas_prices: Some(gas_prices.into()),
+            alt_gas_prices: Vec::new(),
         };
 
         Ok(tonic::Response::new(response))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn fmd_parameters(
         &self,
         _request: tonic::Request<pb::FmdParametersRequest>,
@@ -1513,6 +1685,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(response))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn owned_position_ids(
         &self,
         request: tonic::Request<pb::OwnedPositionIdsRequest>,
@@ -1559,6 +1732,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn authorize_and_build(
         &self,
         _request: tonic::Request<pb::AuthorizeAndBuildRequest>,
@@ -1566,6 +1740,7 @@ impl ViewService for ViewServer {
         unimplemented!("authorize_and_build")
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn unclaimed_swaps(
         &self,
         _: tonic::Request<pb::UnclaimedSwapsRequest>,
@@ -1593,6 +1768,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn wallet_id(
         &self,
         _: Request<WalletIdRequest>,
@@ -1606,6 +1782,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn asset_metadata_by_id(
         &self,
         request: Request<AssetMetadataByIdRequest>,
@@ -1626,5 +1803,21 @@ impl ViewService for ViewServer {
         Ok(Response::new(AssetMetadataByIdResponse {
             denom_metadata: metadata.map(Into::into),
         }))
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn delegations_by_address_index(
+        &self,
+        _request: tonic::Request<pb::DelegationsByAddressIndexRequest>,
+    ) -> Result<tonic::Response<Self::DelegationsByAddressIndexStream>, tonic::Status> {
+        unimplemented!("delegations_by_address_index")
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn unbonding_tokens_by_address_index(
+        &self,
+        _request: tonic::Request<pb::UnbondingTokensByAddressIndexRequest>,
+    ) -> Result<tonic::Response<Self::UnbondingTokensByAddressIndexStream>, tonic::Status> {
+        unimplemented!("unbonding_tokens_by_address_index currently only implemented on web")
     }
 }

@@ -43,7 +43,7 @@ impl Participant {
     }
 
     pub fn address(&self) -> Address {
-        self.address
+        self.address.clone()
     }
 
     pub fn is_live(&self) -> bool {

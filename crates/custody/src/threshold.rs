@@ -1,19 +1,39 @@
 use anyhow::{anyhow, Result};
+use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tonic::{async_trait, Request, Response, Status};
 
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_proto::{custody::v1 as pb, DomainType};
-use penumbra_transaction::{AuthorizationData, TransactionPlan};
 
-use crate::AuthorizeRequest;
+use crate::{AuthorizeRequest, AuthorizeValidatorDefinitionRequest, AuthorizeValidatorVoteRequest};
 
 pub use self::config::Config;
+use self::sign::no_signature_response;
+pub use crate::terminal::{SigningRequest, Terminal};
 
 mod config;
 mod dkg;
 mod sign;
+
+/// Authorization data returned in response to some signing request, which may be a request to
+/// authorize a transaction, a validator definition, or a validator vote.
+#[derive(Clone, Debug)]
+pub enum SigningResponse {
+    /// Authorization data for a transaction.
+    Transaction(AuthorizationData),
+    /// Authorization signature for a validator definition.
+    ValidatorDefinition(decaf377_rdsa::Signature<decaf377_rdsa::SpendAuth>),
+    /// Authorization signature for a validator vote.
+    ValidatorVote(decaf377_rdsa::Signature<decaf377_rdsa::SpendAuth>),
+}
+
+impl From<AuthorizationData> for SigningResponse {
+    fn from(msg: AuthorizationData) -> Self {
+        Self::Transaction(msg)
+    }
+}
 
 fn to_json<T>(data: &T) -> Result<String>
 where
@@ -24,84 +44,44 @@ where
     Ok(serde_json::to_string(&data.to_proto())?)
 }
 
-fn from_json<'a, T: DomainType>(data: &'a str) -> Result<T>
-where
-    T: DomainType,
-    anyhow::Error: From<<T as TryFrom<<T as DomainType>::Proto>>::Error>,
-    <T as DomainType>::Proto: Deserialize<'a>,
-{
-    Ok(serde_json::from_str::<<T as DomainType>::Proto>(data)?.try_into()?)
-}
-
-/// A trait abstracting over the kind of terminal interface we expect.
-///
-/// This is mainly used to accommodate the kind of interaction we have with the CLI
-/// interface, but it can also be plugged in with more general backends.
-#[async_trait]
-pub trait Terminal {
-    /// Have a user confirm that they want to sign this transaction.
-    ///
-    /// In an actual terminal, this should display the transaction in a human readable
-    /// form, and then get feedback from the user.
-    async fn confirm_transaction(&self, transaction: &TransactionPlan) -> Result<bool>;
-
-    /// Push an explanatory message to the terminal.
-    ///
-    /// This message has no relation to the actual protocol, it just allows explaining
-    /// what subsequent data means, and what the user needs to do.
-    ///
-    /// Backends can replace this with a no-op.
-    async fn explain(&self, msg: &str) -> Result<()>;
-
-    /// Broadcast a message to other users.
-    async fn broadcast(&self, data: &str) -> Result<()>;
-
-    /// Wait for a response from *some* other user, it doesn't matter which.
-    ///
-    /// This function should not return None spuriously, when it does,
-    /// it should continue to return None until a message is broadcast.
-    async fn next_response(&self) -> Result<Option<String>>;
-}
-
 /// Act as a follower in the signing protocol.
 ///
 /// All this function does is produce side effects on the terminal, potentially returning
 /// early if the user on the other end did not want to sign the transaction.
-pub async fn follow(config: &Config, terminal: &impl Terminal) -> Result<()> {
+pub async fn follow(
+    config: Option<&Config>,
+    governance_config: Option<&Config>,
+    terminal: &impl Terminal,
+) -> Result<()> {
     // Round 1
-    terminal
-        .explain("Paste the coordinator's first message:")
-        .await?;
-    let round1_message: sign::CoordinatorRound1 = {
-        let string = terminal
-            .next_response()
-            .await?
-            .ok_or(anyhow!("expected message from coordinator"))?;
-        from_json(&string)?
+    terminal.explain("Paste the coordinator's first message:")?;
+    let round1_message = terminal.next_response::<sign::CoordinatorRound1>().await?;
+    // Pick the right config based on the message
+    let config = match round1_message.signing_request() {
+        SigningRequest::TransactionPlan(_) => config.ok_or(anyhow!(
+            "cannot threshold sign transaction using a non-threshold custody backend"
+        ))?,
+        SigningRequest::ValidatorDefinition(_) => config.ok_or(anyhow!(
+            "cannot threshold sign validator definition using a non-threshold custody backend"
+        ))?,
+        SigningRequest::ValidatorVote(_) => governance_config.ok_or(anyhow!(
+            "cannot threshold sign validator vote using a non-threshold validator governance custody backend"
+        ))?,
     };
-    if !terminal.confirm_transaction(&round1_message.plan()).await? {
+    if !terminal
+        .confirm_request(round1_message.signing_request())
+        .await?
+    {
         return Ok(());
     }
     let (round1_reply, round1_state) = sign::follower_round1(&mut OsRng, config, round1_message)?;
-    terminal
-        .explain("Send this message to the coordinator:")
-        .await?;
+    terminal.explain("Send this message to the coordinator:")?;
     terminal.broadcast(&to_json(&round1_reply)?).await?;
     // Round 2
-    terminal
-        .explain("Paste the coordinator's second message:")
-        .await?;
-    let round2_message: sign::CoordinatorRound2 = {
-        let string = terminal
-            .next_response()
-            .await?
-            .ok_or(anyhow!("expected message from coordinator"))?;
-        from_json(&string)?
-    };
+    terminal.explain("Paste the coordinator's second message:")?;
+    let round2_message = terminal.next_response::<sign::CoordinatorRound2>().await?;
     let round2_reply = sign::follower_round2(config, round1_state, round2_message)?;
-    terminal
-        .explain("Send this message to the coordinator:")
-        .await?;
+    terminal.explain("Send this message to the coordinator:")?;
     terminal.broadcast(&to_json(&round2_reply)?).await?;
 
     Ok(())
@@ -118,55 +98,79 @@ pub async fn dkg(t: u16, n: u16, terminal: &impl Terminal) -> Result<Config> {
     let expected_responses = n.saturating_sub(1) as usize;
     // Round 1 top
     let (round1_message, state) = dkg::round1(&mut OsRng, t, n)?;
-    terminal
-        .explain("Round 1/2: Send this message to all other participants:")
-        .await?;
+    terminal.explain("Round 1/2: Send this message to all other participants:")?;
     terminal.broadcast(&to_json(&round1_message)?).await?;
     // Round 1 bottom
-    terminal
-        .explain(&format!(
-            "Round 1/2: Gather {expected_responses} messages from the other participants:"
-        ))
-        .await?;
+    terminal.explain(&format!(
+        "Round 1/2: Gather {expected_responses} messages from the other participants:"
+    ))?;
     let round1_replies = {
         let mut acc: Vec<dkg::Round1> = Vec::new();
         while acc.len() < expected_responses {
-            let string = terminal
-                .next_response()
-                .await?
-                .ok_or(anyhow!("expected message from another participant"))?;
-            acc.push(from_json(&string)?);
+            let rsp = terminal.next_response::<dkg::Round1>().await?;
+            // Before we accept, check that the user hasn't double-pasted the same message.
+            if acc
+                .iter()
+                // Inefficient but good enough.
+                .any(|existing| existing.encode_to_vec() == rsp.encode_to_vec())
+            {
+                terminal.explain("Received a duplicate message, ignoring")?;
+                continue;
+            }
+            // Before we accept, check that the user hasn't pasted their own message.
+            if round1_message.encode_to_vec() == rsp.encode_to_vec() {
+                terminal.explain("Received our own outbound message by mistake, ignoring")?;
+                continue;
+            }
+            acc.push(rsp);
+            terminal.explain(&format!(
+                "Received {}/{} responses...",
+                acc.len(),
+                expected_responses
+            ))?;
         }
         acc
     };
 
     // Round 2 top
     let (round2_message, state) = dkg::round2(&mut OsRng, state, round1_replies)?;
-    terminal
-        .explain("Round 2/2: Send this message to all other participants:")
-        .await?;
+    terminal.explain("Round 2/2: Send this message to all other participants:")?;
     terminal.broadcast(&to_json(&round2_message)?).await?;
     // Round 2 bottom
-    terminal
-        .explain(&format!(
-            "Round 2/2: Gather {expected_responses} messages from the other participants:"
-        ))
-        .await?;
+    terminal.explain(&format!(
+        "Round 2/2: Gather {expected_responses} messages from the other participants:"
+    ))?;
     let round2_replies = {
         let mut acc: Vec<dkg::Round2> = Vec::new();
         while acc.len() < expected_responses {
-            let string = terminal
-                .next_response()
-                .await?
-                .ok_or(anyhow!("expected message from another participant"))?;
-            acc.push(from_json(&string)?);
+            let rsp = terminal.next_response::<dkg::Round2>().await?;
+            // Before we accept, check that the user hasn't double-pasted the same message.
+            if acc
+                .iter()
+                // Inefficient but good enough.
+                .any(|existing| existing.encode_to_vec() == rsp.encode_to_vec())
+            {
+                terminal.explain("Received a duplicate message, ignoring")?;
+                continue;
+            }
+            // Before we accept, check that the user hasn't pasted their own message.
+            if round2_message.encode_to_vec() == rsp.encode_to_vec() {
+                terminal.explain("Received our own outbound message by mistake, ignoring")?;
+                continue;
+            }
+            acc.push(rsp);
+            terminal.explain(&format!(
+                "Received {}/{} responses...",
+                acc.len(),
+                expected_responses
+            ))?;
         }
         acc
     };
     dkg::round3(&mut OsRng, state, round2_replies)
 }
 
-/// A custody backend using threshold signing.  
+/// A custody backend using threshold signing.
 ///
 /// This backend is initialized with a full viewing key, but only a share
 /// of the spend key, which is not enough to sign on its own. Instead,
@@ -185,32 +189,26 @@ impl<T> Threshold<T> {
 
 impl<T: Terminal> Threshold<T> {
     /// Try and create the necessary signatures to authorize the transaction plan.
-    async fn authorize(&self, request: AuthorizeRequest) -> Result<AuthorizationData> {
-        let plan = request.plan;
-
+    async fn authorize(&self, request: SigningRequest) -> Result<SigningResponse> {
+        // Some requests will have no signatures to gather, so there's no need
+        // to send around empty threshold signature requests.
+        if let Some(out) = no_signature_response(self.config.fvk(), &request)? {
+            return Ok(out);
+        }
         // Round 1
-        let (round1_message, state1) = sign::coordinator_round1(&mut OsRng, &self.config, plan)?;
+        let (round1_message, state1) = sign::coordinator_round1(&mut OsRng, &self.config, request)?;
         self.terminal
-            .explain("Send this message to the other signers:")
-            .await?;
+            .explain("Send this message to the other signers:")?;
         self.terminal.broadcast(&to_json(&round1_message)?).await?;
-        self.terminal
-            .explain(&format!(
-                "Now, gather at least {} replies from the other signers, and paste them below:",
-                self.config.threshold()
-            ))
-            .await?;
+        self.terminal.explain(&format!(
+            "Now, gather at least {} replies from the other signers, and paste them below:",
+            self.config.threshold() - 1
+        ))?;
         let round1_replies = {
-            let mut acc = Vec::new();
+            let mut acc = Vec::<sign::FollowerRound1>::new();
             // We need 1 less, since we've already included ourselves.
             for _ in 1..self.config.threshold() {
-                let reply_str = self
-                    .terminal
-                    .next_response()
-                    .await?
-                    .ok_or(anyhow!("expected round1 reply"))?;
-                let reply = from_json::<sign::FollowerRound1>(&reply_str)?;
-                acc.push(reply);
+                acc.push(self.terminal.next_response().await?);
             }
             acc
         };
@@ -218,25 +216,16 @@ impl<T: Terminal> Threshold<T> {
         let (round2_message, state2) =
             sign::coordinator_round2(&self.config, state1, &round1_replies)?;
         self.terminal
-            .explain("Send this message to the other signers:")
-            .await?;
+            .explain("Send this message to the other signers:")?;
         self.terminal.broadcast(&to_json(&round2_message)?).await?;
-        self.terminal
-            .explain(
-                "Now, gather the replies from the *same* signers as Round 1, and paste them below:",
-            )
-            .await?;
+        self.terminal.explain(
+            "Now, gather the replies from the *same* signers as Round 1, and paste them below:",
+        )?;
         let round2_replies = {
-            let mut acc = Vec::new();
+            let mut acc = Vec::<sign::FollowerRound2>::new();
             // We need 1 less, since we've already included ourselves.
             for _ in 1..self.config.threshold() {
-                let reply_str = self
-                    .terminal
-                    .next_response()
-                    .await?
-                    .ok_or(anyhow!("expected round2 reply"))?;
-                let reply = from_json::<sign::FollowerRound2>(&reply_str)?;
-                acc.push(reply);
+                acc.push(self.terminal.next_response().await?);
             }
             acc
         };
@@ -265,15 +254,80 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
         &self,
         request: Request<pb::AuthorizeRequest>,
     ) -> Result<Response<pb::AuthorizeResponse>, Status> {
-        let request = request
+        let request: AuthorizeRequest = request
             .into_inner()
             .try_into()
             .map_err(|e| Status::invalid_argument(format!("{e}")))?;
-        let data = self.authorize(request).await.map_err(|e| {
-            Status::internal(format!("Failed to process authorization request: {e}"))
-        })?;
+        let data = self
+            .authorize(SigningRequest::TransactionPlan(request.plan))
+            .await
+            .map_err(|e| {
+                Status::internal(format!(
+                    "Failed to process transaction authorization request: {e}"
+                ))
+            })?;
+        let SigningResponse::Transaction(data) = data else {
+            return Err(Status::internal(
+                "expected transaction authorization but custody service returned another kind of authorization data"
+                    .to_string()
+            ));
+        };
         Ok(Response::new(pb::AuthorizeResponse {
             data: Some(data.into()),
+        }))
+    }
+
+    async fn authorize_validator_definition(
+        &self,
+        request: Request<pb::AuthorizeValidatorDefinitionRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorDefinitionResponse>, Status> {
+        let request: AuthorizeValidatorDefinitionRequest = request
+            .into_inner()
+            .try_into()
+            .map_err(|e| Status::invalid_argument(format!("{e}")))?;
+        let data = self
+            .authorize(SigningRequest::ValidatorDefinition(
+                request.validator_definition,
+            ))
+            .await
+            .map_err(|e| {
+                Status::internal(format!(
+                    "Failed to process validator definition authorization request: {e}"
+                ))
+            })?;
+        let SigningResponse::ValidatorDefinition(validator_definition_auth) = data else {
+            return Err(Status::internal(
+                "expected validator definition authorization but custody service returned another kind of authorization data".to_string()
+            ));
+        };
+        Ok(Response::new(pb::AuthorizeValidatorDefinitionResponse {
+            validator_definition_auth: Some(validator_definition_auth.into()),
+        }))
+    }
+
+    async fn authorize_validator_vote(
+        &self,
+        request: Request<pb::AuthorizeValidatorVoteRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorVoteResponse>, Status> {
+        let request: AuthorizeValidatorVoteRequest = request
+            .into_inner()
+            .try_into()
+            .map_err(|e| Status::invalid_argument(format!("{e}")))?;
+        let data = self
+            .authorize(SigningRequest::ValidatorVote(request.validator_vote))
+            .await
+            .map_err(|e| {
+                Status::internal(format!(
+                    "Failed to process validator vote authorization request: {e}"
+                ))
+            })?;
+        let SigningResponse::ValidatorVote(validator_vote_auth) = data else {
+            return Err(Status::internal(
+                "expected validator vote authorization but custody service returned another kind of authorization data".to_string()
+            ));
+        };
+        Ok(Response::new(pb::AuthorizeValidatorVoteResponse {
+            validator_vote_auth: Some(validator_vote_auth.into()),
         }))
     }
 
@@ -308,6 +362,8 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
 mod test {
     use std::collections::HashMap;
 
+    use penumbra_transaction::TransactionPlan;
+
     use tokio::sync;
 
     use super::*;
@@ -319,11 +375,11 @@ mod test {
 
     #[async_trait]
     impl Terminal for FollowerTerminal {
-        async fn confirm_transaction(&self, _transaction: &TransactionPlan) -> Result<bool> {
+        async fn confirm_request(&self, _request: &SigningRequest) -> Result<bool> {
             Ok(true)
         }
 
-        async fn explain(&self, _msg: &str) -> Result<()> {
+        fn explain(&self, _msg: &str) -> Result<()> {
             Ok(())
         }
 
@@ -332,8 +388,12 @@ mod test {
             Ok(())
         }
 
-        async fn next_response(&self) -> Result<Option<String>> {
-            Ok(self.incoming.lock().await.recv().await)
+        async fn read_line_raw(&self) -> Result<String> {
+            Ok(self.incoming.lock().await.recv().await.unwrap_or_default())
+        }
+
+        async fn get_password(&self) -> Result<String> {
+            Ok(Default::default())
         }
     }
 
@@ -357,11 +417,11 @@ mod test {
 
     #[async_trait]
     impl Terminal for CoordinatorTerminal {
-        async fn confirm_transaction(&self, _transaction: &TransactionPlan) -> Result<bool> {
+        async fn confirm_request(&self, _request: &SigningRequest) -> Result<bool> {
             Ok(true)
         }
 
-        async fn explain(&self, _msg: &str) -> Result<()> {
+        fn explain(&self, _msg: &str) -> Result<()> {
             Ok(())
         }
 
@@ -372,8 +432,12 @@ mod test {
             Ok(())
         }
 
-        async fn next_response(&self) -> Result<Option<String>> {
-            Ok(self.incoming.lock().await.recv().await)
+        async fn read_line_raw(&self) -> Result<String> {
+            Ok(self.incoming.lock().await.recv().await.unwrap_or_default())
+        }
+
+        async fn get_password(&self) -> Result<String> {
+            Ok(Default::default())
         }
     }
 
@@ -567,31 +631,31 @@ mod test {
             .into_iter()
             .zip(follower_terminals.into_iter())
         {
-            tokio::spawn(async move { follow(&config, &terminal).await });
+            tokio::spawn(async move { follow(Some(&config), Some(&config), &terminal).await });
         }
         let plan = serde_json::from_str::<TransactionPlan>(TEST_PLAN)?;
         let fvk = coordinator_config.fvk().clone();
         let authorization_data = Threshold::new(coordinator_config, coordinator_terminal)
-            .authorize(AuthorizeRequest {
-                plan: plan.clone(),
-                pre_authorizations: Vec::new(),
-            })
+            .authorize(SigningRequest::TransactionPlan(plan.clone()))
             .await?;
+        let tx_authorization_data = match authorization_data {
+            SigningResponse::Transaction(tx) => tx,
+            _ => panic!("expected transaction authorization data"),
+        };
         assert_eq!(
             plan.effect_hash(&fvk)?,
-            authorization_data
+            tx_authorization_data
                 .effect_hash
                 .expect("effect hash not present")
         );
         // The transaction plan only has spends
         for (randomizer, sig) in plan
             .spend_plans()
-            .into_iter()
             .map(|x| x.randomizer)
-            .zip(authorization_data.spend_auths)
+            .zip(tx_authorization_data.spend_auths)
         {
             fvk.spend_verification_key().randomize(&randomizer).verify(
-                authorization_data
+                tx_authorization_data
                     .effect_hash
                     .expect("effect hash not present")
                     .as_bytes(),
