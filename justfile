@@ -10,6 +10,11 @@ fmt:
 proto:
     ./deployments/scripts/protobuf-codegen
 
+# Run a local prometheus/grafana setup, in containers, to scrape a local node. Linux only.
+metrics:
+    cd ./deployments/compose/ \
+        && docker-compose -f metrics.yml up --build --abort-on-container-exit --force-recreate --remove-orphans
+
 # Configures and runs a relayer instance between "preview" (latest main) and local devnet on current HEAD
 relayer-local-devnet:
     ./deployments/scripts/relayer-local-devnet

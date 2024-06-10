@@ -1,3 +1,0 @@
-# Run a grafana/prometheus sidecar deployment, attaching to local node.
-metrics:
-    docker-compose -f metrics.yml up --build --abort-on-container-exit --force-recreate

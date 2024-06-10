@@ -62,10 +62,10 @@ After being changed, Grafana dashboards should be backed up to the repository fo
 Grafana has an [import/export](https://grafana.com/docs/grafana/latest/dashboards/export-import/) feature that
 we use for maintaining our dashboards.
 
-1. Export the dashboard as JSON with the default settings
-2. Rename the JSON file and copy into the repo (`config/grafana/dashboards/`)
-3. PR the changes into main, and confirm on preview post-deploy that it works as expected.
-
+1. View the dashboard you want to export, and click the share icon in the top bar.
+2. Choose **Export**, and enable **Export for sharing externally**, which will generalized the datasource.
+3. Download the JSON file, renaming it as necessary, and copy into the repo (`config/grafana/dashboards/`)
+4. PR the changes into main, and confirm on preview post-deploy that it works as expected.
 
 ## Editing metrics locally
 
@@ -73,9 +73,11 @@ To facilitate working with metrics locally, first run a `pd` node on your machin
 exposed. Then, you can spin up a metrics sidecar deployment:
 
 ```bash
-cd deployments/compose
 just metrics
 ```
+
+Note that this setup only works on Linux hosts, due to the use of host networking, so the metrics
+containers can reach network ports on the host machine.
 
 To add new Grafana visualizations, open http://localhost:3000 and edit the existing dashboards.
 When you're happy with what you've got, follow the "Backing up Grafana" instructions above to save your work.
