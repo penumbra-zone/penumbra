@@ -200,6 +200,10 @@ impl SellOrder {
         let desired_amount = U128x128::from(self.desired.amount);
         let offered_unit_amount = U128x128::from(offered_unit.unit_amount());
 
+        if offered_amount == 0u64.into() {
+            return Ok("∞".to_string());
+        }
+
         let price_amount: Amount = ((desired_amount * offered_unit_amount) / offered_amount)?
             // TODO: Is this the correct rounding behavior? Should we expect this to round-trip exactly?
             .round_up()?
