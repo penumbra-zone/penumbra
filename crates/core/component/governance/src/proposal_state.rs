@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
 
+use crate::MAX_VALIDATOR_VOTE_REASON_LENGTH;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::ProposalState", into = "pb::ProposalState")]
 pub enum State {
@@ -293,7 +295,7 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
                 }) => Outcome::Failed {
                     withdrawn: if let Some(pb::proposal_outcome::Withdrawn { reason }) = withdrawn {
                         // Max reason length is 1kb
-                        if reason.len() > 1024 {
+                        if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
                             anyhow::bail!("withdrawn reason must be smaller than 1kb")
                         }
 
@@ -307,7 +309,7 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
                 }) => Outcome::Slashed {
                     withdrawn: if let Some(pb::proposal_outcome::Withdrawn { reason }) = withdrawn {
                         // Max reason length is 1kb
-                        if reason.len() > 1024 {
+                        if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
                             anyhow::bail!("withdrawn reason must be smaller than 1kb")
                         }
                         Withdrawn::WithReason { reason }
@@ -373,7 +375,7 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<()> {
                     // Max reason length is 1kb
                     if withdrawn.is_some() {
                         let reason = &withdrawn.as_ref().expect("reason is some").reason;
-                        if reason.len() > 1024 {
+                        if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
                             anyhow::bail!("withdrawn reason must be smaller than 1kb");
                         }
                     }
@@ -388,7 +390,7 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<()> {
                     // Max reason length is 1kb
                     if withdrawn.is_some() {
                         let reason = &withdrawn.as_ref().expect("reason is some").reason;
-                        if reason.len() > 1024 {
+                        if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
                             anyhow::bail!("withdrawn reason must be smaller than 1kb");
                         }
                     }

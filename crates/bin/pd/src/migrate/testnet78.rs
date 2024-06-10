@@ -354,7 +354,7 @@ pub fn floor_char_boundary(s: &str, index: usize) -> usize {
             .rposition(|b| is_utf8_char_boundary(*b));
 
         // SAFETY: we know that the character boundary will be within four bytes
-        unsafe { lower_bound + new_index.unwrap_unchecked() }
+        lower_bound + new_index.unwrap()
     }
 }
 
