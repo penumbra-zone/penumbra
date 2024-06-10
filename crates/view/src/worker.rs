@@ -223,8 +223,8 @@ impl Worker {
             let block: CompactBlock = block?.try_into()?;
 
             let height = block.height;
-            if height < expected_height {
-                tracing::warn!("repeated block detected");
+            if height != expected_height {
+                tracing::warn!("out of order block detected");
                 continue;
             }
             expected_height += 1;
