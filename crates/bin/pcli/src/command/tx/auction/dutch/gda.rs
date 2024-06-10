@@ -40,22 +40,19 @@ impl GdaRecipe {
         }
     }
 
-    pub fn poisson_intensity_per_block(&self) -> f64 {
+    pub fn poisson_intensity(&self) -> f64 {
         match &self {
-            GdaRecipe::TenMinutes => 0.064614,
-            GdaRecipe::ThirtyMinutes => 0.050577,
-            GdaRecipe::OneHour => 0.042122,
-            GdaRecipe::TwoHours => 0.022629,
-            GdaRecipe::SixHours => 0.010741,
-            GdaRecipe::TwelveHours => 0.00537,
-            GdaRecipe::OneDay => 0.03469,
-            GdaRecipe::TwoDays => 0.00735,
+            GdaRecipe::TenMinutes => 0.0645833333333,
+            GdaRecipe::ThirtyMinutes => 0.05058333333,
+            GdaRecipe::OneHour => 0.02525,
+            GdaRecipe::TwoHours => 0.02266666666,
+            GdaRecipe::SixHours => 0.01075,
+            GdaRecipe::TwelveHours => 0.0053333333,
+            GdaRecipe::OneDay => 0.035,
+            GdaRecipe::TwoDays => 0.00175,
         }
     }
 
-    pub fn poisson_intensity(&self) -> f64 {
-        self.poisson_intensity_per_block() * self.as_blocks() as f64
-    }
 
     pub fn num_auctions(&self) -> u64 {
         match self {
