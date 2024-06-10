@@ -1,5 +1,5 @@
 use std::{
-    io::{IsTerminal as _, Read},
+    io::{stdin, IsTerminal as _, Read, Write},
     str::FromStr,
 };
 
@@ -8,6 +8,7 @@ use camino::Utf8PathBuf;
 use penumbra_custody::threshold;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use rand_core::OsRng;
+use termion::screen::IntoAlternateScreen;
 use url::Url;
 
 use crate::{
@@ -78,7 +79,11 @@ pub enum InitSubCmd {
 pub enum SoftKmsInitCmd {
     /// Generate a new seed phrase and import its corresponding key.
     #[clap(display_order = 100)]
-    Generate,
+    Generate {
+        /// If set, will write the seed phrase to stdout.
+        #[clap(long, action)]
+        stdout: bool,
+    },
     /// Import a spend key from an existing seed phrase.
     #[clap(display_order = 200)]
     ImportPhrase {
@@ -95,19 +100,27 @@ pub enum SoftKmsInitCmd {
 impl SoftKmsInitCmd {
     fn spend_key(&self, init_type: InitType) -> Result<SpendKey> {
         Ok(match self {
-            SoftKmsInitCmd::Generate => {
+            SoftKmsInitCmd::Generate { stdout } => {
                 let seed_phrase = SeedPhrase::generate(OsRng);
-
-                // TODO: Something better should be done here, this is in danger of being
-                // shared by users accidentally in log output.
-                println!(
-                    "YOUR PRIVATE {}SEED PHRASE:\n\n  {seed_phrase}\n\nSave this in a safe place!\nDO NOT SHARE WITH ANYONE!\n",
-                    if let InitType::SpendKey = init_type {
-                        ""
-                    } else {
-                        "GOVERNANCE "
-                    },
+                let seed_msg = format!(
+                    "YOUR PRIVATE SEED PHRASE ({init_type:?}):\n\n\
+                   {seed_phrase}\n\n\
+                   Save this in a safe place!\n\
+                   DO NOT SHARE WITH ANYONE!\n"
                 );
+
+                let mut output = std::io::stdout();
+
+                if *stdout {
+                    output.write_all(seed_msg.as_bytes())?;
+                    output.flush()?;
+                } else {
+                    let mut screen = output.into_alternate_screen()?;
+                    writeln!(screen, "{seed_msg}")?;
+                    screen.flush()?;
+                    println!("Press enter to proceed.");
+                    let _ = stdin().bytes().next();
+                }
 
                 let path = Bip44Path::new(0);
                 SpendKey::from_seed_phrase_bip44(seed_phrase, &path)
@@ -241,7 +254,7 @@ fn exec_deal(
 }
 
 /// Which kind of initialization are we doing?
-#[derive(Clone, Copy)]
+#[derive(Clone, Debug, Copy)]
 enum InitType {
     /// Initialize from scratch with a spend key.
     SpendKey,
