@@ -4,10 +4,11 @@ use futures::TryStreamExt as _;
 use jmt::RootHash;
 use pbjson_types::Any;
 use penumbra_app::app::StateReadExt as _;
+use penumbra_governance::StateReadExt as _;
 use penumbra_proto::{DomainType as _, StateReadProto as _, StateWriteProto as _};
 use penumbra_sct::component::clock::EpochRead as _;
 use penumbra_stake::validator::Validator;
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 use tracing::instrument;
 
 use crate::testnet::generate::TestnetConfig;
@@ -17,22 +18,24 @@ use crate::testnet::generate::TestnetConfig;
 /// Menu:
 /// - Truncate various user-supplied `String` fields to a maximum length.
 ///   * Validators:
-///    - `name` (140 characters)
-///    - `website` (70 characters)
-///    - `description` (280 characters)
+///    - `name` (140 bytes)
+///    - `website` (70 bytes)
+///    - `description` (280 bytes)
 ///   * Governance Parameter Changes:
-///    - `key` (64 characters)
-///    - `value` (2048 characters)
-///    - `component` (64 characters)
+///    - `key` (64 bytes)
+///    - `value` (2048 bytes)
+///    - `component` (64 bytes)
 ///   * Governance Proposals:
-///    - `title` (80 characters)
-///    - `description` (10,000 characters)
+///    - `title` (80 bytes)
+///    - `description` (10,000 bytes)
 ///   * Governance Proposal Withdrawals:
-///    - `reason` (1024 characters)
+///    - `reason` (1024 bytes)
 ///   * Governance IBC Client Freeze Proposals:
-///    - `client_id` (128 characters)
-///   * Signaling Proposals:
-///    - `commit hash` (64 characters)
+///    - `client_id` (128 bytes)
+///   * Governance IBC Client Unfreeze Proposals:
+///    - `client_id` (128 bytes)
+///   * Governance Signaling Proposals:
+///    - `commit hash` (255 bytes)
 #[instrument]
 pub async fn migrate(
     storage: Storage,
@@ -60,6 +63,12 @@ pub async fn migrate(
         let start_time = std::time::SystemTime::now();
         // Adjust the length of `Validator` fields.
         truncate_validator_fields(&mut delta).await?;
+
+        // Adjust the length of governance proposal fields.
+        truncate_proposal_fields(&mut delta).await?;
+
+        // Adjust the length of governance proposal outcome fields.
+        truncate_proposal_outcome_fields(&mut delta).await?;
 
         let post_upgrade_root_hash = storage.commit_in_place(delta).await?;
         tracing::info!(?post_upgrade_root_hash, "post-migration root hash");
@@ -115,6 +124,10 @@ pub async fn migrate(
     Ok(())
 }
 
+///   * Validators:
+///    - `name` (140 bytes)
+///    - `website` (70 bytes)
+///    - `description` (280 bytes)
 async fn truncate_validator_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
     let key_prefix_validators = penumbra_stake::state_key::validators::definitions::prefix();
     let all_validators = delta
@@ -125,10 +138,202 @@ async fn truncate_validator_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::
 
     for (key, mut validator) in all_validators {
         validator.name = truncate(&validator.name, 140).to_string();
+        validator.website = truncate(&validator.website, 70).to_string();
+        validator.description = truncate(&validator.description, 280).to_string();
 
         delta.put(key, validator);
     }
 
+    Ok(())
+}
+
+///   * Governance Proposals:
+///    - `title` (80 bytes)
+///    - `description` (10,000 bytes)
+///   * Governance Parameter Changes:
+///    - `key` (64 bytes)
+///    - `value` (2048 bytes)
+///    - `component` (64 bytes)
+///   * Governance IBC Client Freeze Proposals:
+///    - `client_id` (128 bytes)
+///   * Governance IBC Client Unfreeze Proposals:
+///    - `client_id` (128 bytes)
+///   * Governance Signaling Proposals:
+///    - `commit hash` (255 bytes)
+async fn truncate_proposal_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
+    let next_proposal_id: u64 = delta.next_proposal_id().await?;
+
+    // Range each proposal and truncate the fields.
+    for proposal_id in 0..next_proposal_id {
+        let proposal = delta.proposal_definition(proposal_id).await?;
+
+        if proposal.is_none() {
+            break;
+        }
+
+        let mut proposal = proposal.unwrap();
+
+        proposal.title = truncate(&proposal.title, 80).to_string();
+        proposal.description = truncate(&proposal.description, 10_000).to_string();
+
+        // Depending on the proposal type, we may need to truncate additional fields.
+        match proposal.payload {
+            penumbra_governance::ProposalPayload::Signaling { commit } => {
+                proposal.payload = penumbra_governance::ProposalPayload::Signaling {
+                    commit: commit.map(|commit| truncate(&commit, 255).to_string()),
+                };
+            }
+            penumbra_governance::ProposalPayload::Emergency { halt_chain: _ } => {}
+            penumbra_governance::ProposalPayload::ParameterChange(mut param_change) => {
+                for (i, mut change) in param_change.changes.clone().into_iter().enumerate() {
+                    let key = truncate(&change.key, 64).to_string();
+                    let value = truncate(&change.value, 2048).to_string();
+                    let component = truncate(&change.component, 64).to_string();
+
+                    change.key = key;
+                    change.value = value;
+                    change.component = component;
+
+                    param_change.changes[i] = change;
+                }
+
+                for (i, mut change) in param_change.preconditions.clone().into_iter().enumerate() {
+                    let key = truncate(&change.key, 64).to_string();
+                    let value = truncate(&change.value, 2048).to_string();
+                    let component = truncate(&change.component, 64).to_string();
+
+                    change.key = key;
+                    change.value = value;
+                    change.component = component;
+
+                    param_change.preconditions[i] = change;
+                }
+
+                proposal.payload =
+                    penumbra_governance::ProposalPayload::ParameterChange(param_change);
+            }
+            penumbra_governance::ProposalPayload::CommunityPoolSpend {
+                transaction_plan: _,
+            } => {}
+            penumbra_governance::ProposalPayload::UpgradePlan { height: _ } => {}
+            penumbra_governance::ProposalPayload::FreezeIbcClient { client_id } => {
+                proposal.payload = penumbra_governance::ProposalPayload::FreezeIbcClient {
+                    client_id: truncate(&client_id, 128).to_string(),
+                };
+            }
+            penumbra_governance::ProposalPayload::UnfreezeIbcClient { client_id } => {
+                proposal.payload = penumbra_governance::ProposalPayload::UnfreezeIbcClient {
+                    client_id: truncate(&client_id, 128).to_string(),
+                };
+            }
+        };
+
+        // Store the truncated proposal data
+        delta.put(
+            penumbra_governance::state_key::proposal_definition(proposal_id),
+            proposal.clone(),
+        );
+    }
+
+    Ok(())
+}
+
+///   * Governance Proposal Withdrawals:
+///    - `reason` (1024 bytes)
+async fn truncate_proposal_outcome_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
+    let next_proposal_id: u64 = delta.next_proposal_id().await?;
+
+    // Range each proposal outcome and truncate the fields.
+    for proposal_id in 0..next_proposal_id {
+        let proposal_state = delta.proposal_state(proposal_id).await?;
+
+        if proposal_state.is_none() {
+            break;
+        }
+
+        let mut proposal_state = proposal_state.unwrap();
+
+        match proposal_state {
+            penumbra_governance::proposal_state::State::Withdrawn { reason } => {
+                proposal_state = penumbra_governance::proposal_state::State::Withdrawn {
+                    reason: truncate(&reason, 1024).to_string(),
+                };
+            }
+            penumbra_governance::proposal_state::State::Voting => {}
+            penumbra_governance::proposal_state::State::Finished { ref outcome } => match outcome {
+                penumbra_governance::proposal_state::Outcome::Passed => {}
+                penumbra_governance::proposal_state::Outcome::Failed { withdrawn } => {
+                    match withdrawn {
+                        penumbra_governance::proposal_state::Withdrawn::No => {}
+                        penumbra_governance::proposal_state::Withdrawn::WithReason { reason } => {
+                            proposal_state = penumbra_governance::proposal_state::State::Finished {
+                                outcome: penumbra_governance::proposal_state::Outcome::Failed {
+                                    withdrawn:
+                                        penumbra_governance::proposal_state::Withdrawn::WithReason {
+                                            reason: truncate(&reason, 1024).to_string(),
+                                        },
+                                },
+                            };
+                        }
+                    }
+                }
+                penumbra_governance::proposal_state::Outcome::Slashed { withdrawn } => {
+                    match withdrawn {
+                        penumbra_governance::proposal_state::Withdrawn::No => {}
+                        penumbra_governance::proposal_state::Withdrawn::WithReason { reason } => {
+                            proposal_state = penumbra_governance::proposal_state::State::Finished {
+                                outcome: penumbra_governance::proposal_state::Outcome::Slashed {
+                                    withdrawn:
+                                        penumbra_governance::proposal_state::Withdrawn::WithReason {
+                                            reason: truncate(&reason, 1024).to_string(),
+                                        },
+                                },
+                            };
+                        }
+                    }
+                }
+            },
+            penumbra_governance::proposal_state::State::Claimed { ref outcome } => match outcome {
+                penumbra_governance::proposal_state::Outcome::Passed => {}
+                penumbra_governance::proposal_state::Outcome::Failed { withdrawn } => {
+                    match withdrawn {
+                        penumbra_governance::proposal_state::Withdrawn::No => {}
+                        penumbra_governance::proposal_state::Withdrawn::WithReason { reason } => {
+                            proposal_state = penumbra_governance::proposal_state::State::Claimed {
+                                outcome: penumbra_governance::proposal_state::Outcome::Failed {
+                                    withdrawn:
+                                        penumbra_governance::proposal_state::Withdrawn::WithReason {
+                                            reason: truncate(&reason, 1024).to_string(),
+                                        },
+                                },
+                            };
+                        }
+                    }
+                }
+                penumbra_governance::proposal_state::Outcome::Slashed { withdrawn } => {
+                    match withdrawn {
+                        penumbra_governance::proposal_state::Withdrawn::No => {}
+                        penumbra_governance::proposal_state::Withdrawn::WithReason { reason } => {
+                            proposal_state = penumbra_governance::proposal_state::State::Claimed {
+                                outcome: penumbra_governance::proposal_state::Outcome::Slashed {
+                                    withdrawn:
+                                        penumbra_governance::proposal_state::Withdrawn::WithReason {
+                                            reason: truncate(&reason, 1024).to_string(),
+                                        },
+                                },
+                            };
+                        }
+                    }
+                }
+            },
+        }
+
+        // Store the truncated proposal state data
+        delta.put(
+            penumbra_governance::state_key::proposal_state(proposal_id),
+            proposal_state.clone(),
+        );
+    }
     Ok(())
 }
 
@@ -168,10 +373,10 @@ fn truncate(s: &str, max_bytes: usize) -> &str {
 }
 
 mod tests {
-    use super::*;
 
     #[test]
     fn truncation() {
+        use super::truncate;
         let s = "Hello, world!";
 
         assert_eq!(truncate(s, 5), "Hello");

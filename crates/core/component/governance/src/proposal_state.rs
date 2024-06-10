@@ -294,7 +294,7 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
                     withdrawn: if let Some(pb::proposal_outcome::Withdrawn { reason }) = withdrawn {
                         // Max reason length is 1kb
                         if reason.len() > 1024 {
-                            anyhow::bail!("withdrawn reason is too long")
+                            anyhow::bail!("withdrawn reason must be smaller than 1kb")
                         }
 
                         Withdrawn::WithReason { reason }
@@ -308,7 +308,7 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
                     withdrawn: if let Some(pb::proposal_outcome::Withdrawn { reason }) = withdrawn {
                         // Max reason length is 1kb
                         if reason.len() > 1024 {
-                            anyhow::bail!("withdrawn reason is too long")
+                            anyhow::bail!("withdrawn reason must be smaller than 1kb")
                         }
                         Withdrawn::WithReason { reason }
                     } else {
@@ -374,7 +374,7 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<()> {
                     if withdrawn.is_some() {
                         let reason = &withdrawn.as_ref().expect("reason is some").reason;
                         if reason.len() > 1024 {
-                            anyhow::bail!("withdrawn reason is too long");
+                            anyhow::bail!("withdrawn reason must be smaller than 1kb");
                         }
                     }
                     Outcome::Failed {
@@ -389,7 +389,7 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<()> {
                     if withdrawn.is_some() {
                         let reason = &withdrawn.as_ref().expect("reason is some").reason;
                         if reason.len() > 1024 {
-                            anyhow::bail!("withdrawn reason is too long");
+                            anyhow::bail!("withdrawn reason must be smaller than 1kb");
                         }
                     }
 

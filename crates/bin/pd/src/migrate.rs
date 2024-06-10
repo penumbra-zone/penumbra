@@ -13,21 +13,17 @@ mod testnet77;
 mod testnet78;
 
 use anyhow::{ensure, Context};
-use jmt::RootHash;
-use penumbra_app::app::StateReadExt as _;
-use penumbra_governance::{StateReadExt, StateWriteExt as _};
-use penumbra_sct::component::clock::{EpochManager as _, EpochRead};
+use penumbra_governance::StateReadExt;
+use penumbra_sct::component::clock::EpochRead;
 use std::path::{Path, PathBuf};
 use tracing::instrument;
 
-use cnidarium::{StateDelta, Storage};
+use cnidarium::Storage;
 use penumbra_app::SUBSTORE_PREFIXES;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use std::fs::File;
-
-use crate::testnet::generate::TestnetConfig;
 
 /// The kind of migration that should be performed.
 #[derive(Debug)]
@@ -85,19 +81,6 @@ impl Migration {
             reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
             return Ok(());
         }
-
-        // Collect various pieces of state pre-migration:
-        let initial_state = storage.latest_snapshot();
-        let root_hash = initial_state
-            .root_hash()
-            .await
-            .expect("chain state has a root hash");
-        let pre_upgrade_root_hash: RootHash = root_hash.into();
-        let pre_upgrade_height = initial_state
-            .get_block_height()
-            .await
-            .expect("chain state has a block height");
-        let post_upgrade_height = pre_upgrade_height.wrapping_add(1);
 
         match self {
             Migration::SimpleMigration => {

@@ -106,9 +106,9 @@ impl TryFrom<pb::Proposal> for Proposal {
                     commit: if signaling.commit.is_empty() {
                         None
                     } else {
-                        // Commit hash has max length of 64 chars:
-                        if signaling.commit.len() > 64 {
-                            anyhow::bail!("proposal commit hash must be less than 64 characters");
+                        // Commit hash has max length of 255 bytes:
+                        if signaling.commit.len() > 255 {
+                            anyhow::bail!("proposal commit hash must be less than 255 bytes");
                         }
 
                         Some(signaling.commit)
@@ -140,15 +140,19 @@ impl TryFrom<pb::Proposal> for Proposal {
                     height: upgrade_plan.height,
                 },
                 Payload::FreezeIbcClient(freeze_ibc_client) => {
-                    // Validation: client ID has a max length of 128 chars
+                    // Validation: client ID has a max length of 128 bytes
                     if freeze_ibc_client.client_id.len() > 128 {
-                        anyhow::bail!("client ID must be less than 128 characters");
+                        anyhow::bail!("client ID must be less than 128 bytes");
                     }
                     ProposalPayload::FreezeIbcClient {
                         client_id: freeze_ibc_client.client_id,
                     }
                 }
                 Payload::UnfreezeIbcClient(unfreeze_ibc_client) => {
+                    // Validation: client ID has a max length of 128 bytes
+                    if unfreeze_ibc_client.client_id.len() > 128 {
+                        anyhow::bail!("client ID must be less than 128 bytes");
+                    }
                     ProposalPayload::UnfreezeIbcClient {
                         client_id: unfreeze_ibc_client.client_id,
                     }

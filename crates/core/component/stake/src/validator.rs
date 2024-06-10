@@ -134,19 +134,19 @@ impl TryFrom<ValidatorToml> for Validator {
 
     fn try_from(v: ValidatorToml) -> anyhow::Result<Self> {
         // Validation:
-        // - Website has a max length of 70 chars
+        // - Website has a max length of 70 bytes
         if v.website.len() > 70 {
-            anyhow::bail!("validator website field must be less than 70 characters");
+            anyhow::bail!("validator website field must be less than 70 bytes");
         }
 
-        // - Name has a max length of 140 chars
+        // - Name has a max length of 140 bytes
         if v.name.len() > 140 {
-            anyhow::bail!("validator name must be less than 140 characters");
+            anyhow::bail!("validator name must be less than 140 bytes");
         }
 
-        // - Description has a max length of 280 chars
+        // - Description has a max length of 280 bytes
         if v.description.len() > 280 {
-            anyhow::bail!("validator description must be less than 280 characters");
+            anyhow::bail!("validator description must be less than 280 bytes");
         }
 
         Ok(Validator {
@@ -241,19 +241,19 @@ impl TryFrom<pb::Validator> for Validator {
     type Error = anyhow::Error;
     fn try_from(v: pb::Validator) -> Result<Self, Self::Error> {
         // Validation:
-        // - Website has a max length of 70 chars
+        // - Website has a max length of 70 bytes
         if v.website.len() > 70 {
-            anyhow::bail!("validator website field must be less than 70 characters");
+            anyhow::bail!("validator website field must be less than 70 bytes");
         }
 
-        // - Name has a max length of 140 chars
+        // - Name has a max length of 140 bytes
         if v.name.len() > 140 {
-            anyhow::bail!("validator name must be less than 140 characters");
+            anyhow::bail!("validator name must be less than 140 bytes");
         }
 
-        // - Description has a max length of 280 chars
+        // - Description has a max length of 280 bytes
         if v.description.len() > 280 {
-            anyhow::bail!("validator description must be less than 280 characters");
+            anyhow::bail!("validator description must be less than 280 bytes");
         }
 
         Ok(Validator {
