@@ -13,10 +13,17 @@ services:
       dockerfile: deployments/containerfiles/Dockerfile-grafana
     network_mode: host
     user: "${UID:-1000}"
+    # Don't use ports, since ports conflicts with network_mode=host.
+    # We use network_mode=host so that metrics can talk to services bound
+    # to localhost.
+    # ports:
+    #   - "3000:3000"
 
   # The Prometheus service, for scraping metrics from Penumbra's pd metrics port.
   prom:
     image: "docker.io/prom/prometheus"
     network_mode: host
+    # ports:
+    #   - "9090:9090"
     volumes:
       - "${PWD:?}/../config/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
