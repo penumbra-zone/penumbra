@@ -1,9 +1,9 @@
 use clap::ArgEnum;
 use penumbra_asset::Value;
 use penumbra_auction::auction::dutch::DutchAuctionDescription;
+use rand::Rng;
 use rand::RngCore;
 use rand_core::OsRng;
-use rand_distr::Distribution;
 use serde::Serialize;
 
 #[derive(ArgEnum, Clone, Debug, Serialize)]
@@ -52,7 +52,6 @@ impl GdaRecipe {
             GdaRecipe::TwoDays => 0.00175,
         }
     }
-
 
     pub fn num_auctions(&self) -> u64 {
         match self {
@@ -112,7 +111,6 @@ impl GradualAuction {
     }
 
     pub fn generate_start_heights(&self) -> Vec<u64> {
-        use rand_distr::Exp;
         let lambda = self.recipe.poisson_intensity();
         let num_auctions = self.recipe.num_auctions();
         let start_height = self.start_height;
@@ -127,12 +125,14 @@ impl GradualAuction {
         );
 
         let mut rng = rand::thread_rng();
-        let exp_dist = Exp::new(1.0 / lambda).expect("lambda too small");
         let mut current_height = start_height as f64;
 
         let mut auction_starts = Vec::with_capacity(num_auctions as usize);
         for _ in 0..num_auctions {
-            let ff_clock = exp_dist.sample(&mut rng);
+            // See https://en.wikipedia.org/wiki/Inverse_transform_sampling
+            // aka. a smirnov transform that is a big workshopped with the abs, but it generates a
+            // nice calendar of auctions.
+            let ff_clock = (rng.gen::<f64>() / lambda).ln().abs();
             current_height += ff_clock;
             let height = current_height.ceil() as u64;
             tracing::debug!(height, arrival_time = ff_clock, "selected auction start");

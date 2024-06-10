@@ -85,7 +85,6 @@ pin-project = {workspace = true}
 rand = {workspace = true}
 rand_chacha = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
-rand_distr = "0.4.3"
 regex = {workspace = true}
 rpassword = "7"
 serde = {workspace = true, features = ["derive"]}
