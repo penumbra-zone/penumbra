@@ -25,7 +25,7 @@ impl ThresholdCmd {
         let config = match app.config.custody.clone() {
             CustodyConfig::Threshold(config) => Some(config),
             CustodyConfig::Encrypted(config) => {
-                let password = ActualTerminal.get_password().await?;
+                let password = ActualTerminal::default().get_password().await?;
                 config.convert_to_threshold(&password)?
             }
             _ => None, // If not threshold, we can't sign using threshold config
@@ -42,7 +42,7 @@ impl ThresholdCmd {
                 penumbra_custody::threshold::follow(
                     config.as_ref(),
                     governance_config.as_ref(),
-                    &ActualTerminal,
+                    &ActualTerminal::default(),
                 )
                 .await
             }
