@@ -94,7 +94,6 @@ serde_with = {workspace = true, features = ["hex"]}
 sha2 = {workspace = true}
 simple-base64 = "0.23"
 tendermint = {workspace = true, features = ["rust-crypto"], default-features = true}
-termion = "2.0"
 tokio = {workspace = true, features = ["full"]}
 tokio-stream = {workspace = true}
 tokio-util = {workspace = true}
