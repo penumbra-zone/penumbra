@@ -22,15 +22,15 @@ pub struct InitCmd {
     pub subcmd: InitTopSubCmd,
     /// The GRPC URL that will be used in the generated config.
     #[clap(
-            long,
-            default_value = "https://grpc.testnet.penumbra.zone",
-            // Note: reading from the environment here means that running
-            // pcli init inside of the test harness (where we override that)
-            // will correctly set the URL, even though we don't subsequently
-            // read it from the environment.
-            env = "PENUMBRA_NODE_PD_URL",
-            parse(try_from_str = Url::parse),
-        )]
+        long,
+        default_value = "https://grpc.testnet.penumbra.zone",
+        // Note: reading from the environment here means that running
+        // pcli init inside of the test harness (where we override that)
+        // will correctly set the URL, even though we don't subsequently
+        // read it from the environment.
+        env = "PENUMBRA_NODE_PD_URL",
+        parse(try_from_str = Url::parse),
+    )]
     grpc_url: Url,
     /// For configs with spend authority, this will enable password encryption.
     ///
