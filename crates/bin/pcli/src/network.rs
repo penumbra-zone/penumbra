@@ -22,6 +22,12 @@ impl App {
         &mut self,
         plan: TransactionPlan,
     ) -> anyhow::Result<TransactionId> {
+        let asset_cache = self.view().assets().await?;
+        println!(
+            "including transaction fee of {}...",
+            plan.transaction_parameters.fee.0.format(&asset_cache)
+        );
+
         let transaction = self.build_transaction(plan).await?;
         self.submit_transaction(transaction).await
     }
