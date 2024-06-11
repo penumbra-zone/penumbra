@@ -18,6 +18,7 @@ use penumbra_proto::{
 use penumbra_view::ViewServer;
 use std::io::IsTerminal as _;
 use tracing_subscriber::EnvFilter;
+use url::Url;
 
 #[derive(Debug, Parser)]
 #[clap(name = "pcli", about = "The Penumbra command-line interface.", version)]
@@ -27,6 +28,11 @@ pub struct Opt {
     /// The home directory used to store configuration and data.
     #[clap(long, default_value_t = default_home(), env = "PENUMBRA_PCLI_HOME")]
     pub home: Utf8PathBuf,
+    /// Override the GRPC URL that will be used to connect to a fullnode.
+    ///
+    /// By default, this URL is provided by pcli's config. See `pcli init` for more information.
+    #[clap(long, parse(try_from_str = Url::parse))]
+    pub grpc_url: Option<Url>,
 }
 
 impl Opt {
@@ -49,7 +55,11 @@ impl Opt {
 
     pub fn load_config(&self) -> Result<PcliConfig> {
         let path = self.home.join(crate::CONFIG_FILE_NAME);
-        PcliConfig::load(path)
+        let mut config = PcliConfig::load(path)?;
+        if let Some(grpc_url) = &self.grpc_url {
+            config.grpc_url = grpc_url.clone();
+        }
+        Ok(config)
     }
 
     pub async fn into_app(self) -> Result<(App, Command)> {
