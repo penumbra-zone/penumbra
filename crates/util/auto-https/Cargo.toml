@@ -12,7 +12,7 @@ publish = false
 [dependencies]
 anyhow = {workspace = true}
 futures = {workspace = true}
-rustls = "0.20.9"
+rustls = "0.21"
 axum-server = {workspace = true, features = []}
-rustls-acme = { version = "0.6.0", features = ["axum"] }
+rustls-acme = { version = "0.7", features = ["axum"] }
 tracing = {workspace = true}
