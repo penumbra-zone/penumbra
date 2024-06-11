@@ -40,7 +40,7 @@ spec:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 1Gi
+            storage: 10Gi
     {{- end }}
 
   updateStrategy:
@@ -100,6 +100,11 @@ spec:
             items:
               - key: "postgres-cometbft-schema.sql"
                 path: "postgres-cometbft-schema.sql"
+        # Create emptyDir volume for /dev/shm, otherwise large psql queries for frontends will fail.
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            size: 1G
       {{ end }}
       {{- if .Values.postgres.certificateSecretName }}
         - name: db-certificates
@@ -273,11 +278,6 @@ spec:
             {{- toYaml .Values.postgres.securityContext | nindent 12 }}
           image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
           imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
-          {{- if .Values.maintenanceMode }}
-          command:
-            - sleep
-            - infinity
-          {{- else }}
           {{- if .Values.postgres.certificateSecretName }}
           args:
           - -c
@@ -286,7 +286,6 @@ spec:
           - ssl_cert_file=/var/lib/postgresql/data/certs/server.crt
           - -c
           - ssl_key_file=/var/lib/postgresql/data/certs/server.key
-          {{- end }}
           {{- end }}
           ports:
             - name: postgres
@@ -344,6 +343,8 @@ spec:
               # in order to override the internal volume mount used by the Postgres container image.
               # With the `/data` suffix, db will not persist.
               mountPath: /var/lib/postgresql/data
+            - name: dshm
+              mountPath: /dev/shm
       {{ end }}
 
       {{- with .Values.nodeSelector }}
