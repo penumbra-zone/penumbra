@@ -271,7 +271,8 @@ impl Storage {
 
             tracing::debug!(?query);
 
-            let mut entries = Vec::new();
+            // Combine notes of the same asset/address index together
+            let mut balances: BTreeMap<AddressIndex, BTreeMap<asset::Id, Amount>> = BTreeMap::new();
 
             for result in pool.get()?.prepare_cached(query)?.query_map([], |row| {
                 let asset_id = row.get::<&str, Vec<u8>>("asset_id")?;
@@ -284,13 +285,12 @@ impl Storage {
 
                 let id = Id::try_from(id.as_slice())?;
 
-                let amount: u128 = Amount::from_be_bytes(
+                let amount: Amount = Amount::from_be_bytes(
                     amount
                         .as_slice()
                         .try_into()
                         .expect("amount slice of incorrect length"),
-                )
-                .into();
+                );
 
                 let index = AddressIndex::try_from(index.as_slice())?;
 
@@ -306,12 +306,24 @@ impl Storage {
                     }
                 }
 
-                entries.push(BalanceEntry {
-                    id,
-                    amount,
-                    address_index: index,
-                });
+                balances
+                    .entry(index)
+                    .or_insert_with(BTreeMap::new)
+                    .entry(id)
+                    .and_modify(|e| *e += amount)
+                    .or_insert(amount);
             }
+
+            let entries = balances
+                .into_iter()
+                .flat_map(|(index, assets)| {
+                    assets.into_iter().map(move |(id, amount)| BalanceEntry {
+                        id,
+                        amount: amount.into(),
+                        address_index: index,
+                    })
+                })
+                .collect::<Vec<_>>();
             Ok(entries)
         })
         .await?
