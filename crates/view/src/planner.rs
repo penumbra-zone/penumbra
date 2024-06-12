@@ -576,19 +576,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         let mut iterations = 0usize;
+        let asset_cache = view.assets().await?;
 
         // Now iterate over the action list's imbalances to balance the transaction.
         while let Some(required) = self.action_list.balance_with_fee().required().next() {
             // Find a single note to spend towards the required balance.
             let note = notes_by_asset_id
                 .get_mut(&required.asset_id)
-                .expect("we already made a notesrequest for each required asset")
+                .expect("we already made a notes request for each required asset")
                 .pop()
                 .ok_or_else(|| {
                     anyhow!(
-                        "ran out of notes to spend while planning transaction, need {} of asset {}",
-                        required.amount,
-                        required.asset_id,
+                        "ran out of notes to spend while planning transaction, need {}",
+                        required.format(&asset_cache)
                     )
                 })?;
 
