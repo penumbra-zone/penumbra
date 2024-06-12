@@ -1,10 +1,13 @@
 //! Contains functions related to the migration script of Testnet78.
+use anyhow::Context;
 use cnidarium::{Snapshot, StateDelta, Storage};
 use futures::TryStreamExt as _;
 use jmt::RootHash;
 use penumbra_app::app::StateReadExt as _;
 use penumbra_governance::StateReadExt as _;
+use penumbra_governance::StateWriteExt;
 use penumbra_proto::{StateReadProto as _, StateWriteProto as _};
+use penumbra_sct::component::clock::EpochManager;
 use penumbra_sct::component::clock::EpochRead as _;
 use penumbra_stake::validator::Validator;
 use std::path::PathBuf;
@@ -79,6 +82,16 @@ pub async fn migrate(
         )
     };
     tracing::info!("completed migration steps");
+
+    // Set halt bit to 0, so chain can start again.
+    let migrated_state = storage.latest_snapshot();
+    let mut delta = StateDelta::new(migrated_state);
+    delta.ready_to_start();
+    delta.put_block_height(0u64);
+    let _ = storage
+        .commit_in_place(delta)
+        .await
+        .context("failed to reset halt bit")?;
     storage.release().await;
 
     // The migration is complete, now we need to generate a genesis file. To do this, we need
