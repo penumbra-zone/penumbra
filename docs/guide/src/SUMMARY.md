@@ -16,6 +16,7 @@
     - [Joining a testnet](./node/pd/join-testnet.md)
     - [Becoming a validator](./node/pd/validator.md)
     - [Performing a chain upgrade](./node/pd/chain-upgrade.md)
+    - [Indexing ABCI events](./node/pd/indexing-events.md)
     - [Debugging](./node/pd/debugging.md)
   - [Ultralight node: `pclientd`](./node/pclientd.md)
     - [Configuring `pclientd`](./node/pclientd/configure.md)
