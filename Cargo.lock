@@ -4418,6 +4418,7 @@ dependencies = [
  "penumbra-transaction",
  "penumbra-txhash",
  "penumbra-view",
+ "penumbra-wallet",
  "prost",
  "rand",
  "rand_chacha",
