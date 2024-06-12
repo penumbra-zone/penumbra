@@ -19,5 +19,4 @@ services:
     image: "docker.io/prom/prometheus"
     network_mode: host
     volumes:
-      # TODO: this path is not accurate
-      - /home/conor/src/penumbra/deployments/config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - "${PWD:?}/../config/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
