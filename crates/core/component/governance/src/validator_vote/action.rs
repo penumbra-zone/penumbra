@@ -4,7 +4,7 @@ use penumbra_stake::{GovernanceKey, IdentityKey};
 use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
-use crate::vote::Vote;
+use crate::{vote::Vote, MAX_VALIDATOR_VOTE_REASON_LENGTH};
 
 /// A vote by a validator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -138,6 +138,11 @@ impl TryFrom<pb::ValidatorVoteReason> for ValidatorVoteReason {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::ValidatorVoteReason) -> Result<Self, Self::Error> {
+        // Check the length of the validator reason field.
+        if msg.reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
+            anyhow::bail!("validator vote reason is too long");
+        }
+
         Ok(ValidatorVoteReason(msg.reason))
     }
 }

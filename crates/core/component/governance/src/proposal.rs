@@ -82,6 +82,17 @@ impl TryFrom<pb::Proposal> for Proposal {
     type Error = anyhow::Error;
 
     fn try_from(inner: pb::Proposal) -> Result<Proposal, Self::Error> {
+        // Validation (matches limits from `impl AppActionHandler for ProposalSubmit`):
+        // - Title has a max length of 80 chars
+        if inner.title.len() > 80 {
+            anyhow::bail!("proposal title field must be less than 80 characters");
+        }
+
+        // - Description has a max length of 10_000 chars
+        if inner.description.len() > 10_000 {
+            anyhow::bail!("proposal description must be less than 10,000 characters");
+        }
+
         use pb::proposal::Payload;
         Ok(Proposal {
             id: inner.id,
@@ -95,6 +106,11 @@ impl TryFrom<pb::Proposal> for Proposal {
                     commit: if signaling.commit.is_empty() {
                         None
                     } else {
+                        // Commit hash has max length of 255 bytes:
+                        if signaling.commit.len() > 255 {
+                            anyhow::bail!("proposal commit hash must be less than 255 bytes");
+                        }
+
                         Some(signaling.commit)
                     },
                 },
@@ -123,10 +139,20 @@ impl TryFrom<pb::Proposal> for Proposal {
                 Payload::UpgradePlan(upgrade_plan) => ProposalPayload::UpgradePlan {
                     height: upgrade_plan.height,
                 },
-                Payload::FreezeIbcClient(freeze_ibc_client) => ProposalPayload::FreezeIbcClient {
-                    client_id: freeze_ibc_client.client_id,
-                },
+                Payload::FreezeIbcClient(freeze_ibc_client) => {
+                    // Validation: client ID has a max length of 128 bytes
+                    if freeze_ibc_client.client_id.len() > 128 {
+                        anyhow::bail!("client ID must be less than 128 bytes");
+                    }
+                    ProposalPayload::FreezeIbcClient {
+                        client_id: freeze_ibc_client.client_id,
+                    }
+                }
                 Payload::UnfreezeIbcClient(unfreeze_ibc_client) => {
+                    // Validation: client ID has a max length of 128 bytes
+                    if unfreeze_ibc_client.client_id.len() > 128 {
+                        anyhow::bail!("client ID must be less than 128 bytes");
+                    }
                     ProposalPayload::UnfreezeIbcClient {
                         client_id: unfreeze_ibc_client.client_id,
                     }

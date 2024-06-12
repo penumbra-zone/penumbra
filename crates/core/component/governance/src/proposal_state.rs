@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
 
+use crate::MAX_VALIDATOR_VOTE_REASON_LENGTH;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::ProposalState", into = "pb::ProposalState")]
 pub enum State {
@@ -292,6 +294,11 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
                     withdrawn,
                 }) => Outcome::Failed {
                     withdrawn: if let Some(pb::proposal_outcome::Withdrawn { reason }) = withdrawn {
+                        // Max reason length is 1kb
+                        if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
+                            anyhow::bail!("withdrawn reason must be smaller than 1kb")
+                        }
+
                         Withdrawn::WithReason { reason }
                     } else {
                         Withdrawn::No
@@ -301,6 +308,10 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
                     withdrawn,
                 }) => Outcome::Slashed {
                     withdrawn: if let Some(pb::proposal_outcome::Withdrawn { reason }) = withdrawn {
+                        // Max reason length is 1kb
+                        if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
+                            anyhow::bail!("withdrawn reason must be smaller than 1kb")
+                        }
                         Withdrawn::WithReason { reason }
                     } else {
                         Withdrawn::No
@@ -360,14 +371,35 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<()> {
                 }
                 pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
                     withdrawn,
-                }) => Outcome::Failed {
-                    withdrawn: <Withdrawn<String>>::from(withdrawn.map(|w| w.reason)).try_into()?,
-                },
+                }) => {
+                    // Max reason length is 1kb
+                    if withdrawn.is_some() {
+                        let reason = &withdrawn.as_ref().expect("reason is some").reason;
+                        if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
+                            anyhow::bail!("withdrawn reason must be smaller than 1kb");
+                        }
+                    }
+                    Outcome::Failed {
+                        withdrawn: <Withdrawn<String>>::from(withdrawn.map(|w| w.reason))
+                            .try_into()?,
+                    }
+                }
                 pb::proposal_outcome::Outcome::Slashed(pb::proposal_outcome::Slashed {
                     withdrawn,
-                }) => Outcome::Slashed {
-                    withdrawn: <Withdrawn<String>>::from(withdrawn.map(|w| w.reason)).try_into()?,
-                },
+                }) => {
+                    // Max reason length is 1kb
+                    if withdrawn.is_some() {
+                        let reason = &withdrawn.as_ref().expect("reason is some").reason;
+                        if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
+                            anyhow::bail!("withdrawn reason must be smaller than 1kb");
+                        }
+                    }
+
+                    Outcome::Slashed {
+                        withdrawn: <Withdrawn<String>>::from(withdrawn.map(|w| w.reason))
+                            .try_into()?,
+                    }
+                }
             },
         )
     }

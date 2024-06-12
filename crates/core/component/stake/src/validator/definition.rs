@@ -29,11 +29,13 @@ impl From<Definition> for pb::ValidatorDefinition {
 impl TryFrom<pb::ValidatorDefinition> for Definition {
     type Error = anyhow::Error;
     fn try_from(v: pb::ValidatorDefinition) -> Result<Self, Self::Error> {
+        let validator = v
+            .validator
+            .ok_or_else(|| anyhow::anyhow!("missing validator field in proto"))?;
+        // Validation:
+        // The validator fields are validated by the `try_into` call below:
         Ok(Definition {
-            validator: v
-                .validator
-                .ok_or_else(|| anyhow::anyhow!("missing validator field in proto"))?
-                .try_into()?,
+            validator: validator.try_into()?,
             auth_sig: v.auth_sig.as_slice().try_into()?,
         })
     }

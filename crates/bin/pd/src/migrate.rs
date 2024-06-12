@@ -10,6 +10,7 @@ mod testnet72;
 mod testnet74;
 mod testnet76;
 mod testnet77;
+mod testnet78;
 
 use anyhow::{ensure, Context};
 use penumbra_governance::StateReadExt;
@@ -47,6 +48,9 @@ pub enum Migration {
     /// Testnet-77 migration:
     /// - Reset the halt bit
     Testnet77,
+    /// Testnet-78 migration:
+    /// - Truncate various user-supplied `String` fields to a maximum length.
+    Testnet78,
 }
 
 impl Migration {
@@ -72,30 +76,22 @@ impl Migration {
         );
         tracing::info!("started migration");
 
+        // If this is `ReadyToStart`, we need to reset the halt bit and return early.
+        if let Migration::ReadyToStart = self {
+            reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
+            return Ok(());
+        }
+
         match self {
-            Migration::ReadyToStart => {
-                reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
-                return Ok(());
-            }
             Migration::SimpleMigration => {
                 simple::migrate(storage, pd_home.clone(), genesis_start).await?
             }
 
-            Migration::Testnet72 => {
-                testnet72::migrate(storage, pd_home.clone(), genesis_start).await?
+            Migration::Testnet78 => {
+                testnet78::migrate(storage, pd_home.clone(), genesis_start).await?
             }
-
-            Migration::Testnet74 => {
-                testnet74::migrate(storage, pd_home.clone(), genesis_start).await?
-            }
-
-            Migration::Testnet76 => {
-                testnet76::migrate(storage, pd_home.clone(), genesis_start).await?
-            }
-            Migration::Testnet77 => {
-                testnet77::migrate(storage, pd_home.clone(), genesis_start).await?
-            }
-        };
+            _ => unreachable!(),
+        }
 
         if let Some(comet_home) = comet_home {
             // TODO avoid this when refactoring to clean up migrations
