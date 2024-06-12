@@ -24,6 +24,7 @@ use {
 
 mod common;
 
+// NB: a multi-thread runtime is needed to run both the view server and its client.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
@@ -62,7 +63,7 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
         .tap(|_| tracing::debug!("fast forwarding past genesis"))
         .await?;
 
-    let grpc_url = "http://127.0.0.1:8080"
+    let grpc_url = "http://127.0.0.1:8080" // see #4517
         .parse::<url::Url>()?
         .tap(|url| tracing::debug!(%url, "parsed grpc url"));
 
