@@ -82,7 +82,7 @@ impl AddressCmd {
                     "Address is viewable with this full viewing key. Account index is {0}. {1}",
                     address_index.account,
                     match address_index.randomizer != [0u8; 12] {
-                        true => "Address is ephemeral.",
+                        true => "Address is an IBC deposit address.",
                         false => "",
                     }
                 ),
