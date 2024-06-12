@@ -2,10 +2,9 @@
 use cnidarium::{Snapshot, StateDelta, Storage};
 use futures::TryStreamExt as _;
 use jmt::RootHash;
-use pbjson_types::Any;
 use penumbra_app::app::StateReadExt as _;
 use penumbra_governance::StateReadExt as _;
-use penumbra_proto::{DomainType as _, StateReadProto as _, StateWriteProto as _};
+use penumbra_proto::{StateReadProto as _, StateWriteProto as _};
 use penumbra_sct::component::clock::EpochRead as _;
 use penumbra_stake::validator::Validator;
 use std::path::PathBuf;
@@ -59,6 +58,7 @@ pub async fn migrate(
     // We initialize a `StateDelta` and start by reaching into the JMT for all entries matching the
     // swap execution prefix. Then, we write each entry to the nv-storage.
     let mut delta = StateDelta::new(initial_state);
+    tracing::info!("beginning migration steps");
     let (migration_duration, post_upgrade_root_hash) = {
         let start_time = std::time::SystemTime::now();
         // Adjust the length of `Validator` fields.
@@ -78,6 +78,7 @@ pub async fn migrate(
             post_upgrade_root_hash,
         )
     };
+    tracing::info!("completed migration steps");
     storage.release().await;
 
     // The migration is complete, now we need to generate a genesis file. To do this, we need
@@ -129,11 +130,16 @@ pub async fn migrate(
 ///    - `website` (70 bytes)
 ///    - `description` (280 bytes)
 async fn truncate_validator_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
+    tracing::info!("truncating validator fields");
     let key_prefix_validators = penumbra_stake::state_key::validators::definitions::prefix();
     let all_validators = delta
-        .prefix_proto::<Any>(&key_prefix_validators)
-        .map_ok(|(k, v)| (k, Validator::decode(v.value).expect("only validators")))
-        .try_collect::<Vec<(String, Validator)>>()
+        .prefix_proto::<penumbra_proto::core::component::stake::v1::Validator>(
+            &key_prefix_validators,
+        )
+        .try_collect::<Vec<(
+            String,
+            penumbra_proto::core::component::stake::v1::Validator,
+        )>>()
         .await?;
 
     for (key, mut validator) in all_validators {
@@ -141,6 +147,8 @@ async fn truncate_validator_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::
         validator.website = truncate(&validator.website, 70).to_string();
         validator.description = truncate(&validator.description, 280).to_string();
 
+        let validator: Validator = validator.try_into()?;
+        tracing::info!("put key {:?}", key);
         delta.put(key, validator);
     }
 
@@ -161,10 +169,12 @@ async fn truncate_validator_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::
 ///   * Governance Signaling Proposals:
 ///    - `commit hash` (255 bytes)
 async fn truncate_proposal_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
+    tracing::info!("truncating proposal fields");
     let next_proposal_id: u64 = delta.next_proposal_id().await?;
 
     // Range each proposal and truncate the fields.
     for proposal_id in 0..next_proposal_id {
+        tracing::info!("truncating proposal: {}", proposal_id);
         let proposal = delta.proposal_definition(proposal_id).await?;
 
         if proposal.is_none() {
@@ -229,6 +239,10 @@ async fn truncate_proposal_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::R
         };
 
         // Store the truncated proposal data
+        tracing::info!(
+            "put key {:?}",
+            penumbra_governance::state_key::proposal_definition(proposal_id)
+        );
         delta.put(
             penumbra_governance::state_key::proposal_definition(proposal_id),
             proposal.clone(),
@@ -241,10 +255,12 @@ async fn truncate_proposal_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::R
 ///   * Governance Proposal Withdrawals:
 ///    - `reason` (1024 bytes)
 async fn truncate_proposal_outcome_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
+    tracing::info!("truncating proposal outcome fields");
     let next_proposal_id: u64 = delta.next_proposal_id().await?;
 
     // Range each proposal outcome and truncate the fields.
     for proposal_id in 0..next_proposal_id {
+        tracing::info!("truncating proposal outcomes: {}", proposal_id);
         let proposal_state = delta.proposal_state(proposal_id).await?;
 
         if proposal_state.is_none() {
@@ -329,6 +345,10 @@ async fn truncate_proposal_outcome_fields(delta: &mut StateDelta<Snapshot>) -> a
         }
 
         // Store the truncated proposal state data
+        tracing::info!(
+            "put key {:?}",
+            penumbra_governance::state_key::proposal_state(proposal_id)
+        );
         delta.put(
             penumbra_governance::state_key::proposal_state(proposal_id),
             proposal_state.clone(),
