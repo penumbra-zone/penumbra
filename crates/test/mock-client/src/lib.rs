@@ -1,10 +1,10 @@
 use anyhow::Error;
 use cnidarium::StateRead;
 use penumbra_compact_block::{component::StateReadExt as _, CompactBlock, StatePayload};
-use penumbra_dex::swap::SwapPlaintext;
+use penumbra_dex::{swap::SwapPlaintext, swap_claim::SwapClaimPlan};
 use penumbra_keys::{keys::SpendKey, FullViewingKey};
 use penumbra_sct::component::{clock::EpochRead, tree::SctRead};
-use penumbra_shielded_pool::{note, Note};
+use penumbra_shielded_pool::{note, Note, SpendPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
 use rand_core::OsRng;
@@ -171,20 +171,25 @@ impl MockClient {
     }
 
     pub fn witness_plan(&self, plan: &TransactionPlan) -> Result<WitnessData, Error> {
+        let spend_commitment = |spend: &SpendPlan| spend.note.commit();
+        let spends = plan.spend_plans().map(spend_commitment);
+
+        let swap_claim_commitment = |swap: &SwapClaimPlan| swap.swap_plaintext.swap_commitment();
+        let swap_claims = plan.swap_claim_plans().map(swap_claim_commitment);
+
+        let witness = |commitment| {
+            self.sct
+                .witness(commitment)
+                .ok_or_else(|| anyhow::anyhow!("note commitment {commitment:?} unknown to client"))
+                .map(|proof| (commitment, proof))
+        };
+
         Ok(WitnessData {
             anchor: self.sct.root(),
-            // TODO: this will only witness spends, not other proofs like swaps
-            state_commitment_proofs: plan
-                .spend_plans()
-                .map(|spend| {
-                    let nc = spend.note.commit();
-                    Ok((
-                        nc,
-                        self.sct.witness(nc).ok_or_else(|| {
-                            anyhow::anyhow!("note commitment {:?} unknown to client", nc)
-                        })?,
-                    ))
-                })
+            // TODO: this will only witness spends and swap claims, but not other proofs
+            state_commitment_proofs: spends
+                .chain(swap_claims)
+                .map(witness)
                 .collect::<Result<_, Error>>()?,
         })
     }
