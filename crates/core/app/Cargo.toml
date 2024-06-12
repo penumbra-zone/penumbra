@@ -93,6 +93,7 @@ penumbra-proto                   = { workspace = true, features = ["box-grpc"] }
 penumbra-test-subscriber         = { workspace = true }
 penumbra-mock-tendermint-proxy   = { workspace = true }
 penumbra-view                    = { workspace = true }
+penumbra-wallet                  = { workspace = true }
 rand                             = { workspace = true }
 rand_chacha                      = { workspace = true }
 rand_core                        = { workspace = true }
