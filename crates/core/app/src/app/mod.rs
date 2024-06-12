@@ -34,7 +34,6 @@ use penumbra_stake::component::{
 use penumbra_transaction::Transaction;
 use prost::Message as _;
 use tendermint::abci::{self, Event};
-use tendermint_proto::v0_34::abci::Event as ProtoEvent;
 
 use tendermint::v0_37::abci::{request, response};
 use tendermint::validator::Update;
@@ -152,19 +151,15 @@ impl App {
             }
         };
 
-        // Apply the state from `init_chain` and return the events generated during genesis. These
-        // cannot be emitted at this time due to a limitation of ABCI, but they will be emitted
-        // during the first BeginBlock.
-        let events = state_tx.apply().1;
+        // Note that `init_chain` can not emit any events, and we do not want to
+        // work around this as it violates the design principle that events are changes
+        // to initial data.
+        //
+        // This means that indexers are responsible for parsing genesis data and bootstrapping
+        // their initial state before processing chronological events.
+        //
+        // See: https://github.com/penumbra-zone/penumbra/pull/4449#discussion_r1636868800
 
-        // Commit the genesis events to the state.
-        let mut state_tx = self
-            .state
-            .try_begin_transaction()
-            .expect("state Arc should not be referenced elsewhere");
-        for (i, event) in events.into_iter().enumerate() {
-            state_tx.put_deferred_event(i, event);
-        }
         state_tx.apply();
     }
 
@@ -232,17 +227,6 @@ impl App {
 
     pub async fn begin_block(&mut self, begin_block: &request::BeginBlock) -> Vec<abci::Event> {
         let mut state_tx = StateDelta::new(self.state.clone());
-
-        // Before anything else, emit the deferred events (only present if right after genesis), and
-        // delete each one to prevent it from being emitted again.
-        for i in 0.. {
-            if let Some(event) = state_tx.deferred_event(i).await {
-                state_tx.record(event);
-                state_tx.delete_deferred_event(i);
-            } else {
-                break;
-            }
-        }
 
         // If a app parameter change is scheduled for this block, apply it here,
         // before any other component has executed. This ensures that app
@@ -599,18 +583,6 @@ pub trait StateReadExt: StateRead {
         Ok(String::from_utf8_lossy(&raw_chain_id).to_string())
     }
 
-    async fn deferred_event(&self, i: usize) -> Option<Event> {
-        let event_bytes = self
-            .nonverifiable_get_raw(&state_key::deferred_event(i))
-            .await
-            .expect("can attempt to get deferred event");
-
-        event_bytes.map(|eb| {
-            tendermint_proto::Protobuf::<ProtoEvent>::decode(&eb[..])
-                .expect("deferred event is always valid")
-        })
-    }
-
     /// Checks a provided chain_id against the chain state.
     ///
     /// Passes through if the provided chain_id is empty or matches, and
@@ -775,22 +747,6 @@ pub trait StateWriteExt: StateWrite {
         self.put_shielded_pool_params(shielded_pool_params);
         self.put_stake_params(stake_params);
         self.put_dex_params(dex_params);
-    }
-
-    /// Stores an event to be emitted at the end of the genesis block.
-    /// Due to an ABCI limitation, we cannot emit events during InitChain.
-    /// By calling this, the event will be stored and emitted during `BeginBlock`
-    /// for the first post-genesis block.
-    fn put_deferred_event(&mut self, i: usize, event: Event) {
-        let mut event_bytes = Vec::new();
-        tendermint_proto::Protobuf::<ProtoEvent>::encode(event, &mut event_bytes)
-            .expect("events are always valid and can be encoded");
-        self.nonverifiable_put_raw(state_key::deferred_event(i), event_bytes);
-    }
-
-    /// Removes a deferred event from the state, to prevent re-processing.
-    fn delete_deferred_event(&mut self, i: usize) {
-        self.nonverifiable_delete(state_key::deferred_event(i));
     }
 }
 
