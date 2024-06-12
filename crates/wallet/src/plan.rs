@@ -13,6 +13,8 @@ use penumbra_transaction::{TransactionParameters, TransactionPlan};
 pub use penumbra_view::Planner;
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 
+pub const SWEEP_COUNT: usize = 8;
+
 #[instrument(skip(view, rng))]
 pub async fn sweep<V, R>(view: &mut V, mut rng: R) -> anyhow::Result<Vec<TransactionPlan>>
 where
@@ -89,8 +91,6 @@ where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    const SWEEP_COUNT: usize = 8;
-
     let gas_prices = view.gas_prices().await?;
 
     let all_notes = view
