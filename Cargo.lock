@@ -5193,6 +5193,7 @@ dependencies = [
  "im",
  "metrics",
  "once_cell",
+ "pbjson-types",
  "penumbra-keys",
  "penumbra-proto",
  "penumbra-tct",

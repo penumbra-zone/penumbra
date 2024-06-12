@@ -134,7 +134,7 @@ pub trait SendPacketRead: StateRead {
             .get_verified_consensus_state(&client_state.latest_height(), &connection.client_id)
             .await?;
 
-        let current_block_time = self.get_block_timestamp().await?;
+        let current_block_time = self.get_current_block_timestamp().await?;
         let time_elapsed = current_block_time.duration_since(latest_consensus_state.timestamp)?;
 
         if client_state.expired(time_elapsed) {

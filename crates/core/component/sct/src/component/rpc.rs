@@ -1,4 +1,5 @@
 use cnidarium::Storage;
+use pbjson_types::Timestamp;
 use penumbra_proto::core::component::sct::v1::query_service_server::QueryService;
 use penumbra_proto::core::component::sct::v1::{
     AnchorByHeightRequest, AnchorByHeightResponse, EpochByHeightRequest, EpochByHeightResponse,
@@ -65,15 +66,17 @@ impl QueryService for Server {
         let state = self.storage.latest_snapshot();
 
         let height = request.get_ref().height;
-        let block_time = state.get_block_timestamp().await.map_err(|e| {
+        let block_time = state.get_block_timestamp(height).await.map_err(|e| {
             tonic::Status::unknown(format!("could not get timestamp for height {height}: {e}"))
         })?;
-
         let timestamp = chrono::DateTime::parse_from_rfc3339(block_time.to_rfc3339().as_str())
             .expect("timestamp should roundtrip to string");
 
         Ok(tonic::Response::new(TimestampByHeightResponse {
-            timestamp,
+            timestamp: Some(Timestamp {
+                seconds: timestamp.timestamp(),
+                nanos: timestamp.timestamp_subsec_nanos() as i32,
+            }),
         }))
     }
 }

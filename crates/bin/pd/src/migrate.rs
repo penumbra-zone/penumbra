@@ -145,7 +145,7 @@ pub async fn last_block_timestamp(home: PathBuf) -> anyhow::Result<tendermint::T
         .context("error loading store for timestamp")?;
     let state = storage.latest_snapshot();
     let last_block_time = state
-        .get_block_timestamp()
+        .get_current_block_timestamp()
         .await
         .context("error reading latest block timestamp")?;
     storage.release().await;
