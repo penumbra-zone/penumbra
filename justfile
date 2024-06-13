@@ -14,6 +14,15 @@ proto:
 relayer-local-devnet:
     ./deployments/scripts/relayer-local-devnet
 
+local-devnet-generate:
+    cargo run --release --bin pd -- testnet generate --chain-id penumbra-devnet-local
+
+local-devnet-run:
+    ./deployments/scripts/run-local-devnet.sh
+
+local-devnet-reset-all:
+    cargo run --bin pd --release -- testnet unsafe-reset-all
+
 # Rebuild Rust crate documentation
 rustdocs:
     ./deployments/scripts/rust-docs
