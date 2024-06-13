@@ -410,6 +410,10 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         auction.state.next_trigger = None;
         auction.state.input_reserves = Amount::zero();
         auction.state.output_reserves = Amount::zero();
+        self.record_proto(event::dutch_auction_withdrawn(
+            auction.description.id(),
+            auction.state.clone(),
+        ));
         self.write_dutch_auction_state(auction);
 
         Ok(withdraw_balance)
