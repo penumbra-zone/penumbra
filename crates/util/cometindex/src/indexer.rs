@@ -4,7 +4,9 @@ use anyhow::Result;
 use clap::Parser;
 use futures::{Stream, StreamExt, TryStreamExt};
 use sqlx::PgPool;
+use tap::{Tap, TapFallible, TapOptional};
 use tendermint::abci;
+use tracing::{debug, info};
 
 use crate::{opt::Options, AppView, ContextualizedEvent, PgTransaction};
 
@@ -75,28 +77,31 @@ impl Indexer {
         indexes: &[Box<dyn AppView>],
     ) -> Result<(), anyhow::Error> {
         // Fetch the highest rowid processed so far (the watermark)
-        let current_watermark: Option<(i64,)> =
+        let current_watermark: Option<i64> =
             sqlx::query_as("SELECT events_rowid FROM index_watermark")
                 .fetch_optional(dst_db)
-                .await?;
+                .await?
+                .map(|(w,)| w)
+                .tap_some(|row_id| debug!(%row_id, "fetched index watermark"))
+                .tap_none(|| debug!("no index watermark was present"));
 
         // Insert initial watermark if not present, so we can use a SET query later
         if current_watermark.is_none() {
             sqlx::query("INSERT INTO index_watermark (events_rowid) VALUES (0)")
                 .execute(dst_db)
-                .await?;
+                .await?
+                .tap(|_| debug!("set index watermark to 0"));
         }
 
-        let watermark = current_watermark.unwrap_or((0,)).0;
+        let watermark = current_watermark.unwrap_or(0);
 
         // Calculate new events count since the last watermark
-        let new_events_count: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM events WHERE rowid > $1")
-                .bind(watermark)
-                .fetch_one(src_db)
-                .await?;
-
-        tracing::info!("New events since last watermark: {}", new_events_count.0);
+        sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM events WHERE rowid > $1")
+            .bind(watermark)
+            .fetch_one(src_db)
+            .await
+            .map(|(count,)| count)?
+            .tap(|count| info!(%count, %watermark, "new events since last watermark"));
 
         let mut scanned_events = 0usize;
         let mut relevant_events = 0usize;
@@ -105,6 +110,14 @@ impl Indexer {
         while let Some(event) = es.next().await.transpose()? {
             if scanned_events % 1000 == 0 {
                 tracing::info!(scanned_events, relevant_events);
+            } else {
+                tracing::debug!(
+                    block_height = %event.block_height,
+                    kind = %event.event.kind,
+                    scanned_events,
+                    relevant_events,
+                    "processing event"
+                );
             }
 
             scanned_events += 1;
@@ -114,6 +127,7 @@ impl Indexer {
                 .iter()
                 .any(|index| index.is_relevant(&event.as_ref().kind))
             {
+                tracing::trace!(kind = %event.as_ref().kind, "event is not relevant to any views");
                 continue;
             }
 
@@ -140,8 +154,17 @@ async fn update_watermark(dbtx: &mut PgTransaction<'_>, watermark: i64) -> Resul
     sqlx::query("UPDATE index_watermark SET events_rowid = $1")
         .bind(watermark)
         .execute(dbtx.as_mut()) // lol, see note on Executor trait about Transaction impl
-        .await?;
-    Ok(())
+        .await
+        .tap_ok(|affected| {
+            debug!(%watermark, "updated index watermark");
+            debug_assert_eq!(
+                affected.rows_affected(),
+                1,
+                "only one row should be affected when updating the index watermark"
+            );
+        })
+        .map(|_| ())
+        .map_err(anyhow::Error::from)
 }
 
 fn read_events(
