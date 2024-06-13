@@ -1,13 +1,11 @@
 use anyhow::Result;
-use cometindex::Indexer;
-
-pub mod shielded_pool;
+use pindexer::{shielded_pool::fmd::ClueSet, Indexer};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     Indexer::new()
         .with_default_tracing()
-        .with_index(shielded_pool::fmd::ClueSet {})
+        .with_index(ClueSet {})
         .run()
         .await?;
 
