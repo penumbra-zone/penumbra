@@ -1,11 +1,11 @@
-use cometindex::{async_trait, sqlx, ContextualizedEvent, Index, PgTransaction};
+use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_proto::{core::component::shielded_pool::v1 as pb, event::ProtoEvent};
 
 #[derive(Debug)]
 pub struct ClueSet {}
 
 #[async_trait]
-impl Index for ClueSet {
+impl AppView for ClueSet {
     async fn create_tables(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
         sqlx::query(
             // table name is module path + struct name
