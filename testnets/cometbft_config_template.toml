@@ -294,7 +294,7 @@ size = 5000
 # This is the raw, total transaction size. For example, given 1MB
 # transactions and a 5MB maximum mempool byte size, the mempool will
 # only accept five transactions.
-max_txs_bytes = 5242880
+max_txs_bytes = 10485760
 
 # Size of the cache (used to filter transactions we saw earlier) in transactions
 cache_size = 10000
