@@ -1,5 +1,5 @@
 use anyhow::Result;
-use cometindex::{async_trait, ContextualizedEvent, Index, Indexer, PgTransaction};
+use cometindex::{async_trait, AppView, ContextualizedEvent, Indexer, PgTransaction};
 
 // This example is silly because it doesn't do any "compilation" of the raw
 // events, so it's only useful as an example of exercising the harness and the
@@ -11,7 +11,7 @@ use cometindex::{async_trait, ContextualizedEvent, Index, Indexer, PgTransaction
 struct FmdCluesExample {}
 
 #[async_trait]
-impl Index for FmdCluesExample {
+impl AppView for FmdCluesExample {
     async fn create_tables(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
         sqlx::query(
             "
