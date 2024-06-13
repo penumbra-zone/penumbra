@@ -1,4 +1,5 @@
 //! Contains functions related to the migration script of Testnet78.
+use anyhow::Context;
 use cnidarium::{Snapshot, StateDelta, StateWrite, Storage};
 use futures::TryStreamExt as _;
 use futures::{pin_mut, StreamExt};
@@ -16,7 +17,10 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::EpochManager;
 use penumbra_sct::component::clock::EpochRead;
 use penumbra_stake::validator::Validator;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::PathBuf;
+use tendermint_config::TendermintConfig;
 use tracing::instrument;
 
 use crate::testnet::generate::TestnetConfig;
@@ -536,8 +540,38 @@ fn truncate(s: &str, max_bytes: usize) -> &str {
     &s[..closest]
 }
 
-mod tests {
+/// Edit the node's CometBFT config file to set two values:
+///
+///   * mempool.max_tx_bytes
+///   * mempool.max_txs_bytes
+///
+/// These values will affect consensus, but the config settings are specified for CometBFT
+/// specifically.
+#[instrument]
+pub(crate) fn update_cometbft_mempool_settings(cometbft_home: PathBuf) -> anyhow::Result<()> {
+    let cometbft_config_path = cometbft_home.join("config").join("config.toml");
+    tracing::debug!(cometbft_config_path = %cometbft_config_path.display(), "opening cometbft config file");
+    let mut cometbft_config = TendermintConfig::load_toml_file(&cometbft_config_path)
+        .context("failed to load pre-migration cometbft config file")?;
+    // The new values were updated in GH4594 & GH4632.
+    let desired_max_txs_bytes = 10485760;
+    let desired_max_tx_bytes = 30720;
+    // Set new value
+    cometbft_config.mempool.max_txs_bytes = desired_max_txs_bytes;
+    cometbft_config.mempool.max_tx_bytes = desired_max_tx_bytes;
+    // Overwrite file
+    let mut fh = OpenOptions::new()
+        .create(false)
+        .write(true)
+        .truncate(true)
+        .open(cometbft_config_path.clone())
+        .context("failed to open cometbft config file for writing")?;
+    fh.write_all(toml::to_string(&cometbft_config)?.as_bytes())
+        .context("failed to write updated cometbft config to toml file")?;
+    Ok(())
+}
 
+mod tests {
     #[test]
     fn truncation() {
         use super::truncate;
