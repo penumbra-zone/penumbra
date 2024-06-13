@@ -67,3 +67,55 @@ cargo run --bin pindexer -- -s "postgresql://localhost:5432/testnet_raw?sslmode=
 ```
 cargo run --example fmd_clues -- -s "postgresql://localhost:5432/testnet_raw?sslmode=disable" -d "postgresql://localhost:5432/testnet_compiled?sslmode=disable"
 ```
+
+# nixos
+
+initialize postgres
+
+```
+[user@hostname:~/penumbra]$ initdb --pgdata=.data
+```
+
+create a directory in `/run/postgresql`, or alter the generated configuration 
+file and change the value of `unix_socket_directories`.
+
+start psql
+
+```
+pg_ctl -D .data -l logfile start
+```
+
+create database `testnet_raw` and `testnet_compiled`
+
+```
+$ psql postgres
+
+postgres=# CREATE DATABASE testnet_raw;
+CREATE DATABASE
+
+postgres=# CREATE DATABASE testnet_compiled;
+CREATE DATABASE
+
+postgres=# \q
+```
+
+test connection
+
+```
+psql "postgresql://localhost:5432/testnet_raw?sslmode=disable"
+```
+
+put in comet config.toml
+
+```
+# ~/.penumbra/testnet_data/node0/cometbft/config/config.toml
+[tx_index]
+indexer = "psql"
+psql-conn = "postgresql://localhost:5432/testnet_raw?sslmode=disable"
+```
+
+install comet schema
+
+```
+psql --file=crates/util/cometindex/vendor/schema.sql "postgresql://localhost:5432/testnet_raw?sslmode=disable"
+```
