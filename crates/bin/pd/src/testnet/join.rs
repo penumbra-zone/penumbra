@@ -251,30 +251,40 @@ pub async fn unpack_state_archive(
     output_dir: PathBuf,
     leave_archive: bool,
 ) -> anyhow::Result<()> {
-    tracing::info!(%archive_url, "downloading compressed node state");
-    // Download.
-    // Here we inspect HEAD so we can infer filename.
-    let response = reqwest::get(archive_url).await?;
-    let fname = response
-        .url()
-        .path_segments()
-        .and_then(|segments| segments.last())
-        .and_then(|name| if name.is_empty() { None } else { Some(name) })
-        .unwrap_or("pd-node-state-archive.tar.gz");
+    let mut archive_filepath: std::path::PathBuf = Default::default();
+    // Check whether URL points to a local file
+    if archive_url.scheme() == "file" {
+        tracing::info!(%archive_url, "extracting compressed node state from local file");
+        archive_filepath = archive_url.to_file_path().map_err(|e| {
+            tracing::error!(?e);
+            anyhow::anyhow!("failed to convert archive url to filepath")
+        })?;
+    } else {
+        // Download.
+        // Here we inspect HEAD so we can infer filename.
+        tracing::info!(%archive_url, "downloading compressed node state");
+        let response = reqwest::get(archive_url).await?;
+        let fname = response
+            .url()
+            .path_segments()
+            .and_then(|segments| segments.last())
+            .and_then(|name| if name.is_empty() { None } else { Some(name) })
+            .unwrap_or("pd-node-state-archive.tar.gz");
 
-    let archive_filepath = output_dir.join(fname);
-    let mut download_opts = std::fs::OpenOptions::new();
-    download_opts.create_new(true).write(true);
-    let mut archive_file = download_opts.open(&archive_filepath)?;
+        let archive_filepath = output_dir.join(fname);
+        let mut download_opts = std::fs::OpenOptions::new();
+        download_opts.create_new(true).write(true);
+        let mut archive_file = download_opts.open(&archive_filepath)?;
 
-    // Download via stream, in case file is too large to shove into RAM.
-    let mut stream = response.bytes_stream();
-    while let Some(chunk_result) = stream.next().await {
-        let chunk = chunk_result?;
-        archive_file.write_all(&chunk)?;
+        // Download via stream, in case file is too large to shove into RAM.
+        let mut stream = response.bytes_stream();
+        while let Some(chunk_result) = stream.next().await {
+            let chunk = chunk_result?;
+            archive_file.write_all(&chunk)?;
+        }
+        archive_file.flush()?;
+        tracing::info!("download complete: {}", archive_filepath.display());
     }
-    archive_file.flush()?;
-    tracing::info!("download complete: {}", archive_filepath.display());
 
     // Extract.
     // Re-open downloaded file for unpacking, for a fresh filehandle.
