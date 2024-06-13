@@ -240,6 +240,9 @@ pub enum TestnetCommand {
         /// When generating Tendermint config, use this socket to bind the Tendermint P2P service.
         #[clap(long, env = "PENUMBRA_PD_TM_P2P_BIND", default_value = "0.0.0.0:26656")]
         tendermint_p2p_bind: SocketAddr,
+        /// Leave the downloaded archive file on disk after extraction.
+        #[clap(long, env = "PENUMBRA_PD_LEAVE_ARCHIVE", action)]
+        leave_archive: bool,
     },
 
     /// Reset all `pd` testnet state.

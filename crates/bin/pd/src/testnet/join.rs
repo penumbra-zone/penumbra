@@ -244,7 +244,13 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
 ///
 /// The `output_dir` should be the same argument as passed to `pd testnet --testnet-dir <dir> join`;
 /// relative paths for pd and cometbft will be created from this base path.
-pub async fn unpack_state_archive(archive_url: Url, output_dir: PathBuf) -> anyhow::Result<()> {
+///
+/// The `leave_archive` argument allows you to keep the downloaded archive file after unpacking.
+pub async fn unpack_state_archive(
+    archive_url: Url,
+    output_dir: PathBuf,
+    leave_archive: bool,
+) -> anyhow::Result<()> {
     tracing::info!(%archive_url, "downloading compressed node state");
     // Download.
     // Here we inspect HEAD so we can infer filename.
@@ -304,8 +310,14 @@ pub async fn unpack_state_archive(archive_url: Url, output_dir: PathBuf) -> anyh
     }
 
     tracing::info!("archived node state unpacked to {}", pd_home.display());
-    // Post-extraction, clean up the downloaded tarball.
-    std::fs::remove_file(archive_filepath)?;
+
+    if !leave_archive {
+        // Post-extraction, clean up the downloaded tarball.
+        std::fs::remove_file(archive_filepath)?;
+    } else {
+        tracing::info!(path = ?archive_filepath, "leaving downloaded archive on disk");
+    }
+
     Ok(())
 }
 
