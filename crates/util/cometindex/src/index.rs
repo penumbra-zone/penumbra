@@ -8,7 +8,7 @@ pub type PgTransaction<'a> = Transaction<'a, Postgres>;
 /// Represents a specific index of raw event data.
 #[async_trait]
 pub trait AppView: std::fmt::Debug {
-    async fn create_tables(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error>;
+    async fn init_chain(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error>;
 
     fn is_relevant(&self, type_str: &str) -> bool;
 
