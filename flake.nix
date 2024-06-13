@@ -108,6 +108,7 @@
               cargo-nextest
               cargo-watch
               cometbft
+              just
               postgresql
               protobuf
               rocksdb
