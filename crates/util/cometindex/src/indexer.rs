@@ -31,9 +31,9 @@ impl Indexer {
         self
     }
 
-    async fn create_dst_tables(&self, pool: &PgPool) -> Result<()> {
+    async fn create_dst_tables(pool: &PgPool, indexes: &[Box<dyn AppView>]) -> Result<()> {
         let mut dbtx = pool.begin().await?;
-        for index in &self.indexes {
+        for index in indexes {
             index.init_chain(&mut dbtx).await?;
         }
         dbtx.commit().await?;
@@ -42,27 +42,48 @@ impl Indexer {
 
     pub async fn run(self) -> Result<(), anyhow::Error> {
         tracing::info!(?self.opts);
+        let Self {
+            opts:
+                Options {
+                    src_database_url,
+                    dst_database_url,
+                    chain_id: _,
+                    poll_ms,
+                },
+            indexes,
+        } = self;
 
-        let src_db = PgPool::connect(&self.opts.src_database_url).await?;
-        let dst_db = PgPool::connect(&self.opts.dst_database_url).await?;
+        let src_db = PgPool::connect(&src_database_url).await?;
+        let dst_db = PgPool::connect(&dst_database_url).await?;
 
-        self.create_dst_tables(&dst_db).await?;
+        Self::create_dst_tables(&dst_db, &indexes).await?;
 
         // Create the index_watermark table if it does not exist
         sqlx::query("CREATE TABLE IF NOT EXISTS index_watermark (events_rowid BIGINT NOT NULL)")
             .execute(&dst_db)
             .await?;
 
+        loop {
+            Self::tick(&src_db, &dst_db, &indexes).await?;
+            tokio::time::sleep(poll_ms).await;
+        }
+    }
+
+    async fn tick(
+        src_db: &PgPool,
+        dst_db: &PgPool,
+        indexes: &[Box<dyn AppView>],
+    ) -> Result<(), anyhow::Error> {
         // Fetch the highest rowid processed so far (the watermark)
         let current_watermark: Option<(i64,)> =
             sqlx::query_as("SELECT events_rowid FROM index_watermark")
-                .fetch_optional(&dst_db)
+                .fetch_optional(dst_db)
                 .await?;
 
         // Insert initial watermark if not present, so we can use a SET query later
         if current_watermark.is_none() {
             sqlx::query("INSERT INTO index_watermark (events_rowid) VALUES (0)")
-                .execute(&dst_db)
+                .execute(dst_db)
                 .await?;
         }
 
@@ -72,7 +93,7 @@ impl Indexer {
         let new_events_count: (i64,) =
             sqlx::query_as("SELECT COUNT(*) FROM events WHERE rowid > $1")
                 .bind(watermark)
-                .fetch_one(&src_db)
+                .fetch_one(src_db)
                 .await?;
 
         tracing::info!("New events since last watermark: {}", new_events_count.0);
@@ -89,8 +110,7 @@ impl Indexer {
             scanned_events += 1;
 
             // if not relevant then skip making a db tx for the dst db
-            if !self
-                .indexes
+            if !indexes
                 .iter()
                 .any(|index| index.is_relevant(&event.as_ref().kind))
             {
@@ -101,7 +121,7 @@ impl Indexer {
 
             // Otherwise we have something to process. Make a dbtx
             let mut dbtx = dst_db.begin().await?;
-            for index in &self.indexes {
+            for index in indexes {
                 if index.is_relevant(&event.as_ref().kind) {
                     tracing::debug!(?event, ?index, "relevant to index");
                     index.index_event(&mut dbtx, &event).await?;
@@ -111,8 +131,6 @@ impl Indexer {
             update_watermark(&mut dbtx, event.local_rowid).await?;
             dbtx.commit().await?;
         }
-
-        // todo poll on a timer ? subscribe ?
 
         Ok(())
     }
