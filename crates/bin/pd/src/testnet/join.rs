@@ -251,7 +251,7 @@ pub async fn unpack_state_archive(
     output_dir: PathBuf,
     leave_archive: bool,
 ) -> anyhow::Result<()> {
-    let mut archive_filepath: std::path::PathBuf = Default::default();
+    let archive_filepath: std::path::PathBuf;
     // Check whether URL points to a local file
     if archive_url.scheme() == "file" {
         tracing::info!(%archive_url, "extracting compressed node state from local file");
@@ -271,7 +271,7 @@ pub async fn unpack_state_archive(
             .and_then(|name| if name.is_empty() { None } else { Some(name) })
             .unwrap_or("pd-node-state-archive.tar.gz");
 
-        let archive_filepath = output_dir.join(fname);
+        archive_filepath = output_dir.join(fname);
         let mut download_opts = std::fs::OpenOptions::new();
         download_opts.create_new(true).write(true);
         let mut archive_file = download_opts.open(&archive_filepath)?;
@@ -290,7 +290,9 @@ pub async fn unpack_state_archive(
     // Re-open downloaded file for unpacking, for a fresh filehandle.
     let mut unpack_opts = std::fs::OpenOptions::new();
     unpack_opts.read(true);
-    let f = unpack_opts.open(&archive_filepath)?;
+    let f = unpack_opts
+        .open(&archive_filepath)
+        .context("failed to open local archive for extraction")?;
     let tar = GzDecoder::new(f);
     let mut archive = tar::Archive::new(tar);
     // This dir-path building is duplicated in the config gen code.
