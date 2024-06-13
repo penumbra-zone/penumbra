@@ -104,7 +104,14 @@
           devShells.default = craneLib.devShell {
             inherit LIBCLANG_PATH ROCKSDB_LIB_DIR;
             inputsFrom = [ penumbra ];
-            packages = [ cargo-watch cargo-nextest protobuf cometbft rocksdb ];
+            packages = [
+              cargo-nextest
+              cargo-watch
+              cometbft
+              postgresql
+              protobuf
+              rocksdb
+            ];
             shellHook = ''
               export LIBCLANG_PATH=${LIBCLANG_PATH}
               export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc} # Required for rust-analyzer
