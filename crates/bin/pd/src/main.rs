@@ -255,6 +255,7 @@ async fn main() -> anyhow::Result<()> {
                     external_address,
                     tendermint_rpc_bind,
                     tendermint_p2p_bind,
+                    leave_archive,
                 },
             testnet_dir,
         } => {
@@ -297,7 +298,8 @@ async fn main() -> anyhow::Result<()> {
 
             // Download and extract archive URL, if set.
             if let Some(archive_url) = archive_url {
-                pd::testnet::join::unpack_state_archive(archive_url, output_dir).await?;
+                pd::testnet::join::unpack_state_archive(archive_url, output_dir, leave_archive)
+                    .await?;
             }
         }
 
