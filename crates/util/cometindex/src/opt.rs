@@ -1,3 +1,6 @@
+use std::time::Duration;
+
+use anyhow::{Error, Result};
 use clap::Parser;
 
 /// This struct represents the command-line options
@@ -19,4 +22,13 @@ pub struct Options {
     /// Filter for only events with this chain ID.
     #[clap(short, long)]
     pub chain_id: Option<String>,
+
+    /// The rate at which to poll for changes, in milliseconds.
+    #[clap(short, long, default_value = "500", value_parser = parse_poll_ms)]
+    pub poll_ms: Duration,
+}
+
+/// Parses a string containing a [`Duration`], represented as a number of milliseconds.
+fn parse_poll_ms(s: &str) -> Result<Duration> {
+    s.parse().map(Duration::from_millis).map_err(Error::from)
 }
