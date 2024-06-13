@@ -34,7 +34,7 @@ impl Indexer {
     async fn create_dst_tables(&self, pool: &PgPool) -> Result<()> {
         let mut dbtx = pool.begin().await?;
         for index in &self.indexes {
-            index.create_tables(&mut dbtx).await?;
+            index.init_chain(&mut dbtx).await?;
         }
         dbtx.commit().await?;
         Ok(())
