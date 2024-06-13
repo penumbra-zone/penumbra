@@ -4,8 +4,11 @@ use cnidarium::{Snapshot, StateDelta, Storage};
 use futures::TryStreamExt as _;
 use jmt::RootHash;
 use penumbra_app::app::StateReadExt as _;
+use penumbra_governance::proposal_state::State as ProposalState;
+use penumbra_governance::Proposal;
 use penumbra_governance::StateReadExt as _;
 use penumbra_governance::StateWriteExt;
+use penumbra_proto::core::component::governance::v1 as pb_governance;
 use penumbra_proto::{StateReadProto as _, StateWriteProto as _};
 use penumbra_sct::component::clock::EpochManager;
 use penumbra_sct::component::clock::EpochRead as _;
@@ -160,6 +163,7 @@ async fn truncate_validator_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::
         validator.website = truncate(&validator.website, 70).to_string();
         validator.description = truncate(&validator.description, 280).to_string();
 
+        // Ensure the validator can be serialized back to the domain type:
         let validator: Validator = validator.try_into()?;
         tracing::info!("put key {:?}", key);
         delta.put(key, validator);
@@ -188,7 +192,11 @@ async fn truncate_proposal_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::R
     // Range each proposal and truncate the fields.
     for proposal_id in 0..next_proposal_id {
         tracing::info!("truncating proposal: {}", proposal_id);
-        let proposal = delta.proposal_definition(proposal_id).await?;
+        let proposal = delta
+            .get_proto::<pb_governance::Proposal>(
+                &penumbra_governance::state_key::proposal_definition(proposal_id),
+            )
+            .await?;
 
         if proposal.is_none() {
             break;
@@ -200,14 +208,20 @@ async fn truncate_proposal_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::R
         proposal.description = truncate(&proposal.description, 10_000).to_string();
 
         // Depending on the proposal type, we may need to truncate additional fields.
-        match proposal.payload {
-            penumbra_governance::ProposalPayload::Signaling { commit } => {
-                proposal.payload = penumbra_governance::ProposalPayload::Signaling {
-                    commit: commit.map(|commit| truncate(&commit, 255).to_string()),
-                };
+        match proposal
+            .payload
+            .clone()
+            .expect("proposal payload always set")
+        {
+            pb_governance::proposal::Payload::Signaling(commit) => {
+                proposal.payload = Some(pb_governance::proposal::Payload::Signaling(
+                    pb_governance::proposal::Signaling {
+                        commit: truncate(&commit.commit, 255).to_string(),
+                    },
+                ));
             }
-            penumbra_governance::ProposalPayload::Emergency { halt_chain: _ } => {}
-            penumbra_governance::ProposalPayload::ParameterChange(mut param_change) => {
+            pb_governance::proposal::Payload::Emergency(_halt_chain) => {}
+            pb_governance::proposal::Payload::ParameterChange(mut param_change) => {
                 for (i, mut change) in param_change.changes.clone().into_iter().enumerate() {
                     let key = truncate(&change.key, 64).to_string();
                     let value = truncate(&change.value, 2048).to_string();
@@ -232,22 +246,25 @@ async fn truncate_proposal_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::R
                     param_change.preconditions[i] = change;
                 }
 
-                proposal.payload =
-                    penumbra_governance::ProposalPayload::ParameterChange(param_change);
+                proposal.payload = Some(pb_governance::proposal::Payload::ParameterChange(
+                    param_change,
+                ));
             }
-            penumbra_governance::ProposalPayload::CommunityPoolSpend {
-                transaction_plan: _,
-            } => {}
-            penumbra_governance::ProposalPayload::UpgradePlan { height: _ } => {}
-            penumbra_governance::ProposalPayload::FreezeIbcClient { client_id } => {
-                proposal.payload = penumbra_governance::ProposalPayload::FreezeIbcClient {
-                    client_id: truncate(&client_id, 128).to_string(),
-                };
+            pb_governance::proposal::Payload::CommunityPoolSpend(_transaction_plan) => {}
+            pb_governance::proposal::Payload::UpgradePlan(_height) => {}
+            pb_governance::proposal::Payload::FreezeIbcClient(client_id) => {
+                proposal.payload = Some(pb_governance::proposal::Payload::FreezeIbcClient(
+                    pb_governance::proposal::FreezeIbcClient {
+                        client_id: truncate(&client_id.client_id, 128).to_string(),
+                    },
+                ));
             }
-            penumbra_governance::ProposalPayload::UnfreezeIbcClient { client_id } => {
-                proposal.payload = penumbra_governance::ProposalPayload::UnfreezeIbcClient {
-                    client_id: truncate(&client_id, 128).to_string(),
-                };
+            pb_governance::proposal::Payload::UnfreezeIbcClient(client_id) => {
+                proposal.payload = Some(pb_governance::proposal::Payload::UnfreezeIbcClient(
+                    pb_governance::proposal::UnfreezeIbcClient {
+                        client_id: truncate(&client_id.client_id, 128).to_string(),
+                    },
+                ));
             }
         };
 
@@ -256,9 +273,11 @@ async fn truncate_proposal_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::R
             "put key {:?}",
             penumbra_governance::state_key::proposal_definition(proposal_id)
         );
+        // Ensure the proposal can be serialized back to the domain type:
+        let proposal: Proposal = proposal.try_into()?;
         delta.put(
             penumbra_governance::state_key::proposal_definition(proposal_id),
-            proposal.clone(),
+            proposal,
         );
     }
 
@@ -274,7 +293,11 @@ async fn truncate_proposal_outcome_fields(delta: &mut StateDelta<Snapshot>) -> a
     // Range each proposal outcome and truncate the fields.
     for proposal_id in 0..next_proposal_id {
         tracing::info!("truncating proposal outcomes: {}", proposal_id);
-        let proposal_state = delta.proposal_state(proposal_id).await?;
+        let proposal_state = delta
+            .get_proto::<pb_governance::ProposalState>(
+                &penumbra_governance::state_key::proposal_state(proposal_id),
+            )
+            .await?;
 
         if proposal_state.is_none() {
             break;
@@ -282,75 +305,133 @@ async fn truncate_proposal_outcome_fields(delta: &mut StateDelta<Snapshot>) -> a
 
         let mut proposal_state = proposal_state.unwrap();
 
-        match proposal_state {
-            penumbra_governance::proposal_state::State::Withdrawn { reason } => {
-                proposal_state = penumbra_governance::proposal_state::State::Withdrawn {
-                    reason: truncate(&reason, 1024).to_string(),
-                };
+        match proposal_state
+            .state
+            .clone()
+            .expect("proposal state always set")
+        {
+            pb_governance::proposal_state::State::Withdrawn(reason) => {
+                proposal_state.state = Some(pb_governance::proposal_state::State::Withdrawn(
+                    pb_governance::proposal_state::Withdrawn {
+                        reason: truncate(&reason.reason, 1024).to_string(),
+                    },
+                ));
             }
-            penumbra_governance::proposal_state::State::Voting => {}
-            penumbra_governance::proposal_state::State::Finished { ref outcome } => match outcome {
-                penumbra_governance::proposal_state::Outcome::Passed => {}
-                penumbra_governance::proposal_state::Outcome::Failed { withdrawn } => {
-                    match withdrawn {
-                        penumbra_governance::proposal_state::Withdrawn::No => {}
-                        penumbra_governance::proposal_state::Withdrawn::WithReason { reason } => {
-                            proposal_state = penumbra_governance::proposal_state::State::Finished {
-                                outcome: penumbra_governance::proposal_state::Outcome::Failed {
-                                    withdrawn:
-                                        penumbra_governance::proposal_state::Withdrawn::WithReason {
-                                            reason: truncate(&reason, 1024).to_string(),
-                                        },
-                                },
-                            };
+            pb_governance::proposal_state::State::Voting(_) => {}
+            pb_governance::proposal_state::State::Finished(ref outcome) => match outcome
+                .outcome
+                .clone()
+                .expect("proposal outcome always set")
+                .outcome
+                .expect("proposal outcome always set")
+            {
+                pb_governance::proposal_outcome::Outcome::Passed(_) => {}
+                pb_governance::proposal_outcome::Outcome::Failed(withdrawn) => {
+                    match withdrawn.withdrawn {
+                        None => {
+                            // Withdrawn::No
+                        }
+                        Some(pb_governance::proposal_outcome::Withdrawn { reason }) => {
+                            // Withdrawn::WithReason
+                            proposal_state.state =
+                                Some(pb_governance::proposal_state::State::Finished(
+                                    pb_governance::proposal_state::Finished {
+                                        outcome: Some(pb_governance::ProposalOutcome{
+                                            outcome: Some(pb_governance::proposal_outcome::Outcome::Failed(
+                                                pb_governance::proposal_outcome::Failed {
+                                                    withdrawn:
+                                                        Some(pb_governance::proposal_outcome::Withdrawn {
+                                                            reason: truncate(&reason, 1024)
+                                                                .to_string(),
+                                                        }),
+                                                },
+                                            )),
+                                        }),
+                                    },
+                                ));
                         }
                     }
                 }
-                penumbra_governance::proposal_state::Outcome::Slashed { withdrawn } => {
-                    match withdrawn {
-                        penumbra_governance::proposal_state::Withdrawn::No => {}
-                        penumbra_governance::proposal_state::Withdrawn::WithReason { reason } => {
-                            proposal_state = penumbra_governance::proposal_state::State::Finished {
-                                outcome: penumbra_governance::proposal_state::Outcome::Slashed {
-                                    withdrawn:
-                                        penumbra_governance::proposal_state::Withdrawn::WithReason {
-                                            reason: truncate(&reason, 1024).to_string(),
-                                        },
-                                },
-                            };
+                pb_governance::proposal_outcome::Outcome::Slashed(withdrawn) => {
+                    match withdrawn.withdrawn {
+                        None => {
+                            // Withdrawn::No
+                        }
+                        Some(pb_governance::proposal_outcome::Withdrawn { reason }) => {
+                            // Withdrawn::WithReason
+                            proposal_state.state = Some(pb_governance::proposal_state::State::Finished(
+                                    pb_governance::proposal_state::Finished {
+                                        outcome: Some(pb_governance::ProposalOutcome{
+                                            outcome: Some(pb_governance::proposal_outcome::Outcome::Slashed(
+                                                pb_governance::proposal_outcome::Slashed {
+                                                    withdrawn:
+                                                        Some(pb_governance::proposal_outcome::Withdrawn {
+                                                            reason: truncate(&reason, 1024)
+                                                                .to_string(),
+                                                        }),
+                                                },
+                                            )),
+                                        }),
+                                    },
+                                ));
                         }
                     }
                 }
             },
-            penumbra_governance::proposal_state::State::Claimed { ref outcome } => match outcome {
-                penumbra_governance::proposal_state::Outcome::Passed => {}
-                penumbra_governance::proposal_state::Outcome::Failed { withdrawn } => {
-                    match withdrawn {
-                        penumbra_governance::proposal_state::Withdrawn::No => {}
-                        penumbra_governance::proposal_state::Withdrawn::WithReason { reason } => {
-                            proposal_state = penumbra_governance::proposal_state::State::Claimed {
-                                outcome: penumbra_governance::proposal_state::Outcome::Failed {
-                                    withdrawn:
-                                        penumbra_governance::proposal_state::Withdrawn::WithReason {
-                                            reason: truncate(&reason, 1024).to_string(),
-                                        },
-                                },
-                            };
+            pb_governance::proposal_state::State::Claimed(ref outcome) => match outcome
+                .outcome
+                .clone()
+                .expect("outcome is set")
+                .outcome
+                .expect("outcome is set")
+            {
+                pb_governance::proposal_outcome::Outcome::Passed(_) => {}
+                pb_governance::proposal_outcome::Outcome::Failed(withdrawn) => {
+                    match withdrawn.withdrawn {
+                        None => {
+                            // Withdrawn::No
+                        }
+                        Some(pb_governance::proposal_outcome::Withdrawn { reason }) => {
+                            // Withdrawn::WithReason
+                            proposal_state.state = Some(pb_governance::proposal_state::State::Claimed(
+                                    pb_governance::proposal_state::Claimed {
+                                        outcome: Some(pb_governance::ProposalOutcome{
+                                            outcome: Some(pb_governance::proposal_outcome::Outcome::Failed(
+                                                pb_governance::proposal_outcome::Failed{
+                                                    withdrawn:
+                                                        Some(pb_governance::proposal_outcome::Withdrawn {
+                                                            reason: truncate(&reason, 1024)
+                                                                .to_string(),
+                                                        }),
+                                                },
+                                            )),
+                                        }),
+                                    },
+                                ));
                         }
                     }
                 }
-                penumbra_governance::proposal_state::Outcome::Slashed { withdrawn } => {
-                    match withdrawn {
-                        penumbra_governance::proposal_state::Withdrawn::No => {}
-                        penumbra_governance::proposal_state::Withdrawn::WithReason { reason } => {
-                            proposal_state = penumbra_governance::proposal_state::State::Claimed {
-                                outcome: penumbra_governance::proposal_state::Outcome::Slashed {
-                                    withdrawn:
-                                        penumbra_governance::proposal_state::Withdrawn::WithReason {
-                                            reason: truncate(&reason, 1024).to_string(),
-                                        },
-                                },
-                            };
+                pb_governance::proposal_outcome::Outcome::Slashed(withdrawn) => {
+                    match withdrawn.withdrawn {
+                        None => {
+                            // Withdrawn::No
+                        }
+                        Some(pb_governance::proposal_outcome::Withdrawn { reason }) => {
+                            proposal_state.state = Some(pb_governance::proposal_state::State::Claimed(
+                                    pb_governance::proposal_state::Claimed {
+                                        outcome: Some(pb_governance::ProposalOutcome{
+                                            outcome: Some(pb_governance::proposal_outcome::Outcome::Slashed(
+                                                pb_governance::proposal_outcome::Slashed{
+                                                    withdrawn:
+                                                        Some(pb_governance::proposal_outcome::Withdrawn {
+                                                            reason: truncate(&reason, 1024)
+                                                                .to_string(),
+                                                        }),
+                                                },
+                                            )),
+                                        }),
+                                    },
+                                ));
                         }
                     }
                 }
@@ -362,9 +443,10 @@ async fn truncate_proposal_outcome_fields(delta: &mut StateDelta<Snapshot>) -> a
             "put key {:?}",
             penumbra_governance::state_key::proposal_state(proposal_id)
         );
+        let proposal_state: ProposalState = proposal_state.try_into()?;
         delta.put(
             penumbra_governance::state_key::proposal_state(proposal_id),
-            proposal_state.clone(),
+            proposal_state,
         );
     }
     Ok(())
