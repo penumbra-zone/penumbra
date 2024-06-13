@@ -61,3 +61,7 @@ phase1.bin
 # npm dependencies
 node_modules
 build
+
+# psql
+.data
+logfile
