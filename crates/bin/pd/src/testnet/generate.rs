@@ -287,7 +287,7 @@ impl TestnetConfig {
             consensus_params: tendermint::consensus::Params {
                 abci: AbciParams::default(),
                 block: tendermint::block::Size {
-                    max_bytes: 22020096,
+                    max_bytes: 1048576,
                     max_gas: -1,
                     // minimum time increment between consecutive blocks
                     time_iota_ms: 500,
