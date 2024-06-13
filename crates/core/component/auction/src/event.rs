@@ -62,6 +62,17 @@ pub fn dutch_auction_exhausted(
     }
 }
 
+/// Event for a Dutch auction that is withdrawn by a user after ending.
+pub fn dutch_auction_withdrawn(
+    id: AuctionId,
+    state: DutchAuctionState,
+) -> pb::EventDutchAuctionWithdrawn {
+    pb::EventDutchAuctionWithdrawn {
+        auction_id: Some(id.into()),
+        state: Some(state.into()),
+    }
+}
+
 // Event for value flowing *into* the auction component.
 pub fn auction_vcb_credit(
     asset_id: asset::Id,

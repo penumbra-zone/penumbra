@@ -201,6 +201,11 @@ message EventDutchAuctionEnded {
   Reason reason = 3;
 }
 
+message EventDutchAuctionWithdrawn {
+  AuctionId auction_id = 1;
+  DutchAuctionState state = 2;
+}
+
 // A message emitted when value flows *into* the auction component.
 message EventValueCircuitBreakerCredit {
   // The asset ID being deposited into the Auction component.

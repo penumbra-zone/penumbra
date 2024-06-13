@@ -435,6 +435,21 @@ impl ::prost::Name for EventDutchAuctionEnded {
         ::prost::alloc::format!("penumbra.core.component.auction.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDutchAuctionWithdrawn {
+    #[prost(message, optional, tag = "1")]
+    pub auction_id: ::core::option::Option<AuctionId>,
+    #[prost(message, optional, tag = "2")]
+    pub state: ::core::option::Option<DutchAuctionState>,
+}
+impl ::prost::Name for EventDutchAuctionWithdrawn {
+    const NAME: &'static str = "EventDutchAuctionWithdrawn";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.auction.v1.{}", Self::NAME)
+    }
+}
 /// A message emitted when value flows *into* the auction component.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
