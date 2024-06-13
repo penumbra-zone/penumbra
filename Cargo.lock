@@ -1333,6 +1333,7 @@ dependencies = [
  "hex",
  "serde_json",
  "sqlx",
+ "tap",
  "tendermint",
  "tokio",
  "tracing",
