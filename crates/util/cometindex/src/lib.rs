@@ -5,7 +5,7 @@ pub mod indexer;
 pub mod opt;
 
 pub use contextualized::ContextualizedEvent;
-pub use index::{Index, PgTransaction};
+pub use index::{AppView, PgTransaction};
 pub use indexer::Indexer;
 
 pub use async_trait::async_trait;

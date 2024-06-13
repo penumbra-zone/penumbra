@@ -6,11 +6,11 @@ use futures::{Stream, StreamExt, TryStreamExt};
 use sqlx::PgPool;
 use tendermint::abci;
 
-use crate::{opt::Options, ContextualizedEvent, Index, PgTransaction};
+use crate::{opt::Options, AppView, ContextualizedEvent, PgTransaction};
 
 pub struct Indexer {
     opts: Options,
-    indexes: Vec<Box<dyn Index>>,
+    indexes: Vec<Box<dyn AppView>>,
 }
 
 impl Indexer {
@@ -21,7 +21,7 @@ impl Indexer {
         }
     }
 
-    pub fn with_index(mut self, index: impl Index + 'static) -> Self {
+    pub fn with_index(mut self, index: impl AppView + 'static) -> Self {
         self.indexes.push(Box::new(index));
         self
     }
