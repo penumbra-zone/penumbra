@@ -26,6 +26,6 @@ impl HostInterface for PenumbraHost {
     async fn get_block_timestamp<S: cnidarium::StateRead>(
         state: S,
     ) -> anyhow::Result<tendermint::Time> {
-        state.get_block_timestamp().await
+        state.get_current_block_timestamp().await
     }
 }

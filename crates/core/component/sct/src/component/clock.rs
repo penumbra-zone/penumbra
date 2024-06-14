@@ -25,14 +25,35 @@ pub trait EpochRead: StateRead {
     ///
     /// # Panic
     /// Panics if the block timestamp is not a valid RFC3339 time string.
-    async fn get_block_timestamp(&self) -> Result<tendermint::Time> {
+    async fn get_current_block_timestamp(&self) -> Result<tendermint::Time> {
         let timestamp_string: String = self
-            .get_proto(state_key::block_manager::block_timestamp())
+            .get_proto(state_key::block_manager::current_block_timestamp())
             .await?
-            .ok_or_else(|| anyhow!("Missing block_timestamp"))?;
+            .ok_or_else(|| anyhow!("Missing current_block_timestamp"))?;
 
         Ok(tendermint::Time::from_str(&timestamp_string)
-            .context("block_timestamp was an invalid RFC3339 time string")?)
+            .context("current_block_timestamp was an invalid RFC3339 time string")?)
+    }
+
+    /// Gets a historic block timestamp from nonverifiable storage.
+    ///
+    /// # Errors
+    /// Returns an error if the block timestamp is missing.
+    ///
+    /// # Panic
+    /// Panics if the block timestamp is not a valid RFC3339 time string.
+    async fn get_block_timestamp(&self, height: u64) -> Result<tendermint::Time> {
+        let timestamp_string: String = self
+            .nonverifiable_get_proto(&state_key::block_manager::block_timestamp(height).as_bytes())
+            .await?
+            .ok_or_else(|| anyhow!("Missing block_timestamp for height {}", height))?;
+
+        Ok(
+            tendermint::Time::from_str(&timestamp_string).context(format!(
+                "block_timestamp for height {} was an invalid RFC3339 time string",
+                height
+            ))?,
+        )
     }
 
     /// Get the current application epoch.
@@ -72,12 +93,19 @@ impl<T: StateRead + ?Sized> EpochRead for T {}
 /// as well as related data like reported timestamps and epoch duration.
 #[async_trait]
 pub trait EpochManager: StateWrite {
-    /// Writes the block timestamp as an RFC3339 string to verifiable storage.
-    fn put_block_timestamp(&mut self, timestamp: tendermint::Time) {
+    /// Writes the current block's timestamp as an RFC3339 string to verifiable storage.
+    ///
+    /// Also writes the current block's timestamp to the appropriate key in nonverifiable storage.
+    fn put_block_timestamp(&mut self, height: u64, timestamp: tendermint::Time) {
         self.put_proto(
-            state_key::block_manager::block_timestamp().into(),
+            state_key::block_manager::current_block_timestamp().into(),
             timestamp.to_rfc3339(),
-        )
+        );
+
+        self.nonverifiable_put_proto(
+            state_key::block_manager::block_timestamp(height).into(),
+            timestamp.to_rfc3339(),
+        );
     }
 
     /// Write a value in the end epoch flag in object-storage.
