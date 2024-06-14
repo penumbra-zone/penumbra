@@ -327,6 +327,32 @@ impl ::prost::Name for AnchorByHeightResponse {
         ::prost::alloc::format!("penumbra.core.component.sct.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TimestampByHeightRequest {
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+}
+impl ::prost::Name for TimestampByHeightRequest {
+    const NAME: &'static str = "TimestampByHeightRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TimestampByHeightResponse {
+    #[prost(message, optional, tag = "1")]
+    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+}
+impl ::prost::Name for TimestampByHeightResponse {
+    const NAME: &'static str = "TimestampByHeightResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
@@ -474,6 +500,36 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        pub async fn timestamp_by_height(
+            &mut self,
+            request: impl tonic::IntoRequest<super::TimestampByHeightRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::TimestampByHeightResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.sct.v1.QueryService/TimestampByHeight",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.sct.v1.QueryService",
+                        "TimestampByHeight",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -496,6 +552,13 @@ pub mod query_service_server {
             request: tonic::Request<super::EpochByHeightRequest>,
         ) -> std::result::Result<
             tonic::Response<super::EpochByHeightResponse>,
+            tonic::Status,
+        >;
+        async fn timestamp_by_height(
+            &self,
+            request: tonic::Request<super::TimestampByHeightRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::TimestampByHeightResponse>,
             tonic::Status,
         >;
     }
@@ -656,6 +719,53 @@ pub mod query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = EpochByHeightSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.sct.v1.QueryService/TimestampByHeight" => {
+                    #[allow(non_camel_case_types)]
+                    struct TimestampByHeightSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::TimestampByHeightRequest>
+                    for TimestampByHeightSvc<T> {
+                        type Response = super::TimestampByHeightResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::TimestampByHeightRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::timestamp_by_height(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = TimestampByHeightSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
