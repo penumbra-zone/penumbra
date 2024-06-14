@@ -81,11 +81,11 @@ pub trait PositionRead: StateRead {
         self.get(&state_key::position_by_id(id)).await
     }
 
-    async fn check_position_by_id(&self, id: &position::Id) -> Result<bool> {
-        Ok(self
-            .get_raw(&state_key::position_by_id(id))
-            .await?
-            .is_some())
+    async fn check_position_by_id(&self, id: &position::Id) -> bool {
+        self.get_raw(&state_key::position_by_id(id))
+            .await
+            .expect("no deserialization errors")
+            .is_some()
     }
 
     async fn best_position(
