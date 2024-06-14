@@ -70,16 +70,16 @@ use {
 ///  │   ┌─────────────┐        ┌────────────┐     │              │◀──┘ │
 ///  └──▶│   Jailed    │◀───────│   Active   │◀───▶│   Inactive   │     │
 ///      └─────────────┘        └────────────┘     │              │◀────┘
-///             │                                  └──────────────┘      
-///             │                                          ▲             
-///             └──────────────────────────────────────────┘             
-///                                                                      
+///             │                                  └──────────────┘
+///             │                                          ▲
+///             └──────────────────────────────────────────┘
+///
 ///     ╔═════════════════╗
 ///     ║ starting state  ║
 ///     ╚═════════════════╝
 ///     ┏━━━━━━━━━━━━━━━━━┓
 ///     ┃ terminal state  ┃
-///     ┗━━━━━━━━━━━━━━━━━┛         
+///     ┗━━━━━━━━━━━━━━━━━┛
 /// ```
 ///
 /// [`add_validator`]: Self::add_validator
@@ -302,6 +302,8 @@ pub trait ValidatorManager: StateWrite {
         tracing::info!("successful state transition");
         self.put(validator_state_path, new_state);
 
+        self.record_proto(event::validator_state_change(*identity_key, new_state));
+
         Ok((old_state, new_state))
     }
 
@@ -477,6 +479,10 @@ pub trait ValidatorManager: StateWrite {
         // ... and its reward rate data in the JMT.
         self.set_validator_rate_data(&validator_identity, initial_rate_data);
 
+        // Track the validator's definition in an event (the rest of the attributes will be tracked
+        // in events emitted by the calls to set_* methods below).
+        self.record_proto(event::validator_definition_upload(validator.clone()));
+
         // We initialize the validator's state, power, and bonding state.
         self.set_initial_validator_state(&validator_identity, initial_state)?;
         self.set_validator_power(&validator_identity, initial_voting_power)?;
@@ -587,7 +593,13 @@ pub trait ValidatorManager: StateWrite {
         // consensus key.
         self.register_consensus_key(&validator.identity_key, &validator.consensus_key);
 
-        self.put(state_key::validators::definitions::by_id(id), validator);
+        self.put(
+            state_key::validators::definitions::by_id(id),
+            validator.clone(),
+        );
+
+        // Track the validator's definition in an event.
+        self.record_proto(event::validator_definition_upload(validator));
 
         Ok(())
     }

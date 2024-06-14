@@ -1,5 +1,6 @@
 pub mod address;
 
+use crate::event::slashing_penalty_applied;
 use crate::params::StakeParameters;
 use crate::rate::BaseRateData;
 use crate::validator::{self, Validator};
@@ -473,6 +474,12 @@ pub(crate) trait RateDataWrite: StateWrite {
 
         let new_penalty = current_penalty.compound(slashing_penalty);
 
+        // Emit an event indicating the validator had a slashing penalty applied.
+        self.record_proto(slashing_penalty_applied(
+            *identity_key,
+            current_epoch_index,
+            new_penalty,
+        ));
         self.put(
             state_key::penalty::for_id_in_epoch(identity_key, current_epoch_index),
             new_penalty,

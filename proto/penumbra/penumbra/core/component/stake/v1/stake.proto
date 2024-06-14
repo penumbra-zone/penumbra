@@ -333,6 +333,8 @@ message GenesisContent {
   repeated stake.v1.Validator validators = 2;
 }
 
+// Events for the staking component:
+
 message EventTombstoneValidator {
   // The height at which the offense occurred.
   uint64 evidence_height = 1;
@@ -344,4 +346,66 @@ message EventTombstoneValidator {
   bytes address = 5;
   // The voting power for the validator.
   uint64 voting_power = 6;
+}
+
+message EventValidatorStateChange {
+  // The validator's identity key.
+  keys.v1.IdentityKey identity_key = 1;
+  // The new state of the validator.
+  ValidatorState state = 2;
+}
+
+message EventValidatorVotingPowerChange {
+  // The validator's identity key.
+  keys.v1.IdentityKey identity_key = 1;
+  // The new voting power of the validator.
+  num.v1.Amount voting_power = 2;
+}
+
+message EventValidatorBondingStateChange {
+  // The validator's identity key.
+  keys.v1.IdentityKey identity_key = 1;
+  // The new bonding state of the validator.
+  BondingState bonding_state = 2;
+}
+
+message EventRateDataChange {
+  // The validator's identity key.
+  keys.v1.IdentityKey identity_key = 1;
+  // The new rate data.
+  RateData rate_data = 2;
+}
+
+message EventValidatorDefinitionUpload {
+  // The validator definition.
+  Validator validator = 1;
+}
+
+message EventValidatorMissedBlock {
+  // The validator's identity key.
+  keys.v1.IdentityKey identity_key = 1;
+}
+
+message EventDelegate {
+  // The validator's identity key.
+  keys.v1.IdentityKey identity_key = 1;
+  // The amount of stake delegated, in the staking token.
+  num.v1.Amount amount = 3;
+}
+
+message EventUndelegate {
+  // The validator's identity key.
+  keys.v1.IdentityKey identity_key = 1;
+  // The amount of stake undelegated, in the staking token.
+  num.v1.Amount amount = 3;
+}
+
+// Indicates a slashing penalty was applied to a validator's reward rates.
+message EventSlashingPenaltyApplied {
+  // The validator's identity key.
+  keys.v1.IdentityKey identity_key = 1;
+  // The epoch in which the penalty was applied.
+  uint64 epoch_index = 2;
+  // The penalty amount after slashing.
+  Penalty new_penalty = 3;
 }

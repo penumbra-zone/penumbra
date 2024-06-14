@@ -1,25 +1,76 @@
-use crate::{Delegate, IdentityKey, Undelegate};
+use crate::{
+    rate,
+    validator::{BondingState, State, Validator},
+    Delegate, IdentityKey, Penalty, Undelegate,
+};
+use penumbra_num::Amount;
 use penumbra_proto::core::component::stake::v1 as pb;
-use tendermint::abci::{types::Misbehavior, Event, EventAttributeIndexExt};
+use tendermint::abci::types::Misbehavior;
 
-pub fn delegate(delegate: &Delegate) -> Event {
-    Event::new(
-        "action_delegate",
-        [
-            ("validator", delegate.validator_identity.to_string()).index(),
-            ("amount", delegate.unbonded_amount.to_string()).no_index(),
-        ],
-    )
+pub fn validator_state_change(
+    identity_key: IdentityKey,
+    state: State,
+) -> pb::EventValidatorStateChange {
+    pb::EventValidatorStateChange {
+        identity_key: Some(identity_key.into()),
+        state: Some(state.into()),
+    }
 }
 
-pub fn undelegate(undelegate: &Undelegate) -> Event {
-    Event::new(
-        "action_undelegate",
-        [
-            ("validator", undelegate.validator_identity.to_string()).index(),
-            ("amount", undelegate.unbonded_amount.to_string()).no_index(),
-        ],
-    )
+pub fn validator_voting_power_change(
+    identity_key: IdentityKey,
+    voting_power: Amount,
+) -> pb::EventValidatorVotingPowerChange {
+    pb::EventValidatorVotingPowerChange {
+        identity_key: Some(identity_key.into()),
+        voting_power: Some(voting_power.into()),
+    }
+}
+
+pub fn validator_bonding_state_change(
+    identity_key: IdentityKey,
+    bonding_state: BondingState,
+) -> pb::EventValidatorBondingStateChange {
+    pb::EventValidatorBondingStateChange {
+        identity_key: Some(identity_key.into()),
+        bonding_state: Some(bonding_state.into()),
+    }
+}
+
+pub fn validator_rate_data_change(
+    identity_key: IdentityKey,
+    rate_data: rate::RateData,
+) -> pb::EventRateDataChange {
+    pb::EventRateDataChange {
+        identity_key: Some(identity_key.into()),
+        rate_data: Some(rate_data.into()),
+    }
+}
+
+pub fn validator_definition_upload(validator: Validator) -> pb::EventValidatorDefinitionUpload {
+    pb::EventValidatorDefinitionUpload {
+        validator: Some(validator.into()),
+    }
+}
+
+pub fn validator_missed_block(identity_key: IdentityKey) -> pb::EventValidatorMissedBlock {
+    pb::EventValidatorMissedBlock {
+        identity_key: Some(identity_key.into()),
+    }
+}
+
+pub fn delegate(delegate: &Delegate) -> pb::EventDelegate {
+    pb::EventDelegate {
+        identity_key: Some(delegate.validator_identity.into()),
+        amount: Some(delegate.unbonded_amount.into()),
+    }
+}
+
+pub fn undelegate(undelegate: &Undelegate) -> pb::EventUndelegate {
+    pb::EventUndelegate {
+        identity_key: Some(undelegate.validator_identity.into()),
+        amount: Some(undelegate.unbonded_amount.into()),
+    }
 }
 
 pub fn tombstone_validator(
@@ -33,5 +84,17 @@ pub fn tombstone_validator(
         identity_key: Some(identity_key.into()),
         address: evidence.validator.address.to_vec(),
         voting_power: evidence.validator.power.value(),
+    }
+}
+
+pub fn slashing_penalty_applied(
+    identity_key: IdentityKey,
+    epoch_index: u64,
+    new_penalty: Penalty,
+) -> pb::EventSlashingPenaltyApplied {
+    pb::EventSlashingPenaltyApplied {
+        identity_key: Some(identity_key.into()),
+        epoch_index,
+        new_penalty: Some(new_penalty.into()),
     }
 }

@@ -9,6 +9,7 @@ use {
             },
             StateReadExt as _,
         },
+        event,
         params::StakeParameters,
         validator, IdentityKey, Uptime,
     },
@@ -16,6 +17,7 @@ use {
     async_trait::async_trait,
     cnidarium::StateWrite,
     futures::StreamExt as _,
+    penumbra_proto::StateWriteProto,
     penumbra_sct::component::clock::EpochRead,
     std::collections::BTreeMap,
     tap::Tap,
@@ -173,6 +175,11 @@ pub trait ValidatorUptimeTracker: StateWrite {
         );
         metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
             .set(uptime.num_missed_blocks() as f64);
+
+        if !voted {
+            // If the validator didn't sign, we need to emit a missed block event.
+            self.record_proto(event::validator_missed_block(identity_key));
+        }
 
         uptime.mark_height_as_signed(height, voted)?;
         if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
