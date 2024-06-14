@@ -4,7 +4,7 @@ use futures::TryStreamExt as _;
 use futures::{pin_mut, StreamExt};
 use jmt::RootHash;
 use penumbra_app::app::StateReadExt as _;
-use penumbra_dex::component::PositionManager;
+use penumbra_dex::component::{PositionManager, StateReadExt, StateWriteExt};
 use penumbra_dex::lp::position;
 use penumbra_dex::lp::position::Position;
 use penumbra_governance::proposal_state::State as ProposalState;
@@ -86,6 +86,9 @@ pub async fn migrate(
         // Re-index all open positions.
         reindex_dex_positions(&mut delta).await?;
 
+        // Write the new dex parameters (with the execution budget field) to the state.
+        update_dex_params(&mut delta).await?;
+
         // Reset the application height and halt flag.
         delta.ready_to_start();
         delta.put_block_height(0u64);
@@ -148,6 +151,19 @@ pub async fn migrate(
     Ok(())
 }
 
+/// Write the updated dex parameters to the chain state.
+async fn update_dex_params(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
+    let mut dex_params = delta
+        .get_dex_params()
+        .await
+        .expect("chain state is initialized");
+    dex_params.max_execution_budget = 64;
+    delta.put_dex_params(dex_params);
+
+    Ok(())
+}
+
+/// Reindex opened liquidity positions to augment the price indexes.
 async fn reindex_dex_positions(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
     tracing::info!("running dex re-indexing migration");
     let prefix_key_lp = penumbra_dex::state_key::all_positions();
