@@ -266,7 +266,7 @@ mod tests {
         let max_execution = state.get_dex_params().await.unwrap().max_execution_budget;
         // This call should panic due to the outflow of gn not being covered by the circuit breaker.
         state
-            .handle_batch_swaps(trading_pair, swap_flow, 0, routing_params,max_execution)
+            .handle_batch_swaps(trading_pair, swap_flow, 0, routing_params, max_execution)
             .await
             .expect("unable to process batch swaps");
     }
