@@ -16,7 +16,7 @@ done
 echo "Pulling proto dependencies from BSR..."
 pushd "${repo_root}/proto/"
 # Make sure the lockfile is up to date.
-buf dep update penumbra
+buf mod update penumbra
 
 # Pull our vendored cosmos/IBC proto defs so we can get reflection for service definitions.
 # The penumbra dependencies will override some of these.

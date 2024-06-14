@@ -6068,6 +6068,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.outputs.is_empty() {
             len += 1;
         }
+        if !self.spends.is_empty() {
+            len += 1;
+        }
         if !self.swaps.is_empty() {
             len += 1;
         }
@@ -6129,6 +6132,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         }
         if !self.outputs.is_empty() {
             struct_ser.serialize_field("outputs", &self.outputs)?;
+        }
+        if !self.spends.is_empty() {
+            struct_ser.serialize_field("spends", &self.spends)?;
         }
         if !self.swaps.is_empty() {
             struct_ser.serialize_field("swaps", &self.swaps)?;
@@ -6201,6 +6207,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "memo",
             "source",
             "outputs",
+            "spends",
             "swaps",
             "swap_claims",
             "swapClaims",
@@ -6239,6 +6246,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             Memo,
             Source,
             Outputs,
+            Spends,
             Swaps,
             SwapClaims,
             Delegations,
@@ -6282,6 +6290,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "memo" => Ok(GeneratedField::Memo),
                             "source" => Ok(GeneratedField::Source),
                             "outputs" => Ok(GeneratedField::Outputs),
+                            "spends" => Ok(GeneratedField::Spends),
                             "swaps" => Ok(GeneratedField::Swaps),
                             "swapClaims" | "swap_claims" => Ok(GeneratedField::SwapClaims),
                             "delegations" => Ok(GeneratedField::Delegations),
@@ -6322,6 +6331,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut memo__ = None;
                 let mut source__ = None;
                 let mut outputs__ = None;
+                let mut spends__ = None;
                 let mut swaps__ = None;
                 let mut swap_claims__ = None;
                 let mut delegations__ = None;
@@ -6365,6 +6375,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                                 return Err(serde::de::Error::duplicate_field("outputs"));
                             }
                             outputs__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Spends => {
+                            if spends__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("spends"));
+                            }
+                            spends__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Swaps => {
                             if swaps__.is_some() {
@@ -6482,6 +6498,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     memo: memo__,
                     source: source__,
                     outputs: outputs__.unwrap_or_default(),
+                    spends: spends__.unwrap_or_default(),
                     swaps: swaps__.unwrap_or_default(),
                     swap_claims: swap_claims__.unwrap_or_default(),
                     delegations: delegations__.unwrap_or_default(),
@@ -7356,6 +7373,118 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionWithd
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1.TransactionPlannerRequest.PositionWithdraw", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_planner_request::Spend {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.value.is_some() {
+            len += 1;
+        }
+        if self.address.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest.Spend", len)?;
+        if let Some(v) = self.value.as_ref() {
+            struct_ser.serialize_field("value", v)?;
+        }
+        if let Some(v) = self.address.as_ref() {
+            struct_ser.serialize_field("address", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_planner_request::Spend {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "value",
+            "address",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Value,
+            Address,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "value" => Ok(GeneratedField::Value),
+                            "address" => Ok(GeneratedField::Address),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_planner_request::Spend;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.TransactionPlannerRequest.Spend")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::Spend, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut value__ = None;
+                let mut address__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Value => {
+                            if value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("value"));
+                            }
+                            value__ = map_.next_value()?;
+                        }
+                        GeneratedField::Address => {
+                            if address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("address"));
+                            }
+                            address__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(transaction_planner_request::Spend {
+                    value: value__,
+                    address: address__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.TransactionPlannerRequest.Spend", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for transaction_planner_request::Swap {

@@ -247,6 +247,8 @@ pub struct TransactionPlannerRequest {
     /// Request contents
     #[prost(message, repeated, tag = "20")]
     pub outputs: ::prost::alloc::vec::Vec<transaction_planner_request::Output>,
+    #[prost(message, repeated, tag = "21")]
+    pub spends: ::prost::alloc::vec::Vec<transaction_planner_request::Spend>,
     #[prost(message, repeated, tag = "30")]
     pub swaps: ::prost::alloc::vec::Vec<transaction_planner_request::Swap>,
     #[prost(message, repeated, tag = "31")]
@@ -319,6 +321,27 @@ pub mod transaction_planner_request {
     }
     impl ::prost::Name for Output {
         const NAME: &'static str = "Output";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Spend {
+        /// The input amount and denomination in which the Spend is issued.
+        #[prost(message, optional, tag = "1")]
+        pub value: ::core::option::Option<super::super::super::core::asset::v1::Value>,
+        /// The source address from which the Spend will be sent.
+        #[prost(message, optional, tag = "2")]
+        pub address: ::core::option::Option<
+            super::super::super::core::keys::v1::Address,
+        >,
+    }
+    impl ::prost::Name for Spend {
+        const NAME: &'static str = "Spend";
         const PACKAGE: &'static str = "penumbra.view.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
