@@ -293,7 +293,7 @@ pub trait StateReadExt: StateRead + penumbra_sct::component::clock::EpochRead {
 
         let latest_consensus_state = latest_consensus_state.expect("latest consensus state is Ok");
 
-        let current_block_time = self.get_block_timestamp().await;
+        let current_block_time = self.get_current_block_timestamp().await;
 
         if current_block_time.is_err() {
             return ClientStatus::Unknown;
@@ -490,7 +490,7 @@ mod tests {
         }
 
         async fn get_block_timestamp<S: StateRead>(state: S) -> Result<tendermint::Time> {
-            state.get_block_timestamp().await
+            state.get_current_block_timestamp().await
         }
     }
 
@@ -609,7 +609,7 @@ mod tests {
         // available to the unit test.
         let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z")?;
         let mut state_tx = state.try_begin_transaction().unwrap();
-        state_tx.put_block_timestamp(timestamp);
+        state_tx.put_block_timestamp(1u64, timestamp);
         state_tx.put_block_height(1);
         state_tx.put_ibc_params(crate::params::IBCParameters {
             ibc_enabled: true,
