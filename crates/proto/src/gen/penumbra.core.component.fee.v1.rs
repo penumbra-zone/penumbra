@@ -17,6 +17,24 @@ impl ::prost::Name for Fee {
         ::prost::alloc::format!("penumbra.core.component.fee.v1.{}", Self::NAME)
     }
 }
+/// Specifies fee view paid by a transaction.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FeeView {
+    /// The amount of the token used to pay fees.
+    #[prost(message, optional, tag = "1")]
+    pub amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// Any relevant denoms for viewed assets.
+    #[prost(message, repeated, tag = "2")]
+    pub denoms: ::prost::alloc::vec::Vec<super::super::super::asset::v1::Metadata>,
+}
+impl ::prost::Name for FeeView {
+    const NAME: &'static str = "FeeView";
+    const PACKAGE: &'static str = "penumbra.core.component.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.fee.v1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GasPrices {

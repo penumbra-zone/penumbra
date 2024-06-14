@@ -61,8 +61,12 @@ pub struct TransactionParameters {
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     /// The transaction fee.
+    #[deprecated]
     #[prost(message, optional, tag = "3")]
     pub fee: ::core::option::Option<super::super::component::fee::v1::Fee>,
+    /// The transaction fee view.
+    #[prost(message, optional, tag = "4")]
+    pub fee_view: ::core::option::Option<super::super::component::fee::v1::FeeView>,
 }
 impl ::prost::Name for TransactionParameters {
     const NAME: &'static str = "TransactionParameters";

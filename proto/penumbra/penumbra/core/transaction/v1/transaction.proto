@@ -51,7 +51,9 @@ message TransactionParameters {
   // replaying a transaction on one chain onto a different chain.
   string chain_id = 2;
   // The transaction fee.
-  component.fee.v1.Fee fee = 3;
+  component.fee.v1.Fee fee = 3 [deprecated = true];
+  // The transaction fee view.
+  component.fee.v1.FeeView fee_view = 4;
 }
 
 // Detection data used by a detection server performing Fuzzy Message Detection.

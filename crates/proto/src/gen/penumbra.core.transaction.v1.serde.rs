@@ -3183,6 +3183,9 @@ impl serde::Serialize for TransactionParameters {
         if self.fee.is_some() {
             len += 1;
         }
+        if self.fee_view.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.TransactionParameters", len)?;
         if self.expiry_height != 0 {
             #[allow(clippy::needless_borrow)]
@@ -3193,6 +3196,9 @@ impl serde::Serialize for TransactionParameters {
         }
         if let Some(v) = self.fee.as_ref() {
             struct_ser.serialize_field("fee", v)?;
+        }
+        if let Some(v) = self.fee_view.as_ref() {
+            struct_ser.serialize_field("feeView", v)?;
         }
         struct_ser.end()
     }
@@ -3209,6 +3215,8 @@ impl<'de> serde::Deserialize<'de> for TransactionParameters {
             "chain_id",
             "chainId",
             "fee",
+            "fee_view",
+            "feeView",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3216,6 +3224,7 @@ impl<'de> serde::Deserialize<'de> for TransactionParameters {
             ExpiryHeight,
             ChainId,
             Fee,
+            FeeView,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3241,6 +3250,7 @@ impl<'de> serde::Deserialize<'de> for TransactionParameters {
                             "expiryHeight" | "expiry_height" => Ok(GeneratedField::ExpiryHeight),
                             "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "fee" => Ok(GeneratedField::Fee),
+                            "feeView" | "fee_view" => Ok(GeneratedField::FeeView),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3263,6 +3273,7 @@ impl<'de> serde::Deserialize<'de> for TransactionParameters {
                 let mut expiry_height__ = None;
                 let mut chain_id__ = None;
                 let mut fee__ = None;
+                let mut fee_view__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ExpiryHeight => {
@@ -3285,6 +3296,12 @@ impl<'de> serde::Deserialize<'de> for TransactionParameters {
                             }
                             fee__ = map_.next_value()?;
                         }
+                        GeneratedField::FeeView => {
+                            if fee_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("feeView"));
+                            }
+                            fee_view__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3294,6 +3311,7 @@ impl<'de> serde::Deserialize<'de> for TransactionParameters {
                     expiry_height: expiry_height__.unwrap_or_default(),
                     chain_id: chain_id__.unwrap_or_default(),
                     fee: fee__,
+                    fee_view: fee_view__,
                 })
             }
         }

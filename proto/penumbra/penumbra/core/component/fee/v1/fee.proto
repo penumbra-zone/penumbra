@@ -13,6 +13,14 @@ message Fee {
   asset.v1.AssetId asset_id = 2;
 }
 
+// Specifies fee view paid by a transaction.
+message FeeView {
+  // The amount of the token used to pay fees.
+  num.v1.Amount amount = 1;
+  // Any relevant denoms for viewed assets.
+  repeated asset.v1.Metadata denoms = 2;
+}
+
 message GasPrices {
   // The asset ID of the fee token these prices are for.
   //
