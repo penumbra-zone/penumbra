@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.core.component.sct.v1;
 
 import "penumbra/crypto/tct/v1/tct.proto";
+import "google/protobuf/timestamp.proto";
 
 // Configuration data for the SCT component.
 message SctParameters {
@@ -117,8 +118,17 @@ message AnchorByHeightResponse {
   crypto.tct.v1.MerkleRoot anchor = 1;
 }
 
+message TimestampByHeightRequest {
+  uint64 height = 1;
+}
+
+message TimestampByHeightResponse {
+  google.protobuf.Timestamp timestamp = 1;
+}
+
 // Query operations for the SCT component.
 service QueryService {
   rpc AnchorByHeight(AnchorByHeightRequest) returns (AnchorByHeightResponse);
   rpc EpochByHeight(EpochByHeightRequest) returns (EpochByHeightResponse);
+  rpc TimestampByHeight(TimestampByHeightRequest) returns (TimestampByHeightResponse);
 }

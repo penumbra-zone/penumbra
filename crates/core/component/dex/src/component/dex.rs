@@ -57,6 +57,11 @@ impl Component for Dex {
 
         // 2. For each batch swap during the block, calculate clearing prices and set in the JMT.
         let routing_params = state.routing_params().await.expect("dex params are set");
+        let execution_budget = state
+            .get_dex_params()
+            .await
+            .expect("dex params are set")
+            .max_execution_budget;
 
         for (trading_pair, swap_flows) in state.swap_flows() {
             let batch_start = std::time::Instant::now();
@@ -72,6 +77,7 @@ impl Component for Dex {
                     routing_params
                         .clone()
                         .with_extra_candidates([trading_pair.asset_1(), trading_pair.asset_2()]),
+                    execution_budget,
                 )
                 .await
                 .expect("handling batch swaps is infaillible");

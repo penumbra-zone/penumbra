@@ -1569,6 +1569,10 @@ pub struct DexParameters {
     /// inventory get evicted from the DEX.
     #[prost(uint32, tag = "4")]
     pub max_positions_per_pair: u32,
+    /// The maximum number of routing and execution steps to be performed
+    /// for a single pair
+    #[prost(uint32, tag = "5")]
+    pub max_execution_budget: u32,
 }
 impl ::prost::Name for DexParameters {
     const NAME: &'static str = "DexParameters";

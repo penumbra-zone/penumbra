@@ -6,6 +6,7 @@ pub use metrics::register_metrics;
 
 /* Component implementation */
 use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_proto::StateWriteProto;
 use penumbra_stake::component::validator_handler::ValidatorDataRead;
 pub use view::{StateReadExt, StateWriteExt};
 
@@ -18,7 +19,7 @@ use cnidarium_component::Component;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use crate::genesis;
+use crate::{event::funding_stream_reward, genesis};
 
 pub struct Funding {}
 
@@ -110,6 +111,13 @@ impl Component for Funding {
                 match stream.recipient() {
                     // If the recipient is an address, mint a note to that address
                     Recipient::Address(address) => {
+                        // Record the funding stream reward event:
+                        state.record_proto(funding_stream_reward(
+                            address.to_string(),
+                            base_rate.epoch_index,
+                            reward_amount_for_stream.into(),
+                        ));
+
                         state
                             .mint_note(
                                 Value {
@@ -125,6 +133,13 @@ impl Component for Funding {
                     }
                     // If the recipient is the Community Pool, deposit the funds into the Community Pool
                     Recipient::CommunityPool => {
+                        // Record the funding stream reward event:
+                        state.record_proto(funding_stream_reward(
+                            "community-pool".to_string(),
+                            base_rate.epoch_index,
+                            reward_amount_for_stream.into(),
+                        ));
+
                         state
                             .community_pool_deposit(Value {
                                 amount: reward_amount_for_stream.into(),

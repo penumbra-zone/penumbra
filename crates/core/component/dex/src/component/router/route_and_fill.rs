@@ -30,18 +30,19 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         self: &mut Arc<Self>,
         trading_pair: TradingPair,
         batch_data: SwapFlow,
-        // This will be read from the ABCI request
         block_height: u64,
         params: RoutingParams,
+        execution_budget: u32,
     ) -> Result<()>
     where
         Self: 'static,
     {
         let (delta_1, delta_2) = (batch_data.0, batch_data.1);
-
         tracing::debug!(?delta_1, ?delta_2, ?trading_pair, "decrypted batch swaps");
 
-        let execution_circuit_breaker = ExecutionCircuitBreaker::default();
+        // We initialize a circuit breaker for this batch swap. This will limit the number of frontier
+        // executions up to the specified `execution_budget` parameter.
+        let execution_circuit_breaker = ExecutionCircuitBreaker::new(execution_budget);
 
         let swap_execution_1_for_2 = if delta_1.value() > 0 {
             Some(
@@ -172,16 +173,19 @@ pub trait RouteAndFill: StateWrite + Sized {
         let max_delta_1: Amount = MAX_RESERVE_AMOUNT.into();
 
         // Termination conditions:
-        // 1. We have no more delta_1 remaining
+        // 1. We have no more `delta_1` remaining
         // 2. A path can no longer be found
         // 3. We have reached the `RoutingParams` specified price limit
         // 4. The execution circuit breaker has been triggered based on the number of path searches and executions
-
         loop {
             // Check if we have exceeded the execution circuit breaker limits.
             if execution_circuit_breaker.exceeded_limits() {
                 tracing::debug!("execution circuit breaker triggered, exiting route_and_fill");
                 break;
+            } else {
+                // This should be done ahead of doing any path search or execution, so that we never
+                // have to reason about the specific control flow of our batch swap logic.
+                execution_circuit_breaker.increment();
             }
 
             // Find the best route between the two assets in the trading pair.
@@ -200,9 +204,8 @@ pub trait RouteAndFill: StateWrite + Sized {
                 break;
             }
 
-            // Increment the execution circuit breaker path search counter.
-            execution_circuit_breaker.current_path_searches += 1;
-
+            // We split off the entire batch swap into smaller chunks to avoid causing
+            // a series of overflow in the DEX.
             let delta_1 = Value {
                 amount: total_unfilled_1.min(max_delta_1),
                 asset_id: asset_1,
@@ -258,9 +261,6 @@ pub trait RouteAndFill: StateWrite + Sized {
                     total_unfilled_1 - delta_1.amount + unfilled_1.amount,
                 )
             };
-
-            // Increment the execution circuit breaker execution counter.
-            execution_circuit_breaker.current_executions += 1;
 
             if total_unfilled_1.value() == 0 {
                 tracing::debug!("filled all input, exiting route_and_fill");

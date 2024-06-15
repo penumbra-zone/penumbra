@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::component::metrics;
+use crate::component::{metrics, StateReadExt};
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateDelta, StateWrite};
@@ -43,7 +43,8 @@ pub trait Arbitrage: StateWrite + Sized {
             amount: u64::MAX.into(),
         };
 
-        let execution_circuit_breaker = ExecutionCircuitBreaker::default();
+        let execution_budget = self.get_dex_params().await?.max_execution_budget;
+        let execution_circuit_breaker = ExecutionCircuitBreaker::new(execution_budget);
         let swap_execution = this
             .route_and_fill(
                 arb_token,

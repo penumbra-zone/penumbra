@@ -9,8 +9,12 @@ pub mod block_manager {
         "sct/block_manager/block_height"
     }
 
-    pub fn block_timestamp() -> &'static str {
+    pub fn current_block_timestamp() -> &'static str {
         "sct/block_manager/block_timestamp"
+    }
+
+    pub fn block_timestamp(height: u64) -> String {
+        format!("sct/block_manager/historical_block_timestamp/{}", height)
     }
 }
 

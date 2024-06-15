@@ -843,6 +843,157 @@ impl ::prost::Name for EventTombstoneValidator {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValidatorStateChange {
+    /// The validator's identity key.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The new state of the validator.
+    #[prost(message, optional, tag = "2")]
+    pub state: ::core::option::Option<ValidatorState>,
+}
+impl ::prost::Name for EventValidatorStateChange {
+    const NAME: &'static str = "EventValidatorStateChange";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValidatorVotingPowerChange {
+    /// The validator's identity key.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The new voting power of the validator.
+    #[prost(message, optional, tag = "2")]
+    pub voting_power: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventValidatorVotingPowerChange {
+    const NAME: &'static str = "EventValidatorVotingPowerChange";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValidatorBondingStateChange {
+    /// The validator's identity key.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The new bonding state of the validator.
+    #[prost(message, optional, tag = "2")]
+    pub bonding_state: ::core::option::Option<BondingState>,
+}
+impl ::prost::Name for EventValidatorBondingStateChange {
+    const NAME: &'static str = "EventValidatorBondingStateChange";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventRateDataChange {
+    /// The validator's identity key.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The new rate data.
+    #[prost(message, optional, tag = "2")]
+    pub rate_data: ::core::option::Option<RateData>,
+}
+impl ::prost::Name for EventRateDataChange {
+    const NAME: &'static str = "EventRateDataChange";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValidatorDefinitionUpload {
+    /// The validator definition.
+    #[prost(message, optional, tag = "1")]
+    pub validator: ::core::option::Option<Validator>,
+}
+impl ::prost::Name for EventValidatorDefinitionUpload {
+    const NAME: &'static str = "EventValidatorDefinitionUpload";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValidatorMissedBlock {
+    /// The validator's identity key.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+}
+impl ::prost::Name for EventValidatorMissedBlock {
+    const NAME: &'static str = "EventValidatorMissedBlock";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDelegate {
+    /// The validator's identity key.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The amount of stake delegated, in the staking token.
+    #[prost(message, optional, tag = "3")]
+    pub amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventDelegate {
+    const NAME: &'static str = "EventDelegate";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventUndelegate {
+    /// The validator's identity key.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The amount of stake undelegated, in the staking token.
+    #[prost(message, optional, tag = "3")]
+    pub amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventUndelegate {
+    const NAME: &'static str = "EventUndelegate";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+/// Indicates a slashing penalty was applied to a validator's reward rates.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventSlashingPenaltyApplied {
+    /// The validator's identity key.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The epoch in which the penalty was applied.
+    #[prost(uint64, tag = "2")]
+    pub epoch_index: u64,
+    /// The penalty amount after slashing.
+    #[prost(message, optional, tag = "3")]
+    pub new_penalty: ::core::option::Option<Penalty>,
+}
+impl ::prost::Name for EventSlashingPenaltyApplied {
+    const NAME: &'static str = "EventSlashingPenaltyApplied";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

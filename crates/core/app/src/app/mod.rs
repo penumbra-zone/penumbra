@@ -151,6 +151,15 @@ impl App {
             }
         };
 
+        // Note that `init_chain` can not emit any events, and we do not want to
+        // work around this as it violates the design principle that events are changes
+        // to initial data.
+        //
+        // This means that indexers are responsible for parsing genesis data and bootstrapping
+        // their initial state before processing chronological events.
+        //
+        // See: https://github.com/penumbra-zone/penumbra/pull/4449#discussion_r1636868800
+
         state_tx.apply();
     }
 
