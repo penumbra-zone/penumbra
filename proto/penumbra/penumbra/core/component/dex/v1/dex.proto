@@ -744,6 +744,9 @@ message DexParameters {
   // If this number is exceeded, positions with the least
   // inventory get evicted from the DEX.
   uint32 max_positions_per_pair = 4;
+  // The maximum number of routing and execution steps to be performed
+  // for a single pair
+  uint32 max_execution_budget = 5;
 }
 
 message GenesisContent {

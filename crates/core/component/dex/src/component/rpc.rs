@@ -621,7 +621,10 @@ impl SimulationService for Server {
         let start_time = std::time::Instant::now();
         let state = self.storage.latest_snapshot();
 
-        let mut routing_params = state.routing_params().await.expect("routing params unset");
+        let mut routing_params = state
+            .routing_params()
+            .await
+            .expect("dex routing params are set");
         match routing_strategy {
             Setting::SingleHop(_) => {
                 routing_params.max_hops = 1;
@@ -631,8 +634,14 @@ impl SimulationService for Server {
             }
         }
 
+        let execution_budget = state
+            .get_dex_params()
+            .await
+            .expect("dex parameters are set")
+            .max_execution_budget;
+
         let mut state_tx = Arc::new(StateDelta::new(state));
-        let execution_circuit_breaker = ExecutionCircuitBreaker::default();
+        let execution_circuit_breaker = ExecutionCircuitBreaker::new(execution_budget);
         let swap_execution = state_tx
             .route_and_fill(
                 input.asset_id,

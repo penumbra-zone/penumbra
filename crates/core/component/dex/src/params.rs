@@ -11,6 +11,7 @@ pub struct DexParameters {
     pub fixed_candidates: Vec<asset::Id>,
     pub max_hops: u32,
     pub max_positions_per_pair: u32,
+    pub max_execution_budget: u32,
 }
 
 impl DomainType for DexParameters {
@@ -30,6 +31,7 @@ impl TryFrom<pb::DexParameters> for DexParameters {
                 .collect::<Result<_, _>>()?,
             max_hops: msg.max_hops,
             max_positions_per_pair: msg.max_positions_per_pair,
+            max_execution_budget: msg.max_execution_budget,
         })
     }
 }
@@ -45,6 +47,7 @@ impl From<DexParameters> for pb::DexParameters {
                 .collect(),
             max_hops: params.max_hops,
             max_positions_per_pair: params.max_positions_per_pair,
+            max_execution_budget: params.max_execution_budget,
         }
     }
 }
@@ -68,6 +71,7 @@ impl Default for DexParameters {
             ],
             max_hops: 4,
             max_positions_per_pair: 1_000,
+            max_execution_budget: 64,
         }
     }
 }

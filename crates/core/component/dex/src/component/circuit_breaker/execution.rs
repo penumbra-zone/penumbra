@@ -1,49 +1,28 @@
-const MAX_PATH_SEARCHES: u32 = 64;
-const MAX_EXECUTIONS: u32 = 64;
-
-/// Holds the state of the execution circuit breaker.
-/// Responsible for managing the conditions of halting execution of
-/// a single batch swap. All execution circuit breaker triggers are
-/// non-fatal and will allow the swap to be partially fulfilled up
-/// to the search and execution limits managed by the circuit breaker.
+/// The execution circuit breaker meters the number of operations (search and execution)
+/// performed to fulfill a batch swap.
 ///
-/// The circuit breaker ensures the swap will not use unbounded time complexity.
+/// The Dex component MUST call `CircuitBreaker::exceed_limits` before an execution round.
+///
+/// Note that in practice, this means that a batch swap can result in a partial fill
+/// even if there were enough liquidity to fulfill all of it.
 #[derive(Debug, Clone)]
 pub(crate) struct ExecutionCircuitBreaker {
-    /// The maximum number of times to perform path searches before stopping.
-    pub max_path_searches: u32,
-    /// The number of times path searches have been performed.
-    pub current_path_searches: u32,
-    /// The maximum number of times to execute against liquidity positions before stopping.
-    pub max_executions: u32,
-    /// The number of times liquidity positions have been executed against.
-    pub current_executions: u32,
+    /// The current number of operations performed.
+    pub counter: u32,
+    /// The maximum number of operations allowed.
+    pub max: u32,
 }
 
 impl ExecutionCircuitBreaker {
-    #[allow(dead_code)]
-    pub fn new(max_path_searches: u32, max_executions: u32) -> Self {
-        Self {
-            max_path_searches,
-            current_path_searches: 0,
-            max_executions,
-            current_executions: 0,
-        }
+    pub fn new(max: u32) -> Self {
+        Self { max, counter: 0 }
+    }
+
+    pub fn increment(&mut self) {
+        self.counter += 1;
     }
 
     pub fn exceeded_limits(&self) -> bool {
-        self.current_path_searches > self.max_path_searches
-            || self.current_executions > self.max_executions
-    }
-}
-
-impl Default for ExecutionCircuitBreaker {
-    fn default() -> Self {
-        Self {
-            max_path_searches: MAX_PATH_SEARCHES,
-            current_path_searches: 0,
-            max_executions: MAX_EXECUTIONS,
-            current_executions: 0,
-        }
+        self.counter >= self.max
     }
 }

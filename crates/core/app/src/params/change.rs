@@ -108,6 +108,7 @@ impl AppParameters {
                     fixed_candidates: _,
                     max_hops: _,
                     max_positions_per_pair: _,
+                    max_execution_budget: _,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
@@ -203,6 +204,7 @@ impl AppParameters {
                     fixed_candidates: _,
                     max_hops: _,
                     max_positions_per_pair: _,
+                    max_execution_budget: _,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
@@ -278,7 +280,6 @@ impl AppParameters {
                 *min_validator_stake >= 1_000_000u128.into(),
                 "the minimum validator stake must be at least 1penumbra",
             ),
-            // TODO(erwan): add a `max_positions_per_pair` check
         ])
     }
 }
