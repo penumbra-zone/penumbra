@@ -247,6 +247,7 @@ message TransactionPlannerRequest {
 
   // Request contents
   repeated Output outputs = 20;
+  repeated Spend spends = 21;
   repeated Swap swaps = 30;
   repeated SwapClaim swap_claims = 31;
   repeated Delegate delegations = 40;
@@ -280,6 +281,12 @@ message TransactionPlannerRequest {
     // The amount and denomination in which the Output is issued.
     core.asset.v1.Value value = 1;
     // The address to which Output will be sent.
+    core.keys.v1.Address address = 2;
+  }
+  message Spend {
+    // The input amount and denomination in which the Spend is issued.
+    core.asset.v1.Value value = 1;
+    // The source address from which the Spend will be sent.
     core.keys.v1.Address address = 2;
   }
   message Swap {
