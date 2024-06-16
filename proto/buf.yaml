@@ -1,0 +1,20 @@
+version: v2
+modules:
+  - path: penumbra
+    name: buf.build/penumbra-zone/penumbra
+deps:
+  - buf.build/cosmos/cosmos-sdk:e7a85cef453e4b999ad9aff8714ae05f
+  - buf.build/cosmos/ibc:7ab44ae956a0488ea04e04511efa5f70
+lint:
+  use:
+    - DEFAULT
+  except:
+    - FIELD_NOT_REQUIRED
+    - PACKAGE_NO_IMPORT_CYCLE
+  disallow_comment_ignores: true
+breaking:
+  use:
+    - FILE
+  except:
+    - EXTENSION_NO_DELETE
+    - FIELD_SAME_DEFAULT

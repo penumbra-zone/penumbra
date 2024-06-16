@@ -26,10 +26,10 @@ jobs:
         shell: bash
         run: |
           cd proto/penumbra
-          buf mod update
+          buf dep update
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
-              echo "ERROR: run 'buf mod update' to synchronize buf.lock"
+              echo "ERROR: run 'buf dep update' to synchronize buf.lock"
               echo "$s"
               exit 1
           else
