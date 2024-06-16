@@ -36,7 +36,7 @@ The `buf` tool is required to update lockfiles used for version management in
 the [Buf Schema Registry](https://buf.build/penumbra-zone/penumbra). Visit
 the [buf download page](https://buf.build/docs/installation/) to obtain a version.
 After installing, run `buf --version` and confirm you're running at least
-`1.27.0` (or newer).
+`1.32.0` (or newer).
 
 ## Building protos
 
@@ -62,7 +62,7 @@ We should review these deps periodically and bump them, as we would any other de
 ```shell
 cd proto/penumbra
 # edit buf.yaml to remove the tags, i.e. suffix `:<tag>`
-buf mod update
+buf dep update
 ```
 
 Then commit and PR in the results.

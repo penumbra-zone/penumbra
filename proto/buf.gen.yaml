@@ -1,11 +1,13 @@
-version: v1
+version: v2
 managed:
   enabled: true
-  go_package_prefix:
-    default: github.com/penumbra-zone/penumbra/proto/go/gen
-    except:
-      - buf.build/cosmos/ibc
+  disable:
+    - file_option: go_package
+      module: buf.build/cosmos/ibc
+  override:
+    - file_option: go_package_prefix
+      value: github.com/penumbra-zone/penumbra/proto/go/gen
 plugins:
-  - plugin: buf.build/protocolbuffers/go
+  - remote: buf.build/protocolbuffers/go
     out: go/gen
     opt: paths=source_relative
