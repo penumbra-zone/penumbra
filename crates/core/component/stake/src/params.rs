@@ -65,11 +65,11 @@ impl From<StakeParameters> for pb::StakeParameters {
     }
 }
 
-// TODO: defaults are implemented here as well as in pd
 impl Default for StakeParameters {
     fn default() -> Self {
         Self {
-            unbonding_delay: 719 * 3 + 1,
+            // About a week worth of blocks.
+            unbonding_delay: 120960,
             active_validator_limit: 80,
             // Copied from cosmos hub
             signed_blocks_window_len: 10000,

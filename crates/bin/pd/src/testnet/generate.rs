@@ -287,17 +287,22 @@ impl TestnetConfig {
             consensus_params: tendermint::consensus::Params {
                 abci: AbciParams::default(),
                 block: tendermint::block::Size {
+                    // 1MB
                     max_bytes: 1048576,
+                    // Set to infinity since a chain running Penumbra won't use
+                    // cometbft's notion of gas.
                     max_gas: -1,
-                    // minimum time increment between consecutive blocks
+                    // Minimum time increment between consecutive blocks.
                     time_iota_ms: 500,
                 },
-                // TODO Should these correspond with values used within `pd` for penumbra epochs?
                 evidence: tendermint::evidence::Params {
-                    max_age_num_blocks: 100000,
-                    // 1 day
-                    max_age_duration: tendermint::evidence::Duration(Duration::new(86400, 0)),
-                    max_bytes: 1048576,
+                    // We should keep this in approximate sync with the recommended default for
+                    // `StakeParameters::unbonding_delay`, this is roughly a week.
+                    max_age_num_blocks: 130000,
+                    // Similarly, we set the max age duration for evidence to be a little over a week.
+                    max_age_duration: tendermint::evidence::Duration(Duration::from_secs(650000)),
+                    // 30KB
+                    max_bytes: 30000,
                 },
                 validator: tendermint::consensus::params::ValidatorParams {
                     pub_key_types: vec![Algorithm::Ed25519],
