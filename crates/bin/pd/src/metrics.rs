@@ -14,6 +14,7 @@
 #[allow(unused_imports)] // It is okay if this reëxport isn't used, see above.
 pub use metrics::*;
 
+pub mod cpu_worker;
 pub mod sleep_worker;
 
 /// Registers all metrics used by this crate.
@@ -24,4 +25,5 @@ pub fn register_metrics() {
     // This will register metrics for all components.
     penumbra_app::register_metrics();
     self::sleep_worker::register_metrics();
+    self::cpu_worker::register_metrics();
 }
