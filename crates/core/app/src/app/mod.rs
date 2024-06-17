@@ -181,20 +181,26 @@ impl App {
             num_candidate_txs
         );
 
-        let mut proposal_size_bytes = 0u64;
+        // This is a node controlled parameter that is different from the homonymous
+        // mempool's `max_tx_bytes`. Comet will send us raw proposals that exceed that
+        // limit, presuming that a subset of those transactions will be shed.
+        // More context in https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_app_requirements
         let max_proposal_size_bytes = proposal.max_tx_bytes as u64;
+        // Tracking the size of the proposal
+        let mut proposal_size_bytes = 0u64;
 
-        // First, we filter the proposal to fit within the block limit.
         for tx in proposal.txs {
             let transaction_size = tx.len() as u64;
 
             // We compute the total proposal size if we were to include this transaction.
             let total_with_tx = proposal_size_bytes.saturating_add(transaction_size);
 
+            // First, we filter proposals to fit within the block limit.
             if total_with_tx >= max_proposal_size_bytes {
                 break;
             }
 
+            // Then, we make sure to only include successful transactions.
             match self.deliver_tx_bytes(&tx).await {
                 Ok(_) => {
                     proposal_size_bytes = total_with_tx;
@@ -204,24 +210,6 @@ impl App {
             }
         }
 
-        // The CometBFT spec requires that application "MUST" check that the list
-        // of transactions in the proposal does not exceed `max_tx_bytes`. And shed
-        // excess transactions so as to be "as close as possible" to the target
-        // parameter.
-        //
-        // A couple things to note about this:
-        // - `max_tx_bytes` here is an operator controlled parameter
-        // - it is different than the homonymous mempool configuration
-        //   parameter controlling the maximum size of a single tx.
-        // - the motivation for this check is that even though `PrepareProposal`
-        //   is only called by the proposer process, CometBFT might not honor
-        //   the target, presuming that some transactions might be yanked.
-        // For more details, see the specification:
-        // - Adapting existing applications to use ABCI+:
-        //  https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
-        // - Application requirements:
-        // https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_app_requirements
-
         tracing::debug!(
             "finished processing PrepareProposal, including {}/{} candidate transactions",
             included_txs.len(),
@@ -230,11 +218,32 @@ impl App {
         response::PrepareProposal { txs: included_txs }
     }
 
+    #[instrument(skip_all, ret, level = "debug")]
     pub async fn process_proposal(
         &mut self,
         proposal: request::ProcessProposal,
     ) -> response::ProcessProposal {
-        tracing::debug!(?proposal, "processing proposal");
+        tracing::debug!(
+            height = proposal.height.value(),
+            proposer = ?proposal.proposer_address,
+            proposal_hash = ?proposal.hash,
+            "processing proposal"
+        );
+        let max_proposal_size = 1 << 20 - 1;
+        let mut total_proposal_size = 0u64;
+        for tx in proposal.txs {
+            let tx_size = tx.len() as u64;
+            total_proposal_size = total_proposal_size.saturating_add(tx_size);
+            if total_proposal_size >= max_proposal_size {
+                return response::ProcessProposal::Reject;
+            }
+
+            match self.deliver_tx_bytes(&tx).await {
+                Ok(_) => continue,
+                Err(_) => return response::ProcessProposal::Reject,
+            }
+        }
+
         response::ProcessProposal::Accept
     }
 

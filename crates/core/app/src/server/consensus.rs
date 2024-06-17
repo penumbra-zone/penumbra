@@ -174,7 +174,10 @@ impl Consensus {
         proposal: request::ProcessProposal,
     ) -> Result<response::ProcessProposal> {
         tracing::info!(height = ?proposal.height, proposer = ?proposal.proposer_address, hash = %proposal.hash, "processing proposal");
-        Ok(self.app.process_proposal(proposal).await)
+        // We process the propopsal in an isolated state fork. Eventually, we should cache this work and
+        // re-use it when processing a `FinalizeBlock` message (starting in `0.38.x`).
+        let mut tmp_app = App::new(self.storage.latest_snapshot());
+        Ok(tmp_app.process_proposal(proposal).await)
     }
 
     async fn begin_block(
