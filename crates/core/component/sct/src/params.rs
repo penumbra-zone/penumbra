@@ -34,11 +34,12 @@ impl From<SctParameters> for pb::SctParameters {
     }
 }
 
-// TODO(erwan): defaults are implemented here as well as in the `pd::main`
 impl Default for SctParameters {
     fn default() -> Self {
         Self {
-            epoch_duration: 719,
+            // Measured in blocks, assuming a 5s block time
+            // this is about a day worth of blocks.
+            epoch_duration: 17280,
         }
     }
 }
