@@ -576,10 +576,10 @@ impl App {
         jmt_root
     }
 
-    pub fn tendermint_validator_updates(&self) -> Vec<Update> {
+    pub fn cometbft_validator_updates(&self) -> Vec<Update> {
         self.state
             .cometbft_validator_updates()
-            // If the tendermint validator updates are not set, we return an empty
+            // If the cometbft validator updates are not set, we return an empty
             // update set, signaling no change to Tendermint.
             .unwrap_or_default()
     }
