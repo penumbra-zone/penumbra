@@ -71,9 +71,9 @@ impl Default for StakeParameters {
         Self {
             unbonding_delay: 719 * 3 + 1,
             active_validator_limit: 80,
-            // Copied from cosmos hub
-            signed_blocks_window_len: 10000,
-            missed_blocks_maximum: 9500,
+            // Adapted from Osmosis. Jail iff 6h40m downtime in the last 33 hours.
+            signed_blocks_window_len: 24000,
+            missed_blocks_maximum: 4800,
             // 1000 basis points = 10%
             slashing_penalty_misbehavior: 1000_0000,
             // 1 basis point = 0.01%
