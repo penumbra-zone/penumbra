@@ -309,9 +309,9 @@ impl QueryService for Server {
         let trading_pair: Option<DirectedTradingPair> =
             trading_pair.map(|trading_pair| trading_pair.try_into().expect("invalid trading pair"));
 
-        let s = state.prefix(state_key::swap_executions());
+        let s = state.nonverifiable_prefix(&state_key::swap_executions().as_bytes());
         Ok(tonic::Response::new(
-            s.filter_map(move |i: anyhow::Result<(String, SwapExecution)>| {
+            s.filter_map(move |i: anyhow::Result<(Vec<u8>, SwapExecution)>| {
                 async move {
                     if i.is_err() {
                         return Some(Err(tonic::Status::unavailable(format!(
@@ -321,6 +321,10 @@ impl QueryService for Server {
                     }
 
                     let (key, swap_execution) = i.expect("i is Ok");
+
+                    let key = std::str::from_utf8(&key)
+                        .expect("state key for swap executions should be valid utf-8 string");
+
                     let parts = key.split('/').collect::<Vec<_>>();
                     let height = parts[2].parse().expect("height is not a number");
                     let asset_1: asset::Id =
@@ -332,7 +336,6 @@ impl QueryService for Server {
 
                     if let Some(trading_pair) = trading_pair {
                         // filter by trading pair
-
                         if swap_trading_pair != trading_pair {
                             return None;
                         }
