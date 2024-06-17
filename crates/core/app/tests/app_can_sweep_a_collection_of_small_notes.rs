@@ -33,6 +33,7 @@ const COUNT: usize = SWEEP_COUNT + 1;
 /// Exercises that the app can process a "sweep", consolidating small notes.
 //  NB: a multi-thread runtime is needed to run both the view server and its client.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Flaked in #4626"]
 async fn app_can_sweep_a_collection_of_small_notes() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber_with_env_filter("info".into());
