@@ -147,9 +147,22 @@ pub trait SendPacketRead: StateRead {
         // receiving chain
         if packet.timeout_height <= latest_height {
             anyhow::bail!(
-                "timeout height {} is less than the latest height {}",
+                "timeout height {} is less than the latest height on the counterparty {}",
                 packet.timeout_height,
                 latest_height,
+            );
+        }
+
+        // check that the timeout timestamp hasn't already passed in the local client tracking
+        // the receiving chain
+        let chain_ts = self
+            .get_client_update_time(&connection.client_id, &latest_height)
+            .await?;
+        if packet.timeout_timestamp <= chain_ts.nanoseconds() {
+            anyhow::bail!(
+                "timeout timestamp {} is less than the latest timestamp on the counterparty {}",
+                packet.timeout_height,
+                chain_ts,
             );
         }
 
