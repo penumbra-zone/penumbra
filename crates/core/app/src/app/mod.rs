@@ -51,6 +51,9 @@ pub mod state_key;
 /// The inter-block state being written to by the application.
 type InterBlockState = Arc<StateDelta<Snapshot>>;
 
+/// The maximum size of a CometBFT block payload.
+const MAX_BLOCK_PAYLOAD_SIZE_BYTES: u64 = (1 << 20) - 1;
+
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
 /// The [`App`] is not a [`Component`], but
@@ -184,7 +187,7 @@ impl App {
         // This is a node controlled parameter that is different from the homonymous
         // mempool's `max_tx_bytes`. Comet will send us raw proposals that exceed that
         // limit, presuming that a subset of those transactions will be shed.
-        // More context in https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_app_requirements
+        // More context in https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_app_requirements.md
         let max_proposal_size_bytes = proposal.max_tx_bytes as u64;
         // Tracking the size of the proposal
         let mut proposal_size_bytes = 0u64;
@@ -229,12 +232,11 @@ impl App {
             proposal_hash = ?proposal.hash,
             "processing proposal"
         );
-        let max_proposal_size = 1 << 20 - 1;
         let mut total_proposal_size = 0u64;
         for tx in proposal.txs {
             let tx_size = tx.len() as u64;
             total_proposal_size = total_proposal_size.saturating_add(tx_size);
-            if total_proposal_size >= max_proposal_size {
+            if total_proposal_size >= MAX_BLOCK_PAYLOAD_SIZE_BYTES {
                 return response::ProcessProposal::Reject;
             }
 
