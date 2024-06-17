@@ -61,13 +61,18 @@ impl MsgHandler for MsgTimeout {
             .context("failed to get connection")?
             .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
 
-        let chain_ts = state
-            .get_client_update_time(&connection.client_id, &self.proof_height_on_b)
+        let client_state = state.get_client_state(&connection.client_id).await?;
+        let last_consensus_state = state
+            .get_verified_consensus_state(&client_state.latest_height(), &connection.client_id)
             .await?;
-        let chain_height = self.proof_height_on_b;
+        let last_update_time = last_consensus_state.timestamp;
+        let last_update_height = client_state.latest_height();
 
         // check that timeout height or timeout timestamp has passed on the other end
-        if !self.packet.timed_out(&chain_ts, chain_height) {
+        if !self
+            .packet
+            .timed_out(&last_update_time.into(), last_update_height)
+        {
             anyhow::bail!("packet has not timed out on the counterparty chain");
         }
 
