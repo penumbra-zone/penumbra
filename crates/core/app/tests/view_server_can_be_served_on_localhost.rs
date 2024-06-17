@@ -26,6 +26,7 @@ mod common;
 
 // NB: a multi-thread runtime is needed to run both the view server and its client.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Flaked in #4627,#4632,#4624"]
 async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
