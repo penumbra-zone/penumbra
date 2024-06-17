@@ -185,7 +185,7 @@ impl App {
         );
 
         // This is a node controlled parameter that is different from the homonymous
-        // mempool's `max_tx_bytes`. Comet will send us raw proposals that exceed that
+        // mempool's `max_tx_bytes`. Comet will send us raw proposals that exceed this
         // limit, presuming that a subset of those transactions will be shed.
         // More context in https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_app_requirements.md
         let max_proposal_size_bytes = proposal.max_tx_bytes as u64;
