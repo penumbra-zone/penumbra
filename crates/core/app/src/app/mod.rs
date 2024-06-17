@@ -183,6 +183,27 @@ impl App {
 
         let mut proposal_size_bytes = 0u64;
         let max_proposal_size_bytes = proposal.max_tx_bytes as u64;
+
+        // First, we filter the proposal to fit within the block limit.
+        for tx in proposal.txs {
+            let transaction_size = tx.len() as u64;
+
+            // We compute the total proposal size if we were to include this transaction.
+            let total_with_tx = proposal_size_bytes.saturating_add(transaction_size);
+
+            if total_with_tx >= max_proposal_size_bytes {
+                break;
+            }
+
+            match self.deliver_tx_bytes(&tx).await {
+                Ok(_) => {
+                    proposal_size_bytes = total_with_tx;
+                    included_txs.push(tx)
+                }
+                Err(_) => continue,
+            }
+        }
+
         // The CometBFT spec requires that application "MUST" check that the list
         // of transactions in the proposal does not exceed `max_tx_bytes`. And shed
         // excess transactions so as to be "as close as possible" to the target
@@ -200,15 +221,7 @@ impl App {
         //  https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
         // - Application requirements:
         // https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_app_requirements
-        for tx in proposal.txs {
-            let tx_len_bytes = tx.len() as u64;
-            proposal_size_bytes = proposal_size_bytes.saturating_add(tx_len_bytes);
-            if proposal_size_bytes <= max_proposal_size_bytes {
-                included_txs.push(tx);
-            } else {
-                break;
-            }
-        }
+
         tracing::debug!(
             "finished processing PrepareProposal, including {}/{} candidate transactions",
             included_txs.len(),

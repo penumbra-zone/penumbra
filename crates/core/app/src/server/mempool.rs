@@ -26,7 +26,7 @@ use crate::{app::App, metrics};
 /// blocks we want.
 pub struct Mempool {
     queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
-    app: App,
+    snapshot: Snapshot,
     rx_snapshot: watch::Receiver<Snapshot>,
 }
 
@@ -35,12 +35,12 @@ impl Mempool {
         storage: Storage,
         queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
     ) -> Self {
-        let app = App::new(storage.latest_snapshot());
+        let snapshot = storage.latest_snapshot();
         let snapshot_rx = storage.subscribe();
 
         Self {
             queue,
-            app,
+            snapshot,
             rx_snapshot: snapshot_rx,
         }
     }
@@ -56,7 +56,9 @@ impl Mempool {
             CheckTxKind::Recheck => "recheck",
         };
 
-        match self.app.deliver_tx_bytes(tx_bytes.as_ref()).await {
+        let mut app = App::new(self.snapshot.clone());
+
+        match app.deliver_tx_bytes(tx_bytes.as_ref()).await {
             Ok(events) => {
                 let elapsed = start.elapsed();
                 tracing::info!(?elapsed, "tx accepted");
@@ -91,7 +93,7 @@ impl Mempool {
                     if let Ok(()) = change {
                         let snapshot = self.rx_snapshot.borrow().clone();
                         tracing::debug!(height = ?snapshot.version(), "resetting ephemeral mempool state");
-                        self.app = App::new(snapshot);
+                        self.snapshot= snapshot;
                     } else {
                         // TODO: what triggers this, now that the channel is owned by the
                         // shared Storage instance, rather than the consensus worker?
