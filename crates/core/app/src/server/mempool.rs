@@ -12,18 +12,7 @@ use tracing::Instrument;
 
 use crate::{app::App, metrics};
 
-/// When using ABCI, we can't control block proposal directly, so we could
-/// potentially end up creating blocks with mutually incompatible transactions.
-/// While we'd reject one of them during execution, it's nicer to try to filter
-/// them out at the mempool stage. Currently, the way we do this is by having
-/// the mempool worker maintain an ephemeral fork of the entire execution state,
-/// and execute incoming transactions against the fork.  This prevents
-/// conflicting transactions in the local mempool, since we'll update the fork,
-/// then reject the second transaction against the forked state. When we learn a
-/// new state has been committed, we discard and recreate the ephemeral fork.
-///
-/// After switching to ABCI++, we can eliminate this mechanism and just build
-/// blocks we want.
+/// A mempool service that applies transaction checks against an isolated application fork.
 pub struct Mempool {
     queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
     snapshot: Snapshot,
@@ -92,13 +81,10 @@ impl Mempool {
                 change = self.rx_snapshot.changed() => {
                     if let Ok(()) = change {
                         let snapshot = self.rx_snapshot.borrow().clone();
-                        tracing::debug!(height = ?snapshot.version(), "resetting ephemeral mempool state");
-                        self.snapshot= snapshot;
+                        tracing::debug!(height = ?snapshot.version(), "mempool has rewired to use the latest snapshot");
+                        self.snapshot = snapshot;
                     } else {
-                        // TODO: what triggers this, now that the channel is owned by the
-                        // shared Storage instance, rather than the consensus worker?
                         tracing::info!("state notification channel closed, shutting down");
-                        // old: The consensus worker shut down, we should too.
                         return Ok(());
                     }
                 }
