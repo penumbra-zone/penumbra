@@ -66,12 +66,12 @@ impl MsgHandler for MsgTimeout {
             .get_verified_consensus_state(&client_state.latest_height(), &connection.client_id)
             .await?;
         let last_update_time = last_consensus_state.timestamp;
-        let last_update_height = client_state.latest_height();
+        let proof_update_height = self.proof_height_on_b;
 
         // check that timeout height or timeout timestamp has passed on the other end
         if !self
             .packet
-            .timed_out(&last_update_time.into(), last_update_height)
+            .timed_out(&last_update_time.into(), proof_update_height)
         {
             anyhow::bail!("packet has not timed out on the counterparty chain");
         }
