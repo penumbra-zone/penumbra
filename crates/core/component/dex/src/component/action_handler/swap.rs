@@ -38,12 +38,10 @@ impl ActionHandler for Swap {
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Only execute the swap if the dex is enabled in the dex params.
         let dex_params = state.get_dex_params().await?;
-
         ensure!(
             dex_params.is_enabled,
             "Dex MUST be enabled to process swap actions."
         );
-
         let swap = self;
 
         // All swaps will be tallied for the block so the

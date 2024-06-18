@@ -11,8 +11,8 @@ use crate::{DirectedTradingPair, TradingPair};
 
 use super::{trading_function::TradingFunction, Reserves};
 
-/// Reserve amounts for positions must be at most 80 bits wide.
-pub const MAX_RESERVE_AMOUNT: u128 = (1 << 80) - 1;
+/// Reserve amounts for positions must be at most 52 bits wide.
+pub const MAX_RESERVE_AMOUNT: u128 = (1 << 52) - 1;
 
 /// A trading function's fee (spread) must be at most 50% (5000 bps)
 pub const MAX_FEE_BPS: u32 = 5000;
