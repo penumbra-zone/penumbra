@@ -43,10 +43,12 @@ message Ics20Withdrawal {
   // funds are sent back to the return address.
   .ibc.core.client.v1.Height timeout_height = 5;
 
-  // the timestamp at which this transfer expires.
+  // The timestamp, in epoch time, after which this transfer will be considered invalid.
+  // Clients must quantize this value to the nearest minute, to preserve privacy.
+  // IBC withdrawals that do not quantize timestamps will be rejected.
   uint64 timeout_time = 6;
 
-  // the source channel used for the withdrawal
+  // The source channel used for the withdrawal
   string source_channel = 7;
 }
 
