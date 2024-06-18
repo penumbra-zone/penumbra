@@ -44,37 +44,25 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         // executions up to the specified `execution_budget` parameter.
         let execution_circuit_breaker = ExecutionCircuitBreaker::new(execution_budget);
 
-        let swap_execution_1_for_2 = if delta_1.value() > 0 {
-            Some(
-                self.route_and_fill(
-                    trading_pair.asset_1(),
-                    trading_pair.asset_2(),
-                    delta_1,
-                    params.clone(),
-                    execution_circuit_breaker.clone(),
-                )
-                .await?,
+        let swap_execution_1_for_2 = self
+            .route_and_fill(
+                trading_pair.asset_1(),
+                trading_pair.asset_2(),
+                delta_1,
+                params.clone(),
+                execution_circuit_breaker.clone(),
             )
-        } else {
-            tracing::debug!("no input for asset 1, skipping 1=>2 routing and execution");
-            None
-        };
+            .await?;
 
-        let swap_execution_2_for_1 = if delta_2.value() > 0 {
-            Some(
-                self.route_and_fill(
-                    trading_pair.asset_2(),
-                    trading_pair.asset_1(),
-                    delta_2,
-                    params.clone(),
-                    execution_circuit_breaker,
-                )
-                .await?,
+        let swap_execution_2_for_1 = self
+            .route_and_fill(
+                trading_pair.asset_2(),
+                trading_pair.asset_1(),
+                delta_2,
+                params.clone(),
+                execution_circuit_breaker,
             )
-        } else {
-            tracing::debug!("no input for asset 2, skipping 2=>1 execution");
-            None
-        };
+            .await?;
 
         let (lambda_2, unfilled_1) = match &swap_execution_1_for_2 {
             Some(swap_execution) => (
@@ -156,11 +144,15 @@ pub trait RouteAndFill: StateWrite + Sized {
         input: Amount,
         params: RoutingParams,
         mut execution_circuit_breaker: ExecutionCircuitBreaker,
-    ) -> Result<SwapExecution>
+    ) -> Result<Option<SwapExecution>>
     where
         Self: 'static,
     {
         tracing::debug!(?input, ?asset_1, ?asset_2, "starting route_and_fill");
+
+        if input == Amount::zero() {
+            return Ok(None);
+        }
 
         // Unfilled output of asset 1
         let mut total_unfilled_1 = input;
@@ -286,17 +278,23 @@ pub trait RouteAndFill: StateWrite + Sized {
             }
         }
 
-        Ok(SwapExecution {
-            traces,
-            input: Value {
-                asset_id: asset_1,
-                amount: input - total_unfilled_1,
-            },
-            output: Value {
-                asset_id: asset_2,
-                amount: total_output_2,
-            },
-        })
+        // If we didn't execute against any position at all, there
+        // are no execution records to return.
+        if traces.is_empty() {
+            return Ok(None);
+        } else {
+            Ok(Some(SwapExecution {
+                traces,
+                input: Value {
+                    asset_id: asset_1,
+                    amount: input - total_unfilled_1,
+                },
+                output: Value {
+                    asset_id: asset_2,
+                    amount: total_output_2,
+                },
+            }))
+        }
     }
 }
 
