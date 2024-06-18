@@ -45,7 +45,7 @@ pub trait Arbitrage: StateWrite + Sized {
 
         let execution_budget = self.get_dex_params().await?.max_execution_budget;
         let execution_circuit_breaker = ExecutionCircuitBreaker::new(execution_budget);
-        let swap_execution = this
+        let Some(swap_execution) = this
             .route_and_fill(
                 arb_token,
                 arb_token,
@@ -53,7 +53,11 @@ pub trait Arbitrage: StateWrite + Sized {
                 routing_params,
                 execution_circuit_breaker,
             )
-            .await?;
+            .await?
+        else {
+            return Ok(None);
+        };
+
         let filled_input = swap_execution.input.amount;
         let output = swap_execution.output.amount;
         let unfilled_input = flash_loan

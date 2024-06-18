@@ -645,7 +645,7 @@ impl SimulationService for Server {
 
         let mut state_tx = Arc::new(StateDelta::new(state));
         let execution_circuit_breaker = ExecutionCircuitBreaker::new(execution_budget);
-        let swap_execution = state_tx
+        let Some(swap_execution) = state_tx
             .route_and_fill(
                 input.asset_id,
                 output_id,
@@ -654,7 +654,12 @@ impl SimulationService for Server {
                 execution_circuit_breaker,
             )
             .await
-            .map_err(|e| tonic::Status::internal(format!("error simulating trade: {:#}", e)))?;
+            .map_err(|e| tonic::Status::internal(format!("error simulating trade: {:#}", e)))?
+        else {
+            return Err(tonic::Status::failed_precondition(
+                "there are no orders to fulfill this swap",
+            ));
+        };
 
         let unfilled = Value {
             amount: input
