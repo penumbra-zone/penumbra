@@ -61,10 +61,12 @@ pub struct Ics20Withdrawal {
     pub timeout_height: ::core::option::Option<
         ::ibc_proto::ibc::core::client::v1::Height,
     >,
-    /// the timestamp at which this transfer expires.
+    /// The timestamp, in epoch time, after which this transfer will be considered invalid.
+    /// Clients must quantize this value to the nearest minute, to preserve privacy.
+    /// IBC withdrawals that do not quantize timestamps will be rejected.
     #[prost(uint64, tag = "6")]
     pub timeout_time: u64,
-    /// the source channel used for the withdrawal
+    /// The source channel used for the withdrawal
     #[prost(string, tag = "7")]
     pub source_channel: ::prost::alloc::string::String,
 }
