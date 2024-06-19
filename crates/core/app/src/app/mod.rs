@@ -253,6 +253,9 @@ impl App {
         let mut bytes_tracker = 0usize;
 
         for evidence in proposal.misbehavior {
+            // This should be pretty cheap, we allow for `MAX_EVIDENCE_SIZE_BYTES` in total
+            // but a single evidence datum should be an order of magnitude smaller than that.
+            evidence_buffer.clear();
             let proto_evidence: tendermint_proto::v0_37::abci::Misbehavior = evidence.into();
             let evidence_size = match proto_evidence.encode(&mut evidence_buffer) {
                 Ok(_) => evidence_buffer.len(),
