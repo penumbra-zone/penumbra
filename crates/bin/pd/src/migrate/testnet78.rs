@@ -1,5 +1,6 @@
 //! Contains functions related to the migration script of Testnet78.
 use anyhow::Context;
+use cnidarium::StateRead;
 use cnidarium::{Snapshot, StateDelta, StateWrite, Storage};
 use futures::TryStreamExt as _;
 use futures::{pin_mut, StreamExt};
@@ -49,6 +50,7 @@ use crate::testnet::generate::TestnetConfig;
 ///   * Governance Signaling Proposals:
 ///    - `commit hash` (255 bytes)
 /// - Close and re-open all *open* positions so that they are re-indexed.
+/// - Update DEX parameters
 #[instrument]
 pub async fn migrate(
     storage: Storage,
@@ -78,6 +80,9 @@ pub async fn migrate(
     let (migration_duration, post_upgrade_root_hash) = {
         let start_time = std::time::SystemTime::now();
 
+        // Migrate empty (deleted) packet commitments to be deleted at the tree level
+        delete_empty_deleted_packet_commitments(&mut delta).await?;
+
         // Adjust the length of `Validator` fields.
         truncate_validator_fields(&mut delta).await?;
 
@@ -87,11 +92,11 @@ pub async fn migrate(
         // Adjust the length of governance proposal outcome fields.
         truncate_proposal_outcome_fields(&mut delta).await?;
 
-        // Re-index all open positions.
-        reindex_dex_positions(&mut delta).await?;
-
         // Write the new dex parameters (with the execution budget field) to the state.
         update_dex_params(&mut delta).await?;
+
+        // Re-index all open positions.
+        reindex_dex_positions(&mut delta).await?;
 
         // Reset the application height and halt flag.
         delta.ready_to_start();
@@ -151,6 +156,24 @@ pub async fn migrate(
         duration = migration_duration.as_secs(),
         "migration fully complete"
     );
+
+    Ok(())
+}
+
+async fn delete_empty_deleted_packet_commitments(
+    delta: &mut StateDelta<Snapshot>,
+) -> anyhow::Result<()> {
+    let prefix_key = "ibc-data/commitments/";
+    let stream = delta.prefix_raw(&prefix_key);
+
+    pin_mut!(stream);
+
+    while let Some(entry) = stream.next().await {
+        let (substore_key, value) = entry?;
+        if value.is_empty() {
+            delta.delete(format!("ibc-data/{substore_key}"));
+        }
+    }
 
     Ok(())
 }

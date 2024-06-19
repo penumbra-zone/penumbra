@@ -81,11 +81,10 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         port_id: &PortId,
         sequence: u64,
     ) {
-        self.put_raw(
+        self.delete(
             IBC_COMMITMENT_PREFIX.apply_string(
                 CommitmentPath::new(port_id, channel_id, sequence.into()).to_string(),
             ),
-            vec![],
         );
     }
 
