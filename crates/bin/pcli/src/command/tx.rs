@@ -69,6 +69,11 @@ mod liquidity_position;
 mod proposal;
 mod replicate;
 
+/// The planner can fail to build a large transaction, so
+/// pcli splits apart the number of positions to close/withdraw
+/// in the [`PositionCmd::CloseAll`]/[`PositionCmd::WithdrawAll`] commands.
+const POSITION_CHUNK_SIZE: usize = 30;
+
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
     /// Auction related commands.
@@ -1112,25 +1117,36 @@ impl TxCmd {
                     return Ok(());
                 }
 
+                println!(
+                    "{} total open positions, closing in {} batches of {}",
+                    owned_position_ids.len(),
+                    owned_position_ids.len() / POSITION_CHUNK_SIZE + 1,
+                    POSITION_CHUNK_SIZE
+                );
+
                 let mut planner = Planner::new(OsRng);
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
 
-                for position_id in owned_position_ids {
-                    // Close the position
-                    planner.position_close(position_id);
+                // Close 5 positions in a single transaction to avoid planner failures.
+                for positions_to_close_now in owned_position_ids.chunks(POSITION_CHUNK_SIZE) {
+                    planner
+                        .set_gas_prices(gas_prices)
+                        .set_fee_tier((*fee_tier).into());
+
+                    for position_id in positions_to_close_now {
+                        // Close the position
+                        planner.position_close(*position_id);
+                    }
+
+                    let final_plan = planner
+                        .plan(
+                            app.view
+                                .as_mut()
+                                .context("view service must be initialized")?,
+                            AddressIndex::new(*source),
+                        )
+                        .await?;
+                    app.build_and_submit_transaction(final_plan).await?;
                 }
-
-                let final_plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await?;
-                app.build_and_submit_transaction(final_plan).await?;
             }
             TxCmd::Position(PositionCmd::WithdrawAll {
                 source,
@@ -1151,53 +1167,64 @@ impl TxCmd {
                     return Ok(());
                 }
 
-                let mut planner = Planner::new(OsRng);
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
+                println!(
+                    "{} total closed positions, withdrawing in {} batches of {}",
+                    owned_position_ids.len(),
+                    owned_position_ids.len() / POSITION_CHUNK_SIZE + 1,
+                    POSITION_CHUNK_SIZE,
+                );
 
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
-                for position_id in owned_position_ids {
-                    // Withdraw the position
+                let mut planner = Planner::new(OsRng);
 
-                    // Fetch the information regarding the position from the view service.
-                    let position = client
-                        .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                            position_id: Some(position_id.into()),
-                        })
-                        .await?
-                        .into_inner();
+                // Withdraw 5 positions in a single transaction to avoid planner failures.
+                for positions_to_withdraw_now in owned_position_ids.chunks(POSITION_CHUNK_SIZE) {
+                    planner
+                        .set_gas_prices(gas_prices)
+                        .set_fee_tier((*fee_tier).into());
 
-                    let reserves = position
-                        .data
-                        .clone()
-                        .expect("missing position metadata")
-                        .reserves
-                        .expect("missing position reserves");
-                    let pair = position
-                        .data
-                        .expect("missing position")
-                        .phi
-                        .expect("missing position trading function")
-                        .pair
-                        .expect("missing trading function pair");
-                    planner.position_withdraw(
-                        position_id,
-                        reserves.try_into().expect("invalid reserves"),
-                        pair.try_into().expect("invalid pair"),
-                    );
+                    for position_id in positions_to_withdraw_now {
+                        // Withdraw the position
+
+                        // Fetch the information regarding the position from the view service.
+                        let position = client
+                            .liquidity_position_by_id(LiquidityPositionByIdRequest {
+                                position_id: Some((*position_id).into()),
+                            })
+                            .await?
+                            .into_inner();
+
+                        let reserves = position
+                            .data
+                            .clone()
+                            .expect("missing position metadata")
+                            .reserves
+                            .expect("missing position reserves");
+                        let pair = position
+                            .data
+                            .expect("missing position")
+                            .phi
+                            .expect("missing position trading function")
+                            .pair
+                            .expect("missing trading function pair");
+                        planner.position_withdraw(
+                            *position_id,
+                            reserves.try_into().expect("invalid reserves"),
+                            pair.try_into().expect("invalid pair"),
+                        );
+                    }
+
+                    let final_plan = planner
+                        .plan(
+                            app.view
+                                .as_mut()
+                                .context("view service must be initialized")?,
+                            AddressIndex::new(*source),
+                        )
+                        .await?;
+                    app.build_and_submit_transaction(final_plan).await?;
                 }
-
-                let final_plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await?;
-                app.build_and_submit_transaction(final_plan).await?;
             }
             TxCmd::Position(PositionCmd::Withdraw {
                 source,
