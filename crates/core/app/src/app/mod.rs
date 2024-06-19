@@ -51,8 +51,14 @@ pub mod state_key;
 /// The inter-block state being written to by the application.
 type InterBlockState = Arc<StateDelta<Snapshot>>;
 
-/// The maximum size of a CometBFT block payload.
-const MAX_BLOCK_PAYLOAD_SIZE_BYTES: u64 = (1 << 20) - 1;
+/// The maximum size of a CometBFT block payload (1MB)
+const MAX_BLOCK_TXS_PAYLOAD_BYTES: usize = 1024 * 1024;
+
+/// The maximum size of a single individual transaction (30KB).
+const MAX_TRANSACTION_SIZE_BYTES: usize = 30 * 1024;
+
+/// The maximum size of the evidence portion of a block (30KB).
+const MAX_EVIDENCE_SIZE_BYTES: usize = 30 * 1024;
 
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
@@ -213,11 +219,16 @@ impl App {
             }
         }
 
+        // The evidence payload is validated by Comet, we can lean on three guarantees:
+        // 1. The total payload is bound by `MAX_EVIDENCE_SIZE_BYTES`
+        // 2. Expired evidence is filtered
+        // 3. Evidence is valid.
         tracing::debug!(
             "finished processing PrepareProposal, including {}/{} candidate transactions",
             included_txs.len(),
             num_candidate_txs
         );
+
         response::PrepareProposal { txs: included_txs }
     }
 
@@ -232,11 +243,39 @@ impl App {
             proposal_hash = ?proposal.hash,
             "processing proposal"
         );
-        let mut total_proposal_size = 0u64;
+
+        // Proposal validation:
+        // 1. Total evidence payload committed is below [`MAX_EVIDENCE_SIZE_BYTES`]
+        // 2. Individual transactions are at most [`MAX_TRANSACTION_SIZE_BYTES`]
+        // 3. The total transaction payload is below [`MAX_BLOCK_PAYLOAD_SIZE_BYTES`]
+        // 4. Each transaction applies successfully.
+        let mut evidence_buffer: Vec<u8> = Vec::with_capacity(MAX_EVIDENCE_SIZE_BYTES);
+        let mut bytes_tracker = 0usize;
+
+        for evidence in proposal.misbehavior {
+            let proto_evidence: tendermint_proto::v0_37::abci::Misbehavior = evidence.into();
+            let evidence_size = match proto_evidence.encode(&mut evidence_buffer) {
+                Ok(_) => evidence_buffer.len(),
+                Err(_) => return response::ProcessProposal::Reject,
+            };
+            bytes_tracker = bytes_tracker.saturating_add(evidence_size);
+            if bytes_tracker > MAX_EVIDENCE_SIZE_BYTES {
+                return response::ProcessProposal::Reject;
+            }
+        }
+
+        // The evidence payload is valid, now we validate the block txs
+        // payload: they MUST be below the tx size limit, and apply cleanly on
+        // state fork.
+        let mut total_txs_payload_size = 0usize;
         for tx in proposal.txs {
-            let tx_size = tx.len() as u64;
-            total_proposal_size = total_proposal_size.saturating_add(tx_size);
-            if total_proposal_size >= MAX_BLOCK_PAYLOAD_SIZE_BYTES {
+            let tx_size = tx.len();
+            if tx_size > MAX_TRANSACTION_SIZE_BYTES {
+                return response::ProcessProposal::Reject;
+            }
+
+            total_txs_payload_size = total_txs_payload_size.saturating_add(tx_size);
+            if total_txs_payload_size >= MAX_BLOCK_TXS_PAYLOAD_BYTES {
                 return response::ProcessProposal::Reject;
             }
 
