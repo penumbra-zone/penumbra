@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_asset::Value;
@@ -49,8 +47,8 @@ pub trait SwapDataRead: StateRead {
         self.swap_flows().get(pair).cloned().unwrap_or_default()
     }
 
-    fn swap_flows(&self) -> BTreeMap<TradingPair, SwapFlow> {
-        self.object_get::<BTreeMap<TradingPair, SwapFlow>>(state_key::swap_flows())
+    fn swap_flows(&self) -> im::OrdMap<TradingPair, SwapFlow> {
+        self.object_get::<im::OrdMap<TradingPair, SwapFlow>>(state_key::swap_flows())
             .unwrap_or_default()
     }
 
@@ -63,15 +61,16 @@ pub trait SwapDataRead: StateRead {
 impl<T: StateRead + ?Sized> SwapDataRead for T {}
 
 pub(crate) trait SwapDataWrite: StateWrite {
-    async fn put_swap_flow(
+    async fn accumulate_swap_flow(
         &mut self,
         trading_pair: &TradingPair,
         swap_flow: SwapFlow,
     ) -> Result<()> {
         // Credit the DEX for the swap inflows.
         //
-        // Note that we credit the DEX for _all_ inflows, since we don't know
-        // how much will eventually be filled.
+        // At this point we don't know how much will eventually be filled, so we
+        // credit for all inflows, and then later debit for any unfilled input
+        // in the BSOD.
         self.dex_vcb_credit(Value {
             amount: swap_flow.0,
             asset_id: trading_pair.asset_1,
@@ -83,10 +82,16 @@ pub(crate) trait SwapDataWrite: StateWrite {
         })
         .await?;
 
-        // TODO: replace with IM struct later
-        let mut swap_flows = self.swap_flows();
-        swap_flows.insert(*trading_pair, swap_flow);
-        self.object_put(state_key::swap_flows(), swap_flows);
+        // Accumulate the new swap flow into the map.
+        let old = self.swap_flows();
+        let new = old.alter(
+            |maybe_flow| match maybe_flow {
+                Some(flow) => Some((flow.0 + swap_flow.0, flow.1 + swap_flow.1).into()),
+                None => Some(swap_flow),
+            },
+            *trading_pair,
+        );
+        self.object_put(state_key::swap_flows(), new);
 
         Ok(())
     }

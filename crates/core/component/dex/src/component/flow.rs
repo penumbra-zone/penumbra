@@ -21,3 +21,9 @@ impl DerefMut for SwapFlow {
         &mut self.0
     }
 }
+
+impl From<(Amount, Amount)> for SwapFlow {
+    fn from(tuple: (Amount, Amount)) -> Self {
+        Self(tuple)
+    }
+}

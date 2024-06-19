@@ -9,7 +9,7 @@ use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::source::SourceContext;
 
 use crate::{
-    component::{InternalDexWrite, StateReadExt, SwapDataRead, SwapDataWrite, SwapManager},
+    component::{InternalDexWrite, StateReadExt, SwapDataWrite, SwapManager},
     event,
     swap::{proof::SwapProofPublic, Swap},
 };
@@ -46,18 +46,10 @@ impl ActionHandler for Swap {
 
         let swap = self;
 
-        // All swaps will be tallied for the block so the
-        // BatchSwapOutputData for the trading pair/block height can
-        // be set during `end_block`.
-        let mut swap_flow = state.swap_flow(&swap.body.trading_pair);
-
-        // Add the amount of each asset being swapped to the batch swap flow.
-        swap_flow.0 += swap.body.delta_1_i;
-        swap_flow.1 += swap.body.delta_2_i;
-
-        // Set the batch swap flow for the trading pair.
+        // Accumulate the swap's flows, crediting the DEX VCB for the inflows.
+        let flow = (swap.body.delta_1_i, swap.body.delta_2_i);
         state
-            .put_swap_flow(&swap.body.trading_pair, swap_flow)
+            .accumulate_swap_flow(&swap.body.trading_pair, flow.into())
             .await?;
 
         // Record the swap commitment in the state.

@@ -1024,7 +1024,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
         .unwrap()
-        .put_swap_flow(&trading_pair, swap_flow.clone())
+        .accumulate_swap_flow(&trading_pair, swap_flow.clone())
         .await
         .unwrap();
     let routing_params = state.routing_params().await.unwrap();
@@ -1165,7 +1165,7 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
         .unwrap()
-        .put_swap_flow(&trading_pair, swap_flow.clone())
+        .accumulate_swap_flow(&trading_pair, swap_flow.clone())
         .await
         .unwrap();
     let routing_params = state.routing_params().await.unwrap();

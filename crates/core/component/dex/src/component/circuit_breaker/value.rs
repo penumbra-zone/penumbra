@@ -257,7 +257,7 @@ mod tests {
 
         // Set the batch swap flow for the trading pair.
         state_tx
-            .put_swap_flow(&trading_pair, swap_flow.clone())
+            .accumulate_swap_flow(&trading_pair, swap_flow.clone())
             .await
             .unwrap();
         state_tx.apply();

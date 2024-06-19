@@ -628,7 +628,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
         .unwrap()
-        .put_swap_flow(&trading_pair, swap_flow.clone())
+        .accumulate_swap_flow(&trading_pair, swap_flow.clone())
         .await
         .unwrap();
     let routing_params = state.routing_params().await.unwrap();
@@ -736,7 +736,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
         .unwrap()
-        .put_swap_flow(&trading_pair, swap_flow.clone())
+        .accumulate_swap_flow(&trading_pair, swap_flow.clone())
         .await
         .unwrap();
     let routing_params = state.routing_params().await.unwrap();
