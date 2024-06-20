@@ -57,6 +57,10 @@ jobs:
     runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
+        with:
+          # we don't need lfs for the check to pass, but we do need it for the paths-ignore
+          # option to work correctly.
+          lfs: true
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
       - run: cargo fmt --all -- --check
