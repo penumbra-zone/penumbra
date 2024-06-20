@@ -174,9 +174,11 @@ impl Component for Dex {
 
                 // Obtain the base fee and tip amounts in the native token, discarding any unfilled amounts.
                 let (swapped_base, swapped_tip) = if pair.asset_1() == *asset_id {
-                    (base_output.0, tip_output.0)
+                    // If `asset_id` is `R_1` we want to pull the other leg of the pair.
+                    (base_output.1, tip_output.1)
                 } else {
-                    (tip_output.1, base_output.1)
+                    // and vice-versa. `R_1` contains native tokens.
+                    (base_output.0, tip_output.0)
                 };
 
                 // Finally, accumulate the swapped base fee and tip back into the fee component.
