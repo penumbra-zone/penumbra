@@ -33,7 +33,7 @@ pub trait StateRead: Send + Sync {
     /// # Returns
     ///
     /// - `Some(&T)` if a value of type `T` was present at `key`.
-    /// - `None` if `key` was not present, or if `key` was present but the value was not of type `T`.
+    /// - `None` if `key` was not present.
     ///
     /// # Panics
     ///
