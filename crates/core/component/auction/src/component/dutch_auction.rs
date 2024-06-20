@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
 use penumbra_asset::{Balance, Value};
-use penumbra_dex::component::{PositionManager, PositionRead};
+use penumbra_dex::component::{PositionManager, PositionRead, StateReadExt as _};
 use penumbra_dex::lp::position::{self, Position};
 use penumbra_dex::lp::Reserves;
 use penumbra_dex::DirectedTradingPair;
@@ -230,18 +230,24 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             // Otherwise, we compute the next trigger height and generate a liquidity
             // position for the new auction round.
             let next_trigger = auction_trigger.compute_next_trigger_height(trigger_height);
+
             // We compute the price parameters for the LP:
             let price = compute_pq_at_step(&new_dutch_auction.description, step_index);
+
             // Take the input reserves from the auction state, and zero it out.
             let input_reserves = new_dutch_auction.state.input_reserves;
             new_dutch_auction.state.input_reserves = Amount::zero();
             let pair = DirectedTradingPair::new(auction_input_id, auction_output_id);
             let auction_nonce = new_dutch_auction.description.nonce;
-            let id = self
+
+            // We allocate the liquidity position, we don't expect any errors, but it's possible
+            // that the LP position could not be allocated for example if the DEX is disabled.
+            // In that case, we will not have a position id to track, but we register the auction
+            // for the next trigger.
+            let maybe_id = self
                 .allocate_position(pair, input_reserves, step_index, price, auction_nonce)
-                .await
-                .expect("no state incoherence");
-            new_dutch_auction.state.current_position = Some(id);
+                .await;
+            new_dutch_auction.state.current_position = maybe_id;
             new_dutch_auction.state.next_trigger = NonZeroU64::new(next_trigger);
 
             self.set_trigger_for_dutch_id(auction_id, next_trigger);
@@ -468,6 +474,13 @@ impl<T: StateRead + ?Sized> DutchAuctionData for T {}
 
 trait Inner: StateWrite {
     #[instrument(skip(self, auction_nonce), ret, level = "debug")]
+    /// Allocate a liquidity position for a Dutch auction.
+    /// Returns `None` if no position was allocated, otherwise returns the position id.
+    ///
+    /// # Panics
+    /// This method panics if a serious invariant is breached:
+    /// - A VCB update fails
+    /// - opening a position fails with an error (invariant breach)
     async fn allocate_position(
         &mut self,
         pair: DirectedTradingPair,
@@ -475,16 +488,26 @@ trait Inner: StateWrite {
         step_index: u64,
         (p, q): (Amount, Amount),
         auction_nonce: [u8; 32],
-    ) -> Result<position::Id> {
-        // Next, we want to construct an auction LP position and send it to the DEX.
-        // The nonce must be chosen so that the resulting position id is unique:
-        // `PositionManager::open_position` will reject duplicates.
+    ) -> Option<position::Id> {
+        // Before we do all this work of allocating the LP, or figuring out a nonce
+        // we check if the DEX is enabled. If it is not, we can short-circuit.
+        if !self
+            .get_dex_params()
+            .await
+            .expect("dex parameters are available")
+            .is_enabled
+        {
+            return None;
+        }
+
+        // Next, we construct a liquidity position for this auction, and send it to
+        // the DEX. We must fina nonce that is unique, and that the DEX will accept.
+        // To do this, we hash the auction nonce, step index, and attempt counter.
         //
-        // To do this, we keep track of our number of attempts at opening a position,
-        // and compute:
-        // position_nonce = H(auction_nonce || step_index || attempt_counter)
-        // until the resulting position id (based on the nonce) is unique and accepted
-        // by the DEX.
+        // `position_nonce = H(DS || auction_nonce || step_index || attempt_counter)`
+        // until the resulting position id (based on the nonce) is unique and accepted.
+        //
+        // We must do this because `PositionManager::open_position` will reject duplicates.
         let mut attempt_counter = 0u64;
 
         loop {
@@ -513,7 +536,7 @@ trait Inner: StateWrite {
 
             let position_id = lp.id();
 
-            if self.check_position_by_id(&position_id).await? {
+            if self.check_position_by_id(&position_id).await {
                 tracing::debug!(
                     attempt_counter,
                     ?position_id,
@@ -529,12 +552,12 @@ trait Inner: StateWrite {
                 );
                 self.auction_vcb_debit(lp.reserves_1())
                     .await
-                    .context("failed to debit vcb of r1 during position allocation")?;
+                    .expect("r1 vcb debit does not underflow");
                 self.auction_vcb_debit(lp.reserves_2())
                     .await
-                    .context("failed to debit vcb of r2 during position allocation")?;
-                self.open_position(lp).await.expect("no state incoherence");
-                return Ok(position_id);
+                    .expect("r2 vcb debit does not underflow");
+                self.open_position(lp).await.expect("auction can open a LP");
+                return Some(position_id);
             }
         }
     }
