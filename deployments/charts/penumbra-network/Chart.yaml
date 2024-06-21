@@ -1,7 +1,0 @@
-apiVersion: v2
-name: penumbra-network
-description: Generate a fresh network config for Penumbra, and deploy its genesis validators.
-
-type: application
-version: 0.1.0
-appVersion: "1.16.0"
