@@ -769,6 +769,7 @@ pub struct StakeParameters {
     #[prost(uint64, tag = "2")]
     pub active_validator_limit: u64,
     /// The base reward rate, expressed in basis points of basis points
+    #[deprecated]
     #[prost(uint64, tag = "3")]
     pub base_reward_rate: u64,
     /// The penalty for slashing due to misbehavior.
