@@ -145,23 +145,22 @@ async fn main() -> anyhow::Result<()> {
             let make_svc = router.into_make_service();
 
             // Now start the GRPC server, initializing an ACME client to use as a certificate
-            // resolver if auto-https has been enabled.
-            macro_rules! spawn_grpc_server {
-                ($server:expr) => {
-                    tokio::task::spawn($server.serve(make_svc))
-                };
-            }
+            // resolver if auto-https has been enabled. if auto-https is not enabled, we will
+            // instead spawn a future that will never return.
             let grpc_server = axum_server::bind(grpc_bind);
-            let grpc_server = match grpc_auto_https {
+            let (grpc_server, acme_worker) = match grpc_auto_https {
                 Some(domain) => {
                     let (acceptor, acme_worker) =
                         penumbra_auto_https::axum_acceptor(pd_home, domain, !acme_staging);
-                    // TODO(kate): we should eventually propagate errors from the ACME worker task.
-                    tokio::spawn(acme_worker);
-                    spawn_grpc_server!(grpc_server.acceptor(acceptor))
+                    let acme_worker = tokio::spawn(acme_worker);
+                    let grpc_server =
+                        tokio::task::spawn(grpc_server.acceptor(acceptor).serve(make_svc));
+                    (grpc_server, acme_worker)
                 }
                 None => {
-                    spawn_grpc_server!(grpc_server)
+                    let acme_worker = tokio::task::spawn(futures::future::pending());
+                    let grpc_server = tokio::task::spawn(grpc_server.serve(make_svc));
+                    (grpc_server, acme_worker)
                 }
             };
 
@@ -228,6 +227,13 @@ async fn main() -> anyhow::Result<()> {
                     anyhow::anyhow!(msg)
                 }
                 )?,
+
+                // if the acme worker returns an error, let's propagate it!
+                x = acme_worker => x?.map_err(|error| {
+                    let msg = format!("acme worker failed: {error}");
+                    tracing::error!("{}", msg);
+                    anyhow::anyhow!(msg)
+                })?,
             };
         }
 
