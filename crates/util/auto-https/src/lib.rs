@@ -70,7 +70,10 @@ where
     loop {
         match state.next().await {
             Some(Ok(ok)) => tracing::debug!("received acme event: {:?}", ok),
-            Some(Err(err)) => tracing::error!("acme error: {:?}", err),
+            Some(Err(err)) => {
+                tracing::error!("acme error: {:?}", err);
+                anyhow::bail!("exiting due to acme error");
+            }
             None => {
                 debug_assert!(false, "acme worker unexpectedly reached end-of-stream");
                 tracing::error!("acme worker unexpectedly reached end-of-stream");
