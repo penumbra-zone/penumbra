@@ -10,8 +10,6 @@ pub struct StakeParameters {
     pub unbonding_delay: u64,
     /// The number of validators allowed in the consensus set (Active state).
     pub active_validator_limit: u64,
-    /// The base reward rate, expressed in basis points of basis points
-    pub base_reward_rate: u64,
     /// The penalty for slashing due to misbehavior, expressed in basis points squared (10^-8)
     pub slashing_penalty_misbehavior: u64,
     /// The penalty for slashing due to downtime, expressed in basis points squared (10^-8)
@@ -36,7 +34,6 @@ impl TryFrom<pb::StakeParameters> for StakeParameters {
             active_validator_limit: msg.active_validator_limit,
             slashing_penalty_downtime: msg.slashing_penalty_downtime,
             slashing_penalty_misbehavior: msg.slashing_penalty_misbehavior,
-            base_reward_rate: msg.base_reward_rate,
             missed_blocks_maximum: msg.missed_blocks_maximum,
             signed_blocks_window_len: msg.signed_blocks_window_len,
             min_validator_stake: msg
@@ -58,7 +55,7 @@ impl From<StakeParameters> for pb::StakeParameters {
             missed_blocks_maximum: params.missed_blocks_maximum,
             slashing_penalty_downtime: params.slashing_penalty_downtime,
             slashing_penalty_misbehavior: params.slashing_penalty_misbehavior,
-            base_reward_rate: params.base_reward_rate,
+            base_reward_rate: 0,
             min_validator_stake: Some(params.min_validator_stake.into()),
             unbonding_delay: params.unbonding_delay,
         }
@@ -78,8 +75,6 @@ impl Default for StakeParameters {
             slashing_penalty_misbehavior: 1000_0000,
             // 1 basis point = 0.01%
             slashing_penalty_downtime: 1_0000,
-            // 3bps -> 11% return over 365 epochs
-            base_reward_rate: 3_0000,
             // 1 penumbra
             min_validator_stake: 1_000_000u128.into(),
         }

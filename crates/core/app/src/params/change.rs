@@ -94,7 +94,6 @@ impl AppParameters {
             stake_params:
                 StakeParameters {
                     active_validator_limit,
-                    base_reward_rate: _,
                     slashing_penalty_misbehavior: _,
                     slashing_penalty_downtime: _,
                     signed_blocks_window_len,
@@ -190,7 +189,6 @@ impl AppParameters {
             stake_params:
                 StakeParameters {
                     active_validator_limit,
-                    base_reward_rate,
                     slashing_penalty_misbehavior,
                     slashing_penalty_downtime,
                     signed_blocks_window_len,
@@ -222,10 +220,6 @@ impl AppParameters {
             (
                 *active_validator_limit > 3,
                 "active validator limit must be at least 4",
-            ),
-            (
-                *base_reward_rate >= 1,
-                "base reward rate must be at least 1 basis point",
             ),
             (
                 *slashing_penalty_misbehavior >= 1,
