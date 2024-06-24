@@ -162,7 +162,7 @@ pub trait SendPacketRead: StateRead {
             anyhow::bail!(
                 "timeout timestamp {} is less than the latest timestamp on the counterparty {}",
                 packet.timeout_timestamp,
-                chain_ts,
+                chain_ts.nanoseconds(),
             );
         }
 
