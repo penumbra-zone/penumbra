@@ -738,6 +738,7 @@ async fn reproduction_bad_substore_cache_range() -> anyhow::Result<()> {
     let mut dirty_delta_prefix = delta.prefix_raw("zest/");
     let mut visited = vec![];
     // Cache interleaving logic will build a bad range and cause a panic.
+    // Check out `v0.77.3` or prior to see the panic.
     while let Some(entry) = dirty_delta_prefix.next().await {
         let (k, _) = entry?;
         visited.push(k);
