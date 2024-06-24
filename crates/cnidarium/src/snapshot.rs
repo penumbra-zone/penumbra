@@ -424,10 +424,13 @@ impl StateRead for Snapshot {
                     // Costly to do on every iteration, but this should be dwarfed by the
                     // context switch to the tokio runtime.
                     let mut full_key: Vec<u8> = vec![];
-                    let prefix = substore_prefix.clone();
-                    full_key.extend(prefix);
-                    full_key.extend(iter::once(b'/'));
-                    full_key.extend(key);
+                    if substore_prefix.is_empty() {
+                        full_key.extend(key);
+                    } else {
+                        full_key.extend(substore_prefix.clone());
+                        full_key.extend(iter::once(b'/'));
+                        full_key.extend(key);
+                    }
 
                     tx_prefix_query.blocking_send(Ok((full_key, value)))?;
                 }
