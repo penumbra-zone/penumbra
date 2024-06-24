@@ -266,7 +266,6 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_a/{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -287,7 +286,6 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_b/{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
@@ -380,7 +378,6 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_a/{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -401,7 +398,6 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_b/{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
@@ -497,7 +493,6 @@ async fn test_substore_nv_prefix() -> anyhow::Result<()> {
         let (raw_key, raw_value) = res?;
         let key = String::from_utf8(raw_key)?;
         let value = String::from_utf8(raw_value)?;
-        let key = format!("prefix_a/{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -523,7 +518,6 @@ async fn test_substore_nv_prefix() -> anyhow::Result<()> {
         let (raw_key, raw_value) = res?;
         let key = String::from_utf8(raw_key)?;
         let value = String::from_utf8(raw_value)?;
-        let key = format!("prefix_b/{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
@@ -706,10 +700,10 @@ async fn reproduction_bad_substore_cache_range() -> anyhow::Result<()> {
     let mut substore_kvs = vec![];
 
     for i in 0..100 {
-        let k = format!("{}/key_{i}", substore_prefix);
+        let k = format!("{}/key_{i:020}", substore_prefix);
         let v = format!("value_{i}").as_bytes().to_vec();
         delta.put_raw(k.clone(), v.clone());
-        substore_kvs.push((k, v))
+        substore_kvs.push(k)
     }
 
     let _ = storage.commit(delta).await?;
@@ -718,31 +712,23 @@ async fn reproduction_bad_substore_cache_range() -> anyhow::Result<()> {
     // We can prefix range fine on a static snapshot.
     let mut naive_prefix = snapshot.prefix_raw("zest/");
     // Track the number of prefix entries returned as a basic check.
-    let mut counter = 0;
+    let mut visited = vec![];
     while let Some(entry) = naive_prefix.next().await {
-        let (_, _) = entry?;
-        counter += 1;
+        let (k, _) = entry?;
+        visited.push(k);
     }
-    assert_eq!(
-        counter,
-        substore_kvs.len(),
-        "prefix query skipped some entries (snapshot)"
-    );
+    assert_eq!(visited, substore_kvs, "prefix query is missing keys");
 
     // We established that we can do prefix range on a static snapshot.
     // Now let's try on a no-op `StateDelta`
     let mut delta = StateDelta::new(snapshot);
     let mut clean_delta_prefix = delta.prefix_raw("zest/");
-    let mut counter = 0;
+    let mut visited = vec![];
     while let Some(entry) = clean_delta_prefix.next().await {
-        let (_, _) = entry?;
-        counter += 1;
+        let (k, _) = entry?;
+        visited.push(k);
     }
-    assert_eq!(
-        counter,
-        substore_kvs.len(),
-        "prefix query skipped some entries (clean delta)"
-    );
+    assert_eq!(visited, substore_kvs, "prefix query is missing keys");
 
     // It worked, finally let's try on a dirty delta.
     delta.put_raw(
@@ -750,16 +736,15 @@ async fn reproduction_bad_substore_cache_range() -> anyhow::Result<()> {
         "normal_value".as_bytes().to_vec(),
     );
     let mut dirty_delta_prefix = delta.prefix_raw("zest/");
-    let mut counter = 0;
+    let mut visited = vec![];
     // Cache interleaving logic will build a bad range and cause a panic.
     while let Some(entry) = dirty_delta_prefix.next().await {
-        let (_, _) = entry?;
-        counter += 1;
+        let (k, _) = entry?;
+        visited.push(k);
     }
-    assert_eq!(
-        counter,
-        substore_kvs.len(),
-        "prefix query skipped some entries (clean delta)"
-    );
+    // Add the key we wrote to the substore.
+    substore_kvs.push("zest/normal_key".to_string());
+    assert_eq!(visited, substore_kvs, "prefix query is missing keys");
+
     Ok(())
 }
