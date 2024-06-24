@@ -663,3 +663,81 @@ async fn test_substore_nv_range_queries_main_store() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+/// This test reproduce an issue with substore cache interleaving caused by a bug
+/// in the initial substore implementation.
+async fn reproduction_bad_substore_cache_range() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let tmpdir = tempfile::tempdir()?;
+    let db_path = tmpdir.into_path();
+    // We pick a friendly prefix with high lexicographic order to help
+    // with reproducing a "bad range" where the lower boundn is greater than
+    // the upper bound.
+    let substore_prefix = "zest".to_string();
+    let substore_prefixes = vec![substore_prefix.clone()];
+    let storage = Storage::load(db_path, substore_prefixes).await?;
+
+    // Write some keys in the substore so that we can prefix range over something
+    let mut delta = StateDelta::new(storage.latest_snapshot());
+
+    let mut substore_kvs = vec![];
+
+    for i in 0..100 {
+        let k = format!("{}/key_{i}", substore_prefix);
+        let v = format!("value_{i}").as_bytes().to_vec();
+        delta.put_raw(k.clone(), v.clone());
+        substore_kvs.push((k, v))
+    }
+
+    let _ = storage.commit(delta).await?;
+    let snapshot = storage.latest_snapshot();
+
+    // We can prefix range fine on a static snapshot.
+    let mut naive_prefix = snapshot.prefix_raw("zest/");
+    // Track the number of prefix entries returned as a basic check.
+    let mut counter = 0;
+    while let Some(entry) = naive_prefix.next().await {
+        let (_, _) = entry?;
+        counter += 1;
+    }
+    assert_eq!(
+        counter,
+        substore_kvs.len(),
+        "prefix query skipped some entries (snapshot)"
+    );
+
+    // We established that we can do prefix range on a static snapshot.
+    // Now let's try on a no-op `StateDelta`
+    let mut delta = StateDelta::new(snapshot);
+    let mut clean_delta_prefix = delta.prefix_raw("zest/");
+    let mut counter = 0;
+    while let Some(entry) = clean_delta_prefix.next().await {
+        let (_, _) = entry?;
+        counter += 1;
+    }
+    assert_eq!(
+        counter,
+        substore_kvs.len(),
+        "prefix query skipped some entries (clean delta)"
+    );
+
+    // It worked, finally let's try on a dirty delta.
+    delta.put_raw(
+        "zest/normal_key".to_string(),
+        "normal_value".as_bytes().to_vec(),
+    );
+    let mut dirty_delta_prefix = delta.prefix_raw("zest/");
+    let mut counter = 0;
+    // Cache interleaving logic will build a bad range and cause a panic.
+    while let Some(entry) = dirty_delta_prefix.next().await {
+        let (_, _) = entry?;
+        counter += 1;
+    }
+    assert_eq!(
+        counter,
+        substore_kvs.len(),
+        "prefix query skipped some entries (clean delta)"
+    );
+    Ok(())
+}
