@@ -665,8 +665,30 @@ async fn test_substore_nv_range_queries_main_store() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-/// This test reproduce an issue with substore cache interleaving caused by a bug
-/// in the initial substore implementation.
+/// Minimal reproduction of the prefix range cache bug.
+///
+/// Context:
+/// `cnidarium`, our storage layer, supports prefix storage.
+/// This allows users to configure independent storage units, each with
+/// their own merkle tree, nonverifiable sidecar, and separate namespace.
+/// Routing is done transparently without the user having to worry about
+/// the details.
+///
+/// Overview:
+/// Prefix queries return tuples of (key, value)s, but instead of
+/// returning the full key, they return the substore key. This is a layering
+/// violation, and indeed causes a bug in the cache interleaving logic.
+///
+/// Terminology:
+/// - a `full_key`:  a key that contains a substore prefix, a delimiter, and a substore key.
+/// - a `substore_key`: a key with a stripped prefix.
+///
+/// Walkthrough:
+/// `StateDelta` index changes using full keys, as it is not aware of the
+/// particular substore configuration that it is working against, by design.
+/// As part of the cache interleaving logic, the `StateDetla` will try look for
+/// new writes or covering deletions. However, since the base prefix implementation
+/// returns substore keys, the cache will build an incoherence range and panic (or miss data).
 async fn reproduction_bad_substore_cache_range() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
