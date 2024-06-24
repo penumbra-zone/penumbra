@@ -51,6 +51,15 @@ pub mod state_key;
 /// The inter-block state being written to by the application.
 type InterBlockState = Arc<StateDelta<Snapshot>>;
 
+/// The maximum size of a CometBFT block payload (1MB)
+const MAX_BLOCK_TXS_PAYLOAD_BYTES: usize = 1024 * 1024;
+
+/// The maximum size of a single individual transaction (30KB).
+const MAX_TRANSACTION_SIZE_BYTES: usize = 30 * 1024;
+
+/// The maximum size of the evidence portion of a block (30KB).
+const MAX_EVIDENCE_SIZE_BYTES: usize = 30 * 1024;
+
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
 /// The [`App`] is not a [`Component`], but
@@ -181,47 +190,104 @@ impl App {
             num_candidate_txs
         );
 
-        let mut proposal_size_bytes = 0u64;
+        // This is a node controlled parameter that is different from the homonymous
+        // mempool's `max_tx_bytes`. Comet will send us raw proposals that exceed this
+        // limit, presuming that a subset of those transactions will be shed.
+        // More context in https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_app_requirements.md
         let max_proposal_size_bytes = proposal.max_tx_bytes as u64;
-        // The CometBFT spec requires that application "MUST" check that the list
-        // of transactions in the proposal does not exceed `max_tx_bytes`. And shed
-        // excess transactions so as to be "as close as possible" to the target
-        // parameter.
-        //
-        // A couple things to note about this:
-        // - `max_tx_bytes` here is an operator controlled parameter
-        // - it is different than the homonymous mempool configuration
-        //   parameter controlling the maximum size of a single tx.
-        // - the motivation for this check is that even though `PrepareProposal`
-        //   is only called by the proposer process, CometBFT might not honor
-        //   the target, presuming that some transactions might be yanked.
-        // For more details, see the specification:
-        // - Adapting existing applications to use ABCI+:
-        //  https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
-        // - Application requirements:
-        // https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_app_requirements
+        // Tracking the size of the proposal
+        let mut proposal_size_bytes = 0u64;
+
         for tx in proposal.txs {
-            let tx_len_bytes = tx.len() as u64;
-            proposal_size_bytes = proposal_size_bytes.saturating_add(tx_len_bytes);
-            if proposal_size_bytes <= max_proposal_size_bytes {
-                included_txs.push(tx);
-            } else {
+            let transaction_size = tx.len() as u64;
+
+            // We compute the total proposal size if we were to include this transaction.
+            let total_with_tx = proposal_size_bytes.saturating_add(transaction_size);
+
+            // First, we filter proposals to fit within the block limit.
+            if total_with_tx >= max_proposal_size_bytes {
                 break;
             }
+
+            // Then, we make sure to only include successful transactions.
+            match self.deliver_tx_bytes(&tx).await {
+                Ok(_) => {
+                    proposal_size_bytes = total_with_tx;
+                    included_txs.push(tx)
+                }
+                Err(_) => continue,
+            }
         }
+
+        // The evidence payload is validated by Comet, we can lean on three guarantees:
+        // 1. The total payload is bound by `MAX_EVIDENCE_SIZE_BYTES`
+        // 2. Expired evidence is filtered
+        // 3. Evidence is valid.
         tracing::debug!(
             "finished processing PrepareProposal, including {}/{} candidate transactions",
             included_txs.len(),
             num_candidate_txs
         );
+
         response::PrepareProposal { txs: included_txs }
     }
 
+    #[instrument(skip_all, ret, level = "debug")]
     pub async fn process_proposal(
         &mut self,
         proposal: request::ProcessProposal,
     ) -> response::ProcessProposal {
-        tracing::debug!(?proposal, "processing proposal");
+        tracing::debug!(
+            height = proposal.height.value(),
+            proposer = ?proposal.proposer_address,
+            proposal_hash = ?proposal.hash,
+            "processing proposal"
+        );
+
+        // Proposal validation:
+        // 1. Total evidence payload committed is below [`MAX_EVIDENCE_SIZE_BYTES`]
+        // 2. Individual transactions are at most [`MAX_TRANSACTION_SIZE_BYTES`]
+        // 3. The total transaction payload is below [`MAX_BLOCK_PAYLOAD_SIZE_BYTES`]
+        // 4. Each transaction applies successfully.
+        let mut evidence_buffer: Vec<u8> = Vec::with_capacity(MAX_EVIDENCE_SIZE_BYTES);
+        let mut bytes_tracker = 0usize;
+
+        for evidence in proposal.misbehavior {
+            // This should be pretty cheap, we allow for `MAX_EVIDENCE_SIZE_BYTES` in total
+            // but a single evidence datum should be an order of magnitude smaller than that.
+            evidence_buffer.clear();
+            let proto_evidence: tendermint_proto::v0_37::abci::Misbehavior = evidence.into();
+            let evidence_size = match proto_evidence.encode(&mut evidence_buffer) {
+                Ok(_) => evidence_buffer.len(),
+                Err(_) => return response::ProcessProposal::Reject,
+            };
+            bytes_tracker = bytes_tracker.saturating_add(evidence_size);
+            if bytes_tracker > MAX_EVIDENCE_SIZE_BYTES {
+                return response::ProcessProposal::Reject;
+            }
+        }
+
+        // The evidence payload is valid, now we validate the block txs
+        // payload: they MUST be below the tx size limit, and apply cleanly on
+        // state fork.
+        let mut total_txs_payload_size = 0usize;
+        for tx in proposal.txs {
+            let tx_size = tx.len();
+            if tx_size > MAX_TRANSACTION_SIZE_BYTES {
+                return response::ProcessProposal::Reject;
+            }
+
+            total_txs_payload_size = total_txs_payload_size.saturating_add(tx_size);
+            if total_txs_payload_size >= MAX_BLOCK_TXS_PAYLOAD_BYTES {
+                return response::ProcessProposal::Reject;
+            }
+
+            match self.deliver_tx_bytes(&tx).await {
+                Ok(_) => continue,
+                Err(_) => return response::ProcessProposal::Reject,
+            }
+        }
+
         response::ProcessProposal::Accept
     }
 
@@ -563,10 +629,10 @@ impl App {
         jmt_root
     }
 
-    pub fn tendermint_validator_updates(&self) -> Vec<Update> {
+    pub fn cometbft_validator_updates(&self) -> Vec<Update> {
         self.state
             .cometbft_validator_updates()
-            // If the tendermint validator updates are not set, we return an empty
+            // If the cometbft validator updates are not set, we return an empty
             // update set, signaling no change to Tendermint.
             .unwrap_or_default()
     }

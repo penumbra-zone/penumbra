@@ -70,6 +70,18 @@ impl Consensus {
                         .await
                         .expect("init_chain must succeed"),
                 ),
+                Request::PrepareProposal(proposal) => Response::PrepareProposal(
+                    self.prepare_proposal(proposal)
+                        .instrument(span)
+                        .await
+                        .expect("prepare proposal must succeed"),
+                ),
+                Request::ProcessProposal(proposal) => Response::ProcessProposal(
+                    self.process_proposal(proposal)
+                        .instrument(span)
+                        .await
+                        .expect("process proposal must succeed"),
+                ),
                 Request::BeginBlock(begin_block) => Response::BeginBlock(
                     self.begin_block(begin_block)
                         .instrument(span)
@@ -87,18 +99,6 @@ impl Consensus {
                         .instrument(span)
                         .await
                         .expect("commit must succeed"),
-                ),
-                Request::PrepareProposal(proposal) => Response::PrepareProposal(
-                    self.prepare_proposal(proposal)
-                        .instrument(span)
-                        .await
-                        .expect("prepare proposal must succeed"),
-                ),
-                Request::ProcessProposal(proposal) => Response::ProcessProposal(
-                    self.process_proposal(proposal)
-                        .instrument(span)
-                        .await
-                        .expect("process proposal must succeed"),
                 ),
             }));
         }
@@ -123,7 +123,7 @@ impl Consensus {
         // to be provided inside the initial app genesis state (`GenesisAppState`). Returning those
         // validators in InitChain::Response tells Tendermint that they are the initial validator
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
-        let validators = self.app.tendermint_validator_updates();
+        let validators = self.app.cometbft_validator_updates();
 
         let app_hash = match &app_state {
             crate::genesis::AppState::Checkpoint(h) => {
@@ -162,7 +162,11 @@ impl Consensus {
         proposal: request::PrepareProposal,
     ) -> Result<response::PrepareProposal> {
         tracing::info!(height = ?proposal.height, proposer = ?proposal.proposer_address, "preparing proposal");
-        Ok(self.app.prepare_proposal(proposal).await)
+        // We prepare a proposal against an isolated fork of the application state.
+        let mut tmp_app = App::new(self.storage.latest_snapshot());
+        // Once we are done, we discard it so that the application state doesn't get corrupted
+        // if another round of consensus is required because the proposal fails to finalize.
+        Ok(tmp_app.prepare_proposal(proposal).await)
     }
 
     async fn process_proposal(
@@ -170,7 +174,10 @@ impl Consensus {
         proposal: request::ProcessProposal,
     ) -> Result<response::ProcessProposal> {
         tracing::info!(height = ?proposal.height, proposer = ?proposal.proposer_address, hash = %proposal.hash, "processing proposal");
-        Ok(self.app.process_proposal(proposal).await)
+        // We process the propopsal in an isolated state fork. Eventually, we should cache this work and
+        // re-use it when processing a `FinalizeBlock` message (starting in `0.38.x`).
+        let mut tmp_app = App::new(self.storage.latest_snapshot());
+        Ok(tmp_app.process_proposal(proposal).await)
     }
 
     async fn begin_block(
@@ -218,7 +225,7 @@ impl Consensus {
         // validators and voting power. This must be the last step performed,
         // after all voting power calculations and validator state transitions have
         // been completed.
-        let validator_updates = self.app.tendermint_validator_updates();
+        let validator_updates = self.app.cometbft_validator_updates();
 
         tracing::debug!(
             ?validator_updates,
