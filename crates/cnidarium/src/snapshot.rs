@@ -1,3 +1,4 @@
+use std::iter;
 use std::{any::Any, sync::Arc};
 
 use anyhow::Result;
@@ -271,6 +272,7 @@ impl StateRead for Snapshot {
 
         let (prefix_truncated, config) = self.0.multistore_cache.config.match_prefix_str(prefix);
         tracing::trace!(substore_key = prefix_truncated,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
+        let substore_prefix = config.prefix.clone();
 
         let version = self
             .substore_version(&config)
@@ -302,18 +304,21 @@ impl StateRead for Snapshot {
                 for tuple in jmt_keys_iterator {
                     // For each key that matches the prefix, fetch the value from the JMT column family.
                     let (key_preimage, _) = tuple?;
+                    let substore_key = std::str::from_utf8(key_preimage.as_ref())
+                        .expect("saved jmt keys are utf-8 strings");
+                    let key_hash = jmt::KeyHash::with::<sha2::Sha256>(substore_key.as_bytes());
 
-                    let k = std::str::from_utf8(key_preimage.as_ref())
-                        .expect("saved jmt keys are utf-8 strings")
-                        .to_string();
-
-                    let key_hash = jmt::KeyHash::with::<sha2::Sha256>(k.as_bytes());
+                    let full_key = if substore_prefix.is_empty() {
+                        substore_key.to_string()
+                    } else {
+                        format!("{substore_prefix}/{substore_key}").to_string()
+                    };
 
                     let v = substore
                         .get_jmt(key_hash)?
                         .expect("keys in jmt_keys should have a corresponding value in jmt");
 
-                    tx_prefix_item.blocking_send(Ok((k, v)))?;
+                    tx_prefix_item.blocking_send(Ok((full_key, v)))?;
                 }
                 anyhow::Ok(())
             })
@@ -332,7 +337,6 @@ impl StateRead for Snapshot {
         let db = self.0.db.clone();
 
         let (prefix_truncated, config) = self.0.multistore_cache.config.match_prefix_str(prefix);
-        tracing::trace!(substore_key = prefix_truncated,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
 
         let version = self
             .substore_version(&config)
@@ -357,12 +361,20 @@ impl StateRead for Snapshot {
                     .rocksdb_snapshot
                     .iterator_cf_opt(cf_jmt_keys, options, mode);
 
+                let substore_prefix = &substore.config.prefix;
+
                 for key_and_keyhash in iter {
                     let (raw_preimage, _) = key_and_keyhash?;
                     let preimage = std::str::from_utf8(raw_preimage.as_ref())
-                        .expect("saved jmt keys are utf-8 strings")
-                        .to_string();
-                    tx_prefix_keys.blocking_send(Ok(preimage))?;
+                        .expect("saved jmt keys are utf-8 strings");
+
+                    let full_key = if substore_prefix.is_empty() {
+                        preimage.to_string()
+                    } else {
+                        format!("{substore_prefix}/{preimage}").to_string()
+                    };
+
+                    tx_prefix_keys.blocking_send(Ok(full_key))?;
                 }
                 anyhow::Ok(())
             })
@@ -403,9 +415,21 @@ impl StateRead for Snapshot {
                     substore
                         .rocksdb_snapshot
                         .iterator_cf_opt(cf_nonverifiable, options, mode);
+                let substore_prefix = substore.config.prefix.as_bytes().to_vec();
                 for i in iter {
-                    let (key, value) = i?;
-                    tx_prefix_query.blocking_send(Ok((key.into(), value.into())))?;
+                    let (boxed_key, boxed_value) = i?;
+                    let key: Vec<u8> = boxed_key.into();
+                    let value: Vec<u8> = boxed_value.into();
+
+                    // Costly to do on every iteration, but this should be dwarfed by the
+                    // context switch to the tokio runtime.
+                    let mut full_key: Vec<u8> = vec![];
+                    let prefix = substore_prefix.clone();
+                    full_key.extend(prefix);
+                    full_key.extend(iter::once(b'/'));
+                    full_key.extend(key);
+
+                    tx_prefix_query.blocking_send(Ok((full_key, value)))?;
                 }
                 anyhow::Ok(())
             })
@@ -416,7 +440,7 @@ impl StateRead for Snapshot {
 
     /// Returns a stream of all key-value pairs with the given prefix, and range
     /// from nonverifiable storage.
-    /// TODO(erwan): For now this method only supports range queries over the main store.
+    /// **Important**: Only supports range queries over the main store.
     fn nonverifiable_range_raw(
         &self,
         prefix: Option<&[u8]>,
