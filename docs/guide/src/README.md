@@ -16,8 +16,8 @@ end-to-end encrypted.
 
 ## Using Penumbra on the web
 
-The easiest way to get started using Penumbra is with the Penumbra web
-extension.  The [web extension][webext] runs entirely locally, and contains an
+The easiest way to get started using Penumbra is with the [Prax Wallet] web
+extension.  The web extension runs entirely locally, and contains an
 embedded ultralight node that syncs and decrypts only the data visible to your
 wallet.  Websites can request to connect to your wallet and query your data.
 
@@ -65,4 +65,4 @@ The [_Resources_](./resources.md) chapter has links to other resources about the
 [protocol]: https://protocol.penumbra.zone
 [rustdoc]: https://rustdoc.penumbra.zone
 [Penumbra]: https://github.com/penumbra-zone/penumbra
-[webext]: https://chrome.google.com/webstore/detail/penumbra-wallet/lkpmkhpnhknhmibgnmmhdhgdilepfghe
+[Prax Wallet]: https://chromewebstore.google.com/detail/prax-wallet/lkpmkhpnhknhmibgnmmhdhgdilepfghe

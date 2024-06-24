@@ -39,10 +39,19 @@ for protecting the validator identity.
 ## Deployment strategies
 
 We expect node operators to manage the lifecycle of their Penumbra deployments.
-Some example configs for systemd, docker compose, and kubernetes helm charts
-can be found in the Penumbra repo's [`deployments/`](https://github.com/penumbra-zone/penumbra/tree/{{ #include ../../penumbra_version.md }}/deployments) directory.
+Some example configs for systemd can be found in the Penumbra repo's
+[`deployments/`](https://github.com/penumbra-zone/penumbra/tree/{{ #include ../../penumbra_version.md }}/deployments) directory.
+Other community solutions include:
+
+* [Cosmos Operator] by [Strangelove] for Kubernetes
+* [NixOS derivations](https://github.com/starlingcyber/infra) maintained by [Starling Cybernetics]
+
 You should consult these configurations as a reference, and write your own
 scripts to maintain your node.
 
 Consider [joining the Penumbra Discord](../../resources.md#discord) to receive announcements
 about new versions and required actions by node operators.
+
+[Cosmos Operator]: https://github.com/strangelove-ventures/cosmos-operator/
+[Strangelove]: https://strange.love/
+[Starling Cybernetics]: https://starlingcyber.net/

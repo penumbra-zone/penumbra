@@ -10,9 +10,10 @@ command-line client, [`pcli`](./pcli.md).
 The Penumbra Wallet web extension only supports the Google Chrome browser.
 You must run Chrome in order to follow the instructions below.
 
-1. Visit the [Web Store page for the Penumbra Wallet](https://chrome.google.com/webstore/detail/penumbra-wallet/lkpmkhpnhknhmibgnmmhdhgdilepfghe),
+1. Visit the Web Store page for the [Prax Wallet](https://chromewebstore.google.com/detail/prax-wallet/lkpmkhpnhknhmibgnmmhdhgdilepfghe),
    and click **Add to Chrome** to install it.
-2. Navigate to the dApp website for the extension: [https://app.testnet.penumbra.zone/](https://app.testnet.penumbra.zone/) and click **Connect** in the top-right corner.
+2. Navigate to the dApp website for the extension: [https://app.testnet.penumbra.zone/](https://app.testnet.penumbra.zone/),
+   or [self-host your own frontend](./tutorials/running-frontend.md) and click **Connect** in the top-right corner.
 3. Click **Get started** to proceed with wallet configuration.
 
 ## Generating a wallet
@@ -88,8 +89,8 @@ with the new chain.
 ## Updating to a new version of the extension
 
 The extension should be automatically updated every time a new version is released.
-You can view the latest version of the extension at the [Chrome Web Store].
-To force a check for updates:
+You can view the latest version of the extension on the [Prax Wallet] page at the
+Chrome Web Store. To force a check for updates:
 
 1. Click the three-dot icon in the top right corner of the browser.
 2. From the drop-down menu, choose **Extensions -> Manage Extensions**.
@@ -98,4 +99,4 @@ To force a check for updates:
 After updating the extension manually, it may be helpful to clear the local cache,
 as described above.
 
-[Chrome Web Store]: https://chrome.google.com/webstore/detail/penumbra-wallet/lkpmkhpnhknhmibgnmmhdhgdilepfghe/
+[Prax Wallet]: https://chromewebstore.google.com/detail/prax-wallet/lkpmkhpnhknhmibgnmmhdhgdilepfghe
