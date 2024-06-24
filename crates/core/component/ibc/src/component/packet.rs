@@ -155,14 +155,12 @@ pub trait SendPacketRead: StateRead {
 
         // check that the timeout timestamp hasn't already passed in the local client tracking
         // the receiving chain
-        let chain_ts = self
-            .get_client_update_time(&connection.client_id, &latest_height)
-            .await?;
-        if packet.timeout_timestamp <= chain_ts.nanoseconds() {
+        let chain_ts = latest_consensus_state.timestamp.unix_timestamp_nanos() as u64;
+        if packet.timeout_timestamp <= chain_ts {
             anyhow::bail!(
                 "timeout timestamp {} is less than the latest timestamp on the counterparty {}",
                 packet.timeout_timestamp,
-                chain_ts.nanoseconds(),
+                chain_ts,
             );
         }
 
