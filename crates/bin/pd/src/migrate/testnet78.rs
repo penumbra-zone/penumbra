@@ -169,9 +169,9 @@ async fn delete_empty_deleted_packet_commitments(
     pin_mut!(stream);
 
     while let Some(entry) = stream.next().await {
-        let (substore_key, value) = entry?;
+        let (key, value) = entry?;
         if value.is_empty() {
-            delta.delete(format!("ibc-data/{substore_key}"));
+            delta.delete(key);
         }
     }
 
