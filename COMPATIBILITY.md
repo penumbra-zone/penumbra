@@ -6,3 +6,4 @@
 | 4 (Testnet 75)            | v0.75.x                | v0.37.5  |   v1     |
 | 5 (Testnet 76)            | v0.76.x                | v0.37.5  |   v1     |
 | 6 (Testnet 77)            | v0.77.x                | v0.37.5  |   v1     |
+| 7 (Testnet 78)            | v0.78.x                | v0.37.5  |   v1     |
