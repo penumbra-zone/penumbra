@@ -13,6 +13,8 @@ message CommunityPoolParameters {
 message GenesisContent {
   // CommunityPool parameters.
   CommunityPoolParameters community_pool_params = 1;
+  // The initial balance of the Community Pool.
+  core.asset.v1.Value initial_balance = 2;
 }
 
 // Query operations for the community_pool component.

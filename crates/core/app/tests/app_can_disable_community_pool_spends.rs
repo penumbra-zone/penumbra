@@ -8,6 +8,7 @@ use {
         server::consensus::Consensus,
         CommunityPoolStateReadExt as _,
     },
+    penumbra_asset::STAKING_TOKEN_ASSET_ID,
     penumbra_community_pool::{
         CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend, StateReadExt as _,
     },
@@ -17,10 +18,11 @@ use {
     },
     penumbra_keys::{
         keys::{SpendKey, SpendKeyBytes},
-        test_keys::{self},
+        test_keys,
     },
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
+    penumbra_num::Amount,
     penumbra_proto::{
         core::keys::v1::{GovernanceKey, IdentityKey},
         penumbra::core::component::stake::v1::Validator as PenumbraValidator,
@@ -124,6 +126,7 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
                     // Disable community spend proposals.
                     community_pool_spend_proposals_enabled: false,
                 },
+                ..Default::default()
             },
             ..Default::default()
         };
@@ -309,15 +312,23 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
 
     // At the outset, the pool should be empty.
     assert_eq!(
-        original_pool_balance,
-        BTreeMap::default(),
+        original_pool_balance.len(),
+        1,
+        "fresh community pool only track the staking token"
+    );
+    assert_eq!(
+        *original_pool_balance
+            .get(&STAKING_TOKEN_ASSET_ID)
+            .expect("CP tracks staking token, even with no balance"),
+        Amount::zero(),
         "the community pool should be empty at the beginning of the chain"
     );
 
     // After we deposit a note into the community pool, we should see the original pool contents,
     // plus the amount that we deposited.
     assert_eq!(
-        [(note.asset_id(), note.amount())]
+        [(note.asset_id(), note.amount()),
+        (*STAKING_TOKEN_ASSET_ID, Amount::zero())]
             .into_iter()
             .collect::<BTreeMap<_, _>>(),
         post_deposit_pool_balance,
@@ -354,9 +365,12 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
     // After any possible voting period, we should see the same pool balance.
     assert_eq!(
         post_voting_period_pool_balance,
-        [(note.asset_id(), note.amount())]
-            .into_iter()
-            .collect::<BTreeMap<_, _>>(),
+        [
+            (note.asset_id(), note.amount()),
+            (*STAKING_TOKEN_ASSET_ID, Amount::zero())
+        ]
+        .into_iter()
+        .collect::<BTreeMap<_, _>>(),
         "a rejected proposal should not decrease the funds of the community pool"
     );
     assert_eq!(

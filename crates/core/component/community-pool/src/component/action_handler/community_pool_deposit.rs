@@ -14,6 +14,6 @@ impl ActionHandler for CommunityPoolDeposit {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        state.community_pool_deposit(self.value).await
+        Ok(state.community_pool_deposit(self.value).await)
     }
 }

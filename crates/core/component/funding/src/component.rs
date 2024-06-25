@@ -145,7 +145,7 @@ impl Component for Funding {
                                 amount: reward_amount_for_stream.into(),
                                 asset_id: *STAKING_TOKEN_ASSET_ID,
                             })
-                            .await?;
+                            .await;
                     }
                 }
             }

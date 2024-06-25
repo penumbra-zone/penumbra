@@ -296,9 +296,15 @@ impl serde::Serialize for GenesisContent {
         if self.community_pool_params.is_some() {
             len += 1;
         }
+        if self.initial_balance.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.community_pool.v1.GenesisContent", len)?;
         if let Some(v) = self.community_pool_params.as_ref() {
             struct_ser.serialize_field("communityPoolParams", v)?;
+        }
+        if let Some(v) = self.initial_balance.as_ref() {
+            struct_ser.serialize_field("initialBalance", v)?;
         }
         struct_ser.end()
     }
@@ -312,11 +318,14 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
         const FIELDS: &[&str] = &[
             "community_pool_params",
             "communityPoolParams",
+            "initial_balance",
+            "initialBalance",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             CommunityPoolParams,
+            InitialBalance,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -340,6 +349,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     {
                         match value {
                             "communityPoolParams" | "community_pool_params" => Ok(GeneratedField::CommunityPoolParams),
+                            "initialBalance" | "initial_balance" => Ok(GeneratedField::InitialBalance),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -360,6 +370,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut community_pool_params__ = None;
+                let mut initial_balance__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::CommunityPoolParams => {
@@ -368,6 +379,12 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                             }
                             community_pool_params__ = map_.next_value()?;
                         }
+                        GeneratedField::InitialBalance => {
+                            if initial_balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("initialBalance"));
+                            }
+                            initial_balance__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -375,6 +392,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 }
                 Ok(GenesisContent {
                     community_pool_params: community_pool_params__,
+                    initial_balance: initial_balance__,
                 })
             }
         }
