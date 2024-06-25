@@ -1,12 +1,22 @@
 use anyhow::{anyhow, Result};
-use cnidarium::StateWrite;
-use penumbra_asset::Value;
+use cnidarium::{StateRead, StateWrite};
+use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use tonic::async_trait;
 use tracing::instrument;
 
 use crate::{event, state_key};
+
+#[async_trait]
+pub trait ValueCircuitBreakerRead: StateRead {
+    /// Fetch the DEX VCB balance for a specified asset id.
+    async fn get_dex_vcb_for_asset(&self, id: &asset::Id) -> Result<Option<Amount>> {
+        Ok(self.get(&state_key::value_balance(&id)).await?)
+    }
+}
+
+impl<T: StateRead + ?Sized> ValueCircuitBreakerRead for T {}
 
 /// Tracks the aggregate value of deposits in the DEX.
 #[async_trait]
@@ -19,7 +29,7 @@ pub(crate) trait ValueCircuitBreaker: StateWrite {
         }
 
         let prev_balance: Amount = self
-            .get(&state_key::value_balance(&value.asset_id))
+            .get_dex_vcb_for_asset(&value.asset_id)
             .await?
             .unwrap_or_default();
         let new_balance = prev_balance
@@ -41,7 +51,7 @@ pub(crate) trait ValueCircuitBreaker: StateWrite {
         }
 
         let prev_balance: Amount = self
-            .get(&state_key::value_balance(&value.asset_id))
+            .get_dex_vcb_for_asset(&value.asset_id)
             .await?
             .unwrap_or_default();
         let new_balance = prev_balance
@@ -257,7 +267,7 @@ mod tests {
 
         // Set the batch swap flow for the trading pair.
         state_tx
-            .put_swap_flow(&trading_pair, swap_flow.clone())
+            .accumulate_swap_flow(&trading_pair, swap_flow.clone())
             .await
             .unwrap();
         state_tx.apply();

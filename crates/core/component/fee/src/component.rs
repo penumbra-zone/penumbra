@@ -1,21 +1,26 @@
+mod fee_pay;
 pub mod rpc;
 mod view;
 
 use std::sync::Arc;
 
-use crate::genesis;
+use crate::{genesis, Fee};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
+use penumbra_proto::core::component::fee::v1 as pb;
+use penumbra_proto::state::StateWriteProto as _;
 use tendermint::abci;
 use tracing::instrument;
+
+pub use fee_pay::FeePay;
 pub use view::{StateReadExt, StateWriteExt};
 
 // Fee component
-pub struct Fee {}
+pub struct FeeComponent {}
 
 #[async_trait]
-impl Component for Fee {
+impl Component for FeeComponent {
     type AppState = genesis::Content;
 
     #[instrument(name = "fee", skip(state, app_state))]
@@ -35,12 +40,27 @@ impl Component for Fee {
     ) {
     }
 
-    #[instrument(name = "fee", skip(_state, _end_block))]
+    #[instrument(name = "fee", skip(state, _end_block))]
     async fn end_block<S: StateWrite + 'static>(
-        _state: &mut Arc<S>,
+        state: &mut Arc<S>,
         _end_block: &abci::request::EndBlock,
     ) {
-        // TODO: update gas prices here eventually
+        let state_ref = Arc::get_mut(state).expect("unique ref in end_block");
+        // Grab the total fees and use them to emit an event.
+        let fees = state_ref.accumulated_base_fees_and_tips();
+
+        let (swapped_base, swapped_tip) = fees
+            .get(&penumbra_asset::STAKING_TOKEN_ASSET_ID)
+            .cloned()
+            .unwrap_or_default();
+
+        let swapped_total = swapped_base + swapped_tip;
+
+        state_ref.record_proto(pb::EventBlockFees {
+            swapped_fee_total: Some(Fee::from_staking_token_amount(swapped_total).into()),
+            swapped_base_fee_total: Some(Fee::from_staking_token_amount(swapped_base).into()),
+            swapped_tip_total: Some(Fee::from_staking_token_amount(swapped_tip).into()),
+        });
     }
 
     #[instrument(name = "fee", skip(_state))]

@@ -15,7 +15,7 @@ use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_dex::component::StateReadExt as _;
 use penumbra_dex::component::{Dex, StateWriteExt as _};
 use penumbra_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
-use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
+use penumbra_fee::component::{FeeComponent, StateReadExt as _, StateWriteExt as _};
 use penumbra_funding::component::Funding;
 use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_governance::component::{Governance, StateReadExt as _, StateWriteExt as _};
@@ -139,7 +139,7 @@ impl App {
                 CommunityPool::init_chain(&mut state_tx, Some(&genesis.community_pool_content))
                     .await;
                 Governance::init_chain(&mut state_tx, Some(&genesis.governance_content)).await;
-                Fee::init_chain(&mut state_tx, Some(&genesis.fee_content)).await;
+                FeeComponent::init_chain(&mut state_tx, Some(&genesis.fee_content)).await;
                 Funding::init_chain(&mut state_tx, Some(&genesis.funding_content)).await;
 
                 state_tx
@@ -155,7 +155,7 @@ impl App {
                 Dex::init_chain(&mut state_tx, None).await;
                 Governance::init_chain(&mut state_tx, None).await;
                 CommunityPool::init_chain(&mut state_tx, None).await;
-                Fee::init_chain(&mut state_tx, None).await;
+                FeeComponent::init_chain(&mut state_tx, None).await;
                 Funding::init_chain(&mut state_tx, None).await;
             }
         };
@@ -340,7 +340,7 @@ impl App {
         CommunityPool::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
-        Fee::begin_block(&mut arc_state_tx, begin_block).await;
+        FeeComponent::begin_block(&mut arc_state_tx, begin_block).await;
         Funding::begin_block(&mut arc_state_tx, begin_block).await;
 
         let state_tx = Arc::try_unwrap(arc_state_tx)
@@ -471,7 +471,7 @@ impl App {
         CommunityPool::end_block(&mut arc_state_tx, end_block).await;
         Governance::end_block(&mut arc_state_tx, end_block).await;
         Staking::end_block(&mut arc_state_tx, end_block).await;
-        Fee::end_block(&mut arc_state_tx, end_block).await;
+        FeeComponent::end_block(&mut arc_state_tx, end_block).await;
         Funding::end_block(&mut arc_state_tx, end_block).await;
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
@@ -533,7 +533,7 @@ impl App {
             Staking::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Staking component");
-            Fee::end_epoch(&mut arc_state_tx)
+            FeeComponent::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Fee component");
             Funding::end_epoch(&mut arc_state_tx)

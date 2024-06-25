@@ -33,7 +33,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         block_height: u64,
         params: RoutingParams,
         execution_budget: u32,
-    ) -> Result<()>
+    ) -> Result<BatchSwapOutputData>
     where
         Self: 'static,
     {
@@ -127,7 +127,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             .set_output_data(output_data, swap_execution_1_for_2, swap_execution_2_for_1)
             .await?;
 
-        Ok(())
+        Ok(output_data)
     }
 }
 

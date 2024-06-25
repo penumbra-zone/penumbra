@@ -328,10 +328,11 @@ mod tests {
         swap_flow.0 += 0u32.into();
         swap_flow.1 += gn.value(1u32.into()).amount;
 
-        // Set the batch swap flow for the trading pair.
+        // Accumulate it into the batch swap flow for the trading pair.
+        // Since this is currently empty this is the same as setting it.
         Arc::get_mut(&mut state)
             .unwrap()
-            .put_swap_flow(&trading_pair, swap_flow.clone())
+            .accumulate_swap_flow(&trading_pair, swap_flow.clone())
             .await
             .unwrap();
 
@@ -420,10 +421,11 @@ mod tests {
         // Swap 2 gn into penumbra, meaning each position is filled.
         swap_flow.1 += gn.value(2u32.into()).amount;
 
-        // Set the batch swap flow for the trading pair.
+        // Accumulate it into the batch swap flow for the trading pair.
+        // Since this is currently empty this is the same as setting it.
         Arc::get_mut(&mut state)
             .unwrap()
-            .put_swap_flow(&trading_pair, swap_flow.clone())
+            .accumulate_swap_flow(&trading_pair, swap_flow.clone())
             .await
             .unwrap();
 
