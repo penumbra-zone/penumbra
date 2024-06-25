@@ -204,6 +204,12 @@ impl App {
             // We compute the total proposal size if we were to include this transaction.
             let total_with_tx = proposal_size_bytes.saturating_add(transaction_size);
 
+            // This should never happen, unless Comet is misbehaving because of a bug
+            // or a misconfiguration. We handle it gracefully, to prioritize forward progress.
+            if transaction_size > MAX_TRANSACTION_SIZE_BYTES as u64 {
+                continue;
+            }
+
             // First, we filter proposals to fit within the block limit.
             if total_with_tx >= max_proposal_size_bytes {
                 break;
