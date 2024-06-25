@@ -8,6 +8,7 @@ use {
         server::consensus::Consensus,
         CommunityPoolStateReadExt as _,
     },
+    penumbra_asset::STAKING_TOKEN_ASSET_ID,
     penumbra_community_pool::{
         CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend, StateReadExt as _,
     },
@@ -17,10 +18,11 @@ use {
     },
     penumbra_keys::{
         keys::{SpendKey, SpendKeyBytes},
-        test_keys::{self},
+        test_keys,
     },
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
+    penumbra_num::Amount,
     penumbra_proto::{
         core::keys::v1::{GovernanceKey, IdentityKey},
         penumbra::core::component::stake::v1::Validator as PenumbraValidator,
@@ -303,8 +305,15 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
 
     // At the outset, the pool should be empty.
     assert_eq!(
-        original_pool_balance,
-        BTreeMap::default(),
+        original_pool_balance.len(),
+        1,
+        "fresh community pool only track the staking token"
+    );
+    assert_eq!(
+        *original_pool_balance
+            .get(&STAKING_TOKEN_ASSET_ID)
+            .expect("CP tracks the staking token"),
+        Amount::zero(),
         "the community pool should be empty at the beginning of the chain"
     );
 
