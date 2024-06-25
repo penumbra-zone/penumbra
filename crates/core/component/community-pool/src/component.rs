@@ -28,6 +28,7 @@ impl Component for CommunityPool {
         match app_state {
             Some(genesis) => {
                 state.put_community_pool_params(genesis.community_pool_params.clone());
+                state.community_pool_deposit(genesis.initial_balance).await;
             }
             None => {}
         }

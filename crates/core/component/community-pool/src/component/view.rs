@@ -52,11 +52,14 @@ pub trait StateWriteExt: StateWrite {
         self.put(state_key::community_pool_params().into(), params)
     }
 
-    async fn community_pool_deposit(&mut self, value: Value) -> Result<()> {
+    async fn community_pool_deposit(&mut self, value: Value) {
         let key = state_key::balance_for_asset(value.asset_id);
-        let current = self.get(&key).await?.unwrap_or_else(|| Amount::from(0u64));
+        let current = self
+            .get(&key)
+            .await
+            .expect("no deserialization errors")
+            .unwrap_or_else(|| Amount::from(0u64));
         self.put(key, current + value.amount);
-        Ok(())
     }
 
     async fn community_pool_withdraw(&mut self, value: Value) -> Result<()> {
