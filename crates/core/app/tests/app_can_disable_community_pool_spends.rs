@@ -17,7 +17,7 @@ use {
     },
     penumbra_keys::{
         keys::{SpendKey, SpendKeyBytes},
-        test_keys::{self},
+        test_keys,
     },
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
@@ -124,6 +124,7 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
                     // Disable community spend proposals.
                     community_pool_spend_proposals_enabled: false,
                 },
+                ..Default::default()
             },
             ..Default::default()
         };
