@@ -22,6 +22,9 @@ pub struct GenesisContent {
     /// CommunityPool parameters.
     #[prost(message, optional, tag = "1")]
     pub community_pool_params: ::core::option::Option<CommunityPoolParameters>,
+    /// The initial balance of the Community Pool.
+    #[prost(message, optional, tag = "2")]
+    pub initial_balance: ::core::option::Option<super::super::super::asset::v1::Value>,
 }
 impl ::prost::Name for GenesisContent {
     const NAME: &'static str = "GenesisContent";
