@@ -1,13 +1,15 @@
 use std::{
     collections::BTreeMap,
-    fs::File,
+    fs::{self, File},
     io::{Read, Write},
+    path::PathBuf,
     str::FromStr,
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::{ensure, Context, Result};
 use ark_ff::UniformRand;
+use clap::Parser;
 use decaf377::{Fq, Fr};
 use ibc_proto::ibc::core::client::v1::{
     query_client::QueryClient as IbcClientQueryClient, QueryClientStateRequest,
@@ -56,7 +58,7 @@ use penumbra_proto::{
 use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
-use penumbra_transaction::gas::swap_claim_gas_cost;
+use penumbra_transaction::{gas::swap_claim_gas_cost, Transaction};
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use penumbra_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
@@ -73,6 +75,27 @@ mod replicate;
 /// pcli splits apart the number of positions to close/withdraw
 /// in the [`PositionCmd::CloseAll`]/[`PositionCmd::WithdrawAll`] commands.
 const POSITION_CHUNK_SIZE: usize = 30;
+
+#[derive(Debug, Parser)]
+pub struct TxCmdWithOptions {
+    /// If present, a file to save the transaction to instead of broadcasting it
+    #[clap(long)]
+    pub offline: Option<PathBuf>,
+    #[clap(subcommand)]
+    pub cmd: TxCmd,
+}
+
+impl TxCmdWithOptions {
+    /// Determine if this command requires a network sync before it executes.
+    pub fn offline(&self) -> bool {
+        self.cmd.offline()
+    }
+
+    pub async fn exec(&self, app: &mut App) -> Result<()> {
+        app.save_transaction_here_instead = self.offline.clone();
+        self.cmd.exec(app).await
+    }
+}
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
@@ -232,6 +255,12 @@ pub enum TxCmd {
         #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
+    /// Broadcast a saved transaction to the network
+    #[clap(display_order = 1000)]
+    Broadcast {
+        /// The transaction to be broadcast
+        transaction: PathBuf,
+    },
 }
 
 /// Vote on a governance proposal.
@@ -286,6 +315,7 @@ impl TxCmd {
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
             TxCmd::Withdraw { .. } => false,
             TxCmd::Auction(_) => false,
+            TxCmd::Broadcast { .. } => false,
         }
     }
 
@@ -1283,6 +1313,10 @@ impl TxCmd {
             }
             TxCmd::Auction(AuctionCmd::Dutch(auction_cmd)) => {
                 auction_cmd.exec(app).await?;
+            }
+            TxCmd::Broadcast { transaction } => {
+                let transaction: Transaction = serde_json::from_slice(&fs::read(transaction)?)?;
+                app.submit_transaction(transaction).await?;
             }
         }
         Ok(())

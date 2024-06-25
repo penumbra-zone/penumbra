@@ -173,6 +173,7 @@ impl Opt {
             custody,
             governance_custody,
             config,
+            save_transaction_here_instead: None,
         };
         Ok((app, self.cmd))
     }

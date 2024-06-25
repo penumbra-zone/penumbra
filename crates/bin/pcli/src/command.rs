@@ -6,7 +6,7 @@ pub use tx::TxCmd;
 pub use validator::ValidatorCmd;
 pub use view::ViewCmd;
 
-use self::ceremony::CeremonyCmd;
+use self::{ceremony::CeremonyCmd, tx::TxCmdWithOptions};
 
 mod ceremony;
 mod debug;
@@ -51,8 +51,8 @@ pub enum Command {
     #[clap(subcommand, display_order = 300, visible_alias = "v")]
     View(ViewCmd),
     /// Create and broadcast a transaction.
-    #[clap(subcommand, display_order = 400, visible_alias = "tx")]
-    Transaction(TxCmd),
+    #[clap(display_order = 400, visible_alias = "tx")]
+    Transaction(TxCmdWithOptions),
     /// Manage a validator.
     #[clap(subcommand, display_order = 900)]
     Validator(ValidatorCmd),

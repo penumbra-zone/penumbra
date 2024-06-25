@@ -11,7 +11,7 @@ use penumbra_proto::{
 use penumbra_stake::validator::Validator;
 use penumbra_transaction::{txhash::TransactionId, Transaction, TransactionPlan};
 use penumbra_view::ViewClient;
-use std::future::Future;
+use std::{fs, future::Future};
 use tonic::transport::{Channel, ClientTlsConfig};
 use tracing::instrument;
 
@@ -105,6 +105,15 @@ impl App {
         &mut self,
         transaction: Transaction,
     ) -> anyhow::Result<TransactionId> {
+        if let Some(file) = &self.save_transaction_here_instead {
+            println!(
+                "saving transaction to disk, path: {}",
+                file.to_string_lossy()
+            );
+            fs::write(file, &serde_json::to_vec(&transaction)?)?;
+            return Ok(transaction.id());
+        }
+
         println!("broadcasting transaction and awaiting confirmation...");
         let mut rsp = self.view().broadcast_transaction(transaction, true).await?;
 
