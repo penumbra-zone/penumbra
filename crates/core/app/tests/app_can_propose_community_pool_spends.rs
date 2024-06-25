@@ -320,9 +320,12 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
     // After we deposit a note into the community pool, we should see the original pool contents,
     // plus the amount that we deposited.
     assert_eq!(
-        [(note.asset_id(), note.amount())]
-            .into_iter()
-            .collect::<BTreeMap<_, _>>(),
+        [
+            (note.asset_id(), note.amount()),
+            (*STAKING_TOKEN_ASSET_ID, Amount::zero())
+        ]
+        .into_iter()
+        .collect::<BTreeMap<_, _>>(),
         post_deposit_pool_balance,
         "a community pool deposit should be reflected in the visible balance"
     );
@@ -362,7 +365,9 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
     // After the proposal passes, we should see the balance decrease by the amount proposed.
     assert_eq!(
         post_voting_period_pool_balance,
-        BTreeMap::default(),
+        [(*STAKING_TOKEN_ASSET_ID, Amount::zero())]
+            .into_iter()
+            .collect::<BTreeMap<_, _>>(),
         "the successful proposal should decrease the funds of the community pool"
     );
     assert_eq!(

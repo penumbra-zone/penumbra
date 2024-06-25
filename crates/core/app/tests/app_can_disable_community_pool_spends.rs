@@ -327,7 +327,8 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
     // After we deposit a note into the community pool, we should see the original pool contents,
     // plus the amount that we deposited.
     assert_eq!(
-        [(note.asset_id(), note.amount())]
+        [(note.asset_id(), note.amount()),
+        (*STAKING_TOKEN_ASSET_ID, Amount::zero())]
             .into_iter()
             .collect::<BTreeMap<_, _>>(),
         post_deposit_pool_balance,
@@ -364,9 +365,12 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
     // After any possible voting period, we should see the same pool balance.
     assert_eq!(
         post_voting_period_pool_balance,
-        [(note.asset_id(), note.amount())]
-            .into_iter()
-            .collect::<BTreeMap<_, _>>(),
+        [
+            (note.asset_id(), note.amount()),
+            (*STAKING_TOKEN_ASSET_ID, Amount::zero())
+        ]
+        .into_iter()
+        .collect::<BTreeMap<_, _>>(),
         "a rejected proposal should not decrease the funds of the community pool"
     );
     assert_eq!(
