@@ -26,6 +26,7 @@ pub use swap_manager::SwapDataRead;
 pub(crate) use arb::Arbitrage;
 pub(crate) use circuit_breaker::ExecutionCircuitBreaker;
 pub(crate) use circuit_breaker::ValueCircuitBreaker;
+pub use circuit_breaker::ValueCircuitBreakerRead;
 pub(crate) use dex::InternalDexWrite;
 pub(crate) use swap_manager::SwapDataWrite;
 pub(crate) use swap_manager::SwapManager;
