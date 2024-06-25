@@ -10,6 +10,7 @@ use {
         view::v1::view_service_client::ViewServiceClient,
     },
     penumbra_view::ViewClient,
+    std::path::PathBuf,
 };
 
 pub mod command;
@@ -34,6 +35,8 @@ pub struct App {
     pub custody: CustodyServiceClient<BoxGrpcService>,
     pub governance_custody: CustodyServiceClient<BoxGrpcService>,
     pub config: PcliConfig,
+    /// If present, save the transaction here instead of broadcasting it.
+    pub save_transaction_here_instead: Option<PathBuf>,
 }
 
 impl App {
