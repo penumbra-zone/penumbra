@@ -62,12 +62,12 @@ ark-serialize = {workspace = true}
 ark-snark = {workspace = true}
 ark-std = {workspace = true, default-features = false}
 bech32 = {workspace = true}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377 = {workspace = true, features = ["r1cs"]}
 num-bigint = {workspace = true}
 once_cell = {workspace = true}
-penumbra-asset = {workspace = true, default-features = true}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-num = {workspace = true, default-features = true}
+penumbra-asset = {workspace = true}
+penumbra-keys = {workspace = true}
+penumbra-num = {workspace = true}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 serde = {workspace = true, features = ["derive"]}
@@ -79,17 +79,16 @@ criterion = {workspace = true, features = ["html_reports"]}
 decaf377-fmd = {workspace = true}
 decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
-penumbra-dex = {workspace = true, default-features = true}
-penumbra-fee = {workspace = true, default-features = true}
-penumbra-governance = {workspace = true, default-features = true}
-penumbra-sct = {workspace = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, default-features = true}
-penumbra-stake = {workspace = true, default-features = true}
-penumbra-tct = {workspace = true, features = ["r1cs"], default-features = true}
+penumbra-dex = {workspace = true}
+penumbra-fee = {workspace = true}
+penumbra-governance = {workspace = true}
+penumbra-sct = {workspace = true}
+penumbra-shielded-pool = {workspace = true}
+penumbra-stake = {workspace = true}
+penumbra-tct = {workspace = true, features = ["r1cs"]}
 
 [dev-dependencies.penumbra-proof-params]
 workspace = true
-default-features = true
 features = [
     "bundled-proving-keys",
     "download-proving-keys",

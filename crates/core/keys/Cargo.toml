@@ -21,7 +21,7 @@ bip32 = "0.5"
 blake2b_simd = {workspace = true}
 bytes = {workspace = true}
 chacha20poly1305 = {workspace = true}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377 = {workspace = true, features = ["r1cs"]}
 decaf377-fmd = {workspace = true}
 decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
@@ -34,9 +34,9 @@ ibig = {workspace = true}
 num-bigint = {workspace = true}
 once_cell = {workspace = true}
 pbkdf2 = "0.12.0"
-penumbra-asset = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = true}
-penumbra-tct = {workspace = true, features = ["r1cs"], default-features = true}
+penumbra-asset = {workspace = true}
+penumbra-proto = {workspace = true}
+penumbra-tct = {workspace = true, features = ["r1cs"]}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}

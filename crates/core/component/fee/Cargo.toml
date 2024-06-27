@@ -21,9 +21,9 @@ ark-ff = {workspace = true, default-features = false}
 async-trait = {workspace = true}
 blake2b_simd = {workspace = true}
 bytes = {workspace = true}
-cnidarium = {workspace = true, optional = true, default-features = true}
-cnidarium-component = {workspace = true, optional = true, default-features = true}
-decaf377 = {workspace = true, default-features = true}
+cnidarium = {workspace = true, optional = true}
+cnidarium-component = {workspace = true, optional = true}
+decaf377 = {workspace = true}
 decaf377-rdsa = {workspace = true}
 im = {workspace = true}
 metrics = {workspace = true}

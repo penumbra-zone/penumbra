@@ -27,12 +27,12 @@ http-body = {workspace = true}
 metrics = {workspace = true}
 parking_lot = {workspace = true}
 penumbra-app = {workspace = true}
-penumbra-asset = {workspace = true, default-features = true}
+penumbra-asset = {workspace = true}
 penumbra-custody = {workspace = true}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-transaction = {workspace = true, default-features = true}
+penumbra-keys = {workspace = true}
+penumbra-proto = {workspace = true, features = ["rpc"]}
+penumbra-tct = {workspace = true}
+penumbra-transaction = {workspace = true}
 penumbra-view = {workspace = true}
 prost = {workspace = true}
 rand = {workspace = true}
@@ -57,9 +57,9 @@ url = {workspace = true, features = ["serde"]}
 assert_cmd = {workspace = true}
 base64 = {workspace = true}
 ibc-proto = {workspace = true, default-features = false, features = ["server"]}
-ibc-types = {workspace = true, default-features = true}
+ibc-types = {workspace = true}
 penumbra-proof-params = {workspace = true, features = [
     "bundled-proving-keys",
     "download-proving-keys",
-], default-features = true}
+]}
 tempfile = {workspace = true}

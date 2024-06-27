@@ -29,12 +29,12 @@ ark-relations = {workspace = true}
 ark-serialize = {workspace = true}
 blake2b_simd = {workspace = true}
 decaf377 = {workspace = true, default-features = false}
-penumbra-dex = {workspace = true, default-features = true}
-penumbra-governance = {workspace = true, default-features = true}
-penumbra-proof-params = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, default-features = true}
-penumbra-stake = {workspace = true, features = ["component"], default-features = true}
+penumbra-dex = {workspace = true}
+penumbra-governance = {workspace = true}
+penumbra-proof-params = {workspace = true}
+penumbra-proto = {workspace = true}
+penumbra-shielded-pool = {workspace = true}
+penumbra-stake = {workspace = true, features = ["component"]}
 rand_core = {workspace = true, features = ["getrandom"]}
 rayon = { version = "1.8.0", optional = true }
 
@@ -42,6 +42,6 @@ rayon = { version = "1.8.0", optional = true }
 ark-r1cs-std = {workspace = true}
 ark-snark = {workspace = true}
 criterion = {workspace = true, features = ["html_reports"]}
-penumbra-dex = {workspace = true, default-features = true}
-penumbra-proof-params = {workspace = true, default-features = true}
+penumbra-dex = {workspace = true}
+penumbra-proof-params = {workspace = true}
 rand_chacha = {workspace = true}

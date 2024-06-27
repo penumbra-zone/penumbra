@@ -17,7 +17,7 @@ ark-relations = {workspace = true, optional = true}
 ark-serialize = {workspace = true}
 async-trait = {workspace = true}
 blake2b_simd = {workspace = true}
-decaf377 = {workspace = true, default-features = true}
+decaf377 = {workspace = true}
 derivative = {workspace = true}
 futures = {workspace = true}
 hash_hasher = "2"
@@ -25,7 +25,7 @@ hex = {workspace = true}
 im = {workspace = true, features = ["serde"]}
 once_cell = {workspace = true}
 parking_lot = {workspace = true}
-penumbra-proto = {workspace = true, default-features = true}
+penumbra-proto = {workspace = true}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 proptest = {workspace = true, optional = true}
 proptest-derive = {workspace = true, optional = true}

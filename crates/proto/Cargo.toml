@@ -24,13 +24,13 @@ async-trait = {workspace = true}
 bech32 = {workspace = true}
 bytes = {workspace = true, features = ["serde"]}
 chrono = {workspace = true, optional = true, default-features = false, features = ["serde"]}
-cnidarium = {workspace = true, optional = true, default-features = true}
+cnidarium = {workspace = true, optional = true}
 decaf377-fmd = {workspace = true}
 decaf377-rdsa = {workspace = true}
 futures = {workspace = true}
 hex = {workspace = true}
 http-body = {workspace = true, optional = true}
-ibc-types = {workspace = true, features = ["std"], default-features = true}
+ibc-types = {workspace = true, features = ["std"]}
 ics23 = {workspace = true}
 pbjson = {workspace = true}
 pbjson-types = {workspace = true}

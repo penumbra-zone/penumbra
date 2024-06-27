@@ -39,9 +39,9 @@ async-trait = {workspace = true}
 base64 = {workspace = true}
 blake2b_simd = {workspace = true}
 bytes = {workspace = true}
-cnidarium = {workspace = true, optional = true, default-features = true}
-cnidarium-component = {workspace = true, optional = true, default-features = true}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+cnidarium = {workspace = true, optional = true}
+cnidarium-component = {workspace = true, optional = true}
+decaf377 = {workspace = true, features = ["r1cs"]}
 decaf377-rdsa = {workspace = true}
 futures = {workspace = true}
 ibc-types = {workspace = true, default-features = false}
@@ -59,7 +59,7 @@ penumbra-proto = {workspace = true, default-features = false}
 penumbra-sct = {workspace = true, default-features = false}
 penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
+penumbra-tct = {workspace = true}
 penumbra-txhash = {workspace = true, default-features = false}
 rand = {workspace = true}
 rand_chacha = {workspace = true}

@@ -48,7 +48,7 @@ bitvec = {workspace = true}
 cnidarium = {workspace = true, default-features = false, optional = true}
 cnidarium-component = {workspace = true, default-features = false, optional = true}
 blake2b_simd = {workspace = true}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377 = {workspace = true, features = ["r1cs"]}
 decaf377-rdsa = {workspace = true}
 futures = {workspace = true, optional = true}
 hex = {workspace = true}
@@ -58,12 +58,12 @@ once_cell = {workspace = true}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
-penumbra-proof-params = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = true}
+penumbra-proof-params = {workspace = true}
+penumbra-proto = {workspace = true}
 penumbra-sct = {workspace = true, default-features = false}
 penumbra-dex = {workspace = true, default-features = false}
 penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
+penumbra-tct = {workspace = true}
 penumbra-txhash = {workspace = true, default-features = false}
 rand_chacha = {workspace = true}
 rand_core = {workspace = true}
@@ -72,7 +72,7 @@ serde = {workspace = true, features = ["derive"]}
 serde_with = {workspace = true}
 sha2 = {workspace = true}
 tap = {workspace = true}
-tendermint = {workspace = true, default-features = true}
+tendermint = {workspace = true}
 tokio = {workspace = true, features = ["full", "tracing"], optional = true}
 tonic = {workspace = true, optional = true}
 tracing = {workspace = true}

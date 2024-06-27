@@ -23,7 +23,7 @@ async-stream = {workspace = true}
 async-trait = {workspace = true}
 bytes = {workspace = true, features = ["serde"]}
 camino = {workspace = true}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377 = {workspace = true, features = ["r1cs"]}
 digest = "0.9"
 ed25519-consensus = {workspace = true}
 futures = {workspace = true}
@@ -34,7 +34,7 @@ metrics = {workspace = true}
 once_cell = {workspace = true}
 parking_lot = {workspace = true}
 penumbra-app = {workspace = true}
-penumbra-asset = {workspace = true, default-features = true}
+penumbra-asset = {workspace = true}
 penumbra-community-pool = {workspace = true, default-features = false}
 penumbra-compact-block = {workspace = true, default-features = false}
 penumbra-dex = {workspace = true, default-features = false}
@@ -43,15 +43,15 @@ penumbra-fee = {workspace = true, default-features = false}
 penumbra-funding = {workspace = true, default-features = false}
 penumbra-governance = {workspace = true, default-features = false}
 penumbra-ibc = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-num = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
+penumbra-keys = {workspace = true}
+penumbra-num = {workspace = true}
+penumbra-proto = {workspace = true, features = ["rpc"]}
 penumbra-sct = {workspace = true, default-features = false}
 penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-transaction = {workspace = true, default-features = true}
-penumbra-auction = {workspace = true, default-features = true}
+penumbra-tct = {workspace = true}
+penumbra-transaction = {workspace = true}
+penumbra-auction = {workspace = true}
 prost = {workspace = true}
 r2d2 = {workspace = true}
 r2d2_sqlite = {workspace = true, features = ["bundled"]}

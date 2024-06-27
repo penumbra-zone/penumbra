@@ -14,7 +14,7 @@ name = "tct-live-edit"
 
 
 [dependencies]
-penumbra-tct = {workspace = true, features = ["arbitrary"], default-features = true}
+penumbra-tct = {workspace = true, features = ["arbitrary"]}
 decaf377 = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 tokio-util = {workspace = true, features = ["full"]}

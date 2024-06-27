@@ -44,7 +44,7 @@ clap = {workspace = true, features = ["derive", "env"]}
 colored = "2.1.0"
 colored_json = "4.1"
 comfy-table = "5"
-decaf377 = {workspace = true, default-features = true}
+decaf377 = {workspace = true}
 decaf377-rdsa = {workspace = true}
 dialoguer = "0.10.4"
 time = "0.3"
@@ -54,8 +54,8 @@ futures = {workspace = true}
 hex = {workspace = true}
 http-body = {workspace = true}
 humantime = {workspace = true}
-ibc-proto = {workspace = true, default-features = true}
-ibc-types = {workspace = true, features = ["std", "with_serde"], default-features = true}
+ibc-proto = {workspace = true}
+ibc-types = {workspace = true, features = ["std", "with_serde"]}
 indicatif = {workspace = true}
 jmt = {workspace = true}
 ndarray = "0.15.6"
@@ -73,13 +73,13 @@ penumbra-ibc = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
 penumbra-proof-setup = {workspace = true}
-penumbra-proof-params = { workspace = true, default-features = true }
-penumbra-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
+penumbra-proof-params = { workspace = true }
+penumbra-proto = {workspace = true, features = ["rpc", "box-grpc"]}
 penumbra-sct = {workspace = true, default-features = false}
 penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-transaction = {workspace = true, default-features = true}
+penumbra-tct = {workspace = true}
+penumbra-transaction = {workspace = true}
 penumbra-view = {workspace = true}
 penumbra-wallet = {workspace = true}
 pin-project = {workspace = true}
@@ -93,7 +93,7 @@ serde_json = {workspace = true}
 serde_with = {workspace = true, features = ["hex"]}
 sha2 = {workspace = true}
 simple-base64 = "0.23"
-tendermint = {workspace = true, features = ["rust-crypto"], default-features = true}
+tendermint = {workspace = true, features = ["rust-crypto"]}
 tokio = {workspace = true, features = ["full"]}
 tokio-stream = {workspace = true}
 tokio-util = {workspace = true}
@@ -113,7 +113,6 @@ regex = {workspace = true}
 tempfile = {workspace = true}
 
 [dev-dependencies.penumbra-proof-params]
-default-features = true
 workspace = true
 features = [
     "bundled-proving-keys",
