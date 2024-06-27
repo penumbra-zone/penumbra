@@ -86,7 +86,6 @@ pub enum RootCommand {
             alias = "tendermint-addr",
         )]
         cometbft_addr: Url,
-
         /// Enable expensive RPCs, such as the trade simulation service.
         /// The trade simulation service allows clients to simulate trades without submitting them.
         /// This is useful for approximating the cost of a trade before submitting it.
@@ -94,13 +93,13 @@ pub enum RootCommand {
         #[clap(short, long, display_order = 500)]
         enable_expensive_rpc: bool,
     },
+
     /// Generate, join, or reset a testnet.
     Testnet {
         /// Path to directory to store output in. Must not exist. Defaults to
         /// ~/.penumbra/testnet_data".
         #[clap(long)]
         testnet_dir: Option<PathBuf>,
-
         #[clap(subcommand)]
         tn_cmd: TestnetCommand,
     },
@@ -121,6 +120,7 @@ pub enum RootCommand {
         #[clap(long, display_order = 300)]
         prune: bool,
     },
+
     /// Run a migration before resuming post-upgrade.
     Migrate {
         /// The home directory of the full node.
@@ -196,7 +196,6 @@ pub enum TestnetCommand {
         /// the validator P2P services to the internet, see the `--external-addresses` option.
         #[clap(long)]
         peer_address_template: Option<String>,
-
         /// Public addresses and ports for the Tendermint P2P services of the genesis
         /// validator. Accepts comma-separated values, to support multiple validators.
         /// If `--validators-input-file` is used to increase the number
@@ -218,14 +217,12 @@ pub enum TestnetCommand {
             default_value = "https://rpc.testnet.penumbra.zone"
         )]
         node: Url,
-
         /// Optional URL of archived node state in .tar.gz format. The archive will be
         /// downloaded and extracted locally, allowing the node to join a network at a block height
         /// higher than 0. Supports loading the archive from a local file, if set with file scheme
         /// explicitly, e.g. `file:///path/to/archive.tar.gz`.
         #[clap(long, env = "PENUMBRA_PD_ARCHIVE_URL")]
         archive_url: Option<Url>,
-
         /// Human-readable name to identify node on network
         // Default: 'node-#'
         #[clap(long, env = "PENUMBRA_PD_TM_MONIKER")]
