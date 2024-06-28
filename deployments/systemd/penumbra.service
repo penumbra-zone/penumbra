@@ -3,15 +3,21 @@ Description=Penumbra pd
 Wants=cometbft.service
 
 [Service]
-# If both 1) running pd as non-root; and 2) using auto-https logic, then
-# uncomment the capability declarations below to permit binding to 443/TCP for HTTPS.
-# CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-# AmbientCapabilities=CAP_NET_BIND_SERVICE
+# Support binding to 443/TCP for HTTPS.
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
 ExecStart=/usr/local/bin/pd start
-# Consider overriding the home directory, e.g.
-# ExecStart=/usr/local/bin/pd start --home /var/www/.penumbra/testnet_data/node0/pd
+# Consider adding an HTTPS URL if you have DNS set up:
+# ExecStart=/usr/local/bin/pd start --grpc-auto-https www.example.com
+
+# Disable automatic restart, since governance votes can intentionally halt the chain.
+# If you're running a validator, you should configure uptime monitoring.
 Restart=no
-User=$USER
+
+# Assumes that the `penumbra` user exists.
+User=penumbra
+
 # Raise filehandle limit for tower-abci.
 LimitNOFILE=65536
 # Consider configuring logrotate if using debug logs
