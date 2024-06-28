@@ -11,7 +11,7 @@ use anyhow::{anyhow, Context};
 use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
-    cli::{Opt, RootCommand, NetworkCommand},
+    cli::{NetworkCommand, Opt, RootCommand},
     migrate::Migration::{ReadyToStart, Testnet78},
     network::{
         config::{get_network_dir, parse_tm_address, url_has_necessary_parts},

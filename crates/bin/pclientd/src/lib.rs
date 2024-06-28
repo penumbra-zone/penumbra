@@ -101,7 +101,6 @@ pub enum Command {
         #[clap(
             long,
             display_order = 900,
-            default_value = "https://grpc.testnet.penumbra.zone",
             parse(try_from_str = Url::parse)
         )]
         grpc_url: Url,

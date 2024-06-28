@@ -213,10 +213,7 @@ pub enum NetworkCommand {
     /// Requires a URL for the CometBFT RPC for the bootstrap node.
     Join {
         /// URL of the remote CometBFT RPC endpoint for bootstrapping connection.
-        #[clap(
-            env = "PENUMBRA_PD_JOIN_URL",
-            default_value = "https://rpc.testnet.penumbra.zone"
-        )]
+        #[clap(env = "PENUMBRA_PD_JOIN_URL")]
         node: Url,
         /// Optional URL of archived node state in .tar.gz format. The archive will be
         /// downloaded and extracted locally, allowing the node to join a network at a block height
