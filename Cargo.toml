@@ -23,7 +23,6 @@ members = [
   "crates/core/component/distributions",
   "crates/core/component/fee",
   "crates/core/component/funding",
-  "crates/core/component/funding",
   "crates/core/component/governance",
   "crates/core/component/ibc",
   "crates/core/component/sct",
