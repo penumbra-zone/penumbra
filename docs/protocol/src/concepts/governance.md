@@ -12,9 +12,9 @@ its deposit to be burned. This functions as a spam deterrent.
 
 ## Proposals
 
-Penumbra users can propose votes by escrowing a minimum amount of `PEN`.  They
+Penumbra users can propose votes by escrowing a minimum amount of `UM`.  They
 do this by creating a transaction with a `ProposalSubmit` description, which
-consumes some amount of `PEN` from the transaction's balance, and creates a
+consumes some amount of `UM` from the transaction's balance, and creates a
 `proposal_N_voting` NFT, which can be redeemed for the proposal deposit in the case
 that the voting concludes without slashing the proposal (both failed and passed
 proposals can reclaim their deposit).
@@ -49,9 +49,9 @@ beginning of the voting period.
 
 To do this, they create a transaction with a `Vote` description.  This
 description identifies the validator $v$ and the proposal, proves spend
-authority over a note recording $y$ `dPEN(v)`, and reveals the note's nullifier.
+authority over a note recording $y$ `dUM(v)`, and reveals the note's nullifier.
 Finally, it proves vote consistency $y = x_y + x_n + x_a$, produces a new
-note with $y$ `dPEN(v)`, and includes $\operatorname{Enc}_D(x_i)$, an encryption
+note with $y$ `dUM(v)`, and includes $\operatorname{Enc}_D(x_i)$, an encryption
 of the vote weights to the validators' decryption key.
 
 The proof statements in a `Vote` description establishing spend authority over
