@@ -37,7 +37,7 @@ Click **Send** to submit the request and view response data in the right-hand pa
 
 Regardless of which interface you choose, you can connect to an instance of `pd` running
 on your machine, which can be useful while adding new features.
-First, make sure you've [joined a testnet](../node/pd/join-testnet.md)
+First, make sure you've [joined a network](../node/pd/join-network.md)
 by setting up a node on your local machine. Once it's running, you can connect directly
 to the pd port via `http://localhost:8080`.
 

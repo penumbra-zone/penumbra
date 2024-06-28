@@ -4,24 +4,24 @@
 
 set -euo pipefail
 
-# This script also runs the devnet. The reason for this is that if testnet
+# This script also runs the devnet. The reason for this is that if
 # preview is redeployed during the run of this script, the script will fail
 # as the chain ID will be different.
 
-# If `SUMMONER_SMOKE_RESET=1` is set, automatically reset the testnet data
+# If `SUMMONER_SMOKE_RESET=1` is set, automatically reset the network data
 # directory, and clear the summonerd directory. This is helpful if running this
 # test in a loop with e.g. `entr` or `cargo watch`.
 if [[ "${SUMMONER_SMOKE_RESET:-0}" -eq '1' ]] ; then
-    cargo run --release --bin pd -- testnet unsafe-reset-all
+    cargo run --release --bin pd -- network unsafe-reset-all
     rm -rf /tmp/summonerd
     rm -rf /tmp/account1
 fi
 
-# Fail fast if testnet dir exists, otherwise `cargo run ...` will block
+# Fail fast if network dir exists, otherwise `cargo run ...` will block
 # for a while, masking the error.
-if [[ -d ~/.penumbra/testnet_data ]] ; then
-    >&2 echo "ERROR: testnet data directory exists at ~/.penumbra/testnet_data"
-    >&2 echo "Not removing this directory automatically; to remove, run: pd testnet unsafe-reset-all"
+if [[ -d ~/.penumbra/network_data ]] ; then
+    >&2 echo "ERROR: network data directory exists at ~/.penumbra/network_data"
+    >&2 echo "Not removing this directory automatically; to remove, run: pd network unsafe-reset-all"
     exit 1
 fi
 
@@ -54,16 +54,16 @@ TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-20}"
 echo "Building latest version of pd from source..."
 cargo build --quiet --release --bin pd
 
-echo "Generating testnet config..."
+echo "Generating network config..."
 EPOCH_DURATION="${EPOCH_DURATION:-100}"
-cargo run --quiet --release --bin pd -- testnet generate --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
+cargo run --quiet --release --bin pd -- network generate --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
 
 echo "Starting CometBFT..."
-cometbft start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/cometbft" &
+cometbft start --log_level=error --home "${HOME}/.penumbra/network_data/node0/cometbft" &
 cometbft_pid="$!"
 
 echo "Starting pd..."
-cargo run --quiet --release --bin pd -- start --home "${HOME}/.penumbra/testnet_data/node0/pd" &
+cargo run --quiet --release --bin pd -- start --home "${HOME}/.penumbra/network_data/node0/pd" &
 pd_pid="$!"
 
 # Ensure processes are cleaned up after script exits, regardless of status.

@@ -17,7 +17,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tonic::IntoRequest;
 
-use crate::testnet::generate::TestnetConfig;
+use crate::network::generate::NetworkConfig;
 
 /// The context holding various query services we need to help perform the migration.
 #[derive(Clone)]
@@ -173,7 +173,7 @@ pub async fn migrate(
         chain_id,
         ..Default::default()
     };
-    let mut genesis = TestnetConfig::make_genesis(app_state.clone()).expect("can make genesis");
+    let mut genesis = NetworkConfig::make_genesis(app_state.clone()).expect("can make genesis");
     genesis.app_hash = post_upgrade_root_hash
         .0
         .to_vec()
@@ -186,7 +186,7 @@ pub async fn migrate(
         now
     });
     let checkpoint = post_upgrade_root_hash.0.to_vec();
-    let genesis = TestnetConfig::make_checkpoint(genesis, Some(checkpoint));
+    let genesis = NetworkConfig::make_checkpoint(genesis, Some(checkpoint));
 
     let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
     tracing::info!("genesis: {}", genesis_json);
@@ -194,7 +194,7 @@ pub async fn migrate(
     std::fs::write(genesis_path, genesis_json).expect("can write genesis");
 
     let validator_state_path = path_to_export.join("priv_validator_state.json");
-    let fresh_validator_state = crate::testnet::generate::TestnetValidator::initial_state();
+    let fresh_validator_state = crate::network::generate::NetworkValidator::initial_state();
     std::fs::write(validator_state_path, fresh_validator_state).expect("can write validator state");
 
     tracing::info!(

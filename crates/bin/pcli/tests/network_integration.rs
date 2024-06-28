@@ -864,8 +864,8 @@ fn mismatched_consensus_key_update_fails() {
     let mut new_validator_def: ValidatorToml = toml::from_str(&template_content)
         .expect("Could not parse initial validator template as TOML");
 
-    // Now we retrieve the actual tendermint consensus key from the testnet data dir.
-    // Doing so assumes that the testnet-generated data was previously but in place,
+    // Now we retrieve the actual cometbft consensus key from the network data dir.
+    // Doing so assumes that the generated data was previously but in place,
     // which is a reasonable assumption in the context of running smoketest suite.
     let userdir = UserDirs::new().unwrap();
     let homedir = userdir
@@ -876,7 +876,7 @@ fn mismatched_consensus_key_update_fails() {
     let tm_key_filepath: PathBuf = [
         homedir,
         ".penumbra",
-        "testnet_data",
+        "network_data",
         "node0",
         "cometbft",
         "config",
@@ -886,10 +886,10 @@ fn mismatched_consensus_key_update_fails() {
     .collect();
     let tm_key_config: Value =
         serde_json::from_str(&std::fs::read_to_string(tm_key_filepath).unwrap())
-            .expect("Could not read tendermint key config file");
+            .expect("Could not read cometbft key config file");
     let tm_key: tendermint::PublicKey =
         serde_json::value::from_value(tm_key_config["pub_key"].clone())
-            .expect("Could not parse tendermint key config file");
+            .expect("Could not parse cometbft key config file");
 
     // Modify initial validator definition template to use actual tm key.
     new_validator_def.consensus_key = tm_key;

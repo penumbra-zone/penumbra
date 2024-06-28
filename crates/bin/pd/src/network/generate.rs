@@ -1,7 +1,7 @@
 //! Logic for creating a new testnet configuration.
 //! Used for deploying (approximately weekly) testnets
 //! for Penumbra.
-use crate::testnet::config::{get_testnet_dir, TestnetTendermintConfig, ValidatorKeys};
+use crate::network::config::{get_network_dir, NetworkTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
 use penumbra_app::params::AppParameters;
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
@@ -33,16 +33,16 @@ use tendermint_config::net::Address as TendermintAddress;
 
 /// Represents a Penumbra network config, including initial validators
 /// and allocations at genesis time.
-pub struct TestnetConfig {
+pub struct NetworkConfig {
     /// The name of the network
     pub name: String,
     /// The Tendermint genesis for initial chain state.
     pub genesis: Genesis<penumbra_app::genesis::AppState>,
     /// Path to local directory where config files will be written to
-    pub testnet_dir: PathBuf,
+    pub network_dir: PathBuf,
     /// Set of validators at genesis. Uses the convenient wrapper type
     /// to generate config files.
-    pub testnet_validators: Vec<TestnetValidator>,
+    pub network_validators: Vec<NetworkValidator>,
     /// Set of validators at genesis. This is the literal type embedded
     /// inside configs, including the keys
     pub validators: Vec<Validator>,
@@ -54,14 +54,14 @@ pub struct TestnetConfig {
     pub tendermint_timeout_commit: Option<tendermint::Timeout>,
 }
 
-impl TestnetConfig {
+impl NetworkConfig {
     /// Create a new testnet configuration, optionally customizing the allocations and validator
     /// set. By default, will use the prepared Discord allocations and Penumbra Labs CI validator
     /// configs.
     #[allow(clippy::too_many_arguments)]
     pub fn generate(
         chain_id: &str,
-        testnet_dir: Option<PathBuf>,
+        network_dir: Option<PathBuf>,
         peer_address_template: Option<String>,
         external_addresses: Option<Vec<TendermintAddress>>,
         allocations_input_file: Option<PathBuf>,
@@ -72,10 +72,10 @@ impl TestnetConfig {
         unbonding_delay: Option<u64>,
         proposal_voting_blocks: Option<u64>,
         gas_price_simple: Option<u64>,
-    ) -> anyhow::Result<TestnetConfig> {
+    ) -> anyhow::Result<NetworkConfig> {
         let external_addresses = external_addresses.unwrap_or_default();
 
-        let testnet_validators = Self::collect_validators(
+        let network_validators = Self::collect_validators(
             validators_input_file,
             peer_address_template.clone(),
             external_addresses,
@@ -83,14 +83,14 @@ impl TestnetConfig {
 
         let mut allocations = Self::collect_allocations(allocations_input_file)?;
 
-        for v in testnet_validators.iter() {
+        for v in network_validators.iter() {
             allocations.push(v.delegation_allocation()?);
         }
 
         // Convert to domain type, for use with other Penumbra interfaces.
         // We do this conversion once and store it in the struct for convenience.
         let validators: anyhow::Result<Vec<Validator>> =
-            testnet_validators.iter().map(|v| v.try_into()).collect();
+            network_validators.iter().map(|v| v.try_into()).collect();
         let validators = validators?;
 
         let app_state = Self::make_genesis_content(
@@ -105,11 +105,11 @@ impl TestnetConfig {
         )?;
         let genesis = Self::make_genesis(app_state)?;
 
-        Ok(TestnetConfig {
+        Ok(NetworkConfig {
             name: chain_id.to_owned(),
             genesis,
-            testnet_dir: get_testnet_dir(testnet_dir),
-            testnet_validators,
+            network_dir: get_network_dir(network_dir),
+            network_validators,
             validators: validators.to_vec(),
             peer_address_template,
             tendermint_timeout_commit,
@@ -123,12 +123,12 @@ impl TestnetConfig {
         validators_input_file: Option<PathBuf>,
         peer_address_template: Option<String>,
         external_addresses: Vec<TendermintAddress>,
-    ) -> anyhow::Result<Vec<TestnetValidator>> {
+    ) -> anyhow::Result<Vec<NetworkValidator>> {
         let testnet_validators = if let Some(validators_input_file) = validators_input_file {
-            TestnetValidator::from_json(validators_input_file)?
+            NetworkValidator::from_json(validators_input_file)?
         } else {
             static LATEST_VALIDATORS: &str = include_str!(env!("PD_LATEST_TESTNET_VALIDATORS"));
-            TestnetValidator::from_reader(std::io::Cursor::new(LATEST_VALIDATORS)).with_context(
+            NetworkValidator::from_reader(std::io::Cursor::new(LATEST_VALIDATORS)).with_context(
                 || {
                     format!(
                         "could not parse default latest testnet validators file {:?}",
@@ -145,7 +145,7 @@ impl TestnetConfig {
         Ok(testnet_validators
             .into_iter()
             .enumerate()
-            .map(|(i, v)| TestnetValidator {
+            .map(|(i, v)| NetworkValidator {
                 peer_address_template: peer_address_template.as_ref().map(|t| format!("{t}-{i}")),
                 external_address: external_addresses.get(i).cloned(),
                 ..v
@@ -161,7 +161,7 @@ impl TestnetConfig {
     ) -> anyhow::Result<Vec<Allocation>> {
         if let Some(ref allocations_input_file) = allocations_input_file {
             Ok(
-                TestnetAllocation::from_csv(allocations_input_file.to_path_buf()).with_context(
+                NetworkAllocation::from_csv(allocations_input_file.to_path_buf()).with_context(
                     || format!("could not parse allocations file {allocations_input_file:?}"),
                 )?,
             )
@@ -169,7 +169,7 @@ impl TestnetConfig {
             // Default to latest testnet allocations computed in the build script.
             static LATEST_ALLOCATIONS: &str = include_str!(env!("PD_LATEST_TESTNET_ALLOCATIONS"));
             Ok(
-                TestnetAllocation::from_reader(std::io::Cursor::new(LATEST_ALLOCATIONS))
+                NetworkAllocation::from_reader(std::io::Cursor::new(LATEST_ALLOCATIONS))
                     .with_context(|| {
                         format!(
                             "could not parse default latest testnet allocations file {:?}",
@@ -336,14 +336,14 @@ impl TestnetConfig {
     /// Generate and write to disk the Tendermint configs for each validator at genesis.
     pub fn write_configs(&self) -> anyhow::Result<()> {
         // Loop over each validator and write its config separately.
-        for (n, v) in self.testnet_validators.iter().enumerate() {
+        for (n, v) in self.network_validators.iter().enumerate() {
             // Create the directory for this node
             let node_name = format!("node{n}");
-            let node_dir = self.testnet_dir.clone().join(node_name.clone());
+            let node_dir = self.network_dir.clone().join(node_name.clone());
 
             // Each node should include only the IPs for *other* nodes in their peers list.
             let ips_minus_mine: anyhow::Result<Vec<TendermintAddress>> = self
-                .testnet_validators
+                .network_validators
                 .iter()
                 .map(|v| v.peering_address())
                 .filter(|a| {
@@ -356,7 +356,7 @@ impl TestnetConfig {
             tracing::debug!(?ips_minus_mine, "Found these peer ips");
 
             let external_address: Option<TendermintAddress> = v.external_address.as_ref().cloned();
-            let mut tm_config = TestnetTendermintConfig::new(
+            let mut tm_config = NetworkTendermintConfig::new(
                 &node_name,
                 ips_minus_mine,
                 external_address,
@@ -374,10 +374,10 @@ impl TestnetConfig {
 
 /// Create a new testnet definition, including genesis and at least one
 /// validator config. Write all configs to the target testnet dir,
-/// defaulting to `~/.penumbra/testnet_data`, as usual.
+/// defaulting to `~/.penumbra/<chain_id>`.
 #[allow(clippy::too_many_arguments)]
-pub fn testnet_generate(
-    testnet_dir: PathBuf,
+pub fn network_generate(
+    network_dir: Option<PathBuf>,
     chain_id: &str,
     active_validator_limit: Option<u64>,
     tendermint_timeout_commit: Option<tendermint::Timeout>,
@@ -391,9 +391,9 @@ pub fn testnet_generate(
     gas_price_simple: Option<u64>,
 ) -> anyhow::Result<()> {
     tracing::info!(?chain_id, "Generating network config");
-    let t = TestnetConfig::generate(
+    let t = NetworkConfig::generate(
         chain_id,
-        Some(testnet_dir),
+        network_dir,
         peer_address_template,
         Some(external_addresses),
         allocations_input_file,
@@ -416,14 +416,14 @@ pub fn testnet_generate(
 
 /// Represents initial allocations to the testnet.
 #[derive(Debug, Deserialize)]
-pub struct TestnetAllocation {
+pub struct NetworkAllocation {
     #[serde(deserialize_with = "string_u64")]
     pub amount: u64,
     pub denom: String,
     pub address: String,
 }
 
-impl TestnetAllocation {
+impl NetworkAllocation {
     /// Import allocations from a CSV file. The format is simple:
     ///
     ///   amount,denom,address
@@ -439,7 +439,7 @@ impl TestnetAllocation {
         let mut rdr = csv::Reader::from_reader(csv_input);
         let mut res = vec![];
         for (line, result) in rdr.deserialize().enumerate() {
-            let record: TestnetAllocation = result?;
+            let record: NetworkAllocation = result?;
             let record: shielded_pool_genesis::Allocation =
                 record.try_into().with_context(|| {
                     format!("invalid allocation in entry {line} of allocations file")
@@ -464,7 +464,7 @@ pub struct TestnetFundingStream {
 
 /// Represents testnet validators in configuration files.
 #[derive(Deserialize)]
-pub struct TestnetValidator {
+pub struct NetworkValidator {
     pub name: String,
     pub website: String,
     pub description: String,
@@ -480,15 +480,15 @@ pub struct TestnetValidator {
     pub keys: ValidatorKeys,
 }
 
-impl TestnetValidator {
+impl NetworkValidator {
     /// Import validator configs from a JSON file.
-    pub fn from_json(json_filepath: PathBuf) -> Result<Vec<TestnetValidator>> {
+    pub fn from_json(json_filepath: PathBuf) -> Result<Vec<NetworkValidator>> {
         let validators_file = File::open(&json_filepath)
             .with_context(|| format!("cannot open file {json_filepath:?}"))?;
         Self::from_reader(validators_file)
     }
     /// Import validator configs from a reader object that emits JSON.
-    pub fn from_reader(input: impl Read) -> Result<Vec<TestnetValidator>> {
+    pub fn from_reader(input: impl Read) -> Result<Vec<NetworkValidator>> {
         Ok(serde_json::from_reader(input)?)
     }
     /// Generate iniital delegation allocation for inclusion in genesis.
@@ -557,7 +557,7 @@ impl TestnetValidator {
     }
 }
 
-impl Default for TestnetValidator {
+impl Default for NetworkValidator {
     fn default() -> Self {
         Self {
             name: "".to_string(),
@@ -574,9 +574,9 @@ impl Default for TestnetValidator {
 
 // The core Penumbra logic deals with `Validator`s, to make sure our convenient
 // wrapper type can resolve as a `Validator` when needed.
-impl TryFrom<&TestnetValidator> for Validator {
+impl TryFrom<&NetworkValidator> for Validator {
     type Error = anyhow::Error;
-    fn try_from(tv: &TestnetValidator) -> anyhow::Result<Validator> {
+    fn try_from(tv: &NetworkValidator) -> anyhow::Result<Validator> {
         // Validation:
         // - Website has a max length of 70 bytes
         if tv.website.len() > 70 {
@@ -622,10 +622,10 @@ impl TryFrom<&TestnetValidator> for Validator {
     }
 }
 
-impl TryFrom<TestnetAllocation> for shielded_pool_genesis::Allocation {
+impl TryFrom<NetworkAllocation> for shielded_pool_genesis::Allocation {
     type Error = anyhow::Error;
 
-    fn try_from(a: TestnetAllocation) -> anyhow::Result<shielded_pool_genesis::Allocation> {
+    fn try_from(a: NetworkAllocation) -> anyhow::Result<shielded_pool_genesis::Allocation> {
         Ok(shielded_pool_genesis::Allocation {
             raw_amount: a.amount.into(),
             raw_denom: a.denom.clone(),
@@ -684,7 +684,7 @@ mod tests {
 "100000","udelegation_penumbravalid1t2hr2lj5n2jt3hftzjw3strjllnakc7jtw234d229x3zakhaqsqsg9yarw","penumbra1xap8sgefy9rl2nfvsse0h4y6c25hy2n20ymr5w7hs28m9xemt3tmz88atyulswumc32sv7h937wnfhyct282de66zm75nk6ywq3d4r32p5ju0cnscj2rraesnrxr9lvk6hcazp"
 "100000","upenumbra","penumbra1xap8sgefy9rl2nfvsse0h4y6c25hy2n20ymr5w7hs28m9xemt3tmz88atyulswumc32sv7h937wnfhyct282de66zm75nk6ywq3d4r32p5ju0cnscj2rraesnrxr9lvk6hcazp"
 "#;
-        let allos = TestnetAllocation::from_reader(csv_content.as_bytes())?;
+        let allos = NetworkAllocation::from_reader(csv_content.as_bytes())?;
 
         let a1 = &allos[0];
         assert!(a1.raw_denom == "udelegation_penumbravalid1jzcc6vsm29am9ggs8z0d7s9jk9uf8tfrqg7hglc9ufs7r23nu5yqtw77ex");
@@ -704,7 +704,7 @@ mod tests {
         let csv_content = r#"
 "amount","denom","address"\n"100000","udelegation_penumbravalid1jzcc6vsm29am9ggs8z0d7s9jk9uf8tfrqg7hglc9ufs7r23nu5yqtw77ex","penumbra1rqcd3hfvkvc04c4c9vc0ac87lh4y0z8l28k4xp6d0cnd5jc6f6k0neuzp6zdwtpwyfpswtdzv9jzqtpjn5t6wh96pfx3flq2dhqgc42u7c06kj57dl39w2xm6tg0wh4zc8kjjk"\n"100000","upenumbra","penumbra1rqcd3hfvkvc04c4c9vc0ac87lh4y0z8l28k4xp6d0cnd5jc6f6k0neuzp6zdwtpwyfpswtdzv9jzqtpjn5t6wh96pfx3flq2dhqgc42u7c06kj57dl39w2xm6tg0wh4zc8kjjk"\n"100000","udelegation_penumbravalid1p2hfuch2p8rshyc90qa23gqk82s74tqcu3x2x3y5tfwpzth4vvrq2gv283","penumbra1xq2e9x7uhfzezwunvazdamlxepf4jr5htsuqnzlsahuayyqxjjwg9lk0aytwm6wfj3jy29rv2kdpen57903s8wxv3jmqwj6m6v5jgn6y2cypfd03rke652k8wmavxra7e9wkrg"\n"100000","upenumbra","penumbra1xq2e9x7uhfzezwunvazdamlxepf4jr5htsuqnzlsahuayyqxjjwg9lk0aytwm6wfj3jy29rv2kdpen57903s8wxv3jmqwj6m6v5jgn6y2cypfd03rke652k8wmavxra7e9wkrg"\n"100000","udelegation_penumbravalid182k8x46hg5vx3ez8ec58ze5yd6a3q4q3fkx45ddt5jahnzz0xyyqdtz7hc","penumbra100zd92fg6x27wc0mlu48cd6phq420u7ep59kzdalg2cq66mjkyl0xr54z0c64gectnj44mv5k2vyjjsz5gyd5gq33a6wnqzvgu2fz7namz7usazsl6p8wza83gcpwt8q76rc4y"\n"100000","upenumbra","penumbra100zd92fg6x27wc0mlu48cd6phq420u7ep59kzdalg2cq66mjkyl0xr54z0c64gectnj44mv5k2vyjjsz5gyd5gq33a6wnqzvgu2fz7namz7usazsl6p8wza83gcpwt8q76rc4y"\n"100000","udelegation_penumbravalid1t2hr2lj5n2jt3hftzjw3strjllnakc7jtw234d229x3zakhaqsqsg9yarw","penumbra1xap8sgefy9rl2nfvsse0h4y6c25hy2n20ymr5w7hs28m9xemt3tmz88atyulswumc32sv7h937wnfhyct282de66zm75nk6ywq3d4r32p5ju0cnscj2rraesnrxr9lvk6hcazp"\n"100000","upenumbra","penumbra1xap8sgefy9rl2nfvsse0h4y6c25hy2n20ymr5w7hs28m9xemt3tmz88atyulswumc32sv7h937wnfhyct282de66zm75nk6ywq3d4r32p5ju0cnscj2rraesnrxr9lvk6hcazp"\n
 "#;
-        let result = TestnetAllocation::from_reader(csv_content.as_bytes());
+        let result = NetworkAllocation::from_reader(csv_content.as_bytes());
         assert!(result.is_err());
         Ok(())
     }
@@ -713,7 +713,7 @@ mod tests {
     /// Generate a config suitable for local testing: no custom address information, no additional
     /// validators at genesis.
     fn generate_devnet_config() -> anyhow::Result<()> {
-        let testnet_config = TestnetConfig::generate(
+        let testnet_config = NetworkConfig::generate(
             "test-chain-1234",
             None,
             None,
@@ -741,9 +741,9 @@ mod tests {
     #[test]
     /// Generate a config suitable for a public testnet: custom validators input file,
     /// increasing the default validators from 1 -> 2.
-    fn generate_testnet_config() -> anyhow::Result<()> {
+    fn generate_network_config() -> anyhow::Result<()> {
         let ci_validators_filepath = PathBuf::from("../../../testnets/validators-ci.json");
-        let testnet_config = TestnetConfig::generate(
+        let testnet_config = NetworkConfig::generate(
             "test-chain-4567",
             None,
             Some(String::from("validator.local")),
@@ -769,7 +769,7 @@ mod tests {
 
     //    #[test]
     //    fn testnet_validator_to_validator_conversion() -> anyhow::Result<()> {
-    //        let tv = TestnetValidator::default();
+    //        let tv = NetworkValidator::default();
     //        let v: Validator = tv.try_into()?;
     //        assert!(v.website == "");
     //        Ok(())

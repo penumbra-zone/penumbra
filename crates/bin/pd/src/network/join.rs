@@ -1,5 +1,5 @@
-//! Logic for onboarding a new `pd` node onto an existing testnet.
-//! Handles generation of config files for `pd` and `tendermint`.
+//! Logic for onboarding a new `pd` node onto an existing network.
+//! Handles generation of config files for `pd` and `cometbft`.
 use anyhow::Context;
 use rand::seq::SliceRandom;
 use rand_core::OsRng;
@@ -12,13 +12,13 @@ use flate2::read::GzDecoder;
 use std::io::Write;
 use tokio_stream::StreamExt;
 
-use crate::testnet::config::{parse_tm_address, TestnetTendermintConfig};
-use crate::testnet::generate::TestnetValidator;
+use crate::network::config::{parse_tm_address, NetworkTendermintConfig};
+use crate::network::generate::NetworkValidator;
 
-/// Bootstrap a connection to a testnet, via a node on that testnet.
+/// Bootstrap a connection to a network, via a node on that network.
 /// Look up network peer info from the target node, and seed the tendermint
 /// p2p settings with that peer info.
-pub async fn testnet_join(
+pub async fn network_join(
     output_dir: PathBuf,
     node: Url,
     node_name: &str,
@@ -60,7 +60,7 @@ pub async fn testnet_join(
     peers.extend(new_peers);
     tracing::info!(?peers, "Network peers for inclusion in generated configs");
 
-    let tm_config = TestnetTendermintConfig::new(
+    let tm_config = NetworkTendermintConfig::new(
         node_name,
         peers,
         external_address,
@@ -68,7 +68,7 @@ pub async fn testnet_join(
         Some(tm_p2p_bind),
     )?;
 
-    let tv = TestnetValidator::default();
+    let tv = NetworkValidator::default();
     tm_config.write_config(node_dir, &tv, &genesis)?;
     Ok(())
 }
@@ -242,7 +242,7 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
 /// and via `pd migrate`, which contain the rocksdb dir, new genesis content, and a private
 /// validator state file.
 ///
-/// The `output_dir` should be the same argument as passed to `pd testnet --testnet-dir <dir> join`;
+/// The `output_dir` should be the same argument as passed to `pd network --network-dir <dir> join`;
 /// relative paths for pd and cometbft will be created from this base path.
 ///
 /// The `leave_archive` argument allows you to keep the downloaded archive file after unpacking.

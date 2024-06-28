@@ -20,13 +20,13 @@ relayer-local-devnet:
     ./deployments/scripts/relayer-local-devnet
 
 local-devnet-generate:
-    cargo run --release --bin pd -- testnet generate --chain-id penumbra-devnet-local
+    cargo run --release --bin pd -- network generate --chain-id penumbra-devnet-local
 
 local-devnet-run:
     ./deployments/scripts/run-local-devnet.sh
 
 local-devnet-reset-all:
-    cargo run --bin pd --release -- testnet unsafe-reset-all
+    cargo run --bin pd --release -- network unsafe-reset-all
 
 # Rebuild Rust crate documentation
 rustdocs:
@@ -35,5 +35,5 @@ rustdocs:
 # Run smoke test suite, via process-compose config.
 smoke:
     # resetting network state
-    cargo run --release --bin pd -- testnet unsafe-reset-all || true
+    cargo run --release --bin pd -- network unsafe-reset-all || true
     ./deployments/scripts/smoke-test.sh

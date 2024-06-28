@@ -11,12 +11,12 @@ use anyhow::{anyhow, Context};
 use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
-    cli::{Opt, RootCommand, TestnetCommand},
+    cli::{Opt, RootCommand, NetworkCommand},
     migrate::Migration::{ReadyToStart, Testnet78},
-    testnet::{
-        config::{get_testnet_dir, parse_tm_address, url_has_necessary_parts},
-        generate::TestnetConfig,
-        join::testnet_join,
+    network::{
+        config::{get_network_dir, parse_tm_address, url_has_necessary_parts},
+        generate::NetworkConfig,
+        join::network_join,
     },
 };
 use penumbra_app::SUBSTORE_PREFIXES;
@@ -93,7 +93,7 @@ async fn main() -> anyhow::Result<()> {
             // to a sane value if unspecified.
             let pd_home = match home {
                 Some(h) => h,
-                None => get_testnet_dir(None).join("node0").join("pd"),
+                None => get_network_dir(None).join("node0").join("pd"),
             };
             let rocksdb_home = pd_home.join("rocksdb");
 
@@ -237,25 +237,25 @@ async fn main() -> anyhow::Result<()> {
             };
         }
 
-        RootCommand::Testnet {
-            tn_cmd: TestnetCommand::UnsafeResetAll {},
-            testnet_dir,
+        RootCommand::Network {
+            net_cmd: NetworkCommand::UnsafeResetAll {},
+            network_dir,
         } => {
-            let testnet_dir = get_testnet_dir(testnet_dir);
-            if testnet_dir.exists() {
-                tracing::info!("Removing testnet directory: {}", testnet_dir.display());
-                std::fs::remove_dir_all(testnet_dir)?;
+            let network_dir = get_network_dir(network_dir);
+            if network_dir.exists() {
+                tracing::info!("Removing testnet directory: {}", network_dir.display());
+                std::fs::remove_dir_all(network_dir)?;
             } else {
                 tracing::info!(
                     "Testnet directory does not exist, so not removing: {}",
-                    testnet_dir.display()
+                    network_dir.display()
                 );
             }
         }
 
-        RootCommand::Testnet {
-            tn_cmd:
-                TestnetCommand::Join {
+        RootCommand::Network {
+            net_cmd:
+                NetworkCommand::Join {
                     node,
                     archive_url,
                     moniker,
@@ -264,9 +264,9 @@ async fn main() -> anyhow::Result<()> {
                     tendermint_p2p_bind,
                     leave_archive,
                 },
-            testnet_dir,
+            network_dir,
         } => {
-            let output_dir = get_testnet_dir(testnet_dir);
+            let output_dir = get_network_dir(network_dir);
 
             // If the output directory already exists, bail out, rather than overwriting.
             if output_dir.exists() {
@@ -291,9 +291,9 @@ async fn main() -> anyhow::Result<()> {
                 None => format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes())),
             };
 
-            // Join the target testnet, looking up network info and writing
-            // local configs for pd and tendermint.
-            testnet_join(
+            // Join the target network, looking up network info and writing
+            // local configs for pd and cometbft.
+            network_join(
                 output_dir.clone(),
                 node,
                 &node_name,
@@ -305,14 +305,14 @@ async fn main() -> anyhow::Result<()> {
 
             // Download and extract archive URL, if set.
             if let Some(archive_url) = archive_url {
-                pd::testnet::join::unpack_state_archive(archive_url, output_dir, leave_archive)
+                pd::network::join::unpack_state_archive(archive_url, output_dir, leave_archive)
                     .await?;
             }
         }
 
-        RootCommand::Testnet {
-            tn_cmd:
-                TestnetCommand::Generate {
+        RootCommand::Network {
+            net_cmd:
+                NetworkCommand::Generate {
                     peer_address_template,
                     timeout_commit,
                     epoch_duration,
@@ -326,7 +326,7 @@ async fn main() -> anyhow::Result<()> {
                     external_addresses,
                     proposal_voting_blocks,
                 },
-            testnet_dir,
+            network_dir,
         } => {
             // Build script computes the latest testnet name and sets it as an env variable
             let chain_id = match preserve_chain_id {
@@ -342,7 +342,7 @@ async fn main() -> anyhow::Result<()> {
                 }
             };
 
-            let output_dir = get_testnet_dir(testnet_dir);
+            let output_dir = get_network_dir(network_dir);
             // If the output directory already exists, bail out, rather than overwriting.
             if output_dir.exists() {
                 anyhow::bail!(
@@ -371,7 +371,7 @@ async fn main() -> anyhow::Result<()> {
 
             // Build and write local configs based on input flags.
             tracing::info!(?chain_id, "Generating network config");
-            let t = TestnetConfig::generate(
+            let t = NetworkConfig::generate(
                 &chain_id,
                 Some(output_dir),
                 peer_address_template,
@@ -448,7 +448,7 @@ async fn main() -> anyhow::Result<()> {
                 None => {
                     // If no pd_home was configured, we're assuming we set up the
                     // data in the default location, in which case we also know where comet lives.
-                    let base = get_testnet_dir(None).join("node0");
+                    let base = get_network_dir(None).join("node0");
                     (base.join("pd"), Some(base.join("cometbft")))
                 }
             };
