@@ -33,6 +33,7 @@ impl From<Option<Hash>> for OptionHash {
     fn from(hash: Option<Hash>) -> Self {
         match hash {
             Some(hash) => Self {
+                // TODO: 'to_le_limbs' is currently marked as a private function 
                 inner: hash.0.to_le_limbs(),
             },
             None => Self {
@@ -52,7 +53,7 @@ impl From<OptionHash> for Option<Hash> {
             // We're directly constructing the hash here by coercing the bytes into the right type,
             // but this is safe because we know that the bytes are a real `Fq` and not the sentinel
             // value we just checked for
-            Some(Hash::new(Fq::from_le_limbs(hash.inner)))
+            Some(Hash::new(Fq::from_montgomery_limbs(hash.inner)))
         }
     }
 }

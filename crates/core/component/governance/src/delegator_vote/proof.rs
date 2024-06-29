@@ -1,10 +1,4 @@
 use anyhow::Result;
-use ark_groth16::r1cs_to_qap::LibsnarkReduction;
-use ark_r1cs_std::{prelude::*, uint8::UInt8};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use decaf377::r1cs::ElementVar;
-use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
-
 use ark_ff::ToConstraintField;
 use ark_groth16::{
     r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
@@ -14,7 +8,7 @@ use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use base64::{engine::general_purpose, Engine as _};
-use decaf377::{r1cs::FqVar, Bls12_377, FieldExt, Fq, Fr};
+use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_asset::{
     balance::{self, commitment::BalanceCommitmentVar, Commitment},

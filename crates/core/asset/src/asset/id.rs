@@ -1,5 +1,7 @@
+use crate::Value;
 use ark_ff::ToConstraintField;
 use ark_serialize::CanonicalDeserialize;
+use base64::Engine;
 use decaf377::Fq;
 use once_cell::sync::Lazy;
 use penumbra_num::Amount;

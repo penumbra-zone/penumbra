@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
 use decaf377::Fq;
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;

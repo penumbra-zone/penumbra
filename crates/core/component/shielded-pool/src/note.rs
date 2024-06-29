@@ -146,7 +146,7 @@ impl Note {
         Ok(Note {
             value,
             rseed,
-            address,
+            address: address.clone(),
             transmission_key_s: Fq::from_bytes_checked(&address.transmission_key().0)
                 .map_err(|_| Error::InvalidTransmissionKey)?,
         })

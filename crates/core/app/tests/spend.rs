@@ -4,11 +4,10 @@ use self::common::TempStorageExt;
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
 use decaf377::{Fq, Fr};
-use decaf377_rdsa::{/*SigningKey,*/ SpendAuth, VerificationKey};
-//use penumbra_app::AppActionHandler;
+use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_asset::Value;
 use penumbra_compact_block::component::CompactBlockManager;
-use penumbra_keys::{keys::NullifierKey, test_keys /*PayloadKey*/};
+use penumbra_keys::{keys::NullifierKey, test_keys};
 use penumbra_mock_client::MockClient;
 use penumbra_num::Amount;
 use penumbra_sct::{
@@ -18,8 +17,7 @@ use penumbra_sct::{
 use penumbra_shielded_pool::{
     component::ShieldedPool, Note, SpendPlan, SpendProof, SpendProofPrivate, SpendProofPublic,
 };
-//use penumbra_transaction::{Transaction, TransactionBody, TransactionParameters};
-use penumbra_txhash::{/*AuthorizingData,*/ EffectHash, TransactionContext};
+use penumbra_txhash::{EffectHash, TransactionContext};
 use rand_core::{OsRng, SeedableRng};
 use std::{ops::Deref, sync::Arc};
 use tendermint::abci;
@@ -164,7 +162,7 @@ async fn invalid_dummy_spend() {
     // construct a proof for this spend using only public information, attempting to prove a spend
     // of a dummy note.
     let ak = VerificationKey::<SpendAuth>::try_from([0u8; 32]).unwrap();
-    let nk = NullifierKey(Fp::rand(&mut OsRng));
+    let nk = NullifierKey(Fq::rand(&mut OsRng));
 
     let private = SpendProofPrivate {
         state_commitment_proof: proof,

@@ -145,7 +145,7 @@ impl TryFrom<pb::UndelegateClaimPlan> for UndelegateClaimPlan {
                 .expect("proof_blinding_r malformed"),
             proof_blinding_s: Fq::from_bytes_checked(&proof_blinding_s_bytes)
                 .expect("proof_blinding_s malformed"),
-            unbonding_start_height: msg.unbonding_start_height
+            unbonding_start_height: msg.unbonding_start_height,
         })
     }
 }
