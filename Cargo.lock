@@ -4604,6 +4604,7 @@ dependencies = [
  "decaf377-rdsa",
  "derivative",
  "ethnum",
+ "getrandom",
  "hex",
  "ibig",
  "num-bigint",

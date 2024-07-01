@@ -39,6 +39,7 @@ penumbra-proto = {workspace = true, default-features = true}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
+getrandom = {version = "0.2", default-features = false, features = ["js"]}
 regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_with = {workspace = true}
