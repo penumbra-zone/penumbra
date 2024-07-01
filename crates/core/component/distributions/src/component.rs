@@ -84,20 +84,8 @@ trait DistributionManager: StateWriteExt {
             .checked_mul(num_blocks as u128) /* Safe to cast a `u64` to `u128` */
             .expect("infaillible unless issuance is pathological");
 
-        tracing::debug!(
-            ?new_issuance_for_epoch,
-            "computed new issuance for epoch (pre-scaled)"
-        );
+        tracing::debug!(?new_issuance_for_epoch, "computed new issuance for epoch");
 
-        let new_issuance_for_epoch = STAKING_TOKEN_DENOM
-            .default_unit()
-            .value(new_issuance_for_epoch.into())
-            .amount;
-
-        tracing::debug!(
-            ?new_issuance_for_epoch,
-            "computed new issuance for epoch (scaled)"
-        );
         Ok(Amount::from(new_issuance_for_epoch))
     }
 
