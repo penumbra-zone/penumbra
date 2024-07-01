@@ -105,7 +105,7 @@ pub enum Command {
             parse(try_from_str = Url::parse)
         )]
         grpc_url: Url,
-        /// Sets the address to bind to to serve gRPC.
+        /// Sets the address to bind to serve gRPC.
         #[clap(long, display_order = 900, default_value = "127.0.0.1:8081")]
         bind_addr: SocketAddr,
     },
