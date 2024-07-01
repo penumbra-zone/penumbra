@@ -31,7 +31,7 @@ async fn check_cors_headers() -> anyhow::Result<()> {
 
 #[ignore]
 #[tokio::test]
-/// Confirm that the a naive GET on the gRPC route returns a 200,
+/// Confirm that the naive GET on the gRPC route returns a 200,
 /// as a sanity check that we haven't badly broken the minifront static asset bundling.
 /// This check does *not* confirm that page works correctly, but it does confirm
 /// it's at least loading, which guards against path regressions in the asset building.

@@ -153,7 +153,7 @@ async fn path_extension_basic() {
         .expect("extend_to failed")
         .expect("path to penumbra not found");
 
-    // This price should be more expensive since the the cheaper path along the mispriced gn:pusd position no longer exists.
+    // This price should be more expensive since the cheaper path along the mispriced gn:pusd position no longer exists.
     let expensive_price = path.price;
 
     assert!(
