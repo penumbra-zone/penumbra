@@ -45,3 +45,6 @@ tendermint = {workspace = true}
 tonic = {workspace = true, optional = true}
 tracing = {workspace = true}
 chrono = { workspace = true, default-features = false, features = ["serde"] }
+
+[dev-dependencies]
+getrandom = {workspace = true}
