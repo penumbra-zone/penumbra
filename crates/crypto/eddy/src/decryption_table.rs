@@ -61,7 +61,7 @@ pub trait DecryptionTable: Send + Sync {
     ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + '_>> {
         #[allow(non_snake_case)]
         async move {
-            let (mut x, mut xB) = (0u32, decaf377::Element::default());
+            let (mut x, mut xB) = (0u32, decaf377::Element::GENERATOR);
             let B = decaf377::Element::GENERATOR;
 
             let bound = 1 << k;

@@ -1,14 +1,8 @@
-use std::convert::{TryFrom, TryInto};
-
-use ark_ff::Zero;
-use ark_serialize::CanonicalDeserialize;
+use crate::{hash, hkd, Clue, ClueKey, Error, MAX_PRECISION};
 use bitvec::{order, slice::BitSlice};
 use decaf377::Fr;
 use rand_core::{CryptoRng, RngCore};
-
-use crate::{hash, hkd, Clue, ClueKey, Error, MAX_PRECISION};
-
-// TODO serialization?
+use std::convert::{TryFrom, TryInto};
 
 /// Used to examine [`Clue`]s and determine whether they were possibly sent to
 /// the detection key's [`ClueKey`].
@@ -91,7 +85,9 @@ impl DetectionKey {
             return false;
         };
 
-        let y = if let Ok(y) = Fr::deserialize_compressed(&clue.0[32..64]) {
+        let y = if let Ok(y) =
+            Fr::from_bytes_checked(&clue.0[32..64].try_into().expect("expected 32 bytes"))
+        {
             y
         } else {
             // Invalid y encoding => not a match
@@ -102,7 +98,7 @@ impl DetectionKey {
         // noted in the OpenPrivacy implementation, these could allow clues to
         // match any detection key.
         // https://docs.rs/fuzzytags/0.6.0/src/fuzzytags/lib.rs.html#348-351
-        if P.is_identity() || y.is_zero() {
+        if P.is_identity() || y == Fr::ZERO {
             return false;
         }
 
