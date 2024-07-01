@@ -9,7 +9,6 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
-use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_num::Amount;
 use tendermint::v0_37::abci;
 use tracing::instrument;
