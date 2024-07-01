@@ -36,7 +36,7 @@ impl From<DistributionsParameters> for pb::DistributionsParameters {
 impl Default for DistributionsParameters {
     fn default() -> Self {
         Self {
-            staking_issuance_per_block: 1,
+            staking_issuance_per_block: 1_000_000,
         }
     }
 }
