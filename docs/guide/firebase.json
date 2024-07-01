@@ -21,6 +21,11 @@
         "regex": "/main/(?P<page>.*)",
         "destination": "/:page",
         "type": 302
+      },
+      {
+        "source": "/node/pd/join-testnet.html",
+        "destination": "/node/pd/join-network.html",
+        "type": 302
       }
     ]
   }

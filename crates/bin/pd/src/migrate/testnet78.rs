@@ -24,7 +24,7 @@ use std::path::PathBuf;
 use tendermint_config::TendermintConfig;
 use tracing::instrument;
 
-use crate::testnet::generate::TestnetConfig;
+use crate::network::generate::NetworkConfig;
 
 /// Run the full migration, given an export path and a start time for genesis.
 ///
@@ -119,7 +119,7 @@ pub async fn migrate(
         chain_id,
         ..Default::default()
     };
-    let mut genesis = TestnetConfig::make_genesis(app_state.clone()).expect("can make genesis");
+    let mut genesis = NetworkConfig::make_genesis(app_state.clone()).expect("can make genesis");
     genesis.app_hash = post_upgrade_root_hash
         .0
         .to_vec()
@@ -135,7 +135,7 @@ pub async fn migrate(
 
     tracing::info!("generating checkpointed genesis");
     let checkpoint = post_upgrade_root_hash.0.to_vec();
-    let genesis = TestnetConfig::make_checkpoint(genesis, Some(checkpoint));
+    let genesis = NetworkConfig::make_checkpoint(genesis, Some(checkpoint));
 
     tracing::info!("writing genesis to disk");
     let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
@@ -145,7 +145,7 @@ pub async fn migrate(
 
     tracing::info!("updating signing state");
     let validator_state_path = pd_home.join("priv_validator_state.json");
-    let fresh_validator_state = crate::testnet::generate::TestnetValidator::initial_state();
+    let fresh_validator_state = crate::network::generate::NetworkValidator::initial_state();
     std::fs::write(validator_state_path, fresh_validator_state).expect("can write validator state");
 
     tracing::info!(

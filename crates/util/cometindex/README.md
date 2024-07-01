@@ -108,7 +108,7 @@ psql "postgresql://localhost:5432/testnet_raw?sslmode=disable"
 put in comet config.toml
 
 ```
-# ~/.penumbra/testnet_data/node0/cometbft/config/config.toml
+# ~/.penumbra/network_data/node0/cometbft/config/config.toml
 [tx_index]
 indexer = "psql"
 psql-conn = "postgresql://localhost:5432/testnet_raw?sslmode=disable"

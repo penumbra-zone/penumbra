@@ -12,7 +12,7 @@ use penumbra_sct::component::clock::EpochRead;
 use std::path::PathBuf;
 use tracing::instrument;
 
-use crate::testnet::generate::TestnetConfig;
+use crate::network::generate::NetworkConfig;
 
 /// Run the full migration, given an export path and a start time for genesis.
 ///
@@ -55,7 +55,7 @@ pub async fn migrate(
         chain_id,
         ..Default::default()
     };
-    let mut genesis = TestnetConfig::make_genesis(app_state.clone()).expect("can make genesis");
+    let mut genesis = NetworkConfig::make_genesis(app_state.clone()).expect("can make genesis");
     genesis.app_hash = pre_upgrade_root_hash
         .0
         .to_vec()
@@ -69,14 +69,14 @@ pub async fn migrate(
         now
     });
     let checkpoint = pre_upgrade_root_hash.0.to_vec();
-    let genesis = TestnetConfig::make_checkpoint(genesis, Some(checkpoint));
+    let genesis = NetworkConfig::make_checkpoint(genesis, Some(checkpoint));
     let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
     tracing::info!("genesis: {}", genesis_json);
     let genesis_path = pd_home.join("genesis.json");
     std::fs::write(genesis_path, genesis_json).expect("can write genesis");
 
     let validator_state_path = pd_home.join("priv_validator_state.json");
-    let fresh_validator_state = crate::testnet::generate::TestnetValidator::initial_state();
+    let fresh_validator_state = crate::network::generate::NetworkValidator::initial_state();
     std::fs::write(validator_state_path, fresh_validator_state).expect("can write validator state");
 
     tracing::info!(

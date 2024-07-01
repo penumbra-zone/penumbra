@@ -1,6 +1,6 @@
 # Becoming a validator
 
-After [starting your node](./join-testnet.md), you should now be participating in the
+After [starting your node](./join-network.md), you should now be participating in the
 network as a fullnode. If you wish to run a validator, you'll need to perform additional
 steps.
 
@@ -32,7 +32,7 @@ To create a template configuration, use `pcli validator definition template`:
 
 ```shell
 $ pcli validator definition template \
-    --tendermint-validator-keyfile ~/.penumbra/testnet_data/node0/cometbft/config/priv_validator_key.json \
+    --tendermint-validator-keyfile ~/.penumbra/network_data/node0/cometbft/config/priv_validator_key.json \
     --file validator.toml
 $ cat validator.toml
 # This is a template for a validator definition.
@@ -97,7 +97,7 @@ You must then **manually update the `consensus_key`**. You can get the correct v
 for `consensus_key` from your `cometbft` configs:
 
 ```shell
-$ grep -A3 pub_key ~/.penumbra/testnet_data/node0/cometbft/config/priv_validator_key.json
+$ grep -A3 pub_key ~/.penumbra/network_data/node0/cometbft/config/priv_validator_key.json
   "pub_key": {
     "type": "tendermint/PubKeyEd25519",
     "value": "Fodjg0m1kF/6uzcAZpRcLJswGf3EeNShLP2A+UCz8lw="

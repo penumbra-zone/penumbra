@@ -2,7 +2,7 @@
 Description=CometBFT for Penumbra
 
 [Service]
-ExecStart=/usr/local/bin/cometbft start --home /home/penumbra/.penumbra/testnet_data/node0/cometbft
+ExecStart=/usr/local/bin/cometbft start --home /home/penumbra/.penumbra/network/node0/cometbft
 Restart=no
 User=penumbra
 # Raise filehandle limit for RPC and P2P connections.

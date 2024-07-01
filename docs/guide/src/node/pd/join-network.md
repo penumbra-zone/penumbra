@@ -12,30 +12,29 @@ have no value.
 
 ## Generating configs
 
-To join a testnet as a fullnode, [install the most recent version of `pd`](install.md), run
-`pd testnet join` to generate configs, then use those configs to run `pd` and
+To join a network as a fullnode, [install the most recent version of `pd`](install.md), run
+`pd network join` to generate configs, then use those configs to run `pd` and
 `cometbft`.
 
 ```shell
 pd testnet join \
     --moniker MY_NODE_NAME \
     --external-address IP_ADDRESS:26656 \
-    --archive-url "https://snapshots.penumbra.zone/testnet/pd-migrated-state-77-78.tar.gz"
+    NODE_URL
 ```
 
 where `MY_NODE_NAME` is a moniker identifying your node, and `IP_ADDRESS` (like `1.2.3.4`)
 is the public IP address of the node you're running. Other peers will try to connect
-to your node over port `26656/TCP`. Finally, the `--archive-url` flag will fetch
-a tarball of historical blocks, so that your newly joining node can understand transactions
-that occurred prior to the most recent chain upgrade.
+to your node over port `26656/TCP`. Finally, the `NODE_URL` flag specified the CometBFT RPC
+for the remote node you wish to bootstrap from.
 
 If your node is behind a firewall or not publicly routable for some other reason,
 skip the `--external-address` flag, so that other peers won't try to connect to it.
 You can also skip the `--moniker` flag to use a randomized moniker instead of selecting one.
 
-This command fetches the genesis file for the current testnet, and writes
-configs to a testnet data directory (by default, `~/.penumbra/testnet_data`).
-If any data exists in the testnet data directory, this command will fail.  See
+This command fetches the genesis file for the target network, and writes
+configs to a network data directory (by default, `~/.penumbra/network_data`).
+If any data exists in the network data directory, this command will fail.  See
 the section above on resetting node state.
 
 ### Running `pd` and `cometbft`
@@ -59,8 +58,8 @@ If you have previously joined a network before, and want to purge those configs,
 use:
 
 ```shell
-pd testnet unsafe-reset-all
+pd network unsafe-reset-all
 ```
 
-This will delete the entire testnet data directory, after which you can re-join.
+This will delete the entire network data directory, after which you can re-join.
 You should only run this command after stopping `pd` and `cometbft`.

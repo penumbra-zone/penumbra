@@ -69,7 +69,7 @@ function install_pd() {
 function reset_pd_state() {
     # Back up ACME dir, so we don't hit ratelimit requesting new certs.
     sudo rm -rf /opt/penumbra-ci
-    acme_cache="/home/penumbra/.penumbra/testnet_data/node0/pd/tokio_rustls_acme_cache"
+    acme_cache="/home/penumbra/.penumbra/network_data/node0/pd/tokio_rustls_acme_cache"
     acme_cache_backup="/opt/penumbra-ci/$(basename "$acme_cache")"
     if [[ -d "$acme_cache" ]]; then
         echo "Backing up ACME certificate directory..."
@@ -84,10 +84,10 @@ function reset_pd_state() {
     # The pd operations must be run specifically as "penumbra" user.
     # Nuke state, rejoin.
     echo "Resetting node state..."
-    sudo -u penumbra pd testnet unsafe-reset-all
+    sudo -u penumbra pd network unsafe-reset-all
     # Using "oumuamua" has moniker to connote that this node is "out there", i.e. separate
     # from the standard fullnode deployments, and also it's cutely technically a celestial body.
-    sudo -u penumbra pd testnet join --moniker oumuamua "$pd_bootstrap_url"
+    sudo -u penumbra pd network join --moniker oumuamua "$pd_bootstrap_url"
 
     # ACME cache dir may not be present, e.g. on a first deploy.
     if [[ -d "$acme_cache_backup" ]] ; then

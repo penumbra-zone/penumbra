@@ -19,7 +19,7 @@ pub enum RootCommand {
     /// Starts the Penumbra daemon.
     Start {
         /// The path used to store all `pd`-related data and configuration.
-        /// If unset, defaults to ~/.penumbra/testnet_data/node0/pd.
+        /// If unset, defaults to ~/.penumbra/network_data/node0/pd.
         #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
         home: Option<PathBuf>,
         /// Bind the ABCI server to this socket.
@@ -48,7 +48,7 @@ pub enum RootCommand {
         /// NOTE: This option automatically provisions TLS certificates from
         /// Let's Encrypt and caches them in the `home` directory.  The
         /// production LE CA has rate limits, so be careful using this option
-        /// with `pd testnet unsafe-reset-all`, which will delete the certificates
+        /// with `pd network unsafe-reset-all`, which will delete the certificates
         /// and force re-issuance, possibly hitting the rate limit. See the
         /// `--acme-staging` option.
         #[clap(long, value_name = "DOMAIN", display_order = 200)]
@@ -94,14 +94,14 @@ pub enum RootCommand {
         enable_expensive_rpc: bool,
     },
 
-    /// Generate, join, or reset a testnet.
-    Testnet {
+    /// Generate, join, or reset a network.
+    Network {
         /// Path to directory to store output in. Must not exist. Defaults to
-        /// ~/.penumbra/testnet_data".
+        /// ~/.penumbra/network_data".
         #[clap(long)]
-        testnet_dir: Option<PathBuf>,
+        network_dir: Option<PathBuf>,
         #[clap(subcommand)]
-        tn_cmd: TestnetCommand,
+        net_cmd: NetworkCommand,
     },
 
     /// Export the storage state the full node.
@@ -148,9 +148,9 @@ pub enum RootCommand {
 }
 
 #[derive(Debug, Subcommand)]
-pub enum TestnetCommand {
+pub enum NetworkCommand {
     /// Generates a directory structure containing necessary files to create a new
-    /// testnet from genesis, based on input configuration.
+    /// network config from genesis, based on input configuration.
     Generate {
         /// The `timeout_commit` parameter (block interval) to configure Tendermint with.
         #[clap(long)]
@@ -164,7 +164,7 @@ pub enum TestnetCommand {
         /// Maximum number of validators in the consensus set.
         #[clap(long)]
         active_validator_limit: Option<u64>,
-        /// Whether to preserve the chain ID (useful for public testnets) or append a random suffix (useful for dev/testing).
+        /// Whether to preserve the chain ID (useful for public networks) or append a random suffix (useful for dev/testing).
         #[clap(long)]
         preserve_chain_id: bool,
         /// Path to CSV file containing initial allocations [default: latest testnet].
@@ -209,13 +209,11 @@ pub enum TestnetCommand {
         external_addresses: Option<String>,
     },
 
-    /// Like `testnet generate`, but joins the testnet to which the specified node belongs
+    /// Like `network generate`, but joins the network to which the specified node belongs.
+    /// Requires a URL for the CometBFT RPC for the bootstrap node.
     Join {
-        /// URL of the remote Tendermint RPC endpoint for bootstrapping connection.
-        #[clap(
-            env = "PENUMBRA_PD_JOIN_URL",
-            default_value = "https://rpc.testnet.penumbra.zone"
-        )]
+        /// URL of the remote CometBFT RPC endpoint for bootstrapping connection.
+        #[clap(env = "PENUMBRA_PD_JOIN_URL")]
         node: Url,
         /// Optional URL of archived node state in .tar.gz format. The archive will be
         /// downloaded and extracted locally, allowing the node to join a network at a block height
@@ -243,6 +241,6 @@ pub enum TestnetCommand {
         leave_archive: bool,
     },
 
-    /// Reset all `pd` testnet state.
+    /// Reset all `pd` network state. This is a destructive action!
     UnsafeResetAll {},
 }

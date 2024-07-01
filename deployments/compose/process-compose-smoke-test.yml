@@ -38,7 +38,7 @@ processes:
   network-generate:
     command: >
       cargo run --quiet --release --bin pd -- 
-      testnet generate --unbonding-delay 50
+      network generate --unbonding-delay 50
       --epoch-duration 50 --timeout-commit 500ms --gas-price-simple 1000
     depends_on:
       build-code:
@@ -60,7 +60,7 @@ processes:
 
   # Run CometBFT for pd p2p.
   cometbft:
-    command: "cometbft --home ~/.penumbra/testnet_data/node0/cometbft start"
+    command: "cometbft --home ~/.penumbra/network_data/node0/cometbft start"
     depends_on:
       pd:
         condition: process_healthy

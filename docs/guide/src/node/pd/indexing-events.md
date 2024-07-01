@@ -8,7 +8,7 @@ can opt-in to writing the events to an external PostgreSQL database.
 
 1. Create a Postgres database, username, and credentials.
 2. Apply the [CometBFT schema] to the database: `psql -d $DATABASE_NAME -f <path/to/schema.sql>`
-3. Edit the CometBFT config file, by default located at `~/.penumbra/testnet_data/node0/cometbft/config/config.toml`,
+3. Edit the CometBFT config file, by default located at `~/.penumbra/network_data/node0/cometbft/config/config.toml`,
    specifically its `[tx_index]`, and set:
    1. `indexer = "psql"`
    2. `psql-conn = "<DATABASE_URL>"`

@@ -13,7 +13,7 @@
   - [Full node: `pd`](./node/pd.md)
     - [Requirements](./node/pd/requirements.md)
     - [Installing `pd`](./node/pd/install.md)
-    - [Joining a testnet](./node/pd/join-testnet.md)
+    - [Joining a network](./node/pd/join-network.md)
     - [Becoming a validator](./node/pd/validator.md)
     - [Performing a chain upgrade](./node/pd/chain-upgrade.md)
     - [Indexing ABCI events](./node/pd/indexing-events.md)

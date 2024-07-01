@@ -23,7 +23,6 @@ pub struct InitCmd {
     /// The GRPC URL that will be used in the generated config.
     #[clap(
         long,
-        default_value = "https://grpc.testnet.penumbra.zone",
         // Note: reading from the environment here means that running
         // pcli init inside of the test harness (where we override that)
         // will correctly set the URL, even though we don't subsequently

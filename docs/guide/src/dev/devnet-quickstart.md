@@ -10,10 +10,10 @@ To start, you'll need to install a [specific version of CometBFT](../node/pd/ins
 To generate a clean set of configs, run
 
 ```shell
-cargo run --release --bin pd -- testnet generate
+cargo run --release --bin pd -- network generate
 ```
 
-This will write configs to `~/.penumbra/testnet_data/`.
+This will write configs to `~/.penumbra/network_data/`.
 
 ## Running `pd`
 
@@ -37,7 +37,7 @@ This will start but won't do anything yet, because CometBFT isn't running.
 To run CometBFT, run
 
 ```shell
-cometbft --home ~/.penumbra/testnet_data/node0/cometbft/ start
+cometbft --home ~/.penumbra/network_data/node0/cometbft/ start
 ```
 
 in another terminal window.

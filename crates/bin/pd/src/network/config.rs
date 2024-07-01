@@ -22,12 +22,12 @@ use tendermint_config::{
 };
 use url::Url;
 
-use crate::testnet::generate::TestnetValidator;
+use crate::network::generate::NetworkValidator;
 
 /// Wrapper for a [TendermintConfig], with a constructor for convenient defaults.
-pub struct TestnetTendermintConfig(pub TendermintConfig);
+pub struct NetworkTendermintConfig(pub TendermintConfig);
 
-impl TestnetTendermintConfig {
+impl NetworkTendermintConfig {
     /// Use a hard-coded Tendermint config as a base template, substitute
     /// values via a typed interface, and rerender as TOML.
     pub fn new(
@@ -61,13 +61,13 @@ impl TestnetTendermintConfig {
     }
 }
 
-impl TestnetTendermintConfig {
+impl NetworkTendermintConfig {
     /// Write Tendermint config files to disk. This includes not only the `config.toml` file,
     /// but also all keypairs required for node and/or validator identity.
     pub fn write_config(
         &self,
         node_dir: PathBuf,
-        v: &TestnetValidator,
+        v: &NetworkValidator,
         genesis: &Genesis<AppState>,
     ) -> anyhow::Result<()> {
         // We'll also create the pd state directory here, since it's convenient.
@@ -119,7 +119,7 @@ impl TestnetTendermintConfig {
         let priv_validator_state_filepath = cb_data_dir.clone().join("priv_validator_state.json");
         tracing::debug!(priv_validator_state_filepath = %priv_validator_state_filepath.display(), "writing validator state");
         let mut priv_validator_state_file = File::create(priv_validator_state_filepath)?;
-        priv_validator_state_file.write_all(TestnetValidator::initial_state().as_bytes())?;
+        priv_validator_state_file.write_all(NetworkValidator::initial_state().as_bytes())?;
 
         // Write the validator's spend key:
         let validator_spend_key_filepath = cb_config_dir.clone().join("validator_custody.json");
@@ -158,7 +158,7 @@ pub fn parse_tm_address(
 }
 
 /// Collection of all keypairs required for a Penumbra validator.
-/// Used to generate a stable identity for a [`TestnetValidator`].
+/// Used to generate a stable identity for a [`NetworkValidator`].
 #[derive(Deserialize)]
 pub struct ValidatorKeys {
     /// Penumbra spending key and viewing key for this node.
@@ -224,7 +224,7 @@ impl ValidatorKeys {
             self.validator_cons_sk
                 .ed25519_signing_key()
                 .ok_or_else(|| {
-                    anyhow::anyhow!("Failed during loop of signing key for TestnetValidator")
+                    anyhow::anyhow!("Failed during loop of signing key for NetworkValidator")
                 })?
                 .clone(),
         );
@@ -285,12 +285,12 @@ pub fn canonicalize_path(input: &str) -> PathBuf {
 }
 
 /// Convert an optional CLI arg into a [`PathBuf`], defaulting to
-/// `~/.penumbra/testnet_data`.
-pub fn get_testnet_dir(testnet_dir: Option<PathBuf>) -> PathBuf {
-    // By default output directory will be in `~/.penumbra/testnet_data/`
-    match testnet_dir {
+/// `~/.penumbra/network_data`.
+pub fn get_network_dir(network_dir: Option<PathBuf>) -> PathBuf {
+    // By default output directory will be in `~/.penumbra/network_data/`
+    match network_dir {
         Some(o) => o,
-        None => canonicalize_path("~/.penumbra/testnet_data"),
+        None => canonicalize_path("~/.penumbra/network_data"),
     }
 }
 
