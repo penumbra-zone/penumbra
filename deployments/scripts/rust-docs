@@ -25,7 +25,7 @@ cargo +nightly doc --no-deps \
   -p decaf377-fmd \
   -p decaf377-ka \
   -p decaf377-rdsa \
-  -p decaf377@0.10.0 \
+  -p decaf377@0.10.1 \
   -p ibc-types \
   -p jmt \
   -p pcli \
