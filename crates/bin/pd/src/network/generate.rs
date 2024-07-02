@@ -3,7 +3,10 @@
 //! for Penumbra.
 use crate::network::config::{get_network_dir, NetworkTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
-use penumbra_app::params::AppParameters;
+use penumbra_app::{
+    app::{MAX_BLOCK_TXS_PAYLOAD_BYTES, MAX_EVIDENCE_SIZE_BYTES},
+    params::AppParameters,
+};
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_fee::genesis::Content as FeeContent;
 use penumbra_governance::genesis::Content as GovernanceContent;
@@ -288,7 +291,7 @@ impl NetworkConfig {
                 abci: AbciParams::default(),
                 block: tendermint::block::Size {
                     // 1MB
-                    max_bytes: 1048576,
+                    max_bytes: MAX_BLOCK_TXS_PAYLOAD_BYTES as u64,
                     // Set to infinity since a chain running Penumbra won't use
                     // cometbft's notion of gas.
                     max_gas: -1,
@@ -302,7 +305,7 @@ impl NetworkConfig {
                     // Similarly, we set the max age duration for evidence to be a little over a week.
                     max_age_duration: tendermint::evidence::Duration(Duration::from_secs(650000)),
                     // 30KB
-                    max_bytes: 30000,
+                    max_bytes: MAX_EVIDENCE_SIZE_BYTES as i64,
                 },
                 validator: tendermint::consensus::params::ValidatorParams {
                     pub_key_types: vec![Algorithm::Ed25519],
