@@ -1713,7 +1713,8 @@ dependencies = [
 [[package]]
 name = "decaf377-rdsa"
 version = "0.11.0"
-source = "git+https://github.com/penumbra-zone/decaf377-rdsa?branch=decaf377-0.10.1#fb198a31c0e23a38053983acbec76ad6509e0d87"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "437967a34e0699b50b986a72ce6c4e2e5930bde85ec8f3749701f7e50d6d32b0"
 dependencies = [
  "ark-ff",
  "ark-serialize",
@@ -5914,16 +5915,18 @@ checksum = "7170ef9988bc169ba16dd36a7fa041e5c4cbeb6a35b76d4c03daded371eae7c0"
 
 [[package]]
 name = "poseidon-parameters"
-version = "1.0.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=decaf377-0.10.1#f60774003a499e66043a5d70e3b5afa9769be62a"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6df50e93cde74d26eb66c9674fccde32172e915a420fe2a73fda39ab377f709"
 dependencies = [
  "decaf377",
 ]
 
 [[package]]
 name = "poseidon-permutation"
-version = "1.0.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=decaf377-0.10.1#f60774003a499e66043a5d70e3b5afa9769be62a"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03c4e1e8d622017ece288f1a1b06f0bfeaacaa4166fa155a91103317299452e2"
 dependencies = [
  "ark-ff",
  "ark-r1cs-std",
@@ -5935,8 +5938,9 @@ dependencies = [
 
 [[package]]
 name = "poseidon377"
-version = "1.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=decaf377-0.10.1#f60774003a499e66043a5d70e3b5afa9769be62a"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae0544874afdaf74b69efc90795c66ea7a494faeb2981a0585d46c757ee2fa94"
 dependencies = [
  "ark-ec",
  "ark-ff",
