@@ -1,0 +1,73 @@
+---
+# docker-compose file for running a Penumbra node.
+# Stores the node config in a docker "volume", which should be
+# reset between testnets: `docker volume rm compose_penumbra-pd-node0` or similar.
+# See docs for details:  https://guide.penumbra.zone/main/pd/join-testnet.html
+
+# N.B. the "latest" tag for Penumbra container images maps to the latest
+# tagged release; use "main" tag for tracking the rolling preview networks.
+version: "3.7"
+services:
+
+  # Initialize node config, via `pd testnet join`.
+  pd-node0-init:
+    platform: "linux/amd64"
+    image: ghcr.io/penumbra-zone/penumbra:latest
+    command: >-
+      sh -c
+      "
+      pd --version &&
+      if ! test -e /pd/testnet_data/node0/cometbft/config/config.toml ; then
+          >&2 printf 'WARN: testnet config not found. Creating fresh node identity.'
+          >&2 echo ' See docs for details: https://guide.penumbra.zone/main/pd/join-testnet.html'
+          /bin/pd testnet --testnet-dir /pd/testnet_data generate
+      else
+          >&2 echo 'Node config already found, using it'
+      fi &&
+      chown 100 -R /pd/testnet_data/node0/cometbft &&
+      chown 1000 -R /pd/testnet_data/node0/pd &&
+      ls -l /pd/testnet_data/node0/ && exit 0
+      "
+    restart: on-failure
+    volumes:
+      - penumbra-pd-node0:/pd
+    # run initcontainer as root so we can chown dirs for app containers.
+    user: "0"
+
+  # The Penumbra daemon
+  pd-node0:
+    platform: "linux/amd64"
+    image: ghcr.io/penumbra-zone/penumbra:latest
+      # consider verbose debugging logs:
+      # environment:
+    # RUST_LOG: h2=off,debug
+    command: >-
+      /bin/pd start --home /pd/testnet_data/node0/pd
+      --grpc-bind 0.0.0.0:8080 --abci-bind 0.0.0.0:26658
+      --cometbft-addr http://cometbft-node0:26657
+    restart: on-failure
+    volumes:
+      - penumbra-pd-node0:/pd
+    user: "${UID:-1000}"
+    depends_on:
+      - pd-node0-init
+    ports:
+      - "26658:26658"
+      - "8080:8080"
+
+  # The CometBFT node
+  cometbft-node0:
+    image: "docker.io/cometbft/cometbft:v0.37.5"
+    ports:
+      - "26656:26656"
+      - "26657:26657"
+    volumes:
+      - penumbra-pd-node0:/cometbft
+    environment:
+      CMTHOME: /cometbft/testnet_data/node0/cometbft
+    command: start --proxy_app=tcp://pd-node0:26658
+    depends_on:
+      - pd-node0
+
+volumes:
+  penumbra-pd-node0: {}
