@@ -52,13 +52,13 @@ pub mod state_key;
 type InterBlockState = Arc<StateDelta<Snapshot>>;
 
 /// The maximum size of a CometBFT block payload (1MB)
-const MAX_BLOCK_TXS_PAYLOAD_BYTES: usize = 1024 * 1024;
+pub const MAX_BLOCK_TXS_PAYLOAD_BYTES: usize = 1024 * 1024;
 
 /// The maximum size of a single individual transaction (96KB).
-const MAX_TRANSACTION_SIZE_BYTES: usize = 96 * 1024;
+pub const MAX_TRANSACTION_SIZE_BYTES: usize = 96 * 1024;
 
 /// The maximum size of the evidence portion of a block (30KB).
-const MAX_EVIDENCE_SIZE_BYTES: usize = 30 * 1024;
+pub const MAX_EVIDENCE_SIZE_BYTES: usize = 30 * 1024;
 
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
