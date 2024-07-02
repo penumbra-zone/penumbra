@@ -293,6 +293,10 @@ pub struct TransactionPlannerRequest {
     pub dutch_auction_withdraw_actions: ::prost::alloc::vec::Vec<
         transaction_planner_request::ActionDutchAuctionWithdraw,
     >,
+    #[prost(message, repeated, tag = "76")]
+    pub delegator_votes: ::prost::alloc::vec::Vec<
+        transaction_planner_request::DelegatorVote,
+    >,
     /// The epoch index of the transaction being planned.
     #[deprecated]
     #[prost(uint64, tag = "200")]
@@ -592,6 +596,38 @@ pub mod transaction_planner_request {
     }
     impl ::prost::Name for ActionDutchAuctionWithdraw {
         const NAME: &'static str = "ActionDutchAuctionWithdraw";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct DelegatorVote {
+        /// The proposal being voted on.
+        #[prost(uint64, tag = "1")]
+        pub proposal: u64,
+        /// The vote.
+        #[prost(message, optional, tag = "2")]
+        pub vote: ::core::option::Option<
+            super::super::super::core::component::governance::v1::Vote,
+        >,
+        /// The block height at which the proposal started voting.
+        #[prost(uint64, tag = "3")]
+        pub start_block_height: u64,
+        /// The position of the state commitment tree at which the proposal is considered to have started voting.
+        #[prost(uint64, tag = "4")]
+        pub start_position: u64,
+        /// The validators rate data for the proposal.
+        #[prost(message, repeated, tag = "5")]
+        pub rate_data: ::prost::alloc::vec::Vec<
+            super::super::super::core::component::stake::v1::RateData,
+        >,
+    }
+    impl ::prost::Name for DelegatorVote {
+        const NAME: &'static str = "DelegatorVote";
         const PACKAGE: &'static str = "penumbra.view.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
