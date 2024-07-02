@@ -260,7 +260,6 @@ impl TryFrom<pbt::MemoPlaintext> for MemoPlaintext {
 
 #[cfg(test)]
 mod tests {
-    use ark_ff::UniformRand;
     use rand_core::OsRng;
 
     use super::*;

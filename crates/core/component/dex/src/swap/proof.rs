@@ -7,7 +7,7 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
-use decaf377::{Bls12_377, FieldExt};
+use decaf377::Bls12_377;
 use decaf377::{Fq, Fr};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
@@ -153,7 +153,7 @@ impl DummyWitness for SwapCircuit {
             .expect("nala asset exists");
         let trading_pair = TradingPair::new(a.id(), b.id());
         let diversifier_bytes = [1u8; 16];
-        let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
+        let pk_d_bytes = decaf377::Element::GENERATOR.vartime_compress().0;
         let clue_key_bytes = [1; 32];
         let diversifier = Diversifier(diversifier_bytes);
         let address = Address::from_components(
@@ -180,12 +180,12 @@ impl DummyWitness for SwapCircuit {
         Self {
             private: SwapProofPrivate {
                 swap_plaintext: swap_plaintext.clone(),
-                fee_blinding: Fr::from(1),
+                fee_blinding: Fr::from(1u64),
             },
             public: SwapProofPublic {
                 swap_commitment: swap_plaintext.swap_commitment(),
-                fee_commitment: balance::Commitment(decaf377::basepoint()),
-                balance_commitment: balance::Commitment(decaf377::basepoint()),
+                fee_commitment: balance::Commitment(decaf377::Element::GENERATOR),
+                balance_commitment: balance::Commitment(decaf377::Element::GENERATOR),
             },
         }
     }
@@ -293,7 +293,6 @@ impl TryFrom<pb::ZkSwapProof> for SwapProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ff::PrimeField;
     use penumbra_asset::{Balance, Value};
     use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
     use penumbra_num::Amount;

@@ -40,7 +40,6 @@ impl TranscriptProtocol for merlin::Transcript {
     }
 
     fn challenge_scalar(&mut self, label: &'static [u8]) -> decaf377::Fr {
-        use ark_ff::fields::PrimeField;
         let mut bytes = [0; 64];
         self.challenge_bytes(label, &mut bytes);
         decaf377::Fr::from_le_bytes_mod_order(&bytes)

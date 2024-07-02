@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use ark_ff::UniformRand;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
@@ -33,7 +32,7 @@ fn spend_proving_time(c: &mut Criterion) {
 
     let note = Note::generate(&mut OsRng, &sender, value_to_send);
     let note_commitment = note.commit();
-    let spend_auth_randomizer = Fr::from(0i32);
+    let spend_auth_randomizer = Fr::from(0u32);
     let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
     let nk = *sk_sender.nullifier_key();
     let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
@@ -42,7 +41,7 @@ fn spend_proving_time(c: &mut Criterion) {
     sct.insert(tct::Witness::Keep, note_commitment).unwrap();
     let anchor = sct.root();
     let state_commitment_proof = sct.witness(note_commitment).unwrap();
-    let v_blinding = Fr::from(0i32);
+    let v_blinding = Fr::from(0u32);
     let balance_commitment = value_to_send.commit(v_blinding);
     let rk: VerificationKey<SpendAuth> = rsk.into();
     let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);

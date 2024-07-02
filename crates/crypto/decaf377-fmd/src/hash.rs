@@ -1,4 +1,3 @@
-use ark_ff::PrimeField;
 use decaf377::Fr;
 
 pub fn to_bit(a: &[u8; 32], b: &[u8; 32], c: &[u8; 32]) -> u8 {

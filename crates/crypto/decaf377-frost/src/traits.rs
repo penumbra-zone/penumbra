@@ -1,5 +1,5 @@
-use ark_ff::{Field as _, One, UniformRand, Zero};
-use decaf377::{Element, FieldExt, Fr};
+use ark_ff::{One, Zero};
+use decaf377::{Element, Fr};
 pub use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError};
 use rand_core;
 
@@ -38,8 +38,8 @@ impl Field for Decaf377ScalarField {
     }
 
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, FieldError> {
-        Fr::from_bytes(
-            TryInto::<[u8; 32]>::try_into(buf.clone()).map_err(|_| FieldError::MalformedScalar)?,
+        Fr::from_bytes_checked(
+            &TryInto::<[u8; 32]>::try_into(buf.clone()).map_err(|_| FieldError::MalformedScalar)?,
         )
         .map_err(|_| FieldError::MalformedScalar)
     }
@@ -64,7 +64,7 @@ impl Group for Decaf377Group {
     }
 
     fn generator() -> Self::Element {
-        decaf377::basepoint()
+        decaf377::Element::GENERATOR
     }
 
     fn serialize(element: &Self::Element) -> Self::Serialization {

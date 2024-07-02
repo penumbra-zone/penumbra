@@ -27,3 +27,4 @@ tendermint = {workspace = true}
 tracing = {workspace = true}
 
 [dev-dependencies]
+getrandom = {workspace = true}

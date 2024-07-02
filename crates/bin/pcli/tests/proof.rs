@@ -1,7 +1,6 @@
 //! Tests guard against drift in the current constraints versus the provided
 //! proving/verification key.
 
-use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_asset::{asset, Balance, Value};

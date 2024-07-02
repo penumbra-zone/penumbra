@@ -1,4 +1,3 @@
-use ark_ff::PrimeField;
 use decaf377_ka as ka;
 use proptest::prelude::*;
 

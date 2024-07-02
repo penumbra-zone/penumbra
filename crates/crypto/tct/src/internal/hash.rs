@@ -7,8 +7,7 @@ use std::{
     ops::RangeInclusive,
 };
 
-use ark_ff::{fields::PrimeField, BigInteger256, Fp256, One, Zero};
-use decaf377::FieldExt;
+use ark_ff::{One, Zero};
 use once_cell::sync::Lazy;
 use poseidon377::{hash_1, hash_4, Fq};
 use serde::{Deserialize, Serialize};
@@ -116,7 +115,7 @@ impl Hash {
 
     /// Decode a hash from bytes representing it
     pub fn from_bytes(bytes: [u8; 32]) -> Result<Self, decaf377::EncodingError> {
-        Ok(Self(Fq::from_bytes(bytes)?))
+        Ok(Self(Fq::from_bytes_checked(&bytes)?))
     }
 
     /// The zero hash, used for padding of frontier nodes.
@@ -142,7 +141,7 @@ impl Hash {
     /// A stand-in hash that is out-of-range for `Fq`, to be used during intermediate construction
     /// of the tree as a sentinel value for uninitialized nodes.
     pub(crate) fn uninitialized() -> Hash {
-        Self(Fp256::new_unchecked(BigInteger256::new([u64::MAX; 4])))
+        Self(Fq::SENTINEL)
     }
 
     /// Checks if the hash is uninitialized.
@@ -272,7 +271,6 @@ impl From<u64> for Forgotten {
 
 #[cfg(any(test, feature = "arbitrary"))]
 mod arbitrary {
-    use ark_ff::BigInteger256;
     use poseidon377::Fq;
 
     use super::Hash;
@@ -301,15 +299,11 @@ mod arbitrary {
         ) -> proptest::strategy::NewTree<Self> {
             use proptest::prelude::RngCore;
             let rng = runner.rng();
-            let parts = [
-                rng.next_u64(),
-                rng.next_u64(),
-                rng.next_u64(),
-                rng.next_u64(),
-            ];
-            Ok(proptest::strategy::Just(Hash(Fq::new(BigInteger256::new(
-                parts,
-            )))))
+            let mut bytes = [0u8; 32];
+            rng.fill_bytes(&mut bytes);
+            Ok(proptest::strategy::Just(Hash(Fq::from_le_bytes_mod_order(
+                &bytes,
+            ))))
         }
     }
 }

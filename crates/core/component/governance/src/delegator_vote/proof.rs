@@ -8,7 +8,7 @@ use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use base64::{engine::general_purpose, Engine as _};
-use decaf377::{r1cs::FqVar, Bls12_377, FieldExt, Fq, Fr};
+use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_asset::{
     balance::{self, commitment::BalanceCommitmentVar, Commitment},
@@ -249,7 +249,7 @@ impl DummyWitness for DelegatorVoteCircuit {
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
 
-        let spend_auth_randomizer = Fr::from(1);
+        let spend_auth_randomizer = Fr::from(1u64);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
@@ -259,9 +259,9 @@ impl DummyWitness for DelegatorVoteCircuit {
             Rseed([1u8; 32]),
         )
         .expect("can make a note");
-        let v_blinding = Fr::from(1);
+        let v_blinding = Fr::from(1u64);
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nullifier = Nullifier(Fq::from(1));
+        let nullifier = Nullifier(Fq::from(1u64));
         let mut sct = tct::Tree::new();
         let note_commitment = note.commit();
         sct.insert(tct::Witness::Keep, note_commitment)
@@ -274,7 +274,7 @@ impl DummyWitness for DelegatorVoteCircuit {
 
         let public = DelegatorVoteProofPublic {
             anchor,
-            balance_commitment: balance::Commitment(decaf377::basepoint()),
+            balance_commitment: balance::Commitment(decaf377::Element::GENERATOR),
             nullifier,
             rk,
             start_position,
@@ -420,8 +420,6 @@ impl TryFrom<pb::ZkDelegatorVoteProof> for DelegatorVoteProof {
 mod tests {
 
     use super::*;
-    use ark_ff::PrimeField;
-
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};

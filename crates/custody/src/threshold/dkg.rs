@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-use ark_ff::UniformRand;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use decaf377::Fq;
 use decaf377_frost as frost;

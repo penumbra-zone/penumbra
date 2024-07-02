@@ -1,7 +1,6 @@
 use {
     self::common::{BuilderExt, TestNodeExt, ValidatorDataReadExt},
     anyhow::anyhow,
-    ark_ff::UniformRand,
     cnidarium::TempStorage,
     decaf377_fmd::Precision,
     penumbra_app::{

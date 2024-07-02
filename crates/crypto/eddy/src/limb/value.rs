@@ -1,6 +1,5 @@
 use crate::limb::Ciphertext;
 use crate::EncryptionKey;
-use ark_ff::UniformRand;
 use rand_core::{CryptoRng, RngCore};
 
 /// An individual limb value.
@@ -26,9 +25,9 @@ impl Value {
         mut rng: R,
     ) -> (Ciphertext, Blinding) {
         let elgamal_blind = decaf377::Fr::rand(&mut rng);
-        let c1 = elgamal_blind * decaf377::basepoint();
-        let c2 =
-            elgamal_blind * encryption_key.0 + decaf377::Fr::from(self.0) * decaf377::basepoint();
+        let c1 = elgamal_blind * decaf377::Element::GENERATOR;
+        let c2 = elgamal_blind * encryption_key.0
+            + decaf377::Fr::from(self.0) * decaf377::Element::GENERATOR;
 
         (Ciphertext { c1, c2 }, elgamal_blind)
     }
