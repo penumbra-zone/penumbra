@@ -20,6 +20,9 @@ use penumbra_proto::{
 use tonic::transport::{Channel, ClientTlsConfig};
 use url::Url;
 
+// The expected maximum size of a compact block message.
+const MAX_CB_SIZE_BYTES: usize = 12 * 1024 * 1024;
+
 #[derive(Debug, Parser)]
 #[clap(
     name = "penumbra-measure",
@@ -99,7 +102,7 @@ impl Opt {
                     js.spawn(
                         async move {
                             let mut client =
-                                CompactBlockQueryServiceClient::connect(node2).await.unwrap();
+                                CompactBlockQueryServiceClient::connect(node2).await.unwrap().max_decoding_message_size(MAX_CB_SIZE_BYTES);
 
                             let mut stream = client
                                 .compact_block_range(tonic::Request::new(
@@ -144,7 +147,8 @@ impl Opt {
                     js.spawn(async move {
                         let mut client = CompactBlockQueryServiceClient::connect(node2)
                             .await
-                            .unwrap();
+                            .unwrap()
+                            .max_decoding_message_size(MAX_CB_SIZE_BYTES);
 
                         let mut stream = client
                             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
@@ -181,7 +185,8 @@ impl Opt {
                     .connect()
                     .await?;
 
-                let mut cb_client = CompactBlockQueryServiceClient::new(channel.clone());
+                let mut cb_client = CompactBlockQueryServiceClient::new(channel.clone())
+                    .max_decoding_message_size(MAX_CB_SIZE_BYTES);
 
                 let end_height = self.latest_known_block_height().await?.0;
                 let start_height = if skip_genesis { 1 } else { 0 };

@@ -37,6 +37,9 @@ use crate::{
     Storage,
 };
 
+// The maximum size of a compact block, in bytes (12MB).
+const MAX_CB_SIZE_BYTES: usize = 12 * 1024 * 1024;
+
 pub struct Worker {
     storage: Storage,
     sct: Arc<RwLock<penumbra_tct::Tree>>,
@@ -192,7 +195,8 @@ impl Worker {
             .map(|h| h + 1)
             .unwrap_or(0);
 
-        let mut client = CompactBlockQueryServiceClient::new(self.channel.clone());
+        let mut client = CompactBlockQueryServiceClient::new(self.channel.clone())
+            .max_decoding_message_size(MAX_CB_SIZE_BYTES);
         let mut stream = client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
                 start_height,
