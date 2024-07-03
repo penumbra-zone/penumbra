@@ -6110,6 +6110,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.dutch_auction_withdraw_actions.is_empty() {
             len += 1;
         }
+        if !self.delegator_votes.is_empty() {
+            len += 1;
+        }
         if self.epoch_index != 0 {
             len += 1;
         }
@@ -6175,6 +6178,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.dutch_auction_withdraw_actions.is_empty() {
             struct_ser.serialize_field("dutchAuctionWithdrawActions", &self.dutch_auction_withdraw_actions)?;
         }
+        if !self.delegator_votes.is_empty() {
+            struct_ser.serialize_field("delegatorVotes", &self.delegator_votes)?;
+        }
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
@@ -6231,6 +6237,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "dutchAuctionEndActions",
             "dutch_auction_withdraw_actions",
             "dutchAuctionWithdrawActions",
+            "delegator_votes",
+            "delegatorVotes",
             "epoch_index",
             "epochIndex",
             "epoch",
@@ -6260,6 +6268,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             DutchAuctionScheduleActions,
             DutchAuctionEndActions,
             DutchAuctionWithdrawActions,
+            DelegatorVotes,
             EpochIndex,
             Epoch,
             AutoFee,
@@ -6304,6 +6313,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "dutchAuctionScheduleActions" | "dutch_auction_schedule_actions" => Ok(GeneratedField::DutchAuctionScheduleActions),
                             "dutchAuctionEndActions" | "dutch_auction_end_actions" => Ok(GeneratedField::DutchAuctionEndActions),
                             "dutchAuctionWithdrawActions" | "dutch_auction_withdraw_actions" => Ok(GeneratedField::DutchAuctionWithdrawActions),
+                            "delegatorVotes" | "delegator_votes" => Ok(GeneratedField::DelegatorVotes),
                             "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
                             "epoch" => Ok(GeneratedField::Epoch),
                             "autoFee" | "auto_fee" => Ok(GeneratedField::AutoFee),
@@ -6345,6 +6355,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut dutch_auction_schedule_actions__ = None;
                 let mut dutch_auction_end_actions__ = None;
                 let mut dutch_auction_withdraw_actions__ = None;
+                let mut delegator_votes__ = None;
                 let mut epoch_index__ = None;
                 let mut epoch__ = None;
                 let mut fee_mode__ = None;
@@ -6460,6 +6471,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             dutch_auction_withdraw_actions__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::DelegatorVotes => {
+                            if delegator_votes__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("delegatorVotes"));
+                            }
+                            delegator_votes__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::EpochIndex => {
                             if epoch_index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("epochIndex"));
@@ -6512,6 +6529,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     dutch_auction_schedule_actions: dutch_auction_schedule_actions__.unwrap_or_default(),
                     dutch_auction_end_actions: dutch_auction_end_actions__.unwrap_or_default(),
                     dutch_auction_withdraw_actions: dutch_auction_withdraw_actions__.unwrap_or_default(),
+                    delegator_votes: delegator_votes__.unwrap_or_default(),
                     epoch_index: epoch_index__.unwrap_or_default(),
                     epoch: epoch__,
                     fee_mode: fee_mode__,
@@ -6939,6 +6957,181 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Delegate {
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1.TransactionPlannerRequest.Delegate", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_planner_request::DelegatorVote {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.proposal != 0 {
+            len += 1;
+        }
+        if self.vote.is_some() {
+            len += 1;
+        }
+        if self.start_block_height != 0 {
+            len += 1;
+        }
+        if self.start_position != 0 {
+            len += 1;
+        }
+        if !self.rate_data.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest.DelegatorVote", len)?;
+        if self.proposal != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
+        }
+        if let Some(v) = self.vote.as_ref() {
+            struct_ser.serialize_field("vote", v)?;
+        }
+        if self.start_block_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("startBlockHeight", ToString::to_string(&self.start_block_height).as_str())?;
+        }
+        if self.start_position != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
+        }
+        if !self.rate_data.is_empty() {
+            struct_ser.serialize_field("rateData", &self.rate_data)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_planner_request::DelegatorVote {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "proposal",
+            "vote",
+            "start_block_height",
+            "startBlockHeight",
+            "start_position",
+            "startPosition",
+            "rate_data",
+            "rateData",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Proposal,
+            Vote,
+            StartBlockHeight,
+            StartPosition,
+            RateData,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "proposal" => Ok(GeneratedField::Proposal),
+                            "vote" => Ok(GeneratedField::Vote),
+                            "startBlockHeight" | "start_block_height" => Ok(GeneratedField::StartBlockHeight),
+                            "startPosition" | "start_position" => Ok(GeneratedField::StartPosition),
+                            "rateData" | "rate_data" => Ok(GeneratedField::RateData),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_planner_request::DelegatorVote;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.TransactionPlannerRequest.DelegatorVote")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::DelegatorVote, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut proposal__ = None;
+                let mut vote__ = None;
+                let mut start_block_height__ = None;
+                let mut start_position__ = None;
+                let mut rate_data__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Proposal => {
+                            if proposal__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proposal"));
+                            }
+                            proposal__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Vote => {
+                            if vote__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("vote"));
+                            }
+                            vote__ = map_.next_value()?;
+                        }
+                        GeneratedField::StartBlockHeight => {
+                            if start_block_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startBlockHeight"));
+                            }
+                            start_block_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::StartPosition => {
+                            if start_position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startPosition"));
+                            }
+                            start_position__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::RateData => {
+                            if rate_data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rateData"));
+                            }
+                            rate_data__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(transaction_planner_request::DelegatorVote {
+                    proposal: proposal__.unwrap_or_default(),
+                    vote: vote__,
+                    start_block_height: start_block_height__.unwrap_or_default(),
+                    start_position: start_position__.unwrap_or_default(),
+                    rate_data: rate_data__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.TransactionPlannerRequest.DelegatorVote", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for transaction_planner_request::Output {
