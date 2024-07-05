@@ -23,7 +23,7 @@ use {
     },
     penumbra_auction::component::rpc::Server as AuctionServer,
     penumbra_compact_block::component::rpc::Server as CompactBlockServer,
-    penumbra_dex::component::rpc::{stub::SimulationsDisabled, Server as DexServer},
+    penumbra_dex::component::rpc::Server as DexServer,
     penumbra_fee::component::rpc::Server as FeeServer,
     penumbra_governance::component::rpc::Server as GovernanceServer,
     penumbra_proto::{
@@ -57,10 +57,10 @@ use {
 pub fn router(
     storage: &cnidarium::Storage,
     tm_proxy: impl TendermintProxyService,
-    enable_expensive_rpc: bool,
+    _enable_expensive_rpc: bool,
 ) -> anyhow::Result<tonic::transport::server::Router> {
     let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
-    let mut grpc_server = tonic::transport::server::Server::builder()
+    let grpc_server = tonic::transport::server::Server::builder()
         .trace_fn(|req| match remote_addr(req) {
             Some(remote_addr) => {
                 tracing::error_span!("grpc", ?remote_addr)
@@ -120,19 +120,13 @@ pub fn router(
         .add_service(we(ChannelQueryServer::new(ibc.clone())))
         .add_service(we(ConnectionQueryServer::new(ibc.clone())))
         .add_service(we(TendermintProxyServiceServer::new(tm_proxy)))
+        .add_service(we(SimulationServiceServer::new(DexServer::new(
+            storage.clone(),
+        ))))
         .add_service(we(tonic_reflection::server::Builder::configure()
             .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
             .build()
             .with_context(|| "could not configure grpc reflection service")?));
-
-    if enable_expensive_rpc {
-        grpc_server = grpc_server.add_service(we(SimulationServiceServer::new(DexServer::new(
-            storage.clone(),
-        ))));
-    } else {
-        grpc_server =
-            grpc_server.add_service(we(SimulationServiceServer::new(SimulationsDisabled)));
-    }
 
     Ok(grpc_server)
 }
