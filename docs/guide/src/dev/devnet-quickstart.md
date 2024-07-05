@@ -59,7 +59,7 @@ and then pass the `--home` flag to any commands you run to point `pcli` at your 
 cargo run --release --bin pcli -- --home ~/.local/share/pcli-localhost view balance
 ```
 
-By default, `pd testnet generate` uses the testnet allocations from the `testnets/` directory in the git repo.
+By default, `pd network generate` uses the testnet allocations from the `testnets/` directory in the git repo.
 If you have an address included in those files, then use `pcli init soft-kms import-phrase`. Otherwise,
 edit the `genesis.json` to add your address.
 

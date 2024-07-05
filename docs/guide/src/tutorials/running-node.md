@@ -5,6 +5,7 @@ so that client software can read chain state and submit transactions.
 This is true of the [Prax wallet], and of [pcli], as well as any other client.
 While users can select a publicly available RPC URL from a party they trust,
 this guide demonstrates how a user can self-host an RPC URL for use by themselves and others.
+For a more generalized description of running pd, see the [pd overview](../node/pd.md).
 
 ## Renting a server
 
@@ -73,7 +74,7 @@ We'll use this account to configure the `pd` and `cometbft` data directories.
 
 ```
 sudo su -l penumbra
-pd testnet join \
+pd network join \
        --moniker <MONIKER> \
        --external-address <EXTERNAL_ADDRESS> \
        <NODE_URL>
