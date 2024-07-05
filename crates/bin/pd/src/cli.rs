@@ -86,10 +86,7 @@ pub enum RootCommand {
             alias = "tendermint-addr",
         )]
         cometbft_addr: Url,
-        /// Enable expensive RPCs, such as the trade simulation service.
-        /// The trade simulation service allows clients to simulate trades without submitting them.
-        /// This is useful for approximating the cost of a trade before submitting it.
-        /// But, it is a potential DoS vector, so it is disabled by default.
+        /// Enable expensive RPCs, currently a no-op.
         #[clap(short, long, display_order = 500)]
         enable_expensive_rpc: bool,
     },
