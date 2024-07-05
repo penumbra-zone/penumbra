@@ -36,6 +36,44 @@ the `--grpc-auto-https <DOMAIN>` option. See `pd start --help` for more info.
 Validators should review the [pcli key custody](../../pcli/wallet.md#validator-custody) recommendations
 for protecting the validator identity.
 
+## CometBFT settings
+
+When bootstrapping a new network connection via [`pd network join`](join-network.md),
+`pd` will create initial CometBFT settings for the node. Node operators
+should review that configuration, stored at `~/.penumbra/network_data/node0/cometbft/config/config.toml`
+by default, and adapt it to their needs.
+
+In particular, node operators should ensure that the following values are set:
+
+```toml
+[mempool]
+broadcast = true
+keep-invalid-txs-in-cache = false
+max_tx_bytes = 98304
+max_txs_bytes = 10485760
+recheck = true
+size = 5000
+
+[consensus]
+timeout_propose = "3000ms"
+timeout_propose_delta = "500ms"
+timeout_prevote = "1000ms"
+timeout_prevote_delta = "500ms"
+timeout_precommit = "1000ms"
+timeout_precommit_delta = "500ms"
+timeout_commit = "5000ms"
+create_empty_blocks = true
+create_empty_blocks_interval = "0ms"
+```
+
+The `mempool` settings are consensus-critical, and should not be changed without coordination.
+
+## Security limits
+
+The OS defaults for maximum number of open file descriptors is typically `1024`, which is too low
+for running a Penumbra node. The example systemd configs raise this value to `65536` via the `LimitNOFILE`
+declaration. Node operators should set this value system-wide, by editing `/etc/security/limits.conf`.
+
 ## Deployment strategies
 
 We expect node operators to manage the lifecycle of their Penumbra deployments.
