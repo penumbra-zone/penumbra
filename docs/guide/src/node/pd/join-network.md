@@ -1,4 +1,4 @@
-# Joining a Testnet
+# Joining a network
 
 We provide instructions for running both fullnode deployments and validator deployments. A
 fullnode will sync with the network but will not have any voting power, and will
@@ -17,7 +17,7 @@ To join a network as a fullnode, [install the most recent version of `pd`](insta
 `cometbft`.
 
 ```shell
-pd testnet join \
+pd network join \
     --moniker MY_NODE_NAME \
     --external-address IP_ADDRESS:26656 \
     NODE_URL
