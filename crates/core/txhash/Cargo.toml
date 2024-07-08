@@ -10,4 +10,6 @@ hex = {workspace = true}
 penumbra-proto = {workspace = true, default-features = false}
 penumbra-tct = {workspace = true, default-features = true}
 serde = {workspace = true}
+
+[dev-dependencies]
 getrandom = {workspace = true}
