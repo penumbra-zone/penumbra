@@ -1,20 +1,31 @@
 # Privacy
 
-This is meant to describe the privacy properties of the protocol in detail,
-as well as document any invariants that must hold for privacy to be preserved, and other notes on privacy that might be useful to users.
+This document describes the privacy features of the Penumbra protocol, as well as conditions that must be true for privacy to be preserved.
 
 ## Transfers
 
-TODO
+Transfers do not reveal the asset, amount, sender or recipient identity. Transfers are also unlinkable to each other.
 
 ## Swaps
 
-Trades are private as long as there are at least two trades in a batch.
+Initiating a swap does not reveal the identity of the swapper or the pre-paid claim fee, but it does reveal the assets and amounts in the swap.
+
+Claiming a swap does not reveal the amounts, asset types or the identity of the claimant.
+
+### Conditions
+
+The above holds true as long as there are at least two swaps in a batch.
 
 ## Governance Voting
 
-TODO
+During a vote, the voting power (amount and asset type of the staked note that's used for voting),
+the vote itself, as well as the proposal being voted on are **revealed** during a delegator vote.
+However, the address of the voter is hidden, which renders the information revealed anonymous.  
 
 ## Staking
+
+TODO
+
+## IBC
 
 TODO
