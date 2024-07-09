@@ -1,4 +1,4 @@
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
 use penumbra_proto::{core::component::shielded_pool::v1 as pb, event::ProtoEvent};
 
 #[derive(Debug)]
@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS shielded_pool_fmd_clue_set (
         &self,
         dbtx: &mut PgTransaction,
         event: &ContextualizedEvent,
+        _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         let pe = pb::EventBroadcastClue::from_event(event.as_ref())?;
 
