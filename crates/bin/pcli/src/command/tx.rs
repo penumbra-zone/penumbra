@@ -8,8 +8,6 @@ use std::{
 };
 
 use anyhow::{ensure, Context, Result};
-use ark_ff::UniformRand;
-use clap::Parser;
 use decaf377::{Fq, Fr};
 use ibc_proto::ibc::core::client::v1::{
     query_client::QueryClient as IbcClientQueryClient, QueryClientStateRequest,
@@ -65,6 +63,7 @@ use proposal::ProposalCmd;
 
 use crate::command::tx::auction::AuctionCmd;
 use crate::App;
+use clap::Parser;
 
 mod auction;
 mod liquidity_position;

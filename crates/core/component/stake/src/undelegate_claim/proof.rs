@@ -99,7 +99,6 @@ impl TryFrom<pb::ZkUndelegateClaimProof> for UndelegateClaimProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ff::{PrimeField, UniformRand};
     use decaf377::{Fq, Fr};
     use decaf377_rdsa as rdsa;
     use penumbra_num::Amount;

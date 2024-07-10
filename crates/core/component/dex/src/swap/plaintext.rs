@@ -1,10 +1,9 @@
 use anyhow::{anyhow, Error, Result};
-use ark_ff::PrimeField;
 
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::r1cs::FqVar;
-use decaf377::{FieldExt, Fq};
+use decaf377::Fq;
 use once_cell::sync::Lazy;
 use penumbra_fee::Fee;
 use penumbra_proto::{

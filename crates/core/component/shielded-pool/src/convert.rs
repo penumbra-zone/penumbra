@@ -7,7 +7,7 @@ use ark_relations::r1cs;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use base64::prelude::*;
-use decaf377::{Bls12_377, FieldExt, Fq, Fr};
+use decaf377::{Bls12_377, Fq, Fr};
 use penumbra_asset::{
     asset::{self, AssetIdVar},
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
@@ -163,7 +163,7 @@ impl r1cs::ConstraintSynthesizer<Fq> for ConvertCircuit {
 impl DummyWitness for ConvertCircuit {
     fn with_dummy_witness() -> Self {
         let amount = Amount::from(1u64);
-        let balance_blinding = Fr::from(1);
+        let balance_blinding = Fr::from(1u64);
         let from = *STAKING_TOKEN_ASSET_ID;
         let to = *STAKING_TOKEN_ASSET_ID;
         let rate = U128x128::from(1u64);

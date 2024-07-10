@@ -4,8 +4,7 @@
 
 use std::convert::{TryFrom, TryInto};
 
-use ark_ff::UniformRand;
-use decaf377::{self, FieldExt};
+use decaf377::{self};
 use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroize;
 
@@ -57,7 +56,7 @@ impl Secret {
     /// Derive a public key for this secret key, using the conventional
     /// `decaf377` generator.
     pub fn public(&self) -> Public {
-        self.diversified_public(&decaf377::basepoint())
+        self.diversified_public(&decaf377::Element::GENERATOR)
     }
 
     /// Derive a diversified public key for this secret key, using the provided
@@ -138,7 +137,7 @@ impl TryFrom<&[u8]> for Secret {
 impl TryFrom<[u8; 32]> for Secret {
     type Error = Error;
     fn try_from(bytes: [u8; 32]) -> Result<Secret, Error> {
-        let x = decaf377::Fr::from_bytes(bytes).map_err(|_| Error::InvalidSecret)?;
+        let x = decaf377::Fr::from_bytes_checked(&bytes).map_err(|_| Error::InvalidSecret)?;
         Ok(Secret(x))
     }
 }

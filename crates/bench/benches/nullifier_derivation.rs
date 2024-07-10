@@ -41,7 +41,7 @@ fn nullifier_derivation_proving_time(c: &mut Criterion) {
         Rseed([1u8; 32]),
     )
     .expect("can make a note");
-    let nullifier = Nullifier(Fq::from(1));
+    let nullifier = Nullifier(Fq::from(1u64));
     let mut sct = tct::Tree::new();
     let note_commitment = note.commit();
     sct.insert(tct::Witness::Keep, note_commitment).unwrap();

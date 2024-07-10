@@ -138,10 +138,10 @@ cnidarium                        = { default-features = false, path = "crates/cn
 cnidarium-component              = { default-features = false, path = "crates/cnidarium-component" }
 cometindex                       = { path = "crates/util/cometindex" }
 criterion                        = { version = "0.4" }
-decaf377                         = { default-features = false, version = "0.5" }
+decaf377                         = { default-features = false, version = "0.10.1" }
 decaf377-fmd                     = { path = "crates/crypto/decaf377-fmd" }
 decaf377-ka                      = { path = "crates/crypto/decaf377-ka" }
-decaf377-rdsa                    = { version = "0.9" }
+decaf377-rdsa                    = { version = "0.11.0" }
 derivative                       = { version = "2.2" }
 directories                      = { version = "4.0.1" }
 ed25519-consensus                = { version = "2.1" }
@@ -199,7 +199,7 @@ penumbra-wallet                  = { path = "crates/wallet" }
 penumbra-extension               = { path = "crates/penumbra-extension", default-features = false }
 pin-project                      = { version = "1.0.12" }
 pin-project-lite                 = { version = "0.2.9" }
-poseidon377                      = { version = "0.6" }
+poseidon377                      = { version = "1.2.0" }
 proptest                         = { version = "1" }
 proptest-derive                  = { version = "0.3" }
 prost                            = { version = "0.12.3" }
@@ -240,6 +240,7 @@ tower-service                    = { version = "0.3.2" }
 tracing                          = { version = "0.1" }
 tracing-subscriber               = { version = "0.3.17", features = ["env-filter"] }
 url                              = { version = "2.2" }
+getrandom                        = { version = "0.2", default-features = false, features = ["js"] }
 
 # TODO(kate):
 # temporarily point these dependencies to a tag in the penumbra-zone fork.

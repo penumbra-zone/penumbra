@@ -1,6 +1,5 @@
-use ark_ff::UniformRand;
 use ark_ff::Zero;
-use decaf377::{FieldExt, Fq, Fr};
+use decaf377::{Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value};
 use penumbra_keys::FullViewingKey;
@@ -115,7 +114,7 @@ impl DelegatorVotePlan {
         let private = DelegatorVoteProofPrivate {
             state_commitment_proof,
             note: self.staked_note.clone(),
-            v_blinding: Fr::from(0),
+            v_blinding: Fr::from(0u64),
             spend_auth_randomizer: self.randomizer,
             ak: *fvk.spend_verification_key(),
             nk: *fvk.nullifier_key(),
@@ -198,14 +197,18 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
                 .ok_or_else(|| anyhow::anyhow!("missing unbonded amount in `DelegatorVotePlan`"))?
                 .try_into()?,
             position: value.staked_note_position.into(),
-            randomizer: Fr::from_bytes(
+            randomizer: Fr::from_bytes_checked(
                 value
                     .randomizer
+                    .as_slice()
                     .try_into()
                     .map_err(|_| anyhow::anyhow!("invalid randomizer"))?,
-            )?,
-            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
-            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
+            )
+            .expect("randomizer malformed"),
+            proof_blinding_r: Fq::from_bytes_checked(&proof_blinding_r_bytes)
+                .expect("proof_blinding_r malformed"),
+            proof_blinding_s: Fq::from_bytes_checked(&proof_blinding_s_bytes)
+                .expect("proof_blinding_s malformed"),
         })
     }
 }

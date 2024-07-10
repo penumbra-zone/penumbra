@@ -1,10 +1,10 @@
 use crate::Address;
-use ark_ff::{PrimeField, ToConstraintField};
+use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    Element, FieldExt, Fq,
+    Element, Fq,
 };
 
 #[derive(Clone)]
@@ -80,7 +80,7 @@ impl ToConstraintField<Fq> for Address {
             .vartime_decompress()
             .expect("transmission key is valid decaf377 Element");
         elements.extend([transmission_key_fq.vartime_compress_to_field()]);
-        elements.extend(Fq::from_bytes(self.clue_key().0));
+        elements.extend(Fq::from_bytes_checked(&self.clue_key().0));
         Some(elements)
     }
 }

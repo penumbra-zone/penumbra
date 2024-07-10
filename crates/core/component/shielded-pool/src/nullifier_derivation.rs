@@ -121,7 +121,7 @@ impl DummyWitness for NullifierDerivationCircuit {
             Rseed([1u8; 32]),
         )
         .expect("can make a note");
-        let nullifier = Nullifier(Fq::from(1));
+        let nullifier = Nullifier(Fq::from(1u64));
         let mut sct = tct::Tree::new();
         let note_commitment = note.commit();
         sct.insert(tct::Witness::Keep, note_commitment)
@@ -232,8 +232,6 @@ impl TryFrom<pb::ZkNullifierDerivationProof> for NullifierDerivationProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ff::PrimeField;
-
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_num::Amount;

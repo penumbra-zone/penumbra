@@ -9,7 +9,6 @@ use ark_r1cs_std::{
     ToBitsGadget,
 };
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use decaf377::FieldExt;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 
 use ark_ff::ToConstraintField;
@@ -225,7 +224,7 @@ impl DummyWitness for SpendCircuit {
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
 
-        let spend_auth_randomizer = Fr::from(1);
+        let spend_auth_randomizer = Fr::from(1u64);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
@@ -235,9 +234,9 @@ impl DummyWitness for SpendCircuit {
             Rseed([1u8; 32]),
         )
         .expect("can make a note");
-        let v_blinding = Fr::from(1);
+        let v_blinding = Fr::from(1u64);
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nullifier = Nullifier(Fq::from(1));
+        let nullifier = Nullifier(Fq::from(1u64));
         let mut sct = tct::Tree::new();
         let anchor: tct::Root = sct.root();
         let note_commitment = note.commit();
@@ -249,7 +248,7 @@ impl DummyWitness for SpendCircuit {
 
         let public = SpendProofPublic {
             anchor,
-            balance_commitment: balance::Commitment(decaf377::basepoint()),
+            balance_commitment: balance::Commitment(decaf377::Element::GENERATOR),
             nullifier,
             rk,
         };
@@ -399,13 +398,10 @@ mod tests {
     use penumbra_tct::StateCommitment;
     use proptest::prelude::*;
 
+    use crate::Note;
     use decaf377_rdsa::{SpendAuth, VerificationKey};
     use penumbra_tct as tct;
     use rand_core::OsRng;
-
-    use crate::Note;
-
-    use ark_ff::PrimeField;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()

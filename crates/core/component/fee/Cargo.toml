@@ -36,3 +36,6 @@ serde = {workspace = true, features = ["derive"]}
 tendermint = {workspace = true}
 tonic = {workspace = true, optional = true}
 tracing = {workspace = true}
+
+[dev-dependencies]
+getrandom = {workspace = true}

@@ -1,7 +1,6 @@
 //! Generating random values of various types.
 
-use ark_ed_on_bls12_377::Fq;
-use decaf377::FieldExt;
+use decaf377::Fq;
 use rand::{distributions::Distribution, Rng};
 
 use super::StateCommitment;
@@ -18,7 +17,7 @@ impl Distribution<Fq> for UniformFq {
         let mut bytes = [0u8; 32];
         loop {
             rng.fill_bytes(&mut bytes);
-            if let Ok(fq) = Fq::from_bytes(bytes) {
+            if let Ok(fq) = Fq::from_bytes_checked(&bytes) {
                 return fq;
             }
         }

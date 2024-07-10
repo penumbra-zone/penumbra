@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
 use crate::fixpoint::{bit_constrain, U128x128, U128x128Var};
-use decaf377::{r1cs::FqVar, FieldExt};
+use decaf377::r1cs::FqVar;
 
 #[derive(Serialize, Default, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 #[serde(try_from = "pb::Amount", into = "pb::Amount")]

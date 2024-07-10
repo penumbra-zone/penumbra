@@ -1,6 +1,5 @@
-use decaf377::FieldExt;
+use decaf377::Fq;
 use penumbra_proto::{penumbra::crypto::tct::v1 as pb, DomainType};
-use poseidon377::Fq;
 
 /// A commitment to a note or swap.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -78,7 +77,7 @@ impl TryFrom<pb::StateCommitment> for StateCommitment {
             .try_into()
             .map_err(|_| InvalidStateCommitment)?;
 
-        let inner = Fq::from_bytes(bytes).map_err(|_| InvalidStateCommitment)?;
+        let inner = Fq::from_bytes_checked(&bytes).map_err(|_| InvalidStateCommitment)?;
 
         Ok(StateCommitment(inner))
     }
@@ -109,7 +108,7 @@ impl TryFrom<[u8; 32]> for StateCommitment {
     type Error = InvalidStateCommitment;
 
     fn try_from(bytes: [u8; 32]) -> Result<StateCommitment, Self::Error> {
-        let inner = Fq::from_bytes(bytes).map_err(|_| InvalidStateCommitment)?;
+        let inner = Fq::from_bytes_checked(&bytes).map_err(|_| InvalidStateCommitment)?;
 
         Ok(StateCommitment(inner))
     }
@@ -122,7 +121,7 @@ impl TryFrom<&[u8]> for StateCommitment {
     fn try_from(slice: &[u8]) -> Result<StateCommitment, Self::Error> {
         let bytes: [u8; 32] = slice[..].try_into().map_err(|_| InvalidStateCommitment)?;
 
-        let inner = Fq::from_bytes(bytes).map_err(|_| InvalidStateCommitment)?;
+        let inner = Fq::from_bytes_checked(&bytes).map_err(|_| InvalidStateCommitment)?;
 
         Ok(StateCommitment(inner))
     }
@@ -133,8 +132,7 @@ pub use arbitrary::FqStrategy;
 
 #[cfg(feature = "arbitrary")]
 mod arbitrary {
-    use ark_ed_on_bls12_377::Fq;
-    use ark_ff::{BigInteger256, PrimeField};
+    use decaf377::Fq;
     use proptest::strategy::Strategy;
 
     use super::StateCommitment;
@@ -185,15 +183,11 @@ mod arbitrary {
                     *rng.sample(rand::distributions::Slice::new(&self.0).expect("empty vector")),
                 )
             } else {
-                let parts = [
-                    rng.next_u64(),
-                    rng.next_u64(),
-                    rng.next_u64(),
-                    rng.next_u64(),
-                ];
-                proptest::strategy::Just(decaf377::Fq::new(BigInteger256::new(parts)))
+                let mut bytes = [0u8; 32];
+                rng.fill_bytes(&mut bytes);
+                proptest::strategy::Just(decaf377::Fq::from_le_bytes_mod_order(&bytes))
             }
-            .prop_filter("bigger than modulus", |fq| fq.0 < Fq::MODULUS))
+            .prop_filter("impossible", |_| true))
         }
     }
 }

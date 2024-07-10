@@ -1,4 +1,3 @@
-use ark_ff::PrimeField;
 use blake2b_simd::{Params, State};
 use decaf377::Fr;
 
