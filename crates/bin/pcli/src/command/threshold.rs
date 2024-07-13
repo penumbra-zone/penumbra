@@ -1,19 +1,17 @@
 use anyhow::Result;
 use penumbra_custody::threshold::Terminal;
 
+use crate::threshold_network::{NetworkedTerminal, Role};
 use crate::{
     config::{CustodyConfig, GovernanceCustodyConfig},
     terminal::ActualTerminal,
     App,
 };
-use crate::threshold_network::{NetworkedTerminal, Role};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ThresholdCmd {
     /// Contribute to signing a transaction with threshold custody
-    Sign {
-        coordinator: bool
-    },
+    Sign { coordinator: bool },
 }
 
 impl ThresholdCmd {
@@ -46,7 +44,12 @@ impl ThresholdCmd {
                     true => Role::COORDINATOR,
                     false => Role::FOLLOWER,
                 };
-                let terminal = NetworkedTerminal::new(role, false, config.clone().expect("should have config").threshold()).await?;
+                let terminal = NetworkedTerminal::new(
+                    role,
+                    false,
+                    config.clone().expect("should have config").threshold(),
+                )
+                .await?;
 
                 penumbra_custody::threshold::follow(
                     config.as_ref(),

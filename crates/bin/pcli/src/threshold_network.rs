@@ -1,22 +1,22 @@
-use std::collections::VecDeque;
-use std::io;
-use std::str::FromStr;
-use std::sync::{Arc};
+use crate::terminal::{pretty_print_transaction_plan, read_password};
 use anyhow::Error;
-use tokio::sync::Mutex;
-use iroh_net::Endpoint;
 use iroh_net::endpoint::get_remote_node_id;
 use iroh_net::key::{PublicKey, SecretKey};
 use iroh_net::ticket::NodeTicket;
+use iroh_net::Endpoint;
+use penumbra_custody::threshold::{SigningRequest, Terminal};
+use penumbra_keys::FullViewingKey;
+use penumbra_proto::DomainType;
 use quinn::{Connection, SendStream};
 use serde::de::DeserializeOwned;
-use penumbra_keys::FullViewingKey;
-use tonic::async_trait;
-use penumbra_custody::threshold::{SigningRequest, Terminal};
-use crate::terminal::{pretty_print_transaction_plan, read_password};
+use std::collections::VecDeque;
+use std::io;
+use std::str::FromStr;
+use std::sync::Arc;
 use termion::{color, input::TermRead};
+use tokio::sync::Mutex;
+use tonic::async_trait;
 use tracing::instrument;
-use penumbra_proto::DomainType;
 
 pub const ALPN: &[u8] = b"PENUMBRATHRESHOLDV0";
 
@@ -25,7 +25,7 @@ pub const HANDSHAKE: [u8; 4] = *b"AQ=="; // (:
 #[derive(Debug, Clone)]
 pub enum Role {
     COORDINATOR,
-    FOLLOWER
+    FOLLOWER,
 }
 
 /// An implementation of the threshold custody Terminal abstraction, which uses a
@@ -68,7 +68,7 @@ impl NetworkedTerminal {
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         }
 
-        return Ok(Self{
+        return Ok(Self {
             fvk: None,
             endpoint,
             coordinator: Arc::new(Mutex::new(None)),
@@ -76,8 +76,8 @@ impl NetworkedTerminal {
             role,
             dkg,
             num_participants,
-            message_queue: Arc::new(Mutex::new(VecDeque::new()))
-        })
+            message_queue: Arc::new(Mutex::new(VecDeque::new())),
+        });
     }
 
     #[instrument]
@@ -92,16 +92,27 @@ impl NetworkedTerminal {
             Role::COORDINATOR => {
                 let mut followers = vec![];
                 let mut follower_keys = vec![];
-                for i in 0..self.num_participants-1 {
-                    println!("Enter follower ticket {}/{}: ", i+1, self.num_participants - 1);
+                for i in 0..self.num_participants - 1 {
+                    println!(
+                        "Enter follower ticket {}/{}: ",
+                        i + 1,
+                        self.num_participants - 1
+                    );
                     let mut input = String::new();
-                    let input = io::stdin().lock().read_line().expect("Failed to read line").map(|line| line.trim().to_string());
+                    let input = io::stdin()
+                        .lock()
+                        .read_line()
+                        .expect("Failed to read line")
+                        .map(|line| line.trim().to_string());
                     let input = input.ok_or(anyhow::anyhow!("empty ticket!"))?;
                     let ticket = NodeTicket::from_str(&input)?;
                     follower_keys.push(ticket.node_addr().node_id);
                 }
-                println!("Waiting for follower connections (give them the coordinator ticket, {})", short);
-                for i in 0..self.num_participants-1 {
+                println!(
+                    "Waiting for follower connections (give them the coordinator ticket, {})",
+                    short
+                );
+                for i in 0..self.num_participants - 1 {
                     loop {
                         let Some(connecting) = self.endpoint.accept().await else {
                             break;
@@ -118,7 +129,9 @@ impl NetworkedTerminal {
                         // Authenticate the remote node
                         let remote_node_id = get_remote_node_id(&connection)?;
                         if !follower_keys.contains(&remote_node_id) {
-                            return Err(anyhow::anyhow!("got a connection from an unauthenticated node"));
+                            return Err(anyhow::anyhow!(
+                                "got a connection from an unauthenticated node"
+                            ));
                         }
 
                         let (mut w, mut r) = connection.accept_bi().await?;
@@ -128,7 +141,11 @@ impl NetworkedTerminal {
 
                         followers.push(connection);
 
-                        println!("Connected to {}/{} followers", i+1, self.num_participants-1);
+                        println!(
+                            "Connected to {}/{} followers",
+                            i + 1,
+                            self.num_participants - 1
+                        );
 
                         break;
                     }
@@ -140,14 +157,23 @@ impl NetworkedTerminal {
 
             Role::FOLLOWER => {
                 println!("Enter a coordinator ticket: ");
-                let input = io::stdin().lock().read_line().expect("Failed to read line").map(|line| line.trim().to_string()).ok_or(anyhow::anyhow!("couldnt read input"))?;
+                let input = io::stdin()
+                    .lock()
+                    .read_line()
+                    .expect("Failed to read line")
+                    .map(|line| line.trim().to_string())
+                    .ok_or(anyhow::anyhow!("couldnt read input"))?;
 
                 let ticket = NodeTicket::from_str(&input)?;
 
                 println!("Connecting to coordinator...");
 
                 loop {
-                    let connection = match self.endpoint.connect(ticket.node_addr().clone(), ALPN).await {
+                    let connection = match self
+                        .endpoint
+                        .connect(ticket.node_addr().clone(), ALPN)
+                        .await
+                    {
                         Ok(connection) => connection,
                         Err(cause) => {
                             println!("error accepting connection: {}", cause);
@@ -164,6 +190,8 @@ impl NetworkedTerminal {
                     *c = Some(connection);
                     break;
                 }
+
+                println!("Connected to coordinator.");
             }
         }
 
@@ -173,7 +201,6 @@ impl NetworkedTerminal {
 
 #[async_trait]
 impl Terminal for NetworkedTerminal {
-
     // We received a new transaction request.
     async fn confirm_request(&self, request: &SigningRequest) -> anyhow::Result<bool> {
         if self.needs_connect().await {
@@ -196,7 +223,7 @@ impl Terminal for NetworkedTerminal {
         };
 
         println!("Press enter to continue");
-//        self.read_line_raw().await?;
+        //        self.read_line_raw().await?;
         Ok(true)
     }
 
@@ -217,12 +244,25 @@ impl Terminal for NetworkedTerminal {
 
         match self.role {
             Role::FOLLOWER => {
-                let mut s = self.coordinator.lock().await.clone().expect("should have coordinator").open_uni().await?;
+                let mut s = self
+                    .coordinator
+                    .lock()
+                    .await
+                    .clone()
+                    .expect("should have coordinator")
+                    .open_uni()
+                    .await?;
                 s.write_all(data.as_bytes()).await?;
                 s.finish().await?;
             }
             Role::COORDINATOR => {
-                for follower in self.followers.lock().await.clone().expect("should have followers") {
+                for follower in self
+                    .followers
+                    .lock()
+                    .await
+                    .clone()
+                    .expect("should have followers")
+                {
                     let mut s = follower.open_uni().await?;
                     s.write_all(data.as_bytes()).await?;
                     s.finish().await?;
@@ -240,7 +280,14 @@ impl Terminal for NetworkedTerminal {
 
         let res = match self.role {
             Role::FOLLOWER => {
-                let mut r = self.coordinator.lock().await.clone().expect("should have coordinator").accept_uni().await?;
+                let mut r = self
+                    .coordinator
+                    .lock()
+                    .await
+                    .clone()
+                    .expect("should have coordinator")
+                    .accept_uni()
+                    .await?;
                 let b = r.read_to_end(163844).await?;
 
                 let res = String::from_utf8(b)?;
@@ -255,7 +302,12 @@ impl Terminal for NetworkedTerminal {
                 }
 
                 // Queue is empty, read from all followers
-                let followers = self.followers.lock().await.clone().expect("should have followers");
+                let followers = self
+                    .followers
+                    .lock()
+                    .await
+                    .clone()
+                    .expect("should have followers");
 
                 for follower in followers.clone() {
                     let mut r = follower.accept_uni().await?;
@@ -277,10 +329,11 @@ impl Terminal for NetworkedTerminal {
                 }
 
                 // Return the first message or an error if none were read
-                queue.pop_front().ok_or_else(|| anyhow::anyhow!("No messages available from followers"))?
+                queue
+                    .pop_front()
+                    .ok_or_else(|| anyhow::anyhow!("No messages available from followers"))?
             }
         };
-
 
         Ok(res)
     }
@@ -288,5 +341,4 @@ impl Terminal for NetworkedTerminal {
     async fn get_password(&self) -> anyhow::Result<String> {
         read_password("Enter Password: ").await
     }
-
 }

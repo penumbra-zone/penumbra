@@ -1,21 +1,25 @@
-use std::{io::{stdin, IsTerminal as _, Read, Write}, io, str::FromStr};
-use std::io::BufRead;
 use anyhow::Result;
 use camino::Utf8PathBuf;
-use iroh_net::Endpoint;
 use iroh_net::key::SecretKey;
 use iroh_net::ticket::NodeTicket;
+use iroh_net::Endpoint;
 use penumbra_custody::threshold;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use rand_core::OsRng;
+use std::io::BufRead;
+use std::{
+    io,
+    io::{stdin, IsTerminal as _, Read, Write},
+    str::FromStr,
+};
 use termion::screen::IntoAlternateScreen;
 use url::Url;
 
+use crate::threshold_network::{NetworkedTerminal, Role, ALPN};
 use crate::{
     config::{CustodyConfig, GovernanceCustodyConfig, PcliConfig},
     terminal::ActualTerminal,
 };
-use crate::threshold_network::{ALPN, NetworkedTerminal, Role};
 
 #[derive(Debug, clap::Parser)]
 pub struct InitCmd {
@@ -337,9 +341,7 @@ impl InitCmd {
                     false => Role::FOLLOWER,
                 };
                 let terminal = NetworkedTerminal::new(role, true, *num_participants).await?;
-                let config =
-                    threshold::dkg(*threshold, *num_participants, &terminal)
-                        .await?;
+                let config = threshold::dkg(*threshold, *num_participants, &terminal).await?;
                 let fvk = config.fvk().clone();
                 let custody_config = if self.encrypted {
                     let password = ActualTerminal::get_confirmed_password().await?;
