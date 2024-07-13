@@ -19,7 +19,7 @@ use tonic::async_trait;
 
 use crate::transaction_view_ext::TransactionViewExt as _;
 
-async fn read_password(prompt: &str) -> Result<String> {
+pub async fn read_password(prompt: &str) -> Result<String> {
     fn get_possibly_empty_string(prompt: &str) -> Result<String> {
         // The `rpassword` crate doesn't support reading from stdin, so we check
         // for an interactive session. We must support non-interactive use cases,
@@ -39,7 +39,7 @@ async fn read_password(prompt: &str) -> Result<String> {
     Ok(string)
 }
 
-fn pretty_print_transaction_plan(
+pub fn pretty_print_transaction_plan(
     fvk: Option<FullViewingKey>,
     plan: &TransactionPlan,
 ) -> anyhow::Result<()> {

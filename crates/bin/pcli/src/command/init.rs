@@ -1,10 +1,10 @@
-use std::{
-    io::{stdin, IsTerminal as _, Read, Write},
-    str::FromStr,
-};
-
+use std::{io::{stdin, IsTerminal as _, Read, Write}, io, str::FromStr};
+use std::io::BufRead;
 use anyhow::Result;
 use camino::Utf8PathBuf;
+use iroh_net::Endpoint;
+use iroh_net::key::SecretKey;
+use iroh_net::ticket::NodeTicket;
 use penumbra_custody::threshold;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use rand_core::OsRng;
@@ -15,6 +15,7 @@ use crate::{
     config::{CustodyConfig, GovernanceCustodyConfig, PcliConfig},
     terminal::ActualTerminal,
 };
+use crate::threshold_network::{ALPN, NetworkedTerminal, Role};
 
 #[derive(Debug, clap::Parser)]
 pub struct InitCmd {
@@ -182,6 +183,9 @@ pub enum ThresholdInitCmd {
         /// The maximum number of signers that can make a signature
         #[clap(short, long)]
         num_participants: u16,
+        /// Whether this node is the coordinator for the DKG.
+        #[clap(short, long, action)]
+        coordinator: bool,
     },
 }
 
@@ -324,11 +328,17 @@ impl InitCmd {
                 InitSubCmd::Threshold(ThresholdInitCmd::Dkg {
                     threshold,
                     num_participants,
+                    coordinator,
                 }),
                 false,
             ) => {
+                let role = match coordinator {
+                    true => Role::COORDINATOR,
+                    false => Role::FOLLOWER,
+                };
+                let terminal = NetworkedTerminal::new(role, true, *num_participants).await?;
                 let config =
-                    threshold::dkg(*threshold, *num_participants, &ActualTerminal::default())
+                    threshold::dkg(*threshold, *num_participants, &terminal)
                         .await?;
                 let fvk = config.fvk().clone();
                 let custody_config = if self.encrypted {

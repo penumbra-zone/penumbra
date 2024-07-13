@@ -19,6 +19,7 @@ use penumbra_view::ViewServer;
 use std::io::IsTerminal as _;
 use tracing_subscriber::EnvFilter;
 use url::Url;
+use crate::threshold_network::{NetworkedTerminal, Role};
 
 #[derive(Debug, Parser)]
 #[clap(name = "pcli", about = "The Penumbra command-line interface.", version)]
@@ -82,11 +83,10 @@ impl Opt {
             }
             CustodyConfig::Threshold(config) => {
                 tracing::info!("using manual threshold custody service");
+                let terminal = NetworkedTerminal::new(Role::COORDINATOR, false, config.threshold()).await?;
                 let threshold_kms = penumbra_custody::threshold::Threshold::new(
                     config.clone(),
-                    ActualTerminal {
-                        fvk: Some(fvk.clone()),
-                    },
+                    terminal,
                 );
                 let custody_svc = CustodyServiceServer::new(threshold_kms);
                 CustodyServiceClient::new(box_grpc_svc::local(custody_svc))

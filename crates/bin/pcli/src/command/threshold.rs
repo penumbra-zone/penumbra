@@ -6,17 +6,20 @@ use crate::{
     terminal::ActualTerminal,
     App,
 };
+use crate::threshold_network::{NetworkedTerminal, Role};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ThresholdCmd {
     /// Contribute to signing a transaction with threshold custody
-    Sign,
+    Sign {
+        coordinator: bool
+    },
 }
 
 impl ThresholdCmd {
     pub fn offline(&self) -> bool {
         match self {
-            ThresholdCmd::Sign => true,
+            ThresholdCmd::Sign { .. } => true,
         }
     }
 
@@ -38,11 +41,17 @@ impl ThresholdCmd {
             _ => None,              // If not threshold, we can't sign using governance config
         };
         match self {
-            ThresholdCmd::Sign => {
+            ThresholdCmd::Sign { coordinator } => {
+                let role = match coordinator {
+                    true => Role::COORDINATOR,
+                    false => Role::FOLLOWER,
+                };
+                let terminal = NetworkedTerminal::new(role, false, config.clone().expect("should have config").threshold()).await?;
+
                 penumbra_custody::threshold::follow(
                     config.as_ref(),
                     governance_config.as_ref(),
-                    &ActualTerminal::default(),
+                    &terminal,
                 )
                 .await
             }

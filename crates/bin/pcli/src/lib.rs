@@ -21,6 +21,7 @@ pub mod warning;
 mod dex_utils;
 mod network;
 mod terminal;
+mod threshold_network;
 mod transaction_view_ext;
 
 const CONFIG_FILE_NAME: &str = "config.toml";

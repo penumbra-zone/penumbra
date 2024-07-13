@@ -104,6 +104,8 @@ termion = {workspace = true}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true, features = ["env-filter", "ansi"]}
 url = {workspace = true, features = ["serde"]}
+iroh-net = { version = "0.20" }
+quinn = { version = "0.10.5", package = "iroh-quinn" }
 
 [dev-dependencies]
 assert_cmd = {workspace = true}
