@@ -5811,6 +5811,7 @@ dependencies = [
  "cometindex",
  "penumbra-proto",
  "penumbra-shielded-pool",
+ "serde_json",
  "tokio",
 ]
 

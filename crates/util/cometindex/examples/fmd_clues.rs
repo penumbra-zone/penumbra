@@ -12,7 +12,11 @@ struct FmdCluesExample {}
 
 #[async_trait]
 impl AppView for FmdCluesExample {
-    async fn init_chain(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+    async fn init_chain(
+        &self,
+        dbtx: &mut PgTransaction,
+        _app_state: &serde_json::Value,
+    ) -> Result<(), anyhow::Error> {
         sqlx::query(
             "
 CREATE TABLE IF NOT EXISTS fmd_clues_example (
