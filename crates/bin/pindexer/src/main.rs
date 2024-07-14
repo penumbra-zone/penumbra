@@ -1,11 +1,11 @@
 use anyhow::Result;
-use pindexer::{shielded_pool::fmd::ClueSet, Indexer};
+use pindexer::{Indexer, IndexerExt as _};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     Indexer::new()
         .with_default_tracing()
-        .with_index(ClueSet {})
+        .with_default_penumbra_app_views()
         .run()
         .await?;
 

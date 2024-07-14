@@ -6,7 +6,11 @@ pub struct ClueSet {}
 
 #[async_trait]
 impl AppView for ClueSet {
-    async fn init_chain(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+    async fn init_chain(
+        &self,
+        dbtx: &mut PgTransaction,
+        _app_state: &serde_json::Value,
+    ) -> Result<(), anyhow::Error> {
         sqlx::query(
             // table name is module path + struct name
             "

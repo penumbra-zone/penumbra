@@ -22,6 +22,12 @@ use decaf377_rdsa::{SpendAuth, VerificationKeyBytes};
 #[serde(try_from = "pb::IdentityKey", into = "pb::IdentityKey")]
 pub struct IdentityKey(pub VerificationKeyBytes<SpendAuth>);
 
+impl IdentityKey {
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.0.into()
+    }
+}
+
 // IMPORTANT: Changing this implementation is state-breaking.
 impl std::str::FromStr for IdentityKey {
     type Err = anyhow::Error;

@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use anyhow::{Error, Result};
 use clap::Parser;
@@ -26,6 +26,10 @@ pub struct Options {
     /// The rate at which to poll for changes, in milliseconds.
     #[clap(short, long, default_value = "500", value_parser = parse_poll_ms)]
     pub poll_ms: Duration,
+
+    /// A file path for the genesis file to use when initializing the indexer.
+    #[clap(short, long)]
+    pub genesis_json: PathBuf,
 }
 
 /// Parses a string containing a [`Duration`], represented as a number of milliseconds.

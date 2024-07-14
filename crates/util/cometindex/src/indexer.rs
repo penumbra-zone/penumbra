@@ -1,6 +1,6 @@
 use std::pin::Pin;
 
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use clap::Parser;
 use futures::{Stream, StreamExt, TryStreamExt};
 use sqlx::PgPool;
@@ -33,10 +33,14 @@ impl Indexer {
         self
     }
 
-    async fn create_dst_tables(pool: &PgPool, indexes: &[Box<dyn AppView>]) -> Result<()> {
+    async fn create_dst_tables(
+        pool: &PgPool,
+        indexes: &[Box<dyn AppView>],
+        app_state: &serde_json::Value,
+    ) -> Result<()> {
         let mut dbtx = pool.begin().await?;
         for index in indexes {
-            index.init_chain(&mut dbtx).await?;
+            index.init_chain(&mut dbtx, app_state).await?;
         }
         dbtx.commit().await?;
         Ok(())
@@ -51,6 +55,7 @@ impl Indexer {
                     dst_database_url,
                     chain_id: _,
                     poll_ms,
+                    genesis_json,
                 },
             indexes,
         } = self;
@@ -58,12 +63,38 @@ impl Indexer {
         let src_db = PgPool::connect(&src_database_url).await?;
         let dst_db = PgPool::connect(&dst_database_url).await?;
 
-        Self::create_dst_tables(&dst_db, &indexes).await?;
+        // Check if the destination db is initialized
+        let dst_db_initialized: bool = sqlx::query_scalar(
+            "SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'index_watermark'
+        )",
+        )
+        .fetch_one(&dst_db)
+        .await?;
 
-        // Create the index_watermark table if it does not exist
-        sqlx::query("CREATE TABLE IF NOT EXISTS index_watermark (events_rowid BIGINT NOT NULL)")
-            .execute(&dst_db)
-            .await?;
+        if !dst_db_initialized {
+            tracing::info!("no watermark found, initializing with genesis data");
+
+            // Create the table if it doesn't exist
+            sqlx::query("CREATE TABLE index_watermark (events_rowid BIGINT NOT NULL)")
+                .execute(&dst_db)
+                .await?;
+
+            // Load the genesis JSON to be used populating initial tables
+            let genesis_content: serde_json::Value = serde_json::from_str(
+                &std::fs::read_to_string(genesis_json)
+                    .context("error reading provided genesis.json file")?,
+            )
+            .context("error parsing provided genesis.json file")?;
+            let app_state = genesis_content
+                .get("app_state")
+                .ok_or_else(|| anyhow::anyhow!("no app_state key in genesis.json"))?;
+
+            Self::create_dst_tables(&dst_db, &indexes, app_state).await?;
+        } else {
+            tracing::info!("skipping genesis initialization");
+        }
 
         loop {
             Self::tick(&src_db, &dst_db, &indexes).await?;

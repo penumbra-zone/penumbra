@@ -13,6 +13,12 @@ publish = false
 [dependencies]
 cometindex = {workspace = true}
 penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-stake = {workspace = true, default-features = false}
+penumbra-app = {workspace = true, default-features = false}
+penumbra-num = {workspace = true, default-features = false}
+penumbra-asset = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, default-features = false}
 tokio = {workspace = true, features = ["full"]}
 anyhow = {workspace = true}
+serde_json = {workspace = true}
+tracing = {workspace = true}
