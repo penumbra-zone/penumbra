@@ -8,5 +8,7 @@ impl IndexerExt for cometindex::Indexer {
             .with_index(crate::stake::ValidatorSet {})
             .with_index(crate::stake::Slashings {})
             .with_index(crate::stake::MissedBlocks {})
+            .with_index(crate::stake::DelegationTxs {})
+            .with_index(crate::stake::UndelegationTxs {})
     }
 }
