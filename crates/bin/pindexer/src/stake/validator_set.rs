@@ -41,6 +41,10 @@ impl AppView for ValidatorSet {
         .execute(dbtx.as_mut())
         .await?;
 
+        sqlx::query("CREATE UNIQUE INDEX idx_stake_validator_set_ik ON stake_validator_set(ik);")
+            .execute(dbtx.as_mut())
+            .await?;
+
         let app_state: penumbra_app::genesis::AppState =
             serde_json::from_value(app_state.clone()).context("error decoding app_state json")?;
 
