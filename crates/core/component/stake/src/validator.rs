@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_unit_struct::{Deserialize_unit_struct, Serialize_unit_struct};
 use serde_with::{serde_as, DisplayFromStr};
 
-use crate::{FundingStream, FundingStreams, GovernanceKey, IdentityKey};
+use crate::{DelegationToken, FundingStream, FundingStreams, GovernanceKey, IdentityKey};
 
 mod bonding;
 mod definition;
@@ -67,6 +67,12 @@ pub struct Validator {
     /// third party from replaying previously valid but stale configuration data
     /// as an update.
     pub sequence_number: u32,
+}
+
+impl Validator {
+    pub fn token(&self) -> DelegationToken {
+        DelegationToken::new(self.identity_key.clone())
+    }
 }
 
 #[serde_as]

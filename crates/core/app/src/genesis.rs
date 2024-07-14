@@ -23,6 +23,15 @@ pub enum AppState {
     Checkpoint(Vec<u8>),
 }
 
+impl AppState {
+    pub fn content(&self) -> Option<&Content> {
+        match self {
+            AppState::Content(content) => Some(content),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
 pub struct Content {

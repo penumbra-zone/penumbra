@@ -1,1 +1,3 @@
-pub mod validator_set;
+pub use validator_set::ValidatorSet;
+
+mod validator_set;

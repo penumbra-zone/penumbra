@@ -5809,10 +5809,15 @@ version = "0.79.0"
 dependencies = [
  "anyhow",
  "cometindex",
+ "penumbra-app",
+ "penumbra-asset",
+ "penumbra-num",
  "penumbra-proto",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "serde_json",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

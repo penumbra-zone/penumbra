@@ -2,7 +2,7 @@ use anyhow::Context;
 use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::params::StakeParameters;
+use crate::{params::StakeParameters, validator::Validator};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
