@@ -1,75 +1,83 @@
-CREATE TYPE proposal_stage AS ENUM ('VOTING', 'FINISHED');
-CREATE TYPE proposal_status AS ENUM ('VOTING', 'WITHDRAWN', 'FINISHED', 'CLAIMED');
-CREATE TYPE payload_type AS ENUM ('SIGNALING', 'EMERGENCY', 'PARAMETER_CHANGE', 'COMMUNITY_POOL_SPEND', 'UPGRADE_PLAN', 'FREEZE_IBC_CLIENT', 'UNFREEZE_IBC_CLIENT');
-CREATE TYPE vote_type AS ENUM ('ABSTAIN', 'YES', 'NO');
-CREATE TYPE proposal_outcome AS ENUM ('PASSED', 'FAILED', 'SLASHED');
-
+-- Governance Proposals Table
 CREATE TABLE governance_proposals (
-id SERIAL PRIMARY KEY,
-proposal_id INTEGER NOT NULL,
-title TEXT NOT NULL,
-description TEXT,
-payload_type payload_type NOT NULL,
-payload_data JSONB,
-start_block_height BIGINT,
-end_block_height BIGINT,
-start_position BIGINT,
-stage proposal_stage NOT NULL,
-status proposal_status NOT NULL,
-proposal_deposit_amount BIGINT,
-outcome proposal_outcome,
-is_withdrawn BOOLEAN DEFAULT FALSE,
-withdrawal_reason TEXT,
-CONSTRAINT check_proposal_id CHECK (proposal_id >= 0),
-CONSTRAINT check_start_block_height CHECK (start_block_height >= 0),
-CONSTRAINT check_end_block_height CHECK (end_block_height >= 0),
-CONSTRAINT check_start_position CHECK (start_position >= 0),
-CONSTRAINT check_proposal_deposit_amount CHECK (proposal_deposit_amount >= 0),
-CONSTRAINT check_withdrawal_consistency CHECK (
-    (is_withdrawn = TRUE AND withdrawal_reason IS NOT NULL) OR
-    (is_withdrawn = FALSE AND withdrawal_reason IS NULL)
-),
-CONSTRAINT check_proposal_outcome CHECK (
-    (stage = 'FINISHED' AND outcome IS NOT NULL) OR
-    (stage = 'VOTING' AND outcome IS NULL)
-),
-CONSTRAINT check_stage_status_consistency CHECK (
-    (stage = 'VOTING' AND status IN ('VOTING', 'WITHDRAWN')) OR
-    (stage = 'FINISHED' AND status IN ('FINISHED', 'CLAIMED'))
-),
-CONSTRAINT check_outcome_withdrawal_consistency CHECK (
-    (is_withdrawn = FALSE AND outcome = 'PASSED') OR
-    (is_withdrawn = TRUE AND (outcome != 'PASSED' OR outcome IS NULL))
-)
+    id SERIAL PRIMARY KEY,
+    -- The on-chain proposal ID
+    proposal_id INTEGER NOT NULL,
+    -- The proposal title
+    title TEXT NOT NULL,
+    -- The proposal description
+    description TEXT,
+    -- The kind of the proposal
+    kind TEXT NOT NULL,
+    -- The proposal payload
+    payload JSONB,
+    -- The height at which voting starts
+    start_block_height BIGINT,
+    -- The height at which voting ends
+    end_block_height BIGINT,
+    -- The position of the Tiered Commitment Tree at the start of the proposal
+    start_position BIGINT,
+    -- The status of the proposal
+    status TEXT NOT NULL,
+    -- The amount of the deposit which will be slashed if the proposal is rejected
+    proposal_deposit_amount BIGINT,
+    -- The outcome of the proposal (null if the proposal is still in progress)
+    outcome TEXT,
+    -- Whether the proposal has been withdrawn
+    withdrawn BOOLEAN DEFAULT FALSE,
+    -- The reason for the withdrawal (null if the proposal has not been withdrawn)
+    withdrawal_reason TEXT
 );
 
-CREATE TABLE validator_votes (
-id SERIAL PRIMARY KEY,
-proposal_id INTEGER NOT NULL,
-identity_key TEXT NOT NULL,
-vote vote_type NOT NULL,
-voting_power BIGINT NOT NULL,
-block_height BIGINT NOT NULL,
-FOREIGN KEY (proposal_id) REFERENCES governance_proposals(proposal_id),
-CONSTRAINT check_voting_power CHECK (voting_power >= 0),
-CONSTRAINT check_block_height CHECK (block_height >= 0)
+CREATE INDEX idx_governance_proposals_id ON governance_proposals(proposal_id);
+CREATE INDEX idx_governance_proposals_title ON governance_proposals(title text_pattern_ops);
+CREATE INDEX idx_governance_proposals_kind ON governance_proposals(kind);
+CREATE INDEX idx_governance_proposals_start_block_height ON governance_proposals(start_block_height DESC);
+CREATE INDEX idx_governance_proposals_end_block_height ON governance_proposals(end_block_height DESC);
+CREATE INDEX idx_governance_proposals_status ON governance_proposals(status);
+CREATE INDEX idx_governance_proposals_outcome ON governance_proposals(outcome);
+CREATE INDEX idx_governance_proposals_withdrawn ON governance_proposals(withdrawn);
+
+-- Validator Votes Table
+CREATE TABLE governance_validator_votes (
+    id SERIAL PRIMARY KEY,
+    -- The on-chain proposal ID
+    proposal_id INTEGER NOT NULL,
+    -- The identity key of the validator
+    identity_key TEXT NOT NULL,
+    -- The vote of the validator
+    vote TEXT NOT NULL,
+    -- The voting power of the validator
+    voting_power BIGINT NOT NULL,
+    -- The height at which the vote was cast
+    block_height BIGINT NOT NULL,
+    FOREIGN KEY (proposal_id) REFERENCES governance_proposals(proposal_id)
 );
 
-CREATE TABLE delegator_votes (
-id SERIAL PRIMARY KEY,
-proposal_id INTEGER NOT NULL,
-validator_identity_key TEXT NOT NULL,
-vote vote_type NOT NULL,
-voting_power BIGINT NOT NULL,
-block_height BIGINT NOT NULL,
-FOREIGN KEY (proposal_id) REFERENCES governance_proposals(proposal_id),
-CONSTRAINT check_voting_power CHECK (voting_power >= 0),
-CONSTRAINT check_block_height CHECK (block_height >= 0)
+CREATE INDEX idx_governance_validator_votes_proposal_id ON governance_validator_votes(proposal_id);
+CREATE INDEX idx_governance_validator_votes_identity_key ON governance_validator_votes(identity_key);
+CREATE INDEX idx_governance_validator_votes_vote ON governance_validator_votes(vote);
+CREATE INDEX idx_governance_validator_votes_voting_power ON governance_validator_votes(voting_power);
+CREATE INDEX idx_governance_validator_votes_block_height ON governance_validator_votes(block_height);
+
+-- Delegator Votes Table
+CREATE TABLE governance_delegator_votes (
+    id SERIAL PRIMARY KEY,
+    -- The on-chain proposal ID
+    proposal_id INTEGER NOT NULL,
+    -- The identity key of the validator to which the delegator is delegating
+    identity_key TEXT NOT NULL,
+    -- The vote of the delegator
+    vote TEXT NOT NULL,
+    -- The voting power of the delegator
+    voting_power BIGINT NOT NULL,
+    -- The height at which the vote was cast
+    block_height BIGINT NOT NULL,
+    FOREIGN KEY (proposal_id) REFERENCES governance_proposals(proposal_id)
 );
 
-CREATE TABLE current_block_height (
-height BIGINT NOT NULL
-);
-
-INSERT INTO current_block_height (height) VALUES (0)
-ON CONFLICT (height) DO NOTHING;
+CREATE INDEX idx_governance_delegator_votes_proposal_id ON governance_delegator_votes(proposal_id);
+CREATE INDEX idx_governance_delegator_votes_identity_key ON governance_delegator_votes(identity_key);
+CREATE INDEX idx_governance_delegator_votes_vote ON governance_delegator_votes(vote);
+CREATE INDEX idx_governance_delegator_votes_voting_power ON governance_delegator_votes(voting_power);
+CREATE INDEX idx_governance_delegator_votes_block_height ON governance_delegator_votes(block_height);

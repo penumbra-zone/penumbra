@@ -23,12 +23,6 @@ impl AppView for GovernanceProposals {
         sqlx::query(include_str!("governance/schema.sql"))
             .execute(dbtx.as_mut())
             .await?;
-
-        // TODO: If there are any governance-related genesis data, handle it here
-        // let app_state: penumbra_app::genesis::AppState =
-        //     serde_json::from_value(app_state.clone()).context("error decoding app_state json")?;
-        // add_genesis_proposals(dbtx, &app_state).await?;
-
         Ok(())
     }
 
@@ -151,37 +145,7 @@ async fn handle_proposal_submit(
     proposal: Proposal,
     block_height: u64,
 ) -> Result<()> {
-    use penumbra_governance::ProposalKind::*;
-    let payload_type = match proposal.kind() {
-        Signaling => "SIGNALING",
-        Emergency => "EMERGENCY",
-        ParameterChange => "PARAMETER_CHANGE",
-        CommunityPoolSpend => "COMMUNITY_POOL_SPEND",
-        UpgradePlan => "UPGRADE_PLAN",
-        FreezeIbcClient => "FREEZE_IBC_CLIENT",
-        UnfreezeIbcClient => "UNFREEZE_IBC_CLIENT",
-    };
-    let proposal_data =
-        serde_json::to_value(ProposalPayloadToml::from(proposal.payload)).expect("can serialize");
-    sqlx::query(
-        "INSERT INTO governance_proposals (
-            proposal_id, title, description, payload_type, payload_data,
-            start_block_height, stage, status
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-    )
-    .bind(proposal.id as i32)
-    .bind(&proposal.title)
-    .bind(&proposal.description)
-    .bind(payload_type)
-    .bind(proposal_data)
-    .bind(block_height as i64)
-    .bind("VOTING")
-    .bind("VOTING")
-    .execute(dbtx.as_mut())
-    .await?;
-
-    Ok(())
+    todo!()
 }
 
 async fn handle_delegator_vote(
@@ -190,28 +154,7 @@ async fn handle_delegator_vote(
     validator_identity_key: IdentityKey,
     block_height: u64,
 ) -> Result<()> {
-    let vote_body = vote.body;
-    let vote = match vote_body.vote {
-        Vote::Yes => "YES",
-        Vote::No => "NO",
-        Vote::Abstain => "ABSTAIN",
-    };
-
-    sqlx::query(
-        "INSERT INTO delegator_votes (
-            proposal_id, validator_identity_key, vote, voting_power, block_height
-        )
-        VALUES ($1, $2, $3, $4, $5)",
-    )
-    .bind(vote_body.proposal as i32)
-    .bind(validator_identity_key.to_string())
-    .bind(vote)
-    .bind(vote_body.unbonded_amount.value() as i64)
-    .bind(block_height as i64)
-    .execute(dbtx.as_mut())
-    .await?;
-
-    Ok(())
+    todo!()
 }
 
 async fn handle_validator_vote(
@@ -219,28 +162,7 @@ async fn handle_validator_vote(
     vote: ValidatorVote,
     block_height: u64,
 ) -> Result<()> {
-    let vote_body = vote.body;
-    let vote = match vote_body.vote {
-        Vote::Yes => "YES",
-        Vote::No => "NO",
-        Vote::Abstain => "ABSTAIN",
-    };
-
-    sqlx::query(
-        "INSERT INTO validator_votes (
-            proposal_id, identity_key, vote, voting_power, block_height
-        )
-        VALUES ($1, $2, $3, $4, $5)",
-    )
-    .bind(vote_body.proposal as i32)
-    .bind(&vote_body.identity_key.to_string())
-    .bind(vote)
-    .bind(0i64) // Voting power for validators is not included in the vote event
-    .bind(block_height as i64)
-    .execute(dbtx.as_mut())
-    .await?;
-
-    Ok(())
+    todo!()
 }
 
 async fn handle_proposal_withdraw(
@@ -248,111 +170,26 @@ async fn handle_proposal_withdraw(
     proposal_id: u64,
     reason: String,
 ) -> Result<()> {
-    sqlx::query(
-        "UPDATE governance_proposals
-        SET
-            status = $1,
-            is_withdrawn = $2,
-            withdrawal_reason = $3
-        WHERE proposal_id = $4",
-    )
-    .bind("WITHDRAWN")
-    .bind(true)
-    .bind(reason)
-    .bind(proposal_id as i32)
-    .execute(dbtx.as_mut())
-    .await?;
-
-    Ok(())
+    todo!()
 }
 
 async fn handle_proposal_passed(dbtx: &mut PgTransaction<'_>, proposal: Proposal) -> Result<()> {
-    sqlx::query(
-        "UPDATE governance_proposals
-        SET
-            stage = $1,
-            status = $2,
-            outcome = $3
-        WHERE proposal_id = $4",
-    )
-    .bind("FINISHED")
-    .bind("FINISHED")
-    .bind("PASSED")
-    .bind(proposal.id as i32)
-    .execute(dbtx.as_mut())
-    .await?;
-
-    Ok(())
+    todo!()
 }
 
 async fn handle_proposal_failed(dbtx: &mut PgTransaction<'_>, proposal: Proposal) -> Result<()> {
-    sqlx::query(
-        "UPDATE governance_proposals
-        SET
-            stage = $1,
-            status = $2,
-            outcome = $3
-        WHERE proposal_id = $4",
-    )
-    .bind("FINISHED")
-    .bind("FINISHED")
-    .bind("FAILED")
-    .bind(proposal.id as i32)
-    .execute(dbtx.as_mut())
-    .await?;
-
-    Ok(())
+    todo!()
 }
 
 async fn handle_proposal_slashed(dbtx: &mut PgTransaction<'_>, proposal: Proposal) -> Result<()> {
-    sqlx::query(
-        "UPDATE governance_proposals
-        SET
-            stage = $1,
-            status = $2,
-            outcome = $3
-        WHERE proposal_id = $4",
-    )
-    .bind("FINISHED")
-    .bind("FINISHED")
-    .bind("SLASHED")
-    .bind(proposal.id as i32)
-    .execute(dbtx.as_mut())
-    .await?;
-
-    Ok(())
+    todo!()
 }
 
 async fn handle_proposal_deposit_claim(
     dbtx: &mut PgTransaction<'_>,
     deposit_claim: ProposalDepositClaim,
 ) -> Result<()> {
-    sqlx::query(
-        "UPDATE governance_proposals
-        SET
-            status = $1
-        WHERE proposal_id = $2 AND status = $3",
-    )
-    .bind("CLAIMED")
-    .bind(deposit_claim.proposal as i32)
-    .bind("FINISHED")
-    .execute(dbtx.as_mut())
-    .await?;
-
-    // Check if the update was successful
-    if sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM governance_proposals WHERE proposal_id = $1 AND status = $2",
-    )
-    .bind(deposit_claim.proposal as i32)
-    .bind("CLAIMED")
-    .fetch_one(dbtx.as_mut())
-    .await?
-        == 0
-    {
-        anyhow::bail!("Failed to update proposal status to CLAIMED. The proposal might not exist or wasn't in the FINISHED state.");
-    }
-
-    Ok(())
+    todo!()
 }
 
 async fn handle_block_root(dbtx: &mut PgTransaction<'_>, height: u64) -> Result<()> {
