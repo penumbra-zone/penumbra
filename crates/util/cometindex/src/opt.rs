@@ -4,7 +4,7 @@ use anyhow::{Error, Result};
 use clap::Parser;
 
 /// This struct represents the command-line options
-#[derive(Debug, Parser)]
+#[derive(Clone, Debug, Parser)]
 #[clap(
     name = "cometindex",
     about = "processes raw events emitted by cometbft applications",
