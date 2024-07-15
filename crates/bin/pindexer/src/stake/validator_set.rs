@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use anyhow::{anyhow, Context, Result};
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction, PgPool};
 
 use penumbra_app::genesis::AppState;
 use penumbra_asset::asset;
@@ -68,6 +68,7 @@ impl AppView for ValidatorSet {
         &self,
         dbtx: &mut PgTransaction,
         event: &ContextualizedEvent,
+        _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         match event.event.kind.as_str() {
             "penumbra.core.component.stake.v1.EventValidatorDefinitionUpload" => {

@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction, PgPool};
 use penumbra_num::Amount;
 use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
 
@@ -54,6 +54,7 @@ impl AppView for DelegationTxs {
         &self,
         dbtx: &mut PgTransaction,
         event: &ContextualizedEvent,
+        _src_db: &PgPool,
     ) -> Result<()> {
         let pe = pb::EventDelegate::from_event(event.as_ref())?;
 
