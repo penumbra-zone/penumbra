@@ -323,17 +323,14 @@ message Proposal {
   }
 }
 
-// All the different kinds of proposals.
 enum ProposalKind {
-  // To make the linter happy
-  PROPOSAL_KIND_UNSPECIFIED = 0;
-  PROPOSAL_KIND_SIGNALING = 1;
-  PROPOSAL_KIND_EMERGENCY = 2;
-  PROPOSAL_KIND_PARAMETER_CHANGE = 3;
-  PROPOSAL_KIND_COMMUNITY_POOL_SPEND = 4;
-  PROPOSAL_KIND_UPGRADE_PLAN = 5;
-  PROPOSAL_KIND_FREEZE_IBC_CLIENT = 6;
-  PROPOSAL_KIND_UNFREEZE_IBC_CLIENT = 7;
+  SIGNALING = 0;
+  EMERGENCY = 1;
+  PARAMETER_CHANGE = 2;
+  COMMUNITY_POOL_SPEND = 3;
+  UPGRADE_PLAN = 4;
+  FREEZE_IBC_CLIENT = 5;
+  UNFREEZE_IBC_CLIENT = 6;
 }
 
 // Query operations for the governance component.
