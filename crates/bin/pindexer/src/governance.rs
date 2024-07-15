@@ -56,9 +56,9 @@ CREATE TABLE governance_proposals (
     -- The proposal description
     description TEXT,
     -- The kind of the proposal
-    kind JSONB NOT NULL,
+    kind JSONB NOT NULL, -- `ProposalKind`
     -- The proposal payload
-    payload JSONB,
+    payload JSONB, -- `ProposalPayloadToml` (misnomer, it's serialized as JSON but that's what the type is called)
     -- The height at which voting starts
     start_block_height BIGINT,
     -- The height at which voting ends
@@ -66,7 +66,7 @@ CREATE TABLE governance_proposals (
     -- The position of the Tiered Commitment Tree at the start of the proposal
     start_position BIGINT,
     -- The state of the proposal
-    state JSONB NOT NULL,
+    state JSONB NOT NULL, -- `proposal_state::State`
     -- The amount of the deposit which will be slashed if the proposal is rejected
     proposal_deposit_amount BIGINT,
     -- Whether the proposal has been withdrawn
@@ -91,7 +91,7 @@ CREATE TABLE governance_validator_votes (
     -- The identity key of the validator
     identity_key TEXT NOT NULL,
     -- The vote of the validator
-    vote JSONB NOT NULL,
+    vote JSONB NOT NULL, -- `Vote`
     -- The voting power of the validator
     voting_power BIGINT NOT NULL,
     -- The height at which the vote was cast
@@ -112,7 +112,7 @@ CREATE TABLE governance_delegator_votes (
     -- The identity key of the validator to which the delegator is delegating
     identity_key TEXT NOT NULL,
     -- The vote of the delegator
-    vote JSONB NOT NULL,
+    vote JSONB NOT NULL, -- `Vote`
     -- The voting power of the delegator
     voting_power BIGINT NOT NULL,
     -- The height at which the vote was cast
