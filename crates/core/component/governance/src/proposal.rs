@@ -242,12 +242,9 @@ impl From<ProposalKind> for pb::ProposalKind {
     }
 }
 
-impl TryFrom<pb::ProposalKind> for ProposalKind {
-    type Error = anyhow::Error;
-
-    fn try_from(kind: pb::ProposalKind) -> anyhow::Result<ProposalKind> {
-        let kind = match kind {
-            pb::ProposalKind::Unspecified => anyhow::bail!("unspecified proposal kind"),
+impl From<pb::ProposalKind> for ProposalKind {
+    fn from(kind: pb::ProposalKind) -> ProposalKind {
+        match kind {
             pb::ProposalKind::Signaling => ProposalKind::Signaling,
             pb::ProposalKind::Emergency => ProposalKind::Emergency,
             pb::ProposalKind::ParameterChange => ProposalKind::ParameterChange,
@@ -255,8 +252,7 @@ impl TryFrom<pb::ProposalKind> for ProposalKind {
             pb::ProposalKind::UpgradePlan => ProposalKind::UpgradePlan,
             pb::ProposalKind::FreezeIbcClient => ProposalKind::FreezeIbcClient,
             pb::ProposalKind::UnfreezeIbcClient => ProposalKind::UnfreezeIbcClient,
-        };
-        Ok(kind)
+        }
     }
 }
 
