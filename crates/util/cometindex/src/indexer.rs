@@ -1,7 +1,6 @@
 use std::pin::Pin;
 
 use anyhow::{Context as _, Result};
-use clap::Parser;
 use futures::{Stream, StreamExt, TryStreamExt};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tap::{Tap, TapFallible, TapOptional};
@@ -16,9 +15,9 @@ pub struct Indexer {
 }
 
 impl Indexer {
-    pub fn new() -> Self {
+    pub fn new(opts: Options) -> Self {
         Self {
-            opts: Options::parse(),
+            opts,
             indexes: Vec::new(),
         }
     }

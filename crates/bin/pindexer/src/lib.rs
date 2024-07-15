@@ -1,4 +1,4 @@
-pub use cometindex::{AppView, ContextualizedEvent, Indexer, PgTransaction, PgPool};
+pub use cometindex::{opt::Options, AppView, ContextualizedEvent, Indexer, PgPool, PgTransaction};
 
 mod indexer_ext;
 pub use indexer_ext::IndexerExt;

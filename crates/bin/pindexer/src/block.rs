@@ -1,6 +1,6 @@
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_proto::{core::component::sct::v1 as pb, event::ProtoEvent};
-use sqlx::types::chrono::DateTime;
+use sqlx::{types::chrono::DateTime, PgPool};
 
 #[derive(Debug)]
 pub struct Block {}
@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS block_details (
         &self,
         dbtx: &mut PgTransaction,
         event: &ContextualizedEvent,
+        _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         let pe = pb::EventBlockRoot::from_event(event.as_ref())?;
         let timestamp = pe.timestamp.expect("Block has no timestamp");
