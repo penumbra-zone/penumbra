@@ -46,88 +46,175 @@ impl AppView for GovernanceProposals {
         dbtx: &mut PgTransaction,
         _app_state: &serde_json::Value,
     ) -> Result<(), anyhow::Error> {
-        sqlx::query(r"
-CREATE TABLE governance_proposals (
-    id SERIAL PRIMARY KEY,
-    -- The on-chain proposal ID
-    proposal_id INTEGER NOT NULL,
-    -- The proposal title
-    title TEXT NOT NULL,
-    -- The proposal description
-    description TEXT,
-    -- The kind of the proposal
-    kind JSONB NOT NULL, -- `ProposalKind`
-    -- The proposal payload
-    payload JSONB, -- `ProposalPayloadToml` (misnomer, it's serialized as JSON but that's what the type is called)
-    -- The height at which voting starts
-    start_block_height BIGINT,
-    -- The height at which voting ends
-    end_block_height BIGINT,
-    -- The position of the Tiered Commitment Tree at the start of the proposal
-    start_position BIGINT,
-    -- The state of the proposal
-    state JSONB NOT NULL, -- `proposal_state::State`
-    -- The amount of the deposit which will be slashed if the proposal is rejected
-    proposal_deposit_amount BIGINT,
-    -- Whether the proposal has been withdrawn
-    withdrawn BOOLEAN DEFAULT FALSE,
-    -- The reason for the withdrawal (null if the proposal has not been withdrawn)
-    withdrawal_reason TEXT
-);
+        // Define table structures
+        let tables = vec![
+            (
+                "governance_proposals",
+                r"
+                id SERIAL PRIMARY KEY,
+                proposal_id INTEGER NOT NULL UNIQUE,
+                title TEXT NOT NULL,
+                description TEXT,
+                kind JSONB NOT NULL,
+                payload JSONB,
+                start_block_height BIGINT,
+                end_block_height BIGINT,
+                start_position BIGINT,
+                state JSONB NOT NULL,
+                proposal_deposit_amount BIGINT,
+                withdrawn BOOLEAN DEFAULT FALSE,
+                withdrawal_reason TEXT
+                ",
+            ),
+            (
+                "governance_validator_votes",
+                r"
+                id SERIAL PRIMARY KEY,
+                proposal_id INTEGER NOT NULL,
+                identity_key TEXT NOT NULL,
+                vote JSONB NOT NULL,
+                voting_power BIGINT NOT NULL,
+                block_height BIGINT NOT NULL,
+                FOREIGN KEY (proposal_id) REFERENCES governance_proposals(proposal_id)
+                ",
+            ),
+            (
+                "governance_delegator_votes",
+                r"
+                id SERIAL PRIMARY KEY,
+                proposal_id INTEGER NOT NULL,
+                identity_key TEXT NOT NULL,
+                vote JSONB NOT NULL,
+                voting_power BIGINT NOT NULL,
+                block_height BIGINT NOT NULL,
+                FOREIGN KEY (proposal_id) REFERENCES governance_proposals(proposal_id)
+                ",
+            ),
+        ];
 
-CREATE INDEX idx_governance_proposals_id ON governance_proposals(proposal_id);
-CREATE INDEX idx_governance_proposals_title ON governance_proposals(title text_pattern_ops);
-CREATE INDEX idx_governance_proposals_kind ON governance_proposals(kind);
-CREATE INDEX idx_governance_proposals_start_block_height ON governance_proposals(start_block_height DESC);
-CREATE INDEX idx_governance_proposals_end_block_height ON governance_proposals(end_block_height DESC);
-CREATE INDEX idx_governance_proposals_status ON governance_proposals(status);
-CREATE INDEX idx_governance_proposals_outcome ON governance_proposals(outcome);
-CREATE INDEX idx_governance_proposals_withdrawn ON governance_proposals(withdrawn);
+        // Define indexes
+        let indexes = vec![
+            (
+                "governance_proposals",
+                "proposal_id",
+                "idx_governance_proposals_id",
+            ),
+            (
+                "governance_proposals",
+                "title text_pattern_ops",
+                "idx_governance_proposals_title",
+            ),
+            (
+                "governance_proposals",
+                "kind",
+                "idx_governance_proposals_kind",
+            ),
+            (
+                "governance_proposals",
+                "start_block_height DESC",
+                "idx_governance_proposals_start_block_height",
+            ),
+            (
+                "governance_proposals",
+                "end_block_height DESC",
+                "idx_governance_proposals_end_block_height",
+            ),
+            (
+                "governance_proposals",
+                "state",
+                "idx_governance_proposals_state",
+            ),
+            (
+                "governance_proposals",
+                "withdrawn",
+                "idx_governance_proposals_withdrawn",
+            ),
+            (
+                "governance_validator_votes",
+                "proposal_id",
+                "idx_governance_validator_votes_proposal_id",
+            ),
+            (
+                "governance_validator_votes",
+                "identity_key",
+                "idx_governance_validator_votes_identity_key",
+            ),
+            (
+                "governance_validator_votes",
+                "vote",
+                "idx_governance_validator_votes_vote",
+            ),
+            (
+                "governance_validator_votes",
+                "voting_power",
+                "idx_governance_validator_votes_voting_power",
+            ),
+            (
+                "governance_validator_votes",
+                "block_height",
+                "idx_governance_validator_votes_block_height",
+            ),
+            (
+                "governance_delegator_votes",
+                "proposal_id",
+                "idx_governance_delegator_votes_proposal_id",
+            ),
+            (
+                "governance_delegator_votes",
+                "identity_key",
+                "idx_governance_delegator_votes_identity_key",
+            ),
+            (
+                "governance_delegator_votes",
+                "vote",
+                "idx_governance_delegator_votes_vote",
+            ),
+            (
+                "governance_delegator_votes",
+                "voting_power",
+                "idx_governance_delegator_votes_voting_power",
+            ),
+            (
+                "governance_delegator_votes",
+                "block_height",
+                "idx_governance_delegator_votes_block_height",
+            ),
+        ];
 
-CREATE TABLE governance_validator_votes (
-    id SERIAL PRIMARY KEY,
-    -- The on-chain proposal ID
-    proposal_id INTEGER NOT NULL,
-    -- The identity key of the validator
-    identity_key TEXT NOT NULL,
-    -- The vote of the validator
-    vote JSONB NOT NULL, -- `Vote`
-    -- The voting power of the validator
-    voting_power BIGINT NOT NULL,
-    -- The height at which the vote was cast
-    block_height BIGINT NOT NULL,
-    FOREIGN KEY (proposal_id) REFERENCES governance_proposals(proposal_id)
-);
+        async fn create_table(
+            dbtx: &mut PgTransaction<'_>,
+            table_name: &str,
+            structure: &str,
+        ) -> Result<()> {
+            let query = format!("CREATE TABLE IF NOT EXISTS {} ({})", table_name, structure);
+            sqlx::query(&query).execute(dbtx.as_mut()).await?;
+            Ok(())
+        }
 
-CREATE INDEX idx_governance_validator_votes_proposal_id ON governance_validator_votes(proposal_id);
-CREATE INDEX idx_governance_validator_votes_identity_key ON governance_validator_votes(identity_key);
-CREATE INDEX idx_governance_validator_votes_vote ON governance_validator_votes(vote);
-CREATE INDEX idx_governance_validator_votes_voting_power ON governance_validator_votes(voting_power);
-CREATE INDEX idx_governance_validator_votes_block_height ON governance_validator_votes(block_height);
+        async fn create_index(
+            dbtx: &mut PgTransaction<'_>,
+            table_name: &str,
+            column: &str,
+            index_name: &str,
+        ) -> Result<()> {
+            let query = format!(
+                "CREATE INDEX IF NOT EXISTS {} ON {}({})",
+                index_name, table_name, column
+            );
+            sqlx::query(&query).execute(dbtx.as_mut()).await?;
+            Ok(())
+        }
 
-CREATE TABLE governance_delegator_votes (
-    id SERIAL PRIMARY KEY,
-    -- The on-chain proposal ID
-    proposal_id INTEGER NOT NULL,
-    -- The identity key of the validator to which the delegator is delegating
-    identity_key TEXT NOT NULL,
-    -- The vote of the delegator
-    vote JSONB NOT NULL, -- `Vote`
-    -- The voting power of the delegator
-    voting_power BIGINT NOT NULL,
-    -- The height at which the vote was cast
-    block_height BIGINT NOT NULL,
-    FOREIGN KEY (proposal_id) REFERENCES governance_proposals(proposal_id)
-);
+        // Create tables
+        for (table_name, table_structure) in tables {
+            create_table(dbtx, table_name, table_structure).await?;
+        }
 
-CREATE INDEX idx_governance_delegator_votes_proposal_id ON governance_delegator_votes(proposal_id);
-CREATE INDEX idx_governance_delegator_votes_identity_key ON governance_delegator_votes(identity_key);
-CREATE INDEX idx_governance_delegator_votes_vote ON governance_delegator_votes(vote);
-CREATE INDEX idx_governance_delegator_votes_voting_power ON governance_delegator_votes(voting_power);
-CREATE INDEX idx_governance_delegator_votes_block_height ON governance_delegator_votes(block_height);
-            ")
-            .execute(dbtx.as_mut())
-            .await?;
+        // Create indexes
+        for (table_name, column, index_name) in indexes {
+            create_index(dbtx, table_name, column, index_name).await?;
+        }
+
         Ok(())
     }
 
@@ -454,17 +541,6 @@ async fn handle_proposal_deposit_claim(
     Ok(())
 }
 
-async fn handle_block_root(dbtx: &mut PgTransaction<'_>, height: u64) -> Result<()> {
-    sqlx::query(
-        "INSERT INTO current_block_height (height)
-         VALUES ($1)
-         ON CONFLICT (height) DO UPDATE
-         SET height = EXCLUDED.height
-         WHERE EXCLUDED.height > current_block_height.height",
-    )
-    .bind(height as i64)
-    .execute(dbtx.as_mut())
-    .await?;
-
+async fn handle_block_root(_dbtx: &mut PgTransaction<'_>, _height: u64) -> Result<()> {
     Ok(())
 }
