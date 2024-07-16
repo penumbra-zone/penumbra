@@ -1,5 +1,5 @@
 use anyhow::Result;
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction, PgPool};
+use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
 
 use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
 

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use anyhow::{anyhow, Context, Result};
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction, PgPool};
+use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
 
 use penumbra_app::genesis::AppState;
 use penumbra_asset::asset;
