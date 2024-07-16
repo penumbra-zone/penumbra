@@ -92,13 +92,6 @@ message EventAnchor {
   google.protobuf.Timestamp timestamp = 3;
 }
 
-// Event recording a block with its corresponding timestamp
-message EventBlockTimestamp {
-  uint64 height = 1;
-  google.protobuf.Timestamp timestamp = 2;
-}
-
-
 // Event recording an SCT epoch root.
 message EventEpochRoot {
   crypto.tct.v1.MerkleRoot root = 1;

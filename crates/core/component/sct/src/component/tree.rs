@@ -84,8 +84,10 @@ pub trait SctManager: StateWrite {
         // TODO: can we move this out to NV storage?
         self.put(state_key::tree::anchor_by_height(height), sct_anchor);
 
-        self.record_proto(event::anchor(height, sct_anchor, block_timestamp));
-        self.record_proto(event::block_root(height, block_root, block_timestamp));
+        self.record_proto(event::anchor(height, sct_anchor));
+        self.record_proto(event::block_root(height, block_root));
+        dbg!("BLOCK");
+        self.record_proto(event::block_timestamp(height, chrono::offset::Utc::now().timestamp()));
         // Only record an epoch root event if we are ending the epoch.
         if let Some(epoch_root) = epoch_root {
             let index = self
