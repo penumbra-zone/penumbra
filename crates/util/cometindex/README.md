@@ -1,4 +1,10 @@
+# pindexer
 
+To run `pindexer`, you will need to create two postgres databases: one for the raw data and one for the compiled data. The raw data is the data from CometBFT, while the compiled data is translated into schemas determined by `pindexer`.
+
+`pindexer` will read from the raw data database and write to the compiled data database, but doing so also requires a local database of ABCI events to be present. The most straightforward way to create such a database is by following the devnet instructions in the [Penumbra Guide].
+
+[Penumbra Guide]: https://guide.penumbra.zone/dev/devnet-quickstart.html
 
 # macos 
 
