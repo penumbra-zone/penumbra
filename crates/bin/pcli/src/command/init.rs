@@ -182,6 +182,16 @@ pub enum ThresholdInitCmd {
         /// The maximum number of signers that can make a signature
         #[clap(short, long)]
         num_participants: u16,
+    },
+    /// Generate a config file without using a trusted dealer, over authenticated P2P network channels
+    /// (using iroh.computer for direct p2p routing, with QUIC+TLS for encryption and authentication).
+    OnlineDkg {
+        /// The minimum number of signers required to make a signature (>= 2).
+        #[clap(short, long)]
+        threshold: u16,
+        /// The maximum number of signers that can make a signature
+        #[clap(short, long)]
+        num_participants: u16,
         /// Whether this node is the coordinator for the DKG.
         #[clap(short, long, action)]
         coordinator: bool,
@@ -327,6 +337,29 @@ impl InitCmd {
                 InitSubCmd::Threshold(ThresholdInitCmd::Dkg {
                     threshold,
                     num_participants,
+                }),
+                false,
+            ) => {
+                let config =
+                    threshold::dkg(*threshold, *num_participants, &ActualTerminal::default())
+                        .await?;
+                let fvk = config.fvk().clone();
+                let custody_config = if self.encrypted {
+                    let password = ActualTerminal::get_confirmed_password().await?;
+                    CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                        &password,
+                        penumbra_custody::encrypted::InnerConfig::Threshold(config),
+                    )?)
+                } else {
+                    CustodyConfig::Threshold(config)
+                };
+                (fvk, custody_config)
+            }
+            (
+                _,
+                InitSubCmd::Threshold(ThresholdInitCmd::OnlineDkg {
+                    threshold,
+                    num_participants,
                     coordinator,
                 }),
                 false,
@@ -345,7 +378,7 @@ impl InitCmd {
                         penumbra_custody::encrypted::InnerConfig::Threshold(config),
                     )?)
                 } else {
-                    CustodyConfig::Threshold(config)
+                    CustodyConfig::NetworkedThreshold(config)
                 };
                 (fvk, custody_config)
             }
