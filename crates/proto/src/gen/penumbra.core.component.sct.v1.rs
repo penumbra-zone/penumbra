@@ -239,6 +239,22 @@ impl ::prost::Name for EventAnchor {
         ::prost::alloc::format!("penumbra.core.component.sct.v1.{}", Self::NAME)
     }
 }
+/// Event recording a block with its corresponding timestamp
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBlockTimestamp {
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+    #[prost(message, optional, tag = "2")]
+    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+}
+impl ::prost::Name for EventBlockTimestamp {
+    const NAME: &'static str = "EventBlockTimestamp";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1.{}", Self::NAME)
+    }
+}
 /// Event recording an SCT epoch root.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
