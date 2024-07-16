@@ -54,14 +54,13 @@ impl AppView for GovernanceProposals {
                 id SERIAL PRIMARY KEY,
                 proposal_id INTEGER NOT NULL UNIQUE,
                 title TEXT NOT NULL,
-                description TEXT,
+                description TEXT NOT NULL,
                 kind JSONB NOT NULL,
                 payload JSONB,
-                start_block_height BIGINT,
-                end_block_height BIGINT,
-                start_position BIGINT,
+                start_block_height BIGINT NOT NULL,
+                end_block_height BIGINT NOT NULL,
                 state JSONB NOT NULL,
-                proposal_deposit_amount BIGINT,
+                proposal_deposit_amount BIGINT NOT NULL,
                 withdrawn BOOLEAN DEFAULT FALSE,
                 withdrawal_reason TEXT
                 ",
@@ -348,9 +347,9 @@ async fn handle_proposal_submit(
 ) -> Result<()> {
     sqlx::query(
         "INSERT INTO governance_proposals (
-            proposal_id, title, description, kind, payload, start_block_height, end_block_height, start_position, state, proposal_deposit_amount
+            proposal_id, title, description, kind, payload, start_block_height, end_block_height, state, proposal_deposit_amount
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (proposal_id) DO NOTHING",
     )
     .bind(proposal.id as i64)
