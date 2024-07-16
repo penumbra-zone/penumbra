@@ -83,6 +83,17 @@ impl Opt {
             }
             CustodyConfig::Threshold(config) => {
                 tracing::info!("using manual threshold custody service");
+                let threshold_kms = penumbra_custody::threshold::Threshold::new(
+                    config.clone(),
+                    ActualTerminal {
+                        fvk: Some(fvk.clone()),
+                    },
+                );
+                let custody_svc = CustodyServiceServer::new(threshold_kms);
+                CustodyServiceClient::new(box_grpc_svc::local(custody_svc))
+            }
+            CustodyConfig::NetworkedThreshold(config) => {
+                tracing::info!("using networked threshold custody service");
                 let terminal =
                     NetworkedTerminal::new(Role::COORDINATOR, false, config.threshold()).await?;
                 let threshold_kms =

@@ -11,7 +11,7 @@ use crate::{
 #[derive(Debug, clap::Subcommand)]
 pub enum ThresholdCmd {
     /// Contribute to signing a transaction with threshold custody
-    Sign { coordinator: bool },
+    Sign,
 }
 
 impl ThresholdCmd {
@@ -25,6 +25,7 @@ impl ThresholdCmd {
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         let config = match app.config.custody.clone() {
             CustodyConfig::Threshold(config) => Some(config),
+            CustodyConfig::NetworkedThreshold(config) => Some(config),
             CustodyConfig::Encrypted(config) => {
                 let password = ActualTerminal::default().get_password().await?;
                 config.convert_to_threshold(&password)?
@@ -38,26 +39,37 @@ impl ThresholdCmd {
             None => config.clone(), // If no governance config, use regular one
             _ => None,              // If not threshold, we can't sign using governance config
         };
-        match self {
-            ThresholdCmd::Sign { coordinator } => {
-                let role = match coordinator {
-                    true => Role::COORDINATOR,
-                    false => Role::FOLLOWER,
-                };
-                let terminal = NetworkedTerminal::new(
-                    role,
-                    false,
-                    config.clone().expect("should have config").threshold(),
-                )
-                .await?;
 
-                penumbra_custody::threshold::follow(
-                    config.as_ref(),
-                    governance_config.as_ref(),
-                    &terminal,
-                )
-                .await
-            }
+        match self {
+            ThresholdCmd::Sign => match app.config.custody.clone() {
+                CustodyConfig::NetworkedThreshold(_) => {
+                    let terminal = NetworkedTerminal::new(
+                        Role::FOLLOWER,
+                        false,
+                        config.clone().expect("should have config").threshold(),
+                    )
+                    .await?;
+                    penumbra_custody::threshold::follow(
+                        config.as_ref(),
+                        governance_config.as_ref(),
+                        &terminal,
+                    )
+                    .await
+                }
+                CustodyConfig::Threshold(_) => {
+                    penumbra_custody::threshold::follow(
+                        config.as_ref(),
+                        governance_config.as_ref(),
+                        &ActualTerminal::default(),
+                    )
+                    .await
+                }
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "cannot threshold sign transaction using a non-threshold custody backend"
+                    ));
+                }
+            },
         }
     }
 }

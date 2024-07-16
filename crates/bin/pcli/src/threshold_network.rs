@@ -1,22 +1,23 @@
-use crate::terminal::{pretty_print_transaction_plan, read_password};
-use anyhow::Error;
-use iroh_net::endpoint::get_remote_node_id;
-use iroh_net::key::{PublicKey, SecretKey};
-use iroh_net::ticket::NodeTicket;
-use iroh_net::Endpoint;
-use penumbra_custody::threshold::{SigningRequest, Terminal};
-use penumbra_keys::FullViewingKey;
-use penumbra_proto::DomainType;
-use quinn::{Connection, SendStream};
-use serde::de::DeserializeOwned;
 use std::collections::VecDeque;
 use std::io;
 use std::str::FromStr;
 use std::sync::Arc;
-use termion::{color, input::TermRead};
+
+use iroh_net::endpoint::get_remote_node_id;
+use iroh_net::key::SecretKey;
+use iroh_net::ticket::NodeTicket;
+use iroh_net::Endpoint;
+use quinn::Connection;
+use termion::color;
+use termion::input::TermRead;
 use tokio::sync::Mutex;
 use tonic::async_trait;
 use tracing::instrument;
+
+use penumbra_custody::threshold::{SigningRequest, Terminal};
+use penumbra_keys::FullViewingKey;
+
+use crate::terminal::{pretty_print_transaction_plan, read_password};
 
 pub const ALPN: &[u8] = b"PENUMBRATHRESHOLDV0";
 
@@ -98,7 +99,6 @@ impl NetworkedTerminal {
                         i + 1,
                         self.num_participants - 1
                     );
-                    let mut input = String::new();
                     let input = io::stdin()
                         .lock()
                         .read_line()
@@ -134,7 +134,7 @@ impl NetworkedTerminal {
                             ));
                         }
 
-                        let (mut w, mut r) = connection.accept_bi().await?;
+                        let (_, mut r) = connection.accept_bi().await?;
                         let mut buf = [0u8; HANDSHAKE.len()];
                         r.read_exact(&mut buf).await?;
                         anyhow::ensure!(buf == HANDSHAKE, "invalid handshake");
@@ -182,9 +182,8 @@ impl NetworkedTerminal {
                         }
                     };
 
-                    let (mut w, mut r) = connection.open_bi().await?;
+                    let (mut w, _) = connection.open_bi().await?;
                     w.write_all(&HANDSHAKE).await?;
-                    let mut buf = [0u8; HANDSHAKE.len()];
 
                     let mut c = self.coordinator.lock().await;
                     *c = Some(connection);
@@ -223,7 +222,7 @@ impl Terminal for NetworkedTerminal {
         };
 
         println!("Press enter to continue");
-        //        self.read_line_raw().await?;
+        io::stdin().lock().read_line()?;
         Ok(true)
     }
 

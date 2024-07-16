@@ -71,6 +71,8 @@ pub enum CustodyConfig {
     SoftKms(SoftKmsConfig),
     /// A manual threshold custody service.
     Threshold(ThresholdConfig),
+    /// A networked threshold custody service.
+    NetworkedThreshold(ThresholdConfig),
     /// An encrypted custody service.
     Encrypted(EncryptedConfig),
 }

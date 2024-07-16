@@ -1,21 +1,16 @@
 use anyhow::Result;
 use camino::Utf8PathBuf;
-use iroh_net::key::SecretKey;
-use iroh_net::ticket::NodeTicket;
-use iroh_net::Endpoint;
 use penumbra_custody::threshold;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use rand_core::OsRng;
-use std::io::BufRead;
 use std::{
-    io,
     io::{stdin, IsTerminal as _, Read, Write},
     str::FromStr,
 };
 use termion::screen::IntoAlternateScreen;
 use url::Url;
 
-use crate::threshold_network::{NetworkedTerminal, Role, ALPN};
+use crate::threshold_network::{NetworkedTerminal, Role};
 use crate::{
     config::{CustodyConfig, GovernanceCustodyConfig, PcliConfig},
     terminal::ActualTerminal,
@@ -391,6 +386,13 @@ impl InitCmd {
                         )?)
                     }
                     CustodyConfig::Threshold(c) => {
+                        let password = ActualTerminal::get_confirmed_password().await?;
+                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                            &password,
+                            penumbra_custody::encrypted::InnerConfig::Threshold(c),
+                        )?)
+                    }
+                    CustodyConfig::NetworkedThreshold(c) => {
                         let password = ActualTerminal::get_confirmed_password().await?;
                         CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
                             &password,
