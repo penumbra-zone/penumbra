@@ -67,12 +67,16 @@ trait Inner: StateWrite {
             (None, Vec::new())
         };
 
-        let fmd_parameters = if height == 0 {
-            Some(
-                self.get_current_fmd_parameters()
-                    .await
-                    .context("could not get FMD parameters")?,
-            )
+        let previous_fmd_params = self
+            .get_previous_fmd_parameters()
+            .await
+            .context("could not get FMD parameters")?;
+        let current_fmd_params = self
+            .get_current_fmd_parameters()
+            .await
+            .context("could not get FMD parameters")?;
+        let fmd_parameters = if previous_fmd_params != current_fmd_params {
+            Some(current_fmd_params)
         } else {
             None
         };
