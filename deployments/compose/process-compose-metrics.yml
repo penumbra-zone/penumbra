@@ -1,0 +1,47 @@
+---
+# A process-compose configuration for running a Prometheus/Grafana metrics setup for Penumbra,
+# scraping metrics endpoints for a localhost-based fullnode.
+version: "0.5"
+log_level: info
+is_strict: true
+
+processes:
+  # Run Grafana for displaying metrics in a web UI: http://localhost:3000
+  grafana:
+    command: |-
+      set -e
+      ./deployments/scripts/prep-grafana-env
+      export GF_PATHS_PROVISIONING=~/.penumbra/network_data/grafana/conf/provisioning
+      grafana server --homepath ~/.penumbra/network_data/grafana --config ./deployments/config/grafana/grafana.ini
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        scheme: http
+        path: "/"
+        port: 3000
+      initial_delay_seconds: 10
+      period_seconds: 5
+      failure_threshold: 3
+    availability:
+      restart: exit_on_failure
+    depends_on:
+      prometheus:
+        condition: process_healthy
+
+  # Run Prometheus for scraping local services: http://localhost:9090
+  prometheus:
+    command: |-
+      set -e
+      mkdir -p ~/.penumbra/network_data/prometheus
+      prometheus --config.file ./deployments/config/prometheus/prometheus.yml --storage.tsdb.path ~/.penumbra/network_data/prometheus
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        scheme: http
+        path: "/"
+        port: 9090
+      initial_delay_seconds: 10
+      period_seconds: 5
+      failure_threshold: 3
+    availability:
+      restart: exit_on_failure

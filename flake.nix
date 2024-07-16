@@ -8,7 +8,6 @@
       url = "github:oxalica/rust-overlay";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
       };
     };
     crane = {
@@ -110,12 +109,22 @@
             packages = [
               cargo-nextest
               cargo-watch
+              glibcLocales # for postgres initdb locale support
               cometbft
+              grafana
+              grpcurl
               just
+              mdbook
+              mdbook-katex
+              mdbook-mermaid
+              mdbook-linkcheck
               nix-prefetch-scripts
               postgresql
+              process-compose
+              prometheus
               protobuf
               rocksdb
+              rsync
             ];
             shellHook = ''
               export LIBCLANG_PATH=${LIBCLANG_PATH}

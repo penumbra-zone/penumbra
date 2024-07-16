@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Helper script to detect whether a Nix environment is active:
+# if not, warn the user to consult the dev docs for setting it up.
+# Useful for running in developer scripts as a sanity check.
+set -euo pipefail
+
+
+if [[ -z "${IN_NIX_SHELL:-}" ]] ; then
+    >&2 echo "WARNING: nix environment not active, dependencies may be missing. Did you forget to run 'nix develop'?"
+    >&2 printf '\tSee developer docs at https://guide.penumbra.zone for more info\n'
+    # Sleep to ensure warning is visible; presumably we're calling this script in dev tooling,
+    # immediately preceding a TUI-grabbing app like process-compose.
+    sleep_duration_seconds="5"
+    for i in $(seq 0 "$sleep_duration_seconds") ; do
+        printf '\rResuming script in %s... ' "$(( sleep_duration_seconds - i ))"
+        sleep 1
+    done
+    printf '\n'
+fi
