@@ -532,7 +532,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
                 // proposal start, minus the total voting power used by delegators to that validator
                 // who have voted. Their votes will be added back in below, re-assigning their
                 // voting power to their chosen votes.
-                let effective_power = power - delegator_tally.total();
+                let effective_power = power.saturating_sub(delegator_tally.total());
                 tally += (vote, effective_power).into();
             }
             // Add the delegator votes in, regardless of if the validator has voted.
