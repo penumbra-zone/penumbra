@@ -45,10 +45,10 @@ impl BankQuery for Server {
         let s = snapshot.prefix(state_key::denom_metadata_by_asset::prefix());
         let mut total_supply = s
             .filter_map(move |i: anyhow::Result<(String, Metadata)>| async move {
-                if i.is_err() {
-                    return Some(Err(i.context("bad denom in state").err().unwrap()));
-                }
-                let (_key, denom_metadata) = i.expect("should not be an error");
+                let (_key, denom_metadata) = match i {
+                    Ok(x) => x,
+                    Err(e) => return Some(Err(e).context("bad denom in state")),
+                };
 
                 // Return a hardcoded 0 supply for now
                 Some(Ok((denom_metadata, Amount::from(0u32))))
@@ -64,30 +64,28 @@ impl BankQuery for Server {
         let s = snapshot.prefix(ibc_state_key::ics20_value_balance::prefix());
         let ibc_amounts = s
             .filter_map(move |i: anyhow::Result<(String, Amount)>| async move {
-                if i.is_err() {
-                    return Some(Err(i.context("bad amount in state").err().unwrap()));
-                }
-                let (key, amount) = i.expect("should not be an error");
+                let (key, amount) = match i {
+                    Ok(x) => x,
+                    Err(e) => return Some(Err(e).context("bad amount in state")),
+                };
 
                 // Extract the asset ID from the key
                 let asset_id = key.split('/').last();
-                if asset_id.is_none() {
-                    return Some(Err(asset_id
-                        .context("bad IBC ics20 value balance key in state")
-                        .err()
-                        .unwrap()));
-                }
-                let asset_id = asset_id.expect("should not be an error");
+                let asset_id = match asset_id {
+                    Some(x) => x,
+                    None => return Some(None.context("bad IBC ics20 value balance key in state")),
+                };
 
                 // Parse the asset ID
                 let asset_id = asset_id.parse::<asset::Id>();
-                if asset_id.is_err() {
-                    return Some(Err(asset_id
-                        .context("invalid IBC ics20 value balance asset ID in state")
-                        .err()
-                        .unwrap()));
-                }
-                let asset_id = asset_id.expect("should not be an error");
+                let asset_id = match asset_id {
+                    Ok(x) => x,
+                    Err(e) => {
+                        return Some(
+                            Err(e).context("invalid IBC ics20 value balance asset ID in state"),
+                        )
+                    }
+                };
 
                 Some(Ok((asset_id, amount)))
             })

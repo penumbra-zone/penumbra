@@ -62,10 +62,10 @@ impl TransferQuery for Server {
         let s = snapshot.prefix(state_key::denom_metadata_by_asset::prefix());
         let denom_traces = s
             .filter_map(move |i: anyhow::Result<(String, Metadata)>| async move {
-                if i.is_err() {
-                    return Some(Err(i.context("bad denom in state").err().unwrap()));
-                }
-                let (_key, denom) = i.expect("should not be an error");
+                let (_key, denom) = match i {
+                    Ok(x) => x,
+                    Err(e) => return Some(Err(e).context("bad denom in state")),
+                };
 
                 // Convert the key to an IBC asset path
                 match denom.ibc_transfer_path() {
