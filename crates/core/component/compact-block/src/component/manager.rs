@@ -75,7 +75,7 @@ trait Inner: StateWrite {
             .get_current_fmd_parameters()
             .await
             .context("could not get FMD parameters")?;
-        let fmd_parameters = if previous_fmd_params != current_fmd_params {
+        let fmd_parameters = if previous_fmd_params != current_fmd_params || height == 0 {
             Some(current_fmd_params)
         } else {
             None
