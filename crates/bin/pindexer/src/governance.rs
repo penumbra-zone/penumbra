@@ -455,6 +455,7 @@ async fn handle_proposal_failed(dbtx: &mut PgTransaction<'_>, proposal: Proposal
          WHERE proposal_id = $1 AND withdrawn = TRUE
          LIMIT 1",
     )
+    .bind(proposal.id as i64)
     .fetch_optional(dbtx.as_mut())
     .await?;
     let withdrawn = proposal_state::Withdrawn::from(reason);
@@ -482,6 +483,7 @@ async fn handle_proposal_slashed(dbtx: &mut PgTransaction<'_>, proposal: Proposa
          WHERE proposal_id = $1 AND withdrawn = TRUE
          LIMIT 1",
     )
+    .bind(proposal.id as i64)
     .fetch_optional(dbtx.as_mut())
     .await?;
     let withdrawn = proposal_state::Withdrawn::from(reason);
