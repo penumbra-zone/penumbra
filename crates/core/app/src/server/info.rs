@@ -258,6 +258,7 @@ impl Info {
                     let id_chan = IdentifiedChannelEnd {
                         channel_id: chan_id,
                         port_id: PortId::transfer(),
+                        upgrade_sequence: channel.upgrade_sequence,
                         channel_end: channel,
                     };
                     channels.push(id_chan.into());
@@ -307,6 +308,7 @@ impl Info {
                         let id_chan = IdentifiedChannelEnd {
                             channel_id: chan_id,
                             port_id: PortId::transfer(),
+                            upgrade_sequence: channel.upgrade_sequence,
                             channel_end: channel,
                         };
                         channels.push(id_chan.into());

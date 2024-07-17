@@ -4,7 +4,8 @@ use async_trait::async_trait;
 use ibc_proto::ibc::core::channel::v1::query_server::Query as ConsensusQuery;
 use ibc_proto::ibc::core::channel::v1::{
     Channel, PacketState, QueryChannelClientStateRequest, QueryChannelClientStateResponse,
-    QueryChannelConsensusStateRequest, QueryChannelConsensusStateResponse, QueryChannelRequest,
+    QueryChannelConsensusStateRequest, QueryChannelConsensusStateResponse,
+    QueryChannelParamsRequest, QueryChannelParamsResponse, QueryChannelRequest,
     QueryChannelResponse, QueryChannelsRequest, QueryChannelsResponse,
     QueryConnectionChannelsRequest, QueryConnectionChannelsResponse,
     QueryNextSequenceReceiveRequest, QueryNextSequenceReceiveResponse,
@@ -14,6 +15,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketCommitmentResponse, QueryPacketCommitmentsRequest, QueryPacketCommitmentsResponse,
     QueryPacketReceiptRequest, QueryPacketReceiptResponse, QueryUnreceivedAcksRequest,
     QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
+    QueryUpgradeErrorRequest, QueryUpgradeErrorResponse, QueryUpgradeRequest, QueryUpgradeResponse,
 };
 use ibc_proto::ibc::core::client::v1::{Height, IdentifiedClientState};
 use ibc_types::path::{
@@ -111,6 +113,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
             let id_chan = IdentifiedChannelEnd {
                 channel_id: chan_id,
                 port_id: PortId::transfer(),
+                upgrade_sequence: channel.upgrade_sequence,
                 channel_end: channel,
             };
             channels.push(id_chan.into());
@@ -163,6 +166,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
                 let id_chan = IdentifiedChannelEnd {
                     channel_id: chan_id,
                     port_id: PortId::transfer(),
+                    upgrade_sequence: channel.upgrade_sequence,
                     channel_end: channel,
                 };
                 channels.push(id_chan.into());
@@ -748,6 +752,35 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
                 revision_number: 0,
                 revision_height: snapshot.version(),
             }),
+        }))
+    }
+
+    async fn upgrade_error(
+        &self,
+        _request: tonic::Request<QueryUpgradeErrorRequest>,
+    ) -> std::result::Result<tonic::Response<QueryUpgradeErrorResponse>, tonic::Status> {
+        Err(tonic::Status::unimplemented(
+            "penumbra chains do not currently support channel upgrades (see https://github.com/penumbra-zone/penumbra/issues/2985)"
+        ))
+    }
+
+    async fn upgrade(
+        &self,
+        _request: tonic::Request<QueryUpgradeRequest>,
+    ) -> std::result::Result<tonic::Response<QueryUpgradeResponse>, tonic::Status> {
+        Err(tonic::Status::unimplemented(
+            "penumbra chains do not currently support channel upgrades (see https://github.com/penumbra-zone/penumbra/issues/2985)"
+        ))
+    }
+
+    async fn channel_params(
+        &self,
+        _request: tonic::Request<QueryChannelParamsRequest>,
+    ) -> std::result::Result<tonic::Response<QueryChannelParamsResponse>, tonic::Status> {
+        Ok(tonic::Response::new(QueryChannelParamsResponse {
+            // This is only used to return a single param specifying the upgrade timeout.
+            // TODO: when upgrades are implemented, this will need to return the timeout duration.
+            params: None,
         }))
     }
 }

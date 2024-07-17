@@ -57,6 +57,8 @@ impl MsgHandler for MsgChannelOpenInit {
             remote: Counterparty::new(self.port_id_on_b.clone(), None),
             connection_hops: self.connection_hops_on_a.clone(),
             version: self.version_proposal.clone(),
+            // Penumbra does not currently support channel upgrades
+            upgrade_sequence: 0,
         };
 
         state.put_channel(&channel_id, &self.port_id_on_a, new_channel.clone());

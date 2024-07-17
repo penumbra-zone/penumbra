@@ -58,6 +58,8 @@ impl MsgHandler for MsgChannelOpenAck {
             remote: expected_counterparty,
             connection_hops: expected_connection_hops,
             version: self.version_on_b.clone(),
+            // Penumbra does not currently support channel upgrades
+            upgrade_sequence: 0,
         };
 
         state
