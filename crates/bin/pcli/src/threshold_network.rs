@@ -8,7 +8,6 @@ use iroh_net::key::SecretKey;
 use iroh_net::ticket::NodeTicket;
 use iroh_net::Endpoint;
 use quinn::Connection;
-use termion::color;
 use termion::input::TermRead;
 use tokio::sync::Mutex;
 use tonic::async_trait;
@@ -87,10 +86,13 @@ impl NetworkedTerminal {
         let mut short = node.clone();
         short.info.direct_addresses.clear();
         let short = NodeTicket::new(short)?;
-        println!("This node's ticket: {}", short);
 
         match self.role {
             Role::COORDINATOR => {
+                println!(
+                    "Running as coordinator. Give this ticket to followers: {}",
+                    short
+                );
                 let mut followers = vec![];
                 let mut follower_keys = vec![];
                 for i in 0..self.num_participants - 1 {
@@ -108,10 +110,6 @@ impl NetworkedTerminal {
                     let ticket = NodeTicket::from_str(&input)?;
                     follower_keys.push(ticket.node_addr().node_id);
                 }
-                println!(
-                    "Waiting for follower connections (give them the coordinator ticket, {})",
-                    short
-                );
                 for i in 0..self.num_participants - 1 {
                     loop {
                         let Some(connecting) = self.endpoint.accept().await else {
@@ -156,6 +154,10 @@ impl NetworkedTerminal {
             }
 
             Role::FOLLOWER => {
+                println!(
+                    "Running as follower. Give this ticket to coordinator: {}",
+                    short
+                );
                 println!("Enter a coordinator ticket: ");
                 let input = io::stdin()
                     .lock()
@@ -194,6 +196,12 @@ impl NetworkedTerminal {
             }
         }
 
+        if self.dkg {
+            println!("Connected! Running FROST dkg...");
+        } else {
+            println!("Connected! Running FROST signing...");
+        }
+
         return Ok(());
     }
 }
@@ -226,13 +234,7 @@ impl Terminal for NetworkedTerminal {
         Ok(true)
     }
 
-    fn explain(&self, msg: &str) -> anyhow::Result<()> {
-        println!(
-            "{}{}{}",
-            color::Fg(color::Blue),
-            msg,
-            color::Fg(color::Reset)
-        );
+    fn explain(&self, _: &str) -> anyhow::Result<()> {
         Ok(())
     }
 
@@ -253,6 +255,7 @@ impl Terminal for NetworkedTerminal {
                     .await?;
                 s.write_all(data.as_bytes()).await?;
                 s.finish().await?;
+                println!("Sent {} bytes to coordinator", data.len())
             }
             Role::COORDINATOR => {
                 for follower in self
@@ -265,6 +268,11 @@ impl Terminal for NetworkedTerminal {
                     let mut s = follower.open_uni().await?;
                     s.write_all(data.as_bytes()).await?;
                     s.finish().await?;
+                    println!(
+                        "Sent {} bytes to follower {}",
+                        data.len(),
+                        get_remote_node_id(&follower)?
+                    )
                 }
             }
         }
@@ -289,6 +297,8 @@ impl Terminal for NetworkedTerminal {
                     .await?;
                 let b = r.read_to_end(163844).await?;
 
+                println!("Received {} bytes from coordinator", b.len());
+
                 let res = String::from_utf8(b)?;
                 res
             }
@@ -311,6 +321,11 @@ impl Terminal for NetworkedTerminal {
                 for follower in followers.clone() {
                     let mut r = follower.accept_uni().await?;
                     let b = r.read_to_end(163844).await?;
+                    println!(
+                        "Received {} bytes from follower {}",
+                        b.len(),
+                        get_remote_node_id(&follower)?
+                    );
                     if let Ok(message) = String::from_utf8(b) {
                         queue.push_back(message.clone());
 
@@ -321,6 +336,11 @@ impl Terminal for NetworkedTerminal {
                                     let mut s = f2.open_uni().await?;
                                     s.write_all(message.as_bytes()).await?;
                                     s.finish().await?;
+                                    println!(
+                                        "Sent {} bytes to follower {}",
+                                        message.len(),
+                                        get_remote_node_id(&f2)?
+                                    );
                                 }
                             }
                         }
