@@ -28,7 +28,7 @@ ark-poly = { version = "0.4.2", default_features = false }
 ark-relations = {workspace = true}
 ark-serialize = {workspace = true}
 blake2b_simd = {workspace = true}
-decaf377 = {workspace = true, default-features = false}
+decaf377 = {workspace = true, default-features = true}
 penumbra-dex = {workspace = true, default-features = true}
 penumbra-governance = {workspace = true, default-features = true}
 penumbra-proof-params = {workspace = true, default-features = true}
