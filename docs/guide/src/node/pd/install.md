@@ -25,6 +25,7 @@ There's also a one-liner install script available on the release page, which wil
 ### Installing CometBFT
 
 You'll need to have [CometBFT installed](https://docs.cometbft.com/v0.37/guides/install) on your system to join your node to the testnet.
-You must use a specific version of CometBFT, `{{ #include ../../cometbft_version.md }}`, which you can download
-[from the CometBFT releases page](https://github.com/cometbft/cometbft/releases/tag/{{ #include ../../cometbft_version.md }}).
-If you prefer to compile from source instead, make sure you are compiling version `{{ #include ../../cometbft_version.md }}`.
+You must use a compatible version of CometBFT. Any version in the `v0.37.x` series will work, such as `{{ #include ../../cometbft_version.md }}`,
+which you can download [from the CometBFT releases page](https://github.com/cometbft/cometbft/releases/tag/{{ #include ../../cometbft_version.md }}).
+If you prefer to compile from source instead, make sure you are compiling the correct version by checking out its tag
+in the CometBFT repo before building.

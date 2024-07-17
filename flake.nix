@@ -23,10 +23,13 @@
         let
           # Define versions of Penumbra and CometBFT
           penumbraRelease = null; # Use the local working copy
+          # To update the cometbft hash values, run:
+          # nix-prefetch-git --url https://github.com/cometbft/cometbft --rev <tag>
+          # and review the output.
           cometBftRelease = {
-            version = "0.37.5";
-            sha256 = "sha256-wNVHsifieAtZgedavCEJLgG0kRDqUhG4Lk5ciTPoNzI=";
-            vendorHash = "sha256-JPEGMa0HDesEtKFvgLUP2UfTB0DlParepE2p+n06Igc=";
+            version = "0.37.9";
+            sha256 = "sha256-4LUdDlDog4kbiwyGo5fZEvtDXa6sIm+SKlSBWq1angc=";
+            vendorHash = "sha256-0iqI/Z8rqDyQ7JqSrsqA9kADqF6qZy8NxTDNjAYYHts=";
           };
 
           # Set up for Rust builds, pinned to the Rust toolchain version in the Penumbra repository
@@ -109,6 +112,7 @@
               cargo-watch
               cometbft
               just
+              nix-prefetch-scripts
               postgresql
               protobuf
               rocksdb
