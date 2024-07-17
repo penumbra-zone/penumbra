@@ -5,7 +5,7 @@ pub struct Block {}
 
 #[async_trait]
 impl AppView for Block {
-    async fn init_chain(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+    async fn init_chain(&self, dbtx: &mut PgTransaction, _: &serde_json::Value) -> Result<(), anyhow::Error> {
         sqlx::query(
             // table name is module path + struct name
             "
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS block_details (
     }
 
     fn is_relevant(&self, type_str: &str) -> bool {
-        type_str == "penumbra.core.component.sct.v1.EventBlockTimestamp.timestamp"
+        type_str == "penumbra.core.component.sct.v1.EventBlockRoot"
     }
 
     async fn index_event(

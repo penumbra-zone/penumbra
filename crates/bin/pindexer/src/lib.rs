@@ -4,5 +4,5 @@ mod indexer_ext;
 pub use indexer_ext::IndexerExt;
 
 pub mod shielded_pool;
-
 pub mod stake;
+pub mod block;
