@@ -229,6 +229,8 @@ pub struct EventAnchor {
     >,
     #[prost(uint64, tag = "2")]
     pub height: u64,
+    #[prost(message, optional, tag = "3")]
+    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
 }
 impl ::prost::Name for EventAnchor {
     const NAME: &'static str = "EventAnchor";
@@ -247,6 +249,8 @@ pub struct EventEpochRoot {
     >,
     #[prost(uint64, tag = "2")]
     pub index: u64,
+    #[prost(message, optional, tag = "3")]
+    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
 }
 impl ::prost::Name for EventEpochRoot {
     const NAME: &'static str = "EventEpochRoot";

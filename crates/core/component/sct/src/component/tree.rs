@@ -73,14 +73,27 @@ pub trait SctManager: StateWrite {
     ) {
         let sct_anchor = sct.root();
 
+        let block_time = self
+            .get_block_timestamp(height)
+            .await
+            .expect("failed trying to get timestamp for block");
+
         // Write the anchor as a key, so we can check claimed anchors...
         self.put_proto(state_key::tree::anchor_lookup(sct_anchor), height);
         // ... and as a value, so we can check SCT consistency.
         // TODO: can we move this out to NV storage?
         self.put(state_key::tree::anchor_by_height(height), sct_anchor);
 
-        self.record_proto(event::anchor(height, sct_anchor));
-        self.record_proto(event::block_root(height, block_root));
+        self.record_proto(event::anchor(
+            height,
+            sct_anchor,
+            block_time.unix_timestamp(),
+        ));
+        self.record_proto(event::block_root(
+            height,
+            block_root,
+            block_time.unix_timestamp(),
+        ));
         // Only record an epoch root event if we are ending the epoch.
         if let Some(epoch_root) = epoch_root {
             let index = self
@@ -88,7 +101,11 @@ pub trait SctManager: StateWrite {
                 .await
                 .expect("epoch must be set")
                 .index;
-            self.record_proto(event::epoch_root(index, epoch_root));
+            self.record_proto(event::epoch_root(
+                index,
+                epoch_root,
+                block_time.unix_timestamp(),
+            ));
         }
 
         self.write_sct_cache(sct);
@@ -238,4 +255,5 @@ pub trait VerificationExt: StateRead {
         Ok(())
     }
 }
+
 impl<T: StateRead + ?Sized> VerificationExt for T {}
