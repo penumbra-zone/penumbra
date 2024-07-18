@@ -44,7 +44,7 @@ pub trait SctRead: StateRead {
         self.get(&state_key::nullifier_set::spent_nullifier_lookup(
             &nullifier,
         ))
-        .await
+            .await
     }
 
     /// Return the set of nullifiers that have been spent in the current block.
@@ -72,11 +72,10 @@ pub trait SctManager: StateWrite {
         epoch_root: Option<epoch::Root>,
     ) {
         let sct_anchor = sct.root();
-
-        let block_time = self
-            .get_block_timestamp(height)
+        let block_timestamp = self
+            .get_current_block_timestamp()
             .await
-            .expect("failed trying to get timestamp for block");
+            .map(|t| t.unix_timestamp()).unwrap_or(0);
 
         // Write the anchor as a key, so we can check claimed anchors...
         self.put_proto(state_key::tree::anchor_lookup(sct_anchor), height);
@@ -87,12 +86,12 @@ pub trait SctManager: StateWrite {
         self.record_proto(event::anchor(
             height,
             sct_anchor,
-            block_time.unix_timestamp(),
+            block_timestamp,
         ));
         self.record_proto(event::block_root(
             height,
             block_root,
-            block_time.unix_timestamp(),
+            block_timestamp,
         ));
         // Only record an epoch root event if we are ending the epoch.
         if let Some(epoch_root) = epoch_root {
@@ -104,7 +103,7 @@ pub trait SctManager: StateWrite {
             self.record_proto(event::epoch_root(
                 index,
                 epoch_root,
-                block_time.unix_timestamp(),
+                block_timestamp,
             ));
         }
 
