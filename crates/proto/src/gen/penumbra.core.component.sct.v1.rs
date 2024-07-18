@@ -265,6 +265,8 @@ pub struct EventBlockRoot {
     >,
     #[prost(uint64, tag = "2")]
     pub height: u64,
+    #[prost(message, optional, tag = "3")]
+    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
 }
 impl ::prost::Name for EventBlockRoot {
     const NAME: &'static str = "EventBlockRoot";
