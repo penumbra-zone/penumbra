@@ -17,16 +17,10 @@ pub fn anchor(height: u64, anchor: tct::Root, timestamp: i64) -> pb::EventAnchor
     }
 }
 
-pub fn block_root(height: u64, root: block::Root) -> pb::EventBlockRoot {
+pub fn block_root(height: u64, root: block::Root, timestamp: i64) -> pb::EventBlockRoot {
     pb::EventBlockRoot {
         height,
         root: Some(root.into()),
-    }
-}
-
-pub fn block_timestamp(height: u64, timestamp: i64) -> pb::EventBlockTimestamp {
-    pb::EventBlockTimestamp {
-        height,
         timestamp: Some(Timestamp {
             seconds: timestamp,
             nanos: 0,
