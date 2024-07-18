@@ -1147,6 +1147,9 @@ impl serde::Serialize for EventAnchor {
         if self.height != 0 {
             len += 1;
         }
+        if self.timestamp.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.EventAnchor", len)?;
         if let Some(v) = self.anchor.as_ref() {
             struct_ser.serialize_field("anchor", v)?;
@@ -1154,6 +1157,9 @@ impl serde::Serialize for EventAnchor {
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
+        }
+        if let Some(v) = self.timestamp.as_ref() {
+            struct_ser.serialize_field("timestamp", v)?;
         }
         struct_ser.end()
     }
@@ -1167,12 +1173,14 @@ impl<'de> serde::Deserialize<'de> for EventAnchor {
         const FIELDS: &[&str] = &[
             "anchor",
             "height",
+            "timestamp",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Anchor,
             Height,
+            Timestamp,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1197,6 +1205,7 @@ impl<'de> serde::Deserialize<'de> for EventAnchor {
                         match value {
                             "anchor" => Ok(GeneratedField::Anchor),
                             "height" => Ok(GeneratedField::Height),
+                            "timestamp" => Ok(GeneratedField::Timestamp),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1218,6 +1227,7 @@ impl<'de> serde::Deserialize<'de> for EventAnchor {
             {
                 let mut anchor__ = None;
                 let mut height__ = None;
+                let mut timestamp__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Anchor => {
@@ -1234,6 +1244,12 @@ impl<'de> serde::Deserialize<'de> for EventAnchor {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::Timestamp => {
+                            if timestamp__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("timestamp"));
+                            }
+                            timestamp__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1242,6 +1258,7 @@ impl<'de> serde::Deserialize<'de> for EventAnchor {
                 Ok(EventAnchor {
                     anchor: anchor__,
                     height: height__.unwrap_or_default(),
+                    timestamp: timestamp__,
                 })
             }
         }
@@ -1262,6 +1279,9 @@ impl serde::Serialize for EventBlockRoot {
         if self.height != 0 {
             len += 1;
         }
+        if self.timestamp.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.EventBlockRoot", len)?;
         if let Some(v) = self.root.as_ref() {
             struct_ser.serialize_field("root", v)?;
@@ -1269,6 +1289,9 @@ impl serde::Serialize for EventBlockRoot {
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
+        }
+        if let Some(v) = self.timestamp.as_ref() {
+            struct_ser.serialize_field("timestamp", v)?;
         }
         struct_ser.end()
     }
@@ -1282,12 +1305,14 @@ impl<'de> serde::Deserialize<'de> for EventBlockRoot {
         const FIELDS: &[&str] = &[
             "root",
             "height",
+            "timestamp",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Root,
             Height,
+            Timestamp,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1312,6 +1337,7 @@ impl<'de> serde::Deserialize<'de> for EventBlockRoot {
                         match value {
                             "root" => Ok(GeneratedField::Root),
                             "height" => Ok(GeneratedField::Height),
+                            "timestamp" => Ok(GeneratedField::Timestamp),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1333,6 +1359,7 @@ impl<'de> serde::Deserialize<'de> for EventBlockRoot {
             {
                 let mut root__ = None;
                 let mut height__ = None;
+                let mut timestamp__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Root => {
@@ -1349,6 +1376,12 @@ impl<'de> serde::Deserialize<'de> for EventBlockRoot {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::Timestamp => {
+                            if timestamp__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("timestamp"));
+                            }
+                            timestamp__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1357,6 +1390,7 @@ impl<'de> serde::Deserialize<'de> for EventBlockRoot {
                 Ok(EventBlockRoot {
                     root: root__,
                     height: height__.unwrap_or_default(),
+                    timestamp: timestamp__,
                 })
             }
         }
@@ -1509,6 +1543,9 @@ impl serde::Serialize for EventEpochRoot {
         if self.index != 0 {
             len += 1;
         }
+        if self.timestamp.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.EventEpochRoot", len)?;
         if let Some(v) = self.root.as_ref() {
             struct_ser.serialize_field("root", v)?;
@@ -1516,6 +1553,9 @@ impl serde::Serialize for EventEpochRoot {
         if self.index != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("index", ToString::to_string(&self.index).as_str())?;
+        }
+        if let Some(v) = self.timestamp.as_ref() {
+            struct_ser.serialize_field("timestamp", v)?;
         }
         struct_ser.end()
     }
@@ -1529,12 +1569,14 @@ impl<'de> serde::Deserialize<'de> for EventEpochRoot {
         const FIELDS: &[&str] = &[
             "root",
             "index",
+            "timestamp",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Root,
             Index,
+            Timestamp,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1559,6 +1601,7 @@ impl<'de> serde::Deserialize<'de> for EventEpochRoot {
                         match value {
                             "root" => Ok(GeneratedField::Root),
                             "index" => Ok(GeneratedField::Index),
+                            "timestamp" => Ok(GeneratedField::Timestamp),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1580,6 +1623,7 @@ impl<'de> serde::Deserialize<'de> for EventEpochRoot {
             {
                 let mut root__ = None;
                 let mut index__ = None;
+                let mut timestamp__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Root => {
@@ -1596,6 +1640,12 @@ impl<'de> serde::Deserialize<'de> for EventEpochRoot {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::Timestamp => {
+                            if timestamp__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("timestamp"));
+                            }
+                            timestamp__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1604,6 +1654,7 @@ impl<'de> serde::Deserialize<'de> for EventEpochRoot {
                 Ok(EventEpochRoot {
                     root: root__,
                     index: index__.unwrap_or_default(),
+                    timestamp: timestamp__,
                 })
             }
         }

@@ -89,19 +89,23 @@ message EventCommitment {
 message EventAnchor {
   crypto.tct.v1.MerkleRoot anchor = 1;
   uint64 height = 2;
+  google.protobuf.Timestamp timestamp = 3;
 }
 
 // Event recording an SCT epoch root.
 message EventEpochRoot {
   crypto.tct.v1.MerkleRoot root = 1;
   uint64 index = 2;
+  google.protobuf.Timestamp timestamp = 3;
 }
 
 // Event recording an SCT block root.
 message EventBlockRoot {
   crypto.tct.v1.MerkleRoot root = 1;
   uint64 height = 2;
+  google.protobuf.Timestamp timestamp = 3;
 }
+
 message EpochByHeightRequest {
   uint64 height = 1;
 }
