@@ -121,7 +121,7 @@ git submodule update --init
 
 # Build snappy using cmake.
 mkdir build
-cd build && cmake .. && make
+cd build && cmake ../ -DSNAPPY_BUILD_BENCHMARKS=OFF && make
 
 # Add an environment variable pointing to the build/ directory.
 SNAPPY_LIB_DIR=`pwd`
