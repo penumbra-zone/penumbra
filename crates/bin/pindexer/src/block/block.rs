@@ -18,7 +18,7 @@ impl AppView for Block {
 CREATE TABLE IF NOT EXISTS block_details (
     id SERIAL PRIMARY KEY,
     root BYTEA NOT NULL,
-    height BYTEA NOT NULL,
+    height INT8 NOT NULL,
     timestamp TIMESTAMPTZ NOT NULL
 );
 ",
@@ -42,12 +42,13 @@ CREATE TABLE IF NOT EXISTS block_details (
 
         sqlx::query(
             "
-            INSERT INTO block_details (height, timestamp)
-            VALUES ($1, $2)
+            INSERT INTO block_details (height, timestamp, root)
+            VALUES ($1, $2, $3)
             ",
         )
-        .bind(&pe.height)
+        .bind(pe.height as i64)
         .bind(DateTime::from_timestamp(timestamp.seconds, timestamp.nanos as u32).unwrap())
+        .bind(pe.root.unwrap().inner)
         .execute(dbtx.as_mut())
         .await?;
 
