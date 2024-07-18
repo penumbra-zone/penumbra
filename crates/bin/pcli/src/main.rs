@@ -10,8 +10,8 @@ use pcli::{command::*, opt::Opt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Display a warning message to the user so they don't get upset when all their tokens are lost.
-    if std::env::var("PCLI_UNLEASH_DANGER").is_err() {
+    // Preserved for posterity and memory
+    if std::env::var("PCLI_DISPLAY_WARNING").is_ok() {
         pcli::warning::display();
     }
 
