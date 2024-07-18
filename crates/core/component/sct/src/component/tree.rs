@@ -44,7 +44,7 @@ pub trait SctRead: StateRead {
         self.get(&state_key::nullifier_set::spent_nullifier_lookup(
             &nullifier,
         ))
-            .await
+        .await
     }
 
     /// Return the set of nullifiers that have been spent in the current block.
@@ -75,7 +75,8 @@ pub trait SctManager: StateWrite {
         let block_timestamp = self
             .get_current_block_timestamp()
             .await
-            .map(|t| t.unix_timestamp()).unwrap_or(0);
+            .map(|t| t.unix_timestamp())
+            .unwrap_or(0);
 
         // Write the anchor as a key, so we can check claimed anchors...
         self.put_proto(state_key::tree::anchor_lookup(sct_anchor), height);
@@ -83,16 +84,8 @@ pub trait SctManager: StateWrite {
         // TODO: can we move this out to NV storage?
         self.put(state_key::tree::anchor_by_height(height), sct_anchor);
 
-        self.record_proto(event::anchor(
-            height,
-            sct_anchor,
-            block_timestamp,
-        ));
-        self.record_proto(event::block_root(
-            height,
-            block_root,
-            block_timestamp,
-        ));
+        self.record_proto(event::anchor(height, sct_anchor, block_timestamp));
+        self.record_proto(event::block_root(height, block_root, block_timestamp));
         // Only record an epoch root event if we are ending the epoch.
         if let Some(epoch_root) = epoch_root {
             let index = self
@@ -100,11 +93,7 @@ pub trait SctManager: StateWrite {
                 .await
                 .expect("epoch must be set")
                 .index;
-            self.record_proto(event::epoch_root(
-                index,
-                epoch_root,
-                block_timestamp,
-            ));
+            self.record_proto(event::epoch_root(index, epoch_root, block_timestamp));
         }
 
         self.write_sct_cache(sct);
