@@ -54,7 +54,7 @@
               };
               filter = path: type:
                 # Retain proving and verification parameters, and no-lfs marker file ...
-                (builtins.match ".*\.(no_lfs|param||bin)$" path != null) ||
+                (builtins.match ".*\.(no_lfs|param|bin)$" path != null) ||
                 # ... as well as all the normal cargo source files:
                 (craneLib.filterCargoSources path type);
             };
