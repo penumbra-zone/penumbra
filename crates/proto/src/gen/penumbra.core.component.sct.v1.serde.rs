@@ -9,8 +9,7 @@ impl serde::Serialize for AnchorByHeightRequest {
         if self.height != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer
-            .serialize_struct("penumbra.core.component.sct.v1.AnchorByHeightRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.AnchorByHeightRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
@@ -24,7 +23,9 @@ impl<'de> serde::Deserialize<'de> for AnchorByHeightRequest {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["height"];
+        const FIELDS: &[&str] = &[
+            "height",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -41,10 +42,7 @@ impl<'de> serde::Deserialize<'de> for AnchorByHeightRequest {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -70,12 +68,9 @@ impl<'de> serde::Deserialize<'de> for AnchorByHeightRequest {
                 formatter.write_str("struct penumbra.core.component.sct.v1.AnchorByHeightRequest")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<AnchorByHeightRequest, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AnchorByHeightRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut height__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -84,10 +79,9 @@ impl<'de> serde::Deserialize<'de> for AnchorByHeightRequest {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
                             }
-                            height__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -99,11 +93,7 @@ impl<'de> serde::Deserialize<'de> for AnchorByHeightRequest {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.AnchorByHeightRequest",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.AnchorByHeightRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for AnchorByHeightResponse {
@@ -117,8 +107,7 @@ impl serde::Serialize for AnchorByHeightResponse {
         if self.anchor.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer
-            .serialize_struct("penumbra.core.component.sct.v1.AnchorByHeightResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.AnchorByHeightResponse", len)?;
         if let Some(v) = self.anchor.as_ref() {
             struct_ser.serialize_field("anchor", v)?;
         }
@@ -131,7 +120,9 @@ impl<'de> serde::Deserialize<'de> for AnchorByHeightResponse {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["anchor"];
+        const FIELDS: &[&str] = &[
+            "anchor",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -148,10 +139,7 @@ impl<'de> serde::Deserialize<'de> for AnchorByHeightResponse {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -177,12 +165,9 @@ impl<'de> serde::Deserialize<'de> for AnchorByHeightResponse {
                 formatter.write_str("struct penumbra.core.component.sct.v1.AnchorByHeightResponse")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<AnchorByHeightResponse, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AnchorByHeightResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut anchor__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -198,14 +183,12 @@ impl<'de> serde::Deserialize<'de> for AnchorByHeightResponse {
                         }
                     }
                 }
-                Ok(AnchorByHeightResponse { anchor: anchor__ })
+                Ok(AnchorByHeightResponse {
+                    anchor: anchor__,
+                })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.AnchorByHeightResponse",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.AnchorByHeightResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for CommitmentSource {
@@ -219,8 +202,7 @@ impl serde::Serialize for CommitmentSource {
         if self.source.is_some() {
             len += 1;
         }
-        let mut struct_ser =
-            serializer.serialize_struct("penumbra.core.component.sct.v1.CommitmentSource", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.CommitmentSource", len)?;
         if let Some(v) = self.source.as_ref() {
             match v {
                 commitment_source::Source::Transaction(v) => {
@@ -279,10 +261,7 @@ impl<'de> serde::Deserialize<'de> for CommitmentSource {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -293,15 +272,9 @@ impl<'de> serde::Deserialize<'de> for CommitmentSource {
                     {
                         match value {
                             "transaction" => Ok(GeneratedField::Transaction),
-                            "ics20Transfer" | "ics_20_transfer" => {
-                                Ok(GeneratedField::Ics20Transfer)
-                            }
-                            "fundingStreamReward" | "funding_stream_reward" => {
-                                Ok(GeneratedField::FundingStreamReward)
-                            }
-                            "communityPoolOutput" | "community_pool_output" => {
-                                Ok(GeneratedField::CommunityPoolOutput)
-                            }
+                            "ics20Transfer" | "ics_20_transfer" => Ok(GeneratedField::Ics20Transfer),
+                            "fundingStreamReward" | "funding_stream_reward" => Ok(GeneratedField::FundingStreamReward),
+                            "communityPoolOutput" | "community_pool_output" => Ok(GeneratedField::CommunityPoolOutput),
                             "genesis" => Ok(GeneratedField::Genesis),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -319,8 +292,8 @@ impl<'de> serde::Deserialize<'de> for CommitmentSource {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<CommitmentSource, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut source__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -329,59 +302,48 @@ impl<'de> serde::Deserialize<'de> for CommitmentSource {
                             if source__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transaction"));
                             }
-                            source__ = map_
-                                .next_value::<::std::option::Option<_>>()?
-                                .map(commitment_source::Source::Transaction);
+                            source__ = map_.next_value::<::std::option::Option<_>>()?.map(commitment_source::Source::Transaction)
+;
                         }
                         GeneratedField::Ics20Transfer => {
                             if source__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("ics20Transfer"));
                             }
-                            source__ = map_
-                                .next_value::<::std::option::Option<_>>()?
-                                .map(commitment_source::Source::Ics20Transfer);
+                            source__ = map_.next_value::<::std::option::Option<_>>()?.map(commitment_source::Source::Ics20Transfer)
+;
                         }
                         GeneratedField::FundingStreamReward => {
                             if source__.is_some() {
-                                return Err(serde::de::Error::duplicate_field(
-                                    "fundingStreamReward",
-                                ));
+                                return Err(serde::de::Error::duplicate_field("fundingStreamReward"));
                             }
-                            source__ = map_
-                                .next_value::<::std::option::Option<_>>()?
-                                .map(commitment_source::Source::FundingStreamReward);
+                            source__ = map_.next_value::<::std::option::Option<_>>()?.map(commitment_source::Source::FundingStreamReward)
+;
                         }
                         GeneratedField::CommunityPoolOutput => {
                             if source__.is_some() {
-                                return Err(serde::de::Error::duplicate_field(
-                                    "communityPoolOutput",
-                                ));
+                                return Err(serde::de::Error::duplicate_field("communityPoolOutput"));
                             }
-                            source__ = map_
-                                .next_value::<::std::option::Option<_>>()?
-                                .map(commitment_source::Source::CommunityPoolOutput);
+                            source__ = map_.next_value::<::std::option::Option<_>>()?.map(commitment_source::Source::CommunityPoolOutput)
+;
                         }
                         GeneratedField::Genesis => {
                             if source__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("genesis"));
                             }
-                            source__ = map_
-                                .next_value::<::std::option::Option<_>>()?
-                                .map(commitment_source::Source::Genesis);
+                            source__ = map_.next_value::<::std::option::Option<_>>()?.map(commitment_source::Source::Genesis)
+;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
-                Ok(CommitmentSource { source: source__ })
+                Ok(CommitmentSource {
+                    source: source__,
+                })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.CommitmentSource", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for commitment_source::CommunityPoolOutput {
@@ -392,10 +354,7 @@ impl serde::Serialize for commitment_source::CommunityPoolOutput {
     {
         use serde::ser::SerializeStruct;
         let len = 0;
-        let struct_ser = serializer.serialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource.CommunityPoolOutput",
-            len,
-        )?;
+        let struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.CommitmentSource.CommunityPoolOutput", len)?;
         struct_ser.end()
     }
 }
@@ -405,7 +364,8 @@ impl<'de> serde::Deserialize<'de> for commitment_source::CommunityPoolOutput {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[];
+        const FIELDS: &[&str] = &[
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -421,10 +381,7 @@ impl<'de> serde::Deserialize<'de> for commitment_source::CommunityPoolOutput {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -433,7 +390,7 @@ impl<'de> serde::Deserialize<'de> for commitment_source::CommunityPoolOutput {
                     where
                         E: serde::de::Error,
                     {
-                        Ok(GeneratedField::__SkipField__)
+                            Ok(GeneratedField::__SkipField__)
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -444,29 +401,21 @@ impl<'de> serde::Deserialize<'de> for commitment_source::CommunityPoolOutput {
             type Value = commitment_source::CommunityPoolOutput;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str(
-                    "struct penumbra.core.component.sct.v1.CommitmentSource.CommunityPoolOutput",
-                )
+                formatter.write_str("struct penumbra.core.component.sct.v1.CommitmentSource.CommunityPoolOutput")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<commitment_source::CommunityPoolOutput, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<commitment_source::CommunityPoolOutput, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 while map_.next_key::<GeneratedField>()?.is_some() {
                     let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
-                Ok(commitment_source::CommunityPoolOutput {})
+                Ok(commitment_source::CommunityPoolOutput {
+                })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource.CommunityPoolOutput",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.CommitmentSource.CommunityPoolOutput", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for commitment_source::FundingStreamReward {
@@ -480,16 +429,10 @@ impl serde::Serialize for commitment_source::FundingStreamReward {
         if self.epoch_index != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource.FundingStreamReward",
-            len,
-        )?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.CommitmentSource.FundingStreamReward", len)?;
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field(
-                "epochIndex",
-                ToString::to_string(&self.epoch_index).as_str(),
-            )?;
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
         struct_ser.end()
     }
@@ -500,7 +443,10 @@ impl<'de> serde::Deserialize<'de> for commitment_source::FundingStreamReward {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["epoch_index", "epochIndex"];
+        const FIELDS: &[&str] = &[
+            "epoch_index",
+            "epochIndex",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -517,10 +463,7 @@ impl<'de> serde::Deserialize<'de> for commitment_source::FundingStreamReward {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -543,17 +486,12 @@ impl<'de> serde::Deserialize<'de> for commitment_source::FundingStreamReward {
             type Value = commitment_source::FundingStreamReward;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str(
-                    "struct penumbra.core.component.sct.v1.CommitmentSource.FundingStreamReward",
-                )
+                formatter.write_str("struct penumbra.core.component.sct.v1.CommitmentSource.FundingStreamReward")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<commitment_source::FundingStreamReward, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<commitment_source::FundingStreamReward, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut epoch_index__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -562,10 +500,9 @@ impl<'de> serde::Deserialize<'de> for commitment_source::FundingStreamReward {
                             if epoch_index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("epochIndex"));
                             }
-                            epoch_index__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -577,11 +514,7 @@ impl<'de> serde::Deserialize<'de> for commitment_source::FundingStreamReward {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource.FundingStreamReward",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.CommitmentSource.FundingStreamReward", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for commitment_source::Genesis {
@@ -592,10 +525,7 @@ impl serde::Serialize for commitment_source::Genesis {
     {
         use serde::ser::SerializeStruct;
         let len = 0;
-        let struct_ser = serializer.serialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource.Genesis",
-            len,
-        )?;
+        let struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.CommitmentSource.Genesis", len)?;
         struct_ser.end()
     }
 }
@@ -605,7 +535,8 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Genesis {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[];
+        const FIELDS: &[&str] = &[
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -621,10 +552,7 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Genesis {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -633,7 +561,7 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Genesis {
                     where
                         E: serde::de::Error,
                     {
-                        Ok(GeneratedField::__SkipField__)
+                            Ok(GeneratedField::__SkipField__)
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -644,28 +572,21 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Genesis {
             type Value = commitment_source::Genesis;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter
-                    .write_str("struct penumbra.core.component.sct.v1.CommitmentSource.Genesis")
+                formatter.write_str("struct penumbra.core.component.sct.v1.CommitmentSource.Genesis")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<commitment_source::Genesis, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<commitment_source::Genesis, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 while map_.next_key::<GeneratedField>()?.is_some() {
                     let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
-                Ok(commitment_source::Genesis {})
+                Ok(commitment_source::Genesis {
+                })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource.Genesis",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.CommitmentSource.Genesis", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for commitment_source::Ics20Transfer {
@@ -685,14 +606,10 @@ impl serde::Serialize for commitment_source::Ics20Transfer {
         if !self.sender.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource.Ics20Transfer",
-            len,
-        )?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.CommitmentSource.Ics20Transfer", len)?;
         if self.packet_seq != 0 {
             #[allow(clippy::needless_borrow)]
-            struct_ser
-                .serialize_field("packetSeq", ToString::to_string(&self.packet_seq).as_str())?;
+            struct_ser.serialize_field("packetSeq", ToString::to_string(&self.packet_seq).as_str())?;
         }
         if !self.channel_id.is_empty() {
             struct_ser.serialize_field("channelId", &self.channel_id)?;
@@ -734,10 +651,7 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Ics20Transfer {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -762,17 +676,12 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Ics20Transfer {
             type Value = commitment_source::Ics20Transfer;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str(
-                    "struct penumbra.core.component.sct.v1.CommitmentSource.Ics20Transfer",
-                )
+                formatter.write_str("struct penumbra.core.component.sct.v1.CommitmentSource.Ics20Transfer")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<commitment_source::Ics20Transfer, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<commitment_source::Ics20Transfer, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut packet_seq__ = None;
                 let mut channel_id__ = None;
@@ -783,10 +692,9 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Ics20Transfer {
                             if packet_seq__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("packetSeq"));
                             }
-                            packet_seq__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            packet_seq__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::ChannelId => {
                             if channel_id__.is_some() {
@@ -812,11 +720,7 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Ics20Transfer {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource.Ics20Transfer",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.CommitmentSource.Ics20Transfer", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for commitment_source::Transaction {
@@ -830,10 +734,7 @@ impl serde::Serialize for commitment_source::Transaction {
         if !self.id.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource.Transaction",
-            len,
-        )?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.CommitmentSource.Transaction", len)?;
         if !self.id.is_empty() {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("id", pbjson::private::base64::encode(&self.id).as_str())?;
@@ -847,7 +748,9 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Transaction {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["id"];
+        const FIELDS: &[&str] = &[
+            "id",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -864,10 +767,7 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Transaction {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -890,16 +790,12 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Transaction {
             type Value = commitment_source::Transaction;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter
-                    .write_str("struct penumbra.core.component.sct.v1.CommitmentSource.Transaction")
+                formatter.write_str("struct penumbra.core.component.sct.v1.CommitmentSource.Transaction")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<commitment_source::Transaction, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<commitment_source::Transaction, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut id__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -908,10 +804,9 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Transaction {
                             if id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("id"));
                             }
-                            id__ = Some(
-                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
-                                    .0,
-                            );
+                            id__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -923,11 +818,7 @@ impl<'de> serde::Deserialize<'de> for commitment_source::Transaction {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.CommitmentSource.Transaction",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.CommitmentSource.Transaction", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Epoch {
@@ -944,18 +835,14 @@ impl serde::Serialize for Epoch {
         if self.start_height != 0 {
             len += 1;
         }
-        let mut struct_ser =
-            serializer.serialize_struct("penumbra.core.component.sct.v1.Epoch", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.Epoch", len)?;
         if self.index != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("index", ToString::to_string(&self.index).as_str())?;
         }
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field(
-                "startHeight",
-                ToString::to_string(&self.start_height).as_str(),
-            )?;
+            struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -966,7 +853,11 @@ impl<'de> serde::Deserialize<'de> for Epoch {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["index", "start_height", "startHeight"];
+        const FIELDS: &[&str] = &[
+            "index",
+            "start_height",
+            "startHeight",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -984,10 +875,7 @@ impl<'de> serde::Deserialize<'de> for Epoch {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1015,8 +903,8 @@ impl<'de> serde::Deserialize<'de> for Epoch {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Epoch, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut index__ = None;
                 let mut start_height__ = None;
@@ -1026,19 +914,17 @@ impl<'de> serde::Deserialize<'de> for Epoch {
                             if index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("index"));
                             }
-                            index__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::StartHeight => {
                             if start_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("startHeight"));
                             }
-                            start_height__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            start_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -1051,11 +937,7 @@ impl<'de> serde::Deserialize<'de> for Epoch {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.Epoch",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.Epoch", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for EpochByHeightRequest {
@@ -1069,8 +951,7 @@ impl serde::Serialize for EpochByHeightRequest {
         if self.height != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer
-            .serialize_struct("penumbra.core.component.sct.v1.EpochByHeightRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.EpochByHeightRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
@@ -1084,7 +965,9 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightRequest {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["height"];
+        const FIELDS: &[&str] = &[
+            "height",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1101,10 +984,7 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightRequest {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1130,12 +1010,9 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightRequest {
                 formatter.write_str("struct penumbra.core.component.sct.v1.EpochByHeightRequest")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<EpochByHeightRequest, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EpochByHeightRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut height__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -1144,10 +1021,9 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightRequest {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
                             }
-                            height__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -1159,11 +1035,7 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightRequest {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.EpochByHeightRequest",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.EpochByHeightRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for EpochByHeightResponse {
@@ -1177,8 +1049,7 @@ impl serde::Serialize for EpochByHeightResponse {
         if self.epoch.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer
-            .serialize_struct("penumbra.core.component.sct.v1.EpochByHeightResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.EpochByHeightResponse", len)?;
         if let Some(v) = self.epoch.as_ref() {
             struct_ser.serialize_field("epoch", v)?;
         }
@@ -1191,7 +1062,9 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightResponse {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["epoch"];
+        const FIELDS: &[&str] = &[
+            "epoch",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1208,10 +1081,7 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightResponse {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1237,12 +1107,9 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightResponse {
                 formatter.write_str("struct penumbra.core.component.sct.v1.EpochByHeightResponse")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<EpochByHeightResponse, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EpochByHeightResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut epoch__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -1258,14 +1125,12 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightResponse {
                         }
                     }
                 }
-                Ok(EpochByHeightResponse { epoch: epoch__ })
+                Ok(EpochByHeightResponse {
+                    epoch: epoch__,
+                })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.EpochByHeightResponse",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.EpochByHeightResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for EventAnchor {
@@ -1285,8 +1150,7 @@ impl serde::Serialize for EventAnchor {
         if self.timestamp.is_some() {
             len += 1;
         }
-        let mut struct_ser =
-            serializer.serialize_struct("penumbra.core.component.sct.v1.EventAnchor", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.EventAnchor", len)?;
         if let Some(v) = self.anchor.as_ref() {
             struct_ser.serialize_field("anchor", v)?;
         }
@@ -1306,7 +1170,11 @@ impl<'de> serde::Deserialize<'de> for EventAnchor {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["anchor", "height", "timestamp"];
+        const FIELDS: &[&str] = &[
+            "anchor",
+            "height",
+            "timestamp",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1325,10 +1193,7 @@ impl<'de> serde::Deserialize<'de> for EventAnchor {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1357,8 +1222,8 @@ impl<'de> serde::Deserialize<'de> for EventAnchor {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventAnchor, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut anchor__ = None;
                 let mut height__ = None;
@@ -1375,10 +1240,9 @@ impl<'de> serde::Deserialize<'de> for EventAnchor {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
                             }
-                            height__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::Timestamp => {
                             if timestamp__.is_some() {
@@ -1398,11 +1262,7 @@ impl<'de> serde::Deserialize<'de> for EventAnchor {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.EventAnchor",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.EventAnchor", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for EventBlockRoot {
@@ -1422,8 +1282,7 @@ impl serde::Serialize for EventBlockRoot {
         if self.timestamp.is_some() {
             len += 1;
         }
-        let mut struct_ser =
-            serializer.serialize_struct("penumbra.core.component.sct.v1.EventBlockRoot", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.EventBlockRoot", len)?;
         if let Some(v) = self.root.as_ref() {
             struct_ser.serialize_field("root", v)?;
         }
@@ -1443,7 +1302,11 @@ impl<'de> serde::Deserialize<'de> for EventBlockRoot {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["root", "height", "timestamp"];
+        const FIELDS: &[&str] = &[
+            "root",
+            "height",
+            "timestamp",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1462,10 +1325,7 @@ impl<'de> serde::Deserialize<'de> for EventBlockRoot {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1494,8 +1354,8 @@ impl<'de> serde::Deserialize<'de> for EventBlockRoot {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventBlockRoot, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut root__ = None;
                 let mut height__ = None;
@@ -1512,10 +1372,9 @@ impl<'de> serde::Deserialize<'de> for EventBlockRoot {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
                             }
-                            height__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::Timestamp => {
                             if timestamp__.is_some() {
@@ -1535,11 +1394,7 @@ impl<'de> serde::Deserialize<'de> for EventBlockRoot {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.EventBlockRoot",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.EventBlockRoot", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for EventCommitment {
@@ -1559,8 +1414,7 @@ impl serde::Serialize for EventCommitment {
         if self.source.is_some() {
             len += 1;
         }
-        let mut struct_ser =
-            serializer.serialize_struct("penumbra.core.component.sct.v1.EventCommitment", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.EventCommitment", len)?;
         if let Some(v) = self.commitment.as_ref() {
             struct_ser.serialize_field("commitment", v)?;
         }
@@ -1580,7 +1434,11 @@ impl<'de> serde::Deserialize<'de> for EventCommitment {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["commitment", "position", "source"];
+        const FIELDS: &[&str] = &[
+            "commitment",
+            "position",
+            "source",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1599,10 +1457,7 @@ impl<'de> serde::Deserialize<'de> for EventCommitment {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1631,8 +1486,8 @@ impl<'de> serde::Deserialize<'de> for EventCommitment {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventCommitment, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut commitment__ = None;
                 let mut position__ = None;
@@ -1649,10 +1504,9 @@ impl<'de> serde::Deserialize<'de> for EventCommitment {
                             if position__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("position"));
                             }
-                            position__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            position__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::Source => {
                             if source__.is_some() {
@@ -1672,11 +1526,7 @@ impl<'de> serde::Deserialize<'de> for EventCommitment {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.EventCommitment",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.EventCommitment", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for EventEpochRoot {
@@ -1696,8 +1546,7 @@ impl serde::Serialize for EventEpochRoot {
         if self.timestamp.is_some() {
             len += 1;
         }
-        let mut struct_ser =
-            serializer.serialize_struct("penumbra.core.component.sct.v1.EventEpochRoot", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.EventEpochRoot", len)?;
         if let Some(v) = self.root.as_ref() {
             struct_ser.serialize_field("root", v)?;
         }
@@ -1717,7 +1566,11 @@ impl<'de> serde::Deserialize<'de> for EventEpochRoot {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["root", "index", "timestamp"];
+        const FIELDS: &[&str] = &[
+            "root",
+            "index",
+            "timestamp",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1736,10 +1589,7 @@ impl<'de> serde::Deserialize<'de> for EventEpochRoot {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1768,8 +1618,8 @@ impl<'de> serde::Deserialize<'de> for EventEpochRoot {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventEpochRoot, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut root__ = None;
                 let mut index__ = None;
@@ -1786,10 +1636,9 @@ impl<'de> serde::Deserialize<'de> for EventEpochRoot {
                             if index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("index"));
                             }
-                            index__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::Timestamp => {
                             if timestamp__.is_some() {
@@ -1809,11 +1658,7 @@ impl<'de> serde::Deserialize<'de> for EventEpochRoot {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.EventEpochRoot",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.EventEpochRoot", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GenesisContent {
@@ -1827,8 +1672,7 @@ impl serde::Serialize for GenesisContent {
         if self.sct_params.is_some() {
             len += 1;
         }
-        let mut struct_ser =
-            serializer.serialize_struct("penumbra.core.component.sct.v1.GenesisContent", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.GenesisContent", len)?;
         if let Some(v) = self.sct_params.as_ref() {
             struct_ser.serialize_field("sctParams", v)?;
         }
@@ -1841,7 +1685,10 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["sct_params", "sctParams"];
+        const FIELDS: &[&str] = &[
+            "sct_params",
+            "sctParams",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1858,10 +1705,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1888,8 +1732,8 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<GenesisContent, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut sct_params__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -1910,11 +1754,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.GenesisContent",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.GenesisContent", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for NullificationInfo {
@@ -1931,18 +1771,14 @@ impl serde::Serialize for NullificationInfo {
         if self.spend_height != 0 {
             len += 1;
         }
-        let mut struct_ser =
-            serializer.serialize_struct("penumbra.core.component.sct.v1.NullificationInfo", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.NullificationInfo", len)?;
         if !self.id.is_empty() {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("id", pbjson::private::base64::encode(&self.id).as_str())?;
         }
         if self.spend_height != 0 {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field(
-                "spendHeight",
-                ToString::to_string(&self.spend_height).as_str(),
-            )?;
+            struct_ser.serialize_field("spendHeight", ToString::to_string(&self.spend_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -1953,7 +1789,11 @@ impl<'de> serde::Deserialize<'de> for NullificationInfo {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["id", "spend_height", "spendHeight"];
+        const FIELDS: &[&str] = &[
+            "id",
+            "spend_height",
+            "spendHeight",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1971,10 +1811,7 @@ impl<'de> serde::Deserialize<'de> for NullificationInfo {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2002,8 +1839,8 @@ impl<'de> serde::Deserialize<'de> for NullificationInfo {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<NullificationInfo, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut id__ = None;
                 let mut spend_height__ = None;
@@ -2013,19 +1850,17 @@ impl<'de> serde::Deserialize<'de> for NullificationInfo {
                             if id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("id"));
                             }
-                            id__ = Some(
-                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
-                                    .0,
-                            );
+                            id__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::SpendHeight => {
                             if spend_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("spendHeight"));
                             }
-                            spend_height__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            spend_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -2038,11 +1873,7 @@ impl<'de> serde::Deserialize<'de> for NullificationInfo {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.NullificationInfo",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.NullificationInfo", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Nullifier {
@@ -2056,14 +1887,10 @@ impl serde::Serialize for Nullifier {
         if !self.inner.is_empty() {
             len += 1;
         }
-        let mut struct_ser =
-            serializer.serialize_struct("penumbra.core.component.sct.v1.Nullifier", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.Nullifier", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field(
-                "inner",
-                pbjson::private::base64::encode(&self.inner).as_str(),
-            )?;
+            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
     }
@@ -2074,7 +1901,9 @@ impl<'de> serde::Deserialize<'de> for Nullifier {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["inner"];
+        const FIELDS: &[&str] = &[
+            "inner",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -2091,10 +1920,7 @@ impl<'de> serde::Deserialize<'de> for Nullifier {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2121,8 +1947,8 @@ impl<'de> serde::Deserialize<'de> for Nullifier {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Nullifier, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -2131,10 +1957,9 @@ impl<'de> serde::Deserialize<'de> for Nullifier {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
-                            inner__ = Some(
-                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
-                                    .0,
-                            );
+                            inner__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -2146,11 +1971,7 @@ impl<'de> serde::Deserialize<'de> for Nullifier {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.Nullifier",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.Nullifier", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for SctParameters {
@@ -2164,14 +1985,10 @@ impl serde::Serialize for SctParameters {
         if self.epoch_duration != 0 {
             len += 1;
         }
-        let mut struct_ser =
-            serializer.serialize_struct("penumbra.core.component.sct.v1.SctParameters", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.SctParameters", len)?;
         if self.epoch_duration != 0 {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field(
-                "epochDuration",
-                ToString::to_string(&self.epoch_duration).as_str(),
-            )?;
+            struct_ser.serialize_field("epochDuration", ToString::to_string(&self.epoch_duration).as_str())?;
         }
         struct_ser.end()
     }
@@ -2182,7 +1999,10 @@ impl<'de> serde::Deserialize<'de> for SctParameters {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["epoch_duration", "epochDuration"];
+        const FIELDS: &[&str] = &[
+            "epoch_duration",
+            "epochDuration",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -2199,10 +2019,7 @@ impl<'de> serde::Deserialize<'de> for SctParameters {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2229,8 +2046,8 @@ impl<'de> serde::Deserialize<'de> for SctParameters {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<SctParameters, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut epoch_duration__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -2239,10 +2056,9 @@ impl<'de> serde::Deserialize<'de> for SctParameters {
                             if epoch_duration__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("epochDuration"));
                             }
-                            epoch_duration__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            epoch_duration__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -2254,11 +2070,7 @@ impl<'de> serde::Deserialize<'de> for SctParameters {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.SctParameters",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.SctParameters", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for TimestampByHeightRequest {
@@ -2272,10 +2084,7 @@ impl serde::Serialize for TimestampByHeightRequest {
         if self.height != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct(
-            "penumbra.core.component.sct.v1.TimestampByHeightRequest",
-            len,
-        )?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.TimestampByHeightRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
@@ -2289,7 +2098,9 @@ impl<'de> serde::Deserialize<'de> for TimestampByHeightRequest {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["height"];
+        const FIELDS: &[&str] = &[
+            "height",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -2306,10 +2117,7 @@ impl<'de> serde::Deserialize<'de> for TimestampByHeightRequest {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2332,16 +2140,12 @@ impl<'de> serde::Deserialize<'de> for TimestampByHeightRequest {
             type Value = TimestampByHeightRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter
-                    .write_str("struct penumbra.core.component.sct.v1.TimestampByHeightRequest")
+                formatter.write_str("struct penumbra.core.component.sct.v1.TimestampByHeightRequest")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<TimestampByHeightRequest, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TimestampByHeightRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut height__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -2350,10 +2154,9 @@ impl<'de> serde::Deserialize<'de> for TimestampByHeightRequest {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
                             }
-                            height__ = Some(
-                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
-                                    .0,
-                            );
+                            height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -2365,11 +2168,7 @@ impl<'de> serde::Deserialize<'de> for TimestampByHeightRequest {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.TimestampByHeightRequest",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.TimestampByHeightRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for TimestampByHeightResponse {
@@ -2383,10 +2182,7 @@ impl serde::Serialize for TimestampByHeightResponse {
         if self.timestamp.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct(
-            "penumbra.core.component.sct.v1.TimestampByHeightResponse",
-            len,
-        )?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.TimestampByHeightResponse", len)?;
         if let Some(v) = self.timestamp.as_ref() {
             struct_ser.serialize_field("timestamp", v)?;
         }
@@ -2399,7 +2195,9 @@ impl<'de> serde::Deserialize<'de> for TimestampByHeightResponse {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &["timestamp"];
+        const FIELDS: &[&str] = &[
+            "timestamp",
+        ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -2416,10 +2214,7 @@ impl<'de> serde::Deserialize<'de> for TimestampByHeightResponse {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(
-                        &self,
-                        formatter: &mut std::fmt::Formatter<'_>,
-                    ) -> std::fmt::Result {
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2442,16 +2237,12 @@ impl<'de> serde::Deserialize<'de> for TimestampByHeightResponse {
             type Value = TimestampByHeightResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter
-                    .write_str("struct penumbra.core.component.sct.v1.TimestampByHeightResponse")
+                formatter.write_str("struct penumbra.core.component.sct.v1.TimestampByHeightResponse")
             }
 
-            fn visit_map<V>(
-                self,
-                mut map_: V,
-            ) -> std::result::Result<TimestampByHeightResponse, V::Error>
-            where
-                V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TimestampByHeightResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
             {
                 let mut timestamp__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -2472,10 +2263,6 @@ impl<'de> serde::Deserialize<'de> for TimestampByHeightResponse {
                 })
             }
         }
-        deserializer.deserialize_struct(
-            "penumbra.core.component.sct.v1.TimestampByHeightResponse",
-            FIELDS,
-            GeneratedVisitor,
-        )
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1.TimestampByHeightResponse", FIELDS, GeneratedVisitor)
     }
 }
