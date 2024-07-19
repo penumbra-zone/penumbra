@@ -1,5 +1,5 @@
 use anyhow::Result;
-use pindexer::block::block::Block;
+use pindexer::block::Block;
 use pindexer::{Indexer, IndexerExt as _};
 
 #[tokio::main]
