@@ -176,18 +176,11 @@ There are other pairs available that you can try this tool on, for example `gm:g
 
 <!--
 N.B. These steps require a running Hermes deployment, specifically one that
-has been configured between the Osmosis testnet and the *current* Penumbra testnet.
+has been configured between the target counterparty network and some Penumbra network.
 -->
 
-Penumbra aims to implement full IBC support for cross-chain asset transfers. For now, however,
-we're only running a relayer between the Penumbra testnet and the [Osmosis testnet] chains.
-For Testnet 69 Deimos, the channel is `0`:
-
-<!--
-To update the information below, update the Hermes config, then run:
-`pcli q ibc channels` and confirm that output matches what Hermes emitted
-during setup.
--->
+Penumbra aims to implement full IBC support for cross-chain asset transfers. You can use a command
+like `pcli query ibc channels` to view the available channels:
 
 ```
 +------------+----------+--------------+-------------------------+-------+-----------------+---------------+
@@ -197,17 +190,15 @@ during setup.
 +------------+----------+--------------+-------------------------+-------+-----------------+---------------+
 ```
 
-You can see this yourself by running `pcli query ibc channels` and comparing the output you see
-with what's shown above. It's possible the output will include mention of other chains.
+You should see something comparable to the example output above. It's possible the output will include mention of other chains.
 
-The output above shows that the IBC channel id on Penumbra is 0, and on Osmosis it's 6105.
+The output above shows that the IBC channel id on Penumbra is 0, and on the [Osmosis testnet] it's 6105.
 To initiate an IBC withdrawal from Penumbra testnet to Osmosis testnet:
 
 ```bash
 pcli tx withdraw --to <OSMOSIS_ADDRESS> --channel <CHANNEL_ID> 5gm
 ```
 
-Unfortunately the CLI tooling for Osmosis is cumbersome. For now, use `hermes` as a user agent
-for the Osmosis testnet, as described in the [IBC dev docs](../dev/ibc.md).
+You should only use channels that you trust, otherwise transfers could fail, leading to loss of funds.
 
 [Osmosis testnet]: https://docs.osmosis.zone/overview/endpoints#testnet-networks
