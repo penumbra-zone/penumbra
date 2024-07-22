@@ -62,7 +62,7 @@
             buildInputs = if stdenv.hostPlatform.isDarwin then 
               with pkgs.darwin.apple_sdk.frameworks; [clang openssl rocksdb SystemConfiguration CoreServices]
             else
-              [clang openssl rocksdb SystemConfiguration CoreServices ];
+              [clang openssl rocksdb];
 
             inherit system PKG_CONFIG_PATH LIBCLANG_PATH ROCKSDB_LIB_DIR;
             cargoExtraArgs = "-p pd -p pcli -p pclientd";
