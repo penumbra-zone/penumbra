@@ -1,17 +1,7 @@
 # Metrics
 
 Metrics are an important part of observability, allowing us to understand what
-the Penumbra software is doing. Penumbra Labs runs Grafana instances for the public deployments:
-
-  * https://grafana.testnet.penumbra.zone
-  * https://grafana.testnet-preview.penumbra.zone
-
-There's a more comprehensive WIP dashboard, gated by basic auth for PL team:
-
-  * https://metrics.penumbra.zone
-
-Check the usual place for credentials. Eventually those views should be exported
-as public references.
+the Penumbra software is doing.
 
 ## Adding Metrics
 
@@ -69,15 +59,7 @@ we use for maintaining our dashboards.
 
 ## Editing metrics locally
 
-To facilitate working with metrics locally, first run a `pd` node on your machine with the metrics endpoint
-exposed. Then, you can spin up a metrics sidecar deployment:
+A minimal metrics setup will be automatically provisioned as part of the [devnet quickstart](./devnet-quickstart.md).
 
-```bash
-just metrics
-```
-
-Note that this setup only works on Linux hosts, due to the use of host networking, so the metrics
-containers can reach network ports on the host machine.
-
-To add new Grafana visualizations, open http://localhost:3000 and edit the existing dashboards.
-When you're happy with what you've got, follow the "Backing up Grafana" instructions above to save your work.
+To add new Grafana visualizations, open [http://127.0.0.1:3000](http://127.0.0.1:3000) and edit the existing dashboards.
+When you're happy with what you've got, follow the [Backing up Grafana](./metrics.md#backing-up-grafana) instructions above to save your work.

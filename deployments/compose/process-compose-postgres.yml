@@ -1,0 +1,76 @@
+---
+# A process-compose configuration for running a PostgreSQL database,
+# specifically for indexing ABCI events as emitted by CometBFT for Penumbra.
+version: "0.5"
+log_level: info
+is_strict: true
+
+processes:
+  # Run postgresql db process
+  postgresql:
+    command: |-
+      set -e
+      ./deployments/scripts/prep-postgres-env
+      postgres -k /tmp -D ~/.penumbra/network_data/postgresql/
+    readiness_probe:
+      exec:
+        command: psql -h localhost -p 5432 -lqt
+      initial_delay_seconds: 5
+      period_seconds: 5
+      failure_threshold: 3
+    shutdown:
+      # Send SIGINT rather than default SIGTERM to get faster postgres shutdown.
+      # More info: https://www.postgresql.org/docs/current/server-shutdown.html
+      # and `man 7 signal`.
+      signal: 2
+    availability:
+      restart: exit_on_failure
+
+  # Set up databases and initial schemas
+  postgresql-init:
+    command: |-
+      set -e
+      if psql -h localhost -p 5432 -lqt | grep penumbra_cometbft ; then
+        >&2 echo "Postgres DB already initialized, skipping schema/grants..."
+        exit 0
+      fi
+      >&2 echo "Creating database schema for CometBFT..."
+      # Create database for CometBFT writes
+      createdb -h localhost -p 5432 penumbra_cometbft || true
+      createuser -h localhost -p 5432 penumbra
+      psql -h localhost -p 5432 -d penumbra_cometbft -f crates/util/cometindex/vendor/schema.sql
+      psql -h localhost -p 5432 -d penumbra_cometbft -c 'GRANT ALL PRIVILEGES ON DATABASE penumbra_cometbft TO penumbra;'
+      psql -h localhost -p 5432 -d penumbra_cometbft -c 'GRANT pg_read_all_data TO penumbra;'
+      psql -h localhost -p 5432 -d penumbra_cometbft -c 'GRANT pg_write_all_data TO penumbra;'
+
+      # Create database for pindexer
+      >&2 echo "Creating database schema for pindexer..."
+      createuser -h localhost -p 5432 penumbra_ro
+      createdb -h localhost -p 5432 penumbra_pindexer || true
+      psql -h localhost -p 5432 -d penumbra_cometbft -c 'GRANT pg_read_all_data TO penumbra_ro;'
+      psql -h localhost -p 5432 -d penumbra_pindexer -c 'GRANT pg_write_all_data TO penumbra_ro;'
+      psql -h localhost -p 5432 -d penumbra_pindexer -c 'GRANT ALL PRIVILEGES ON DATABASE penumbra_pindexer TO penumbra_ro;'
+    availability:
+      restart: exit_on_failure
+    depends_on:
+      postgresql:
+        condition: process_healthy
+
+  # Add rule for CometBFT to wait for db to be ready.
+  cometbft:
+    depends_on:
+      postgresql-init:
+        condition: process_completed_successfully
+
+  # Add rule for CometBFT to wait for db to be ready.
+  pindexer:
+    environment:
+      - "RUST_LOG=debug"
+    command: |-
+      cargo run --release --bin pindexer -- \
+          --src-database-url "postgresql://localhost:5432/penumbra_cometbft?sslmode=disable" \
+          --dst-database-url "postgresql://localhost:5432/penumbra_pindexer?sslmode=disable" \
+          --genesis-json ~/.penumbra/network_data/node0/cometbft/config/genesis.json
+    depends_on:
+      postgresql-init:
+        condition: process_completed_successfully

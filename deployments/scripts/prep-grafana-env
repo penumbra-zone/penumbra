@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Helper script to prepare a localhost grafana instance,
+# provisioned via nix, for displaying Penumbra metrics.
+set -euo pipefail
+
+
+# The Nix env will add the Grafana public directory to XDG_DATA_DIRS.
+# Let's pluck that out of the dir listing env vars, so we can copy files out of it
+# to a writable location.
+grafana_share_dir="$(echo "$XDG_DATA_DIRS" | perl -npE 's/:/\n/g' | grep grafana | tail -n 1)"
+
+if [[ -z "${grafana_share_dir}" ]] ; then
+    >&2 "ERROR: could not find grafana dir in XDG_DATA_DIRS"
+    exit 1
+fi
+
+# Set up a write-friendly directory for grafana state from the local fullnode.
+# The nix store is read-only by default, so add write capability to copy.
+grafana_config_dir="$HOME/.penumbra/network_data/grafana"
+# While debugging it may be useful to nuke the dir between runs.
+# rm -rf "$grafana_config_dir"
+rsync -a "${grafana_share_dir:?}/grafana/" "${grafana_config_dir}/"
+chmod -R u+w "$grafana_config_dir"
+
+# Copy in Penumbra-specific dashboards
+rsync -a --delete-after "${PWD}/deployments/config/grafana/dashboards" "${grafana_config_dir}/conf/dashboards/"
+rsync -a --delete-after "${PWD}/deployments/config/grafana/provisioning/" "${grafana_config_dir}/conf/provisioning/"

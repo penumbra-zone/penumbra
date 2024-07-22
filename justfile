@@ -2,31 +2,32 @@
 default:
     @just --list
 
+# Creates and runs a local devnet with solo validator. Includes ancillary services
+# like metrics, postgres for storing ABCI events, and pindexer for munging those events.
+dev:
+    ./deployments/scripts/check-nix-shell && \
+        ./deployments/scripts/run-local-devnet.sh \
+        --config ./deployments/compose/process-compose-postgres.yml \
+        --config ./deployments/compose/process-compose-metrics.yml
+
 # Formats the rust files in the project.
 fmt:
     cargo fmt --all
+
+# Render livereload environment for editing the Dev Guide documentation.
+guide:
+    # Access local docs at http://127.0.0.1:3001
+    cd docs/guide && \
+        mdbook serve -n 127.0.0.1 --port 3001
 
 # Generate code for Rust & Go from proto definitions.
 proto:
     ./deployments/scripts/protobuf-codegen
 
-# Run a local prometheus/grafana setup, in containers, to scrape a local node. Linux only.
+# Run a local prometheus/grafana setup, to scrape a local node.
 metrics:
-    cd ./deployments/compose/ \
-        && docker-compose -f metrics.yml up --build --abort-on-container-exit --force-recreate --remove-orphans
-
-# Configures and runs a relayer instance between "preview" (latest main) and local devnet on current HEAD
-relayer-local-devnet:
-    ./deployments/scripts/relayer-local-devnet
-
-local-devnet-generate:
-    cargo run --release --bin pd -- network generate --chain-id penumbra-devnet-local
-
-local-devnet-run:
-    ./deployments/scripts/run-local-devnet.sh
-
-local-devnet-reset-all:
-    cargo run --bin pd --release -- network unsafe-reset-all
+    ./deployments/scripts/check-nix-shell && \
+        process-compose --no-server --config ./deployments/compose/process-compose-metrics.yml up --keep-tui
 
 # Rebuild Rust crate documentation
 rustdocs:
@@ -34,6 +35,5 @@ rustdocs:
 
 # Run smoke test suite, via process-compose config.
 smoke:
-    # resetting network state
-    cargo run --release --bin pd -- network unsafe-reset-all || true
+    ./deployments/scripts/warn-about-pd-state
     ./deployments/scripts/smoke-test.sh

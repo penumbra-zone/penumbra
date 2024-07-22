@@ -8,7 +8,6 @@
       url = "github:oxalica/rust-overlay";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
       };
     };
     crane = {
@@ -55,12 +54,16 @@
               };
               filter = path: type:
                 # Retain proving and verification parameters, and no-lfs marker file ...
-                (builtins.match ".*\.(no_lfs|param||bin)$" path != null) ||
+                (builtins.match ".*\.(no_lfs|param|bin)$" path != null) ||
                 # ... as well as all the normal cargo source files:
                 (craneLib.filterCargoSources path type);
             };
             nativeBuildInputs = [ pkg-config ];
-            buildInputs = [ clang openssl rocksdb ];
+            buildInputs = if stdenv.hostPlatform.isDarwin then 
+              with pkgs.darwin.apple_sdk.frameworks; [clang openssl rocksdb SystemConfiguration CoreServices]
+            else
+              [clang openssl rocksdb];
+
             inherit system PKG_CONFIG_PATH LIBCLANG_PATH ROCKSDB_LIB_DIR;
             cargoExtraArgs = "-p pd -p pcli -p pclientd";
             meta = {
@@ -110,12 +113,22 @@
             packages = [
               cargo-nextest
               cargo-watch
+              glibcLocales # for postgres initdb locale support
               cometbft
+              grafana
+              grpcurl
               just
+              mdbook
+              mdbook-katex
+              mdbook-mermaid
+              mdbook-linkcheck
               nix-prefetch-scripts
               postgresql
+              process-compose
+              prometheus
               protobuf
               rocksdb
+              rsync
             ];
             shellHook = ''
               export LIBCLANG_PATH=${LIBCLANG_PATH}
