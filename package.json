@@ -1,5 +1,0 @@
-{
-  "dependencies": {
-    "@bufbuild/buf": "^1.34.0"
-  }
-}
