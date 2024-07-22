@@ -6,6 +6,7 @@ While users can choose to grant access to website run by a party they trust,
 this guide demonstrates how a user can self-host a frontend for use by themselves and others.
 
 ## About minifront
+
 [Minifront] is minimal frontend for interacting with the [Penumbra] chain.
 A number of technical decisions were made to ensure minifront is maximally client side and does not leak
 information unnecessarily:
@@ -17,12 +18,23 @@ information unnecessarily:
 - Idiomatic urls & query params ❌
 - Build-time pre-rendering ❌
 
-[Read more](https://x.com/grod220/status/1760217326245285923) about how this frontend embraces censorship resistance and privacy.
+[Read more](https://x.com/grod220/status/1760217326245285923) about how this frontend embraces censorship resistance and
+privacy.
 
 ## Deploy anywhere
 
+### Automatically w/ github action
+
+The [minifront deployer repo](https://github.com/penumbra-zone/minifront-deployer) has a github action
+that can manage minifront's the build+deployment steps on a schedule. Using this will allow you to
+always host the latest code commited to [@penumbra-zone/web](https://github.com/penumbra-zone/web).
+Simply fork, add environment variables to your repo, and make customizations for your particular host.
+
+### Manual deploys
+
 The `dist/` output of the build is simply static assets. That means, it basically can be hosted anywhere.
-First, download `dist.zip` from the [latest minifront release from github](https://github.com/penumbra-zone/web/releases?q=minifront&expanded=true).
+First, download `dist.zip` from
+the [latest minifront release from github](https://github.com/penumbra-zone/web/releases?q=minifront&expanded=true).
 Unzip that and take it to a variety of host providers. Examples:
 
 ### Vercel
@@ -91,5 +103,7 @@ a bundled version of the frontend code is available at `https://<YOUR_NODE_URL>/
 to that site after installing [Prax], and authorize the web extension to connect to it.
 
 [Minifront]: https://github.com/penumbra-zone/web/tree/main/apps/minifront
+
 [Prax]: https://chromewebstore.google.com/detail/prax-wallet/lkpmkhpnhknhmibgnmmhdhgdilepfghe
+
 [Penumbra]: https://penumbra.zone
