@@ -507,15 +507,16 @@ async fn handle_proposal_deposit_claim(
     dbtx: &mut PgTransaction<'_>,
     deposit_claim: ProposalDepositClaim,
 ) -> Result<()> {
-    let current_state: String = sqlx::query_scalar(
+    let current_state: serde_json::Value = sqlx::query_scalar(
         "SELECT state
-            FROM governance_proposals
-            WHERE proposal_id = $1",
+        FROM governance_proposals
+        WHERE proposal_id = $1",
     )
     .bind(deposit_claim.proposal as i64)
     .fetch_one(dbtx.as_mut())
     .await?;
-    let current_state: proposal_state::State = serde_json::from_str(&current_state)?;
+
+    let current_state: proposal_state::State = serde_json::from_value(current_state)?;
 
     let outcome = match current_state {
         proposal_state::State::Finished { outcome } => outcome,
