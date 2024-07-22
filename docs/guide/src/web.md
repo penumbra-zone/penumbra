@@ -66,10 +66,6 @@ click **Connect**, then authorize the extension to work with the site. After
 doing so, you'll see buttons for actions such as **Receive**, **Send**, and
 **Exchange**.
 
-As of Testnet 53, only the **Send** action is supported. Check back on
-subsequent versions to follow progress as we implement more advanced
-functionality in the web wallet.
-
 ## Upgrading to a new testnet
 
 When a new testnet is released, you'll need to clear the existing state

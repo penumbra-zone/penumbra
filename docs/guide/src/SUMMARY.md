@@ -22,6 +22,8 @@
     - [Configuring `pclientd`](./node/pclientd/configure.md)
     - [Making RPC requests](./node/pclientd/rpc.md)
     - [Building Transactions](./node/pclientd/build_transaction.md)
+  - [IBC relayer](./node/relayer.md)
+    - [Hermes](./node/relayer/hermes.md)
 - [Development](./dev.md)
   - [Developer environment](./dev/dev-env.md)
   - [Devnet quickstart](./dev/devnet-quickstart.md)
