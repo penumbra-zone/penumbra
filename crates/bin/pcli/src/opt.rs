@@ -1,12 +1,12 @@
 use crate::{
     config::{CustodyConfig, GovernanceCustodyConfig, PcliConfig},
+    default_home,
     terminal::ActualTerminal,
     App, Command,
 };
 use anyhow::Result;
 use camino::Utf8PathBuf;
 use clap::Parser;
-use directories::ProjectDirs;
 use penumbra_custody::{null_kms::NullKms, soft_kms::SoftKms};
 use penumbra_proto::box_grpc_svc;
 use penumbra_proto::{
@@ -177,12 +177,4 @@ impl Opt {
         };
         Ok((app, self.cmd))
     }
-}
-
-fn default_home() -> Utf8PathBuf {
-    let path = ProjectDirs::from("zone", "penumbra", "pcli")
-        .expect("Failed to get platform data dir")
-        .data_dir()
-        .to_path_buf();
-    Utf8PathBuf::from_path_buf(path).expect("Platform default data dir was not UTF-8")
 }

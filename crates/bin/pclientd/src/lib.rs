@@ -66,7 +66,7 @@ impl PclientdConfig {
     }
 }
 
-fn default_home() -> Utf8PathBuf {
+pub fn default_home() -> Utf8PathBuf {
     let path = ProjectDirs::from("zone", "penumbra", "pclientd")
         .expect("Failed to get platform data dir")
         .data_dir()
