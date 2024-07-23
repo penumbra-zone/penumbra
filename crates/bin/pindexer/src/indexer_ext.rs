@@ -10,5 +10,6 @@ impl IndexerExt for cometindex::Indexer {
             .with_index(crate::stake::MissedBlocks {})
             .with_index(crate::stake::DelegationTxs {})
             .with_index(crate::stake::UndelegationTxs {})
+            .with_index(crate::governance::GovernanceProposals {})
     }
 }

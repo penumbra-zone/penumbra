@@ -28,7 +28,7 @@ impl AppView for ValidatorSet {
             // hence TEXT fields
             "CREATE TABLE stake_validator_set (
                 id SERIAL PRIMARY KEY,
-                ik BYTEA NOT NULL,
+                ik TEXT NOT NULL,
                 name TEXT NOT NULL,
                 definition TEXT NOT NULL,
                 voting_power BIGINT NOT NULL,
@@ -180,7 +180,7 @@ async fn add_genesis_validators<'a>(
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         )
-        .bind(val.identity_key.to_bytes())
+        .bind(val.identity_key.to_string())
         .bind(val.name.clone())
         .bind(serde_json::to_string(&val).expect("can serialize"))
         .bind(delegation_amount.value() as i64)
@@ -199,7 +199,7 @@ async fn handle_upload<'a>(dbtx: &mut PgTransaction<'a>, val: Validator) -> Resu
     // First, check if the validator already exists
     let exists: bool =
         sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM stake_validator_set WHERE ik = $1)")
-            .bind(&val.identity_key.to_bytes())
+            .bind(&val.identity_key.to_string())
             .fetch_one(dbtx.as_mut())
             .await?;
 
@@ -211,7 +211,7 @@ async fn handle_upload<'a>(dbtx: &mut PgTransaction<'a>, val: Validator) -> Resu
                 definition = $3
             WHERE ik = $1",
         )
-        .bind(val.identity_key.to_bytes())
+        .bind(val.identity_key.to_string())
         .bind(val.name.clone())
         .bind(serde_json::to_string(&val).expect("can serialize"))
         .execute(dbtx.as_mut())
@@ -225,7 +225,7 @@ async fn handle_upload<'a>(dbtx: &mut PgTransaction<'a>, val: Validator) -> Resu
             )
             VALUES ($1, $2, $3, 0, 0, 0, $4, $5)",
         )
-        .bind(val.identity_key.to_bytes())
+        .bind(val.identity_key.to_string())
         .bind(val.name.clone())
         .bind(serde_json::to_string(&val).expect("can serialize"))
         .bind(serde_json::to_string(&validator::State::Defined).expect("can serialize")) // ValidatorManager::add_validator
@@ -249,7 +249,7 @@ async fn handle_delegate<'a>(
             queued_delegations = queued_delegations + $2
         WHERE ik = $1",
     )
-    .bind(ik.to_bytes())
+    .bind(ik.to_string())
     .bind(amount.value() as i64)
     .execute(dbtx.as_mut())
     .await?
@@ -275,7 +275,7 @@ async fn handle_undelegate<'a>(
             queued_undelegations = queued_undelegations + $2
         WHERE ik = $1",
     )
-    .bind(ik.to_bytes())
+    .bind(ik.to_string())
     .bind(amount.value() as i64)
     .execute(dbtx.as_mut())
     .await?
@@ -303,7 +303,7 @@ async fn handle_voting_power_change<'a>(
             queued_undelegations = 0
         WHERE ik = $1",
     )
-    .bind(ik.to_bytes())
+    .bind(ik.to_string())
     .bind(voting_power.value() as i64)
     .execute(dbtx.as_mut())
     .await?
@@ -329,7 +329,7 @@ async fn handle_validator_state_change<'a>(
             validator_state = $2
         WHERE ik = $1",
     )
-    .bind(ik.to_bytes())
+    .bind(ik.to_string())
     .bind(serde_json::to_string(&state).expect("can serialize"))
     .execute(dbtx.as_mut())
     .await?
@@ -355,7 +355,7 @@ async fn handle_validator_bonding_state_change<'a>(
             bonding_state = $2
         WHERE ik = $1",
     )
-    .bind(ik.to_bytes())
+    .bind(ik.to_string())
     .bind(serde_json::to_string(&bonding_state).expect("can serialize"))
     .execute(dbtx.as_mut())
     .await?

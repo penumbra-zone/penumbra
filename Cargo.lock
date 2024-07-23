@@ -5811,6 +5811,7 @@ dependencies = [
  "cometindex",
  "penumbra-app",
  "penumbra-asset",
+ "penumbra-governance",
  "penumbra-num",
  "penumbra-proto",
  "penumbra-shielded-pool",
