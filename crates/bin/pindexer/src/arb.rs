@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS arb_traces (
     id SERIAL PRIMARY KEY,
     steps_start INT8 NOT NULL,
     steps_end INT8 NOT NULL,
-); 
+);
 ",
         )
         .execute(dbtx.as_mut())
@@ -83,18 +83,14 @@ CREATE TABLE IF NOT EXISTS trace_steps (
                 QueryBuilder::new("WITH inserted AS ( INSERT INTO trace_steps(amount, asset_id) ");
 
             query_builder.push_values(trace.value, |mut b, step| {
-                let asset_id = AssetId::try_from(
-                    step.asset_id
-                        .ok_or_else(|| anyhow::anyhow!("missing step asset id in event")),
-                )?;
+                let asset_id =
+                    AssetId::try_from(step.asset_id.expect("missing step asset id in event"))
+                        .unwrap();
 
-                let amount = Amount::try_from(
-                    step.amount
-                        .ok_or_else(|| anyhow::anyhow!("missing step amount in event")),
-                )?;
+                let amount =
+                    Amount::try_from(step.amount.expect("missing step amount in event")).unwrap();
 
-                b.push_bind(amount.value() as i64)
-                    .push_bind(asset_id.value() as i64);
+                b.push_bind(amount.value() as i64).push_bind(asset_id.inner);
             });
 
             query_builder.push(
@@ -127,28 +123,14 @@ RETURNING id
         }
 
         let input = swap.input.expect("Input is None");
-        let input_amount = Amount::try_from(
-            input
-                .amount
-                .ok_or_else(|| anyhow::anyhow!("missing amount in event"))?,
-        )?;
-        let input_asset_id = AssetId::try_from(
-            input
-                .asset_id
-                .ok_or_else(|| anyhow::anyhow!("missing input asset id in event")),
-        )?;
+        let input_amount = Amount::try_from(input.amount.expect("missing amount in event"))?;
+        let input_asset_id =
+            AssetId::try_from(input.asset_id.expect("missing input asset id in event"))?;
 
         let output = swap.output.expect("Input is None");
-        let output_amount = Amount::try_from(
-            output
-                .amount
-                .ok_or_else(|| anyhow::anyhow!("missing amount in event"))?,
-        )?;
-        let output_asset_id = AssetId::try_from(
-            output
-                .asset_id
-                .ok_or_else(|| anyhow::anyhow!("missing output asset id in event")),
-        )?;
+        let output_amount = Amount::try_from(output.amount.expect("missing amount in event"))?;
+        let output_asset_id =
+            AssetId::try_from(output.asset_id.expect("missing output asset id in event"))?;
 
         sqlx::query(
             "
