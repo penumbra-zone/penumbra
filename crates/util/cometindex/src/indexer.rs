@@ -1,9 +1,8 @@
 use std::pin::Pin;
 
 use anyhow::{Context as _, Result};
-use clap::Parser;
 use futures::{Stream, StreamExt, TryStreamExt};
-use sqlx::PgPool;
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use tap::{Tap, TapFallible, TapOptional};
 use tendermint::abci;
 use tracing::{debug, info};
@@ -16,9 +15,9 @@ pub struct Indexer {
 }
 
 impl Indexer {
-    pub fn new() -> Self {
+    pub fn new(opts: Options) -> Self {
         Self {
-            opts: Options::parse(),
+            opts,
             indexes: Vec::new(),
         }
     }
@@ -60,7 +59,22 @@ impl Indexer {
             indexes,
         } = self;
 
-        let src_db = PgPool::connect(&src_database_url).await?;
+        // Create a source db, with, for sanity, some read only settings.
+        // These will be overrideable by a consumer who knows what they're doing,
+        // but prevents basic mistakes.
+        // c.f. https://github.com/launchbadge/sqlx/issues/481#issuecomment-727011811
+        let src_db = PgPoolOptions::new()
+            .after_connect(|conn, _| {
+                Box::pin(async move {
+                    sqlx::query("SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY;")
+                        .execute(conn)
+                        .await?;
+                    Ok(())
+                })
+            })
+            .connect(&src_database_url)
+            .await?;
+
         let dst_db = PgPool::connect(&dst_database_url).await?;
 
         // Check if the destination db is initialized
@@ -169,7 +183,7 @@ impl Indexer {
             for index in indexes {
                 if index.is_relevant(&event.as_ref().kind) {
                     tracing::debug!(?event, ?index, "relevant to index");
-                    index.index_event(&mut dbtx, &event).await?;
+                    index.index_event(&mut dbtx, &event, &src_db).await?;
                 }
             }
             // Mark that we got to at least this event

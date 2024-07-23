@@ -5808,6 +5808,7 @@ name = "pindexer"
 version = "0.79.0"
 dependencies = [
  "anyhow",
+ "clap",
  "cometindex",
  "penumbra-app",
  "penumbra-asset",

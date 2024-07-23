@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
 
 use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
 use penumbra_stake::IdentityKey;
@@ -52,6 +52,7 @@ impl AppView for Slashings {
         &self,
         dbtx: &mut PgTransaction,
         event: &ContextualizedEvent,
+        _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         let pe = pb::EventSlashingPenaltyApplied::from_event(event.as_ref())?;
         let ik = IdentityKey::try_from(

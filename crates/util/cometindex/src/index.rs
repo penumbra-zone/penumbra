@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+pub use sqlx::PgPool;
 use sqlx::{Postgres, Transaction};
 
 use crate::ContextualizedEvent;
@@ -20,5 +21,6 @@ pub trait AppView: std::fmt::Debug {
         &self,
         dbtx: &mut PgTransaction,
         event: &ContextualizedEvent,
+        src_db: &PgPool,
     ) -> Result<(), anyhow::Error>;
 }
