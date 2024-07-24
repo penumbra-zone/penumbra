@@ -61,6 +61,7 @@ impl AppView for BlockEvents {
         &self,
         dbtx: &mut PgTransaction,
         event: &ContextualizedEvent,
+        _src_db: &sqlx::PgPool,
     ) -> Result<(), anyhow::Error> {
         // Transaction Event, not a Block Event.
         if event.tx_hash.is_some() {
