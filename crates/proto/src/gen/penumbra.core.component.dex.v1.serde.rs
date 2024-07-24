@@ -2547,6 +2547,9 @@ impl serde::Serialize for EventPositionOpen {
         if self.trading_fee != 0 {
             len += 1;
         }
+        if self.position.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventPositionOpen", len)?;
         if let Some(v) = self.position_id.as_ref() {
             struct_ser.serialize_field("positionId", v)?;
@@ -2562,6 +2565,9 @@ impl serde::Serialize for EventPositionOpen {
         }
         if self.trading_fee != 0 {
             struct_ser.serialize_field("tradingFee", &self.trading_fee)?;
+        }
+        if let Some(v) = self.position.as_ref() {
+            struct_ser.serialize_field("position", v)?;
         }
         struct_ser.end()
     }
@@ -2583,6 +2589,7 @@ impl<'de> serde::Deserialize<'de> for EventPositionOpen {
             "reserves2",
             "trading_fee",
             "tradingFee",
+            "position",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2592,6 +2599,7 @@ impl<'de> serde::Deserialize<'de> for EventPositionOpen {
             Reserves1,
             Reserves2,
             TradingFee,
+            Position,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2619,6 +2627,7 @@ impl<'de> serde::Deserialize<'de> for EventPositionOpen {
                             "reserves1" | "reserves_1" => Ok(GeneratedField::Reserves1),
                             "reserves2" | "reserves_2" => Ok(GeneratedField::Reserves2),
                             "tradingFee" | "trading_fee" => Ok(GeneratedField::TradingFee),
+                            "position" => Ok(GeneratedField::Position),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2643,6 +2652,7 @@ impl<'de> serde::Deserialize<'de> for EventPositionOpen {
                 let mut reserves_1__ = None;
                 let mut reserves_2__ = None;
                 let mut trading_fee__ = None;
+                let mut position__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PositionId => {
@@ -2677,6 +2687,12 @@ impl<'de> serde::Deserialize<'de> for EventPositionOpen {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::Position => {
+                            if position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("position"));
+                            }
+                            position__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -2688,6 +2704,7 @@ impl<'de> serde::Deserialize<'de> for EventPositionOpen {
                     reserves_1: reserves_1__,
                     reserves_2: reserves_2__,
                     trading_fee: trading_fee__.unwrap_or_default(),
+                    position: position__,
                 })
             }
         }

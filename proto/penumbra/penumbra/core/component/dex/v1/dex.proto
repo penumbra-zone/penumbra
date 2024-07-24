@@ -655,6 +655,10 @@ message EventPositionOpen {
   // The trading fee for the position, expressed in basis points.
   // e.g. 2% fee is expressed as 200, 100% fee is expressed as 10000;
   uint32 trading_fee = 5;
+  // The full position.
+  //
+  // This is somewhat redundant, but contains any information not present above.
+  Position position = 6;
 }
 
 message EventPositionClose {

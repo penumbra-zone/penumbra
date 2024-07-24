@@ -1377,6 +1377,11 @@ pub struct EventPositionOpen {
     /// e.g. 2% fee is expressed as 200, 100% fee is expressed as 10000;
     #[prost(uint32, tag = "5")]
     pub trading_fee: u32,
+    /// The full position.
+    ///
+    /// This is somewhat redundant, but contains any information not present above.
+    #[prost(message, optional, tag = "6")]
+    pub position: ::core::option::Option<Position>,
 }
 impl ::prost::Name for EventPositionOpen {
     const NAME: &'static str = "EventPositionOpen";
