@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_proto::{core::component::sct::v1 as pb, event::ProtoEvent};
 use sqlx::{types::chrono::DateTime, PgPool};
@@ -16,9 +17,8 @@ impl AppView for Block {
             // table name is module path + struct name
             "
 CREATE TABLE IF NOT EXISTS block_details (
-    id SERIAL PRIMARY KEY,
+    height BIGINT PRIMARY KEY,
     root BYTEA NOT NULL,
-    height INT8 NOT NULL,
     timestamp TIMESTAMPTZ NOT NULL
 );
 ",
@@ -39,7 +39,9 @@ CREATE TABLE IF NOT EXISTS block_details (
         _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         let pe = pb::EventBlockRoot::from_event(event.as_ref())?;
-        let timestamp = pe.timestamp.expect("Block has no timestamp");
+        let timestamp = pe
+            .timestamp
+            .ok_or(anyhow!("block at height {} has no timestamp", pe.height))?;
 
         sqlx::query(
             "
@@ -47,8 +49,11 @@ CREATE TABLE IF NOT EXISTS block_details (
             VALUES ($1, $2, $3)
             ",
         )
-        .bind(pe.height as i64)
-        .bind(DateTime::from_timestamp(timestamp.seconds, timestamp.nanos as u32).unwrap())
+        .bind(i64::try_from(pe.height)?)
+        .bind(
+            DateTime::from_timestamp(timestamp.seconds, u32::try_from(timestamp.nanos)?)
+                .ok_or(anyhow!("failed to convert timestamp"))?,
+        )
         .bind(pe.root.unwrap().inner)
         .execute(dbtx.as_mut())
         .await?;
