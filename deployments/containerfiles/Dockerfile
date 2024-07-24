@@ -48,7 +48,7 @@ COPY --from=build-env \
             /usr/src/penumbra/target/release/pcli \
             /usr/src/penumbra/target/release/pclientd \
             /usr/src/penumbra/target/release/pd \
-            /usr/src/penumbra/target/release/summonerd \
+            /usr/src/penumbra/target/release/pindexer \
             /usr/src/penumbra/target/release/tct-live-edit \
             /usr/bin/
 
