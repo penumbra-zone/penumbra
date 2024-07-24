@@ -51,3 +51,13 @@ CREATE TABLE IF NOT EXISTS arb (
   trace_start INTEGER REFERENCES trace(id),
   trace_end INTEGER REFERENCES trace(id)
 );
+
+--- Represents LP updates
+CREATE TABLE IF NOT EXISTS lp_updates
+(
+    id           SERIAL PRIMARY KEY,
+    height       INT8    NOT NULL,
+    type         integer NOT NULL,
+    position_id  BYTEA   NOT NULL,
+    trading_pair BYTEA
+);
