@@ -14,11 +14,11 @@ dev:
 fmt:
     cargo fmt --all
 
-# Render livereload environment for editing the Dev Guide documentation.
-guide:
-    # Access local docs at http://127.0.0.1:3001
-    cd docs/guide && \
-        mdbook serve -n 127.0.0.1 --port 3001
+# Render livereload environment for editing the Protocol documentation.
+protocol-docs:
+    # Access local docs at http://127.0.0.1:3002
+    cd docs/protocol && \
+        mdbook serve -n 127.0.0.1 --port 3002
 
 # Generate code for Rust & Go from proto definitions.
 proto:

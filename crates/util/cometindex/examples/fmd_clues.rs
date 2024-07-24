@@ -1,5 +1,7 @@
 use anyhow::Result;
-use cometindex::{async_trait, AppView, ContextualizedEvent, Indexer, PgTransaction};
+use clap::Parser;
+use cometindex::{async_trait, opt::Options, AppView, ContextualizedEvent, Indexer, PgTransaction};
+use sqlx::PgPool;
 
 // This example is silly because it doesn't do any "compilation" of the raw
 // events, so it's only useful as an example of exercising the harness and the
@@ -39,6 +41,7 @@ CREATE TABLE IF NOT EXISTS fmd_clues_example (
         &self,
         dbtx: &mut PgTransaction,
         event: &ContextualizedEvent,
+        _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         // this is just an example in the integration tests, so we don't want to do any
         // - queries against existing table state
@@ -72,7 +75,7 @@ CREATE TABLE IF NOT EXISTS fmd_clues_example (
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    Indexer::new()
+    Indexer::new(Options::parse())
         .with_default_tracing()
         // add as many indexers as you want
         .with_index(FmdCluesExample {})

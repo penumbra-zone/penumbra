@@ -35,18 +35,6 @@ jobs:
         # Make sure to install with `+nightly`, because that's the toolchain we'll use for building docs.
         run: cargo +nightly install mdbook mdbook-katex mdbook-mermaid mdbook-linkcheck
 
-      - name: Build software guide
-        working-directory: docs/guide
-        run: mdbook build
-
-      - name: Deploy software guide to firebase
-        uses: w9jds/firebase-action@v12.9.0
-        with:
-          args: deploy
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          PROJECT_PATH: docs/guide
-
       - name: Build protocol spec
         run: cd docs/protocol && mdbook build
 

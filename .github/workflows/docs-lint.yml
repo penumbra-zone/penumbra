@@ -44,8 +44,5 @@ jobs:
       - name: Install mdbook dependencies
         run: cargo install mdbook mdbook-katex mdbook-mermaid mdbook-linkcheck
 
-      - name: Build guide docs
-        run: cd docs/guide && mdbook build
-
       - name: Build protocol docs
         run: cd docs/protocol && mdbook build

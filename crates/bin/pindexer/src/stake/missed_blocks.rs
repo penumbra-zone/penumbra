@@ -1,5 +1,5 @@
 use anyhow::Result;
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
 
 use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
 
@@ -52,6 +52,7 @@ impl AppView for MissedBlocks {
         &self,
         dbtx: &mut PgTransaction,
         event: &ContextualizedEvent,
+        _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         let pe = pb::EventValidatorMissedBlock::from_event(event.as_ref())?;
         let ik_bytes = pe

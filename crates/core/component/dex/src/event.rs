@@ -37,6 +37,7 @@ pub fn position_open(position: &Position) -> pb::EventPositionOpen {
         reserves_1: Some(position.reserves.r1.into()),
         reserves_2: Some(position.reserves.r2.into()),
         trading_fee: position.phi.component.fee,
+        position: Some(position.clone().into()),
     }
 }
 
