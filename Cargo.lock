@@ -5824,6 +5824,7 @@ dependencies = [
  "num-bigint",
  "penumbra-app",
  "penumbra-asset",
+ "penumbra-dex",
  "penumbra-num",
  "penumbra-proto",
  "penumbra-shielded-pool",
