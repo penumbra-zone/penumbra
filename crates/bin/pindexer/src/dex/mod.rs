@@ -5,6 +5,7 @@ use cometindex::async_trait;
 use penumbra_asset::asset::Id as AssetId;
 use penumbra_dex::SwapExecution;
 use penumbra_num::Amount;
+use penumbra_proto::core::component::dex::v1::{PositionId, TradingPair};
 use penumbra_proto::{event::ProtoEvent, penumbra::core::component::dex::v1 as pb};
 use sqlx::{PgPool, Postgres, Transaction};
 
@@ -31,13 +32,39 @@ enum Event {
         height: u64,
         execution: SwapExecution,
     },
+    /// A parsed version of [pb::EventPositionOpen]
+    PositionOpen {
+        height: u64,
+        position_id: PositionId,
+        trading_pair: TradingPair,
+        reserves_1: Amount,
+        reserves_2: Amount,
+        trading_fee: u32,
+    },
+    /// A parsed version of [pb::EventPositionWithdraw]
+    PositionWithdraw {
+        height: u64,
+        position_id: PositionId,
+        trading_pair: TradingPair,
+        reserves_1: Amount,
+        reserves_2: Amount,
+        sequence: u32,
+    },
+    /// A parsed version of [pb::EventPositionClose]
+    PositionClose {
+        height: u64,
+        position_id: PositionId,
+    },
 }
 
 impl Event {
-    const NAMES: [&'static str; 3] = [
+    const NAMES: [&'static str; 6] = [
         "penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit",
         "penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit",
         "penumbra.core.component.dex.v1.EventArbExecution",
+        "penumbra.core.component.dex.v1.EventPositionWithdraw",
+        "penumbra.core.component.dex.v1.EventPositionOpen",
+        "penumbra.core.component.dex.v1.EventPositionClose",
     ];
 
     /// Index this event, using the handle to the postgres transaction.
@@ -130,6 +157,60 @@ impl Event {
                     .await?;
                 Ok(())
             }
+            Event::PositionOpen {
+                height,
+                position_id,
+                ..
+            } => {
+                sqlx::query(
+                    "
+            INSERT INTO lp_updates (height, type, position_id)
+            VALUES ($1, $2, $3)
+            ",
+                )
+                .bind(*height as i64)
+                .bind(0)
+                .bind(&position_id.inner)
+                .execute(dbtx.as_mut())
+                .await?;
+                Ok(())
+            }
+            Event::PositionWithdraw {
+                height,
+                position_id,
+                ..
+            } => {
+                sqlx::query(
+                    "
+            INSERT INTO lp_updates (height, type, position_id)
+            VALUES ($1, $2, $3)
+            ",
+                )
+                .bind(*height as i64)
+                .bind(2)
+                .bind(&position_id.inner)
+                .execute(dbtx.as_mut())
+                .await?;
+                Ok(())
+            }
+            Event::PositionClose {
+                height,
+                position_id,
+                ..
+            } => {
+                sqlx::query(
+                    "
+            INSERT INTO lp_updates (height, type, position_id)
+            VALUES ($1, $2, $3)
+            ",
+                )
+                .bind(*height as i64)
+                .bind(1)
+                .bind(&position_id.inner)
+                .execute(dbtx.as_mut())
+                .await?;
+                Ok(())
+            }
         }
     }
 }
@@ -182,6 +263,80 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     .ok_or(anyhow!("missing swap execution"))?
                     .try_into()?;
                 Ok(Self::ArbExecution { height, execution })
+            }
+            // LP Withdraw
+            x if x == Event::NAMES[3] => {
+                let pe = pb::EventPositionWithdraw::from_event(event.as_ref())?;
+                let height = event.block_height;
+                let position_id = pe
+                    .position_id
+                    .ok_or(anyhow!("missing position id"))?
+                    .try_into()?;
+                let trading_pair = pe
+                    .trading_pair
+                    .ok_or(anyhow!("missing trading pair"))?
+                    .try_into()?;
+                let reserves_1 = pe
+                    .reserves_1
+                    .ok_or(anyhow!("missing reserves_1"))?
+                    .try_into()?;
+                let reserves_2 = pe
+                    .reserves_2
+                    .ok_or(anyhow!("missing reserves_2"))?
+                    .try_into()?;
+                let sequence = pe.sequence.try_into()?;
+                Ok(Self::PositionWithdraw {
+                    height,
+                    position_id,
+                    trading_pair,
+                    reserves_1,
+                    reserves_2,
+                    sequence,
+                })
+            }
+            // LP Open
+            x if x == Event::NAMES[4] => {
+                let pe = pb::EventPositionOpen::from_event(event.as_ref())?;
+                let height = event.block_height;
+                let position_id = pe
+                    .position_id
+                    .ok_or(anyhow!("missing position id"))?
+                    .try_into()?;
+                let trading_pair = pe
+                    .trading_pair
+                    .ok_or(anyhow!("missing trading pair"))?
+                    .try_into()?;
+                let reserves_1 = pe
+                    .reserves_1
+                    .ok_or(anyhow!("missing reserves_1"))?
+                    .try_into()?;
+                let reserves_2 = pe
+                    .reserves_2
+                    .ok_or(anyhow!("missing reserves_2"))?
+                    .try_into()?;
+                let trading_fee = pe.trading_fee.try_into()?;
+                Ok(Self::PositionOpen {
+                    height,
+                    position_id,
+                    trading_pair,
+                    reserves_1,
+                    reserves_2,
+                    trading_fee,
+                })
+            }
+            // LP Close
+            x if x == Event::NAMES[5] => {
+                let pe = pb::EventPositionClose::from_event(event.as_ref())?;
+                let height = event.block_height;
+                let position_id = pe
+                    .position_id
+                    .ok_or(anyhow!("missing position id"))?
+                    .try_into()?;
+
+                Ok(Self::PositionClose {
+                    height,
+                    position_id,
+                })
             }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }
