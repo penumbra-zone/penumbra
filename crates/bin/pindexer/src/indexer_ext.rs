@@ -7,7 +7,6 @@ impl IndexerExt for cometindex::Indexer {
         self.with_index(crate::shielded_pool::fmd::ClueSet {})
             .with_index(crate::stake::ValidatorSet {})
             .with_index(crate::stake::Slashings {})
-            .with_index(crate::stake::MissedBlocks {})
             .with_index(crate::stake::DelegationTxs {})
             .with_index(crate::stake::UndelegationTxs {})
     }

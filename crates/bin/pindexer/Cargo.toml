@@ -14,6 +14,7 @@ publish = false
 anyhow = {workspace = true}
 clap = {workspace = true}
 cometindex = {workspace = true}
+num-bigint = { version = "0.4" }
 penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
 penumbra-app = {workspace = true, default-features = false}
@@ -22,5 +23,5 @@ penumbra-asset = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, default-features = false}
 tokio = {workspace = true, features = ["full"]}
 serde_json = {workspace = true}
-sqlx = { workspace = true, features = ["chrono"] }
+sqlx = { workspace = true, features = ["bigdecimal", "chrono", "postgres"] }
 tracing = {workspace = true}
