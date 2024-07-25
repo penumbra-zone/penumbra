@@ -14,50 +14,63 @@ DROP TYPE IF EXISTS Value CASCADE;
 DROP DOMAIN IF EXISTS Amount;
 
 CREATE DOMAIN Amount AS NUMERIC(39, 0) NOT NULL;
-CREATE TYPE Value AS (
-  amount Amount,
-  asset BYTEA
+CREATE TYPE Value AS
+(
+    amount Amount,
+    asset  BYTEA
 );
 
 
 -- Keeps track of changes to the dex's value circuit breaker.
-CREATE TABLE IF NOT EXISTS dex_value_circuit_breaker_change (
-  -- The asset being moved into or out of the dex.
-  asset_id BYTEA NOT NULL,
-  -- The flow, either positive, or negative, into the dex via this particular asset.
-  --
-  -- Because we're dealing with arbitrary assets, we need to use something which can store u128
-  flow Amount
+CREATE TABLE IF NOT EXISTS dex_value_circuit_breaker_change
+(
+    -- The asset being moved into or out of the dex.
+    asset_id BYTEA NOT NULL,
+    -- The flow, either positive, or negative, into the dex via this particular asset.
+    --
+    -- Because we're dealing with arbitrary assets, we need to use something which can store u128
+    flow     Amount
 );
 
 -- One step of an execution trace.
-CREATE TABLE IF NOT EXISTS trace_step (
-  id SERIAL PRIMARY KEY,
-  value Value
+CREATE TABLE IF NOT EXISTS trace_step
+(
+    id    SERIAL PRIMARY KEY,
+    value Value
 );
 
 -- A single trace, showing what a small amount of an input asset was exchanged for.
-CREATE TABLE IF NOT EXISTS trace (
-  id SERIAL PRIMARY KEY,
-  step_start INTEGER REFERENCES trace_step(id),
-  step_end INTEGER REFERENCES trace_step(id)
+CREATE TABLE IF NOT EXISTS trace
+(
+    id         SERIAL PRIMARY KEY,
+    step_start INTEGER REFERENCES trace_step (id),
+    step_end   INTEGER REFERENCES trace_step (id)
 );
 
 --- Represents instances where arb executions happened.
-CREATE TABLE IF NOT EXISTS arb (
-  height BIGINT PRIMARY KEY,
-  input Value,
-  output Value,
-  trace_start INTEGER REFERENCES trace(id),
-  trace_end INTEGER REFERENCES trace(id)
+CREATE TABLE IF NOT EXISTS arb
+(
+    height      BIGINT PRIMARY KEY,
+    input       Value,
+    output      Value,
+    trace_start INTEGER REFERENCES trace (id),
+    trace_end   INTEGER REFERENCES trace (id)
 );
 
 --- Represents LP updates
 CREATE TABLE IF NOT EXISTS lp_updates
 (
-    id           SERIAL PRIMARY KEY,
-    height       INT8    NOT NULL,
-    type         integer NOT NULL,
-    position_id  BYTEA   NOT NULL,
-    trading_pair BYTEA
+    id              SERIAL PRIMARY KEY,
+    height          INT8    NOT NULL,
+    type            integer NOT NULL,
+    position_id     BYTEA   NOT NULL,
+    asset_1         BYTEA,
+    asset_2         BYTEA,
+    reserves_1      Amount,
+    reserves_2      Amount,
+    trading_fee     INT8,
+    prev_reserves_1 Amount,
+    prev_reserves_2 Amount,
+    start_asset     BYTEA,
+    end_asset       BYTEA
 );
