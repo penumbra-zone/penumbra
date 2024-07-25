@@ -31,9 +31,10 @@ pub struct SellOrder {
 
 /// This doesn't parse the values yet, because we need to inspect their units.
 fn parse_parts(input: &str) -> Result<(&str, &str, u32)> {
-    let (trade_part, fee_part) = match input.split_once('/') {
-        Some((trade_part, fee_part)) => (trade_part, fee_part),
-        None => (input, "0bps"),
+    let (trade_part, fee_part) = match input.rsplit_once('/') {
+        // In case we have a denom with a slash, and no fee
+        Some((trade_part, fee_part)) if fee_part.ends_with("bps") => (trade_part, fee_part),
+        _ => (input, "0bps"),
     };
 
     let Some((val1, val2)) = trade_part.split_once('@') else {
