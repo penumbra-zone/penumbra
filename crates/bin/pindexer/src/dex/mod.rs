@@ -48,7 +48,6 @@ enum Event {
         trading_pair: TradingPair,
         reserves_1: Amount,
         reserves_2: Amount,
-        sequence: u32,
     },
     /// A parsed version of [pb::EventPositionClose]
     PositionClose {
@@ -345,14 +344,12 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     .reserves_2
                     .ok_or(anyhow!("missing reserves_2"))?
                     .try_into()?;
-                let sequence = pe.sequence.try_into()?;
                 Ok(Self::PositionWithdraw {
                     height,
                     position_id,
                     trading_pair,
                     reserves_1,
                     reserves_2,
-                    sequence,
                 })
             }
             // LP Open
