@@ -129,6 +129,7 @@
               protobuf
               rocksdb
               rsync
+              sqlfluff
             ];
             shellHook = ''
               export LIBCLANG_PATH=${LIBCLANG_PATH}
