@@ -114,7 +114,10 @@ impl ActionHandler for ValidatorVote {
             }
         }
 
-        state.record_proto(event::validator_vote(self));
+        let voting_power = state
+            .specific_validator_voting_power_at_proposal_start(*proposal, *identity_key)
+            .await?;
+        state.record_proto(event::validator_vote(self, voting_power));
 
         Ok(())
     }

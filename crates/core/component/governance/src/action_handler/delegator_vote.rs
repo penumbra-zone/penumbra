@@ -91,7 +91,7 @@ impl ActionHandler for DelegatorVote {
             .cast_delegator_vote(*proposal, identity_key, *vote, nullifier, *unbonded_amount)
             .await?;
 
-        state.record_proto(event::delegator_vote(self));
+        state.record_proto(event::delegator_vote(self, &identity_key));
 
         Ok(())
     }

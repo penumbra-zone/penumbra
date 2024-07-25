@@ -422,6 +422,20 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         Ok(())
     }
 
+    /// Get a specific validator's voting power for a proposal.
+    async fn specific_validator_voting_power_at_proposal_start(
+        &self,
+        proposal_id: u64,
+        identity_key: IdentityKey,
+    ) -> Result<u64> {
+        self.get_proto(&state_key::voting_power_at_proposal_start(
+            proposal_id,
+            identity_key,
+        ))
+        .await
+        .map(Option::unwrap_or_default)
+    }
+
     /// Get all the active validator voting power for the proposal.
     async fn validator_voting_power_at_proposal_start(
         &self,

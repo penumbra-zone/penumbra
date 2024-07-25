@@ -1224,6 +1224,11 @@ pub struct EventDelegatorVote {
     /// The delegator vote.
     #[prost(message, optional, tag = "1")]
     pub vote: ::core::option::Option<DelegatorVote>,
+    /// The corresponding validator's identity key.
+    #[prost(message, optional, tag = "2")]
+    pub validator_identity_key: ::core::option::Option<
+        super::super::super::keys::v1::IdentityKey,
+    >,
 }
 impl ::prost::Name for EventDelegatorVote {
     const NAME: &'static str = "EventDelegatorVote";
@@ -1252,6 +1257,9 @@ pub struct EventValidatorVote {
     /// The validator vote.
     #[prost(message, optional, tag = "1")]
     pub vote: ::core::option::Option<ValidatorVote>,
+    /// The validator's voting power at the time of the proposal's start.
+    #[prost(uint64, tag = "2")]
+    pub voting_power: u64,
 }
 impl ::prost::Name for EventValidatorVote {
     const NAME: &'static str = "EventValidatorVote";
@@ -1280,6 +1288,12 @@ pub struct EventProposalSubmit {
     /// Details on the submitted proposal.
     #[prost(message, optional, tag = "1")]
     pub submit: ::core::option::Option<ProposalSubmit>,
+    /// The start height for the proposal.
+    #[prost(uint64, tag = "2")]
+    pub start_height: u64,
+    /// The end height for the proposal.
+    #[prost(uint64, tag = "3")]
+    pub end_height: u64,
 }
 impl ::prost::Name for EventProposalSubmit {
     const NAME: &'static str = "EventProposalSubmit";
@@ -1290,13 +1304,13 @@ impl ::prost::Name for EventProposalSubmit {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventEnactProposal {
-    /// The enacted proposal.
+pub struct EventProposalPassed {
+    /// The passed proposal.
     #[prost(message, optional, tag = "1")]
     pub proposal: ::core::option::Option<Proposal>,
 }
-impl ::prost::Name for EventEnactProposal {
-    const NAME: &'static str = "EventEnactProposal";
+impl ::prost::Name for EventProposalPassed {
+    const NAME: &'static str = "EventProposalPassed";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.governance.v1.{}", Self::NAME)
@@ -1328,6 +1342,52 @@ impl ::prost::Name for EventProposalSlashed {
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.governance.v1.{}", Self::NAME)
+    }
+}
+/// All the different kinds of proposals.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum ProposalKind {
+    /// To make the linter happy
+    Unspecified = 0,
+    Signaling = 1,
+    Emergency = 2,
+    ParameterChange = 3,
+    CommunityPoolSpend = 4,
+    UpgradePlan = 5,
+    FreezeIbcClient = 6,
+    UnfreezeIbcClient = 7,
+}
+impl ProposalKind {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            ProposalKind::Unspecified => "PROPOSAL_KIND_UNSPECIFIED",
+            ProposalKind::Signaling => "PROPOSAL_KIND_SIGNALING",
+            ProposalKind::Emergency => "PROPOSAL_KIND_EMERGENCY",
+            ProposalKind::ParameterChange => "PROPOSAL_KIND_PARAMETER_CHANGE",
+            ProposalKind::CommunityPoolSpend => "PROPOSAL_KIND_COMMUNITY_POOL_SPEND",
+            ProposalKind::UpgradePlan => "PROPOSAL_KIND_UPGRADE_PLAN",
+            ProposalKind::FreezeIbcClient => "PROPOSAL_KIND_FREEZE_IBC_CLIENT",
+            ProposalKind::UnfreezeIbcClient => "PROPOSAL_KIND_UNFREEZE_IBC_CLIENT",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PROPOSAL_KIND_UNSPECIFIED" => Some(Self::Unspecified),
+            "PROPOSAL_KIND_SIGNALING" => Some(Self::Signaling),
+            "PROPOSAL_KIND_EMERGENCY" => Some(Self::Emergency),
+            "PROPOSAL_KIND_PARAMETER_CHANGE" => Some(Self::ParameterChange),
+            "PROPOSAL_KIND_COMMUNITY_POOL_SPEND" => Some(Self::CommunityPoolSpend),
+            "PROPOSAL_KIND_UPGRADE_PLAN" => Some(Self::UpgradePlan),
+            "PROPOSAL_KIND_FREEZE_IBC_CLIENT" => Some(Self::FreezeIbcClient),
+            "PROPOSAL_KIND_UNFREEZE_IBC_CLIENT" => Some(Self::UnfreezeIbcClient),
+            _ => None,
+        }
     }
 }
 /// Generated client implementations.

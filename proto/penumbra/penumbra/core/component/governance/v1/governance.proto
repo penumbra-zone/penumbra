@@ -323,6 +323,19 @@ message Proposal {
   }
 }
 
+// All the different kinds of proposals.
+enum ProposalKind {
+  // To make the linter happy
+  PROPOSAL_KIND_UNSPECIFIED = 0;
+  PROPOSAL_KIND_SIGNALING = 1;
+  PROPOSAL_KIND_EMERGENCY = 2;
+  PROPOSAL_KIND_PARAMETER_CHANGE = 3;
+  PROPOSAL_KIND_COMMUNITY_POOL_SPEND = 4;
+  PROPOSAL_KIND_UPGRADE_PLAN = 5;
+  PROPOSAL_KIND_FREEZE_IBC_CLIENT = 6;
+  PROPOSAL_KIND_UNFREEZE_IBC_CLIENT = 7;
+}
+
 // Query operations for the governance component.
 service QueryService {
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
@@ -532,6 +545,8 @@ message Ratio {
 message EventDelegatorVote {
   // The delegator vote.
   DelegatorVote vote = 1;
+  // The corresponding validator's identity key.
+  keys.v1.IdentityKey validator_identity_key = 2;
 }
 
 message EventProposalDepositClaim {
@@ -542,6 +557,8 @@ message EventProposalDepositClaim {
 message EventValidatorVote {
   // The validator vote.
   ValidatorVote vote = 1;
+  // The validator's voting power at the time of the proposal's start.
+  uint64 voting_power = 2;
 }
 
 message EventProposalWithdraw {
@@ -552,10 +569,14 @@ message EventProposalWithdraw {
 message EventProposalSubmit {
   // Details on the submitted proposal.
   ProposalSubmit submit = 1;
+  // The start height for the proposal.
+  uint64 start_height = 2;
+  // The end height for the proposal.
+  uint64 end_height = 3;
 }
 
-message EventEnactProposal {
-  // The enacted proposal.
+message EventProposalPassed {
+  // The passed proposal.
   Proposal proposal = 1;
 }
 
