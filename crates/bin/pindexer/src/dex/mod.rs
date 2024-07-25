@@ -142,18 +142,14 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
             // Credit
             x if x == Event::NAMES[0] => {
                 let pe = pb::EventValueCircuitBreakerCredit::from_event(event.as_ref())?;
-                let asset_id = AssetId::try_from(
-                    pe.asset_id
-                        .ok_or(anyhow!("event missing asset_id" + PD_COMPAT))?,
-                )?;
+                let asset_id =
+                    AssetId::try_from(pe.asset_id.ok_or(anyhow!("event missing asset_id"))?)?;
                 let previous_balance = Amount::try_from(
                     pe.previous_balance
-                        .ok_or(anyhow!("event missing previous_balance" + PD_COMPAT))?,
+                        .ok_or(anyhow!("event missing previous_balance"))?,
                 )?;
-                let new_balance = Amount::try_from(
-                    pe.new_balance
-                        .ok_or(anyhow!("event missing new_balance" + PD_COMPAT))?,
-                )?;
+                let new_balance =
+                    Amount::try_from(pe.new_balance.ok_or(anyhow!("event missing new_balance"))?)?;
                 Ok(Self::CircuitBreakerCredit {
                     asset_id,
                     previous_balance,
@@ -163,18 +159,14 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
             // Debit
             x if x == Event::NAMES[1] => {
                 let pe = pb::EventValueCircuitBreakerDebit::from_event(event.as_ref())?;
-                let asset_id = AssetId::try_from(
-                    pe.asset_id
-                        .ok_or(anyhow!("event missing asset_id" + PD_COMPAT))?,
-                )?;
+                let asset_id =
+                    AssetId::try_from(pe.asset_id.ok_or(anyhow!("event missing asset_id"))?)?;
                 let previous_balance = Amount::try_from(
                     pe.previous_balance
-                        .ok_or(anyhow!("event missing previous_balance" + PD_COMPAT))?,
+                        .ok_or(anyhow!("event missing previous_balance"))?,
                 )?;
-                let new_balance = Amount::try_from(
-                    pe.new_balance
-                        .ok_or(anyhow!("event missing new_balance" + PD_COMPAT))?,
-                )?;
+                let new_balance =
+                    Amount::try_from(pe.new_balance.ok_or(anyhow!("event missing new_balance"))?)?;
                 Ok(Self::CircuitBreakerDebit {
                     asset_id,
                     previous_balance,
@@ -187,7 +179,7 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                 let height = pe.height;
                 let execution = pe
                     .swap_execution
-                    .ok_or(anyhow!("missing swap execution" + PD_COMPAT))?
+                    .ok_or(anyhow!("missing swap execution"))?
                     .try_into()?;
                 Ok(Self::ArbExecution { height, execution })
             }

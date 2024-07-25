@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS block_details (
         .bind(i64::try_from(pe.height)?)
         .bind(
             DateTime::from_timestamp(timestamp.seconds, u32::try_from(timestamp.nanos)?)
-                .ok_or(anyhow!("failed to convert timestamp." + PD_COMPAT))?,
+                .ok_or(anyhow!(format!("failed to convert timestamp. {PD_COMPAT}")))?,
         )
         .bind(pe.root.unwrap().inner)
         .execute(dbtx.as_mut())
