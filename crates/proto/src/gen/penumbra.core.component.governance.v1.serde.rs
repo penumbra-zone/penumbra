@@ -4834,6 +4834,7 @@ impl serde::Serialize for ProposalKind {
         S: serde::Serializer,
     {
         let variant = match self {
+            Self::Unspecified => "PROPOSAL_KIND_UNSPECIFIED",
             Self::Signaling => "PROPOSAL_KIND_SIGNALING",
             Self::Emergency => "PROPOSAL_KIND_EMERGENCY",
             Self::ParameterChange => "PROPOSAL_KIND_PARAMETER_CHANGE",
@@ -4852,6 +4853,7 @@ impl<'de> serde::Deserialize<'de> for ProposalKind {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
+            "PROPOSAL_KIND_UNSPECIFIED",
             "PROPOSAL_KIND_SIGNALING",
             "PROPOSAL_KIND_EMERGENCY",
             "PROPOSAL_KIND_PARAMETER_CHANGE",
@@ -4899,6 +4901,7 @@ impl<'de> serde::Deserialize<'de> for ProposalKind {
                 E: serde::de::Error,
             {
                 match value {
+                    "PROPOSAL_KIND_UNSPECIFIED" => Ok(ProposalKind::Unspecified),
                     "PROPOSAL_KIND_SIGNALING" => Ok(ProposalKind::Signaling),
                     "PROPOSAL_KIND_EMERGENCY" => Ok(ProposalKind::Emergency),
                     "PROPOSAL_KIND_PARAMETER_CHANGE" => Ok(ProposalKind::ParameterChange),

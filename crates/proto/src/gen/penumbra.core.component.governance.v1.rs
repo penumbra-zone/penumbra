@@ -1348,13 +1348,15 @@ impl ::prost::Name for EventProposalSlashed {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ProposalKind {
-    Signaling = 0,
-    Emergency = 1,
-    ParameterChange = 2,
-    CommunityPoolSpend = 3,
-    UpgradePlan = 4,
-    FreezeIbcClient = 5,
-    UnfreezeIbcClient = 6,
+    /// To make the linter happy
+    Unspecified = 0,
+    Signaling = 1,
+    Emergency = 2,
+    ParameterChange = 3,
+    CommunityPoolSpend = 4,
+    UpgradePlan = 5,
+    FreezeIbcClient = 6,
+    UnfreezeIbcClient = 7,
 }
 impl ProposalKind {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -1363,6 +1365,7 @@ impl ProposalKind {
     /// (if the ProtoBuf definition does not change) and safe for programmatic use.
     pub fn as_str_name(&self) -> &'static str {
         match self {
+            ProposalKind::Unspecified => "PROPOSAL_KIND_UNSPECIFIED",
             ProposalKind::Signaling => "PROPOSAL_KIND_SIGNALING",
             ProposalKind::Emergency => "PROPOSAL_KIND_EMERGENCY",
             ProposalKind::ParameterChange => "PROPOSAL_KIND_PARAMETER_CHANGE",
@@ -1375,6 +1378,7 @@ impl ProposalKind {
     /// Creates an enum from field names used in the ProtoBuf definition.
     pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
         match value {
+            "PROPOSAL_KIND_UNSPECIFIED" => Some(Self::Unspecified),
             "PROPOSAL_KIND_SIGNALING" => Some(Self::Signaling),
             "PROPOSAL_KIND_EMERGENCY" => Some(Self::Emergency),
             "PROPOSAL_KIND_PARAMETER_CHANGE" => Some(Self::ParameterChange),
