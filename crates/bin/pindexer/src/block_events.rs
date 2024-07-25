@@ -6,7 +6,6 @@ use penumbra_proto::{
     },
     event::ProtoEvent,
 };
-use sqlx::types::chrono::DateTime;
 
 #[derive(Debug)]
 pub struct BlockEvents {}
@@ -21,15 +20,14 @@ impl AppView for BlockEvents {
         sqlx::query(
             "CREATE TABLE IF NOT EXISTS block_events (
                 id SERIAL PRIMARY KEY,
-                height INT8 NOT NULL,
-                timestamp TIMESTAMPTZ NOT NULL,
+                height BIGINT UNIQUE,
                 events JSONB NOT NULL
             );",
         )
         .execute(dbtx.as_mut())
         .await?;
 
-        sqlx::query("CREATE INDEX idx_height ON block_events(height DESC);")
+        sqlx::query("CREATE INDEX IF NOT EXISTS idx_height ON block_events(height DESC);")
             .execute(dbtx.as_mut())
             .await?;
         Ok(())
@@ -76,22 +74,7 @@ impl AppView for BlockEvents {
             "block" => {}
             // EventBlockRoot should always be first... Right?
             "penumbra.core.component.sct.v1.EventBlockRoot" => {
-                let val = sct_pb::EventBlockRoot::from_event(event.as_ref())?;
-                let timestamp = val.timestamp.clone().expect("BlockRoot has no timestamp");
-                // Should always be first.
-                sqlx::query(
-                    "INSERT INTO block_events (height, timestamp, events)
-                    VALUES ($1, $2, JSON_ARRAY(JSON_OBJECT($3, $4)))",
-                )
-                .bind(event.block_height as i64)
-                .bind(
-                    DateTime::from_timestamp(timestamp.seconds, timestamp.nanos as u32)
-                        .expect("Could not convert timestamp."),
-                )
-                .bind(event.event.kind.as_str())
-                .bind(serde_json::to_string(&val).expect("Serializable"))
-                .execute(dbtx.as_mut())
-                .await?;
+                handle_block_event::<sct_pb::EventBlockRoot>(dbtx, event).await?
             }
             "penumbra.core.component.sct.v1.EventAnchor" => {
                 handle_block_event::<sct_pb::EventAnchor>(dbtx, event).await?
@@ -154,14 +137,22 @@ async fn handle_block_event<'a, E: ProtoEvent>(
 ) -> Result<()> {
     let height = event.block_height;
     let pe = E::from_event(event.as_ref())?;
+    // Create a json of the form { "PROTOBUF_EVENT_SCHEMA_URI": "PROTOBUF_EVENT_JSON_STRING" }
+    let json_event = serde_json::json!({
+        event.event.kind.as_str(): &pe
+    });
     let affected = sqlx::query(
-        "UPDATE block_events
-        SET events = JSONB_INSERT(events, '{0}', JSON_OBJECT($2, $3))
-        WHERE height=$1",
+        "
+        INSERT INTO block_events(height, events)
+        VALUES ($1, JSONB_BUILD_ARRAY($2))
+        ON CONFLICT(height)
+        DO UPDATE
+        SET
+            events = JSONB_INSERT(EXCLUDED.events, '{0}', $2)
+        ",
     )
     .bind(height as i64)
-    .bind(event.event.kind.as_str())
-    .bind(serde_json::to_string(&pe).expect("Serializable"))
+    .bind(&json_event)
     .execute(dbtx.as_mut())
     .await?
     .rows_affected();
