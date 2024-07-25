@@ -239,6 +239,8 @@ GROUP BY
     events.type, 
     blocks.height, 
     tx_results.tx_hash
+ORDER BY
+    events.rowid ASC
         "#,
     )
     .bind(watermark)
