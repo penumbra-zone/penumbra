@@ -144,7 +144,7 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                                 .ok_or_else(|| {
                                     anyhow::anyhow!("proposal {} does not exist", proposal_id)
                                 })?;
-                        state.record_proto(event::enact_proposal(&proposal));
+                        state.record_proto(event::proposal_passed(&proposal));
                     }
                     tally::Outcome::Fail => {
                         tracing::info!(proposal = %proposal_id, "proposal failed");

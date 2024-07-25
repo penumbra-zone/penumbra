@@ -296,7 +296,7 @@ impl AppActionHandler for ProposalSubmit {
         // state needed to vote as delegators
         state.mark_proposal_started();
 
-        state.record_proto(event::proposal_submit(self));
+        state.record_proto(event::proposal_submit(self, current_block, voting_end));
 
         tracing::debug!(proposal = %proposal_id, "created proposal");
 

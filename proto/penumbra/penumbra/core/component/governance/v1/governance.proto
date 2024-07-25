@@ -543,6 +543,8 @@ message Ratio {
 message EventDelegatorVote {
   // The delegator vote.
   DelegatorVote vote = 1;
+  // The corresponding validator's identity key.
+  keys.v1.IdentityKey validator_identity_key = 2;
 }
 
 message EventProposalDepositClaim {
@@ -553,6 +555,8 @@ message EventProposalDepositClaim {
 message EventValidatorVote {
   // The validator vote.
   ValidatorVote vote = 1;
+  // The validator's voting power at the time of the proposal's start.
+  uint64 voting_power = 2;
 }
 
 message EventProposalWithdraw {
@@ -563,10 +567,14 @@ message EventProposalWithdraw {
 message EventProposalSubmit {
   // Details on the submitted proposal.
   ProposalSubmit submit = 1;
+  // The start height for the proposal.
+  uint64 start_height = 2;
+  // The end height for the proposal.
+  uint64 end_height = 3;
 }
 
-message EventEnactProposal {
-  // The enacted proposal.
+message EventProposalPassed {
+  // The passed proposal.
   Proposal proposal = 1;
 }
 
