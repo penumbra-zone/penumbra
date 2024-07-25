@@ -39,9 +39,7 @@ CREATE TABLE IF NOT EXISTS block_details (
         _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         let pe = pb::EventBlockRoot::from_event(event.as_ref())?;
-        let timestamp = pe
-            .timestamp
-            .ok_or(anyhow!("block at height {} has no timestamp", pe.height))?;
+        let timestamp = pe.timestamp.unwrap_or_default();
 
         sqlx::query(
             "
