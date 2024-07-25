@@ -207,9 +207,9 @@ impl AppView for Component {
         dbtx: &mut PgTransaction,
         _app_state: &serde_json::Value,
     ) -> anyhow::Result<()> {
-        sqlx::query(include_str!("dex.sql"))
-            .execute(dbtx.as_mut())
-            .await?;
+        for statement in include_str!("dex.sql").split(";") {
+            sqlx::query(statement).execute(dbtx.as_mut()).await?;
+        }
         Ok(())
     }
 

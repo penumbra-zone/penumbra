@@ -9,12 +9,16 @@
 -- that given an `penumbra_asset::asset::Id`, we always know exactly how to filter
 -- tables, rather than needing to do a join with another table.
 
-CREATE DOMAIN IF NOT EXISTS Amount AS NUMERIC(39, 0) NOT NULL;
 
+DROP TYPE IF EXISTS Value CASCADE;
+DROP DOMAIN IF EXISTS Amount;
+
+CREATE DOMAIN Amount AS NUMERIC(39, 0) NOT NULL;
 CREATE TYPE Value AS (
   amount Amount,
-  asset BYTEA NOT NULL
+  asset BYTEA
 );
+
 
 -- Keeps track of changes to the dex's value circuit breaker.
 CREATE TABLE IF NOT EXISTS dex_value_circuit_breaker_change (
@@ -29,14 +33,14 @@ CREATE TABLE IF NOT EXISTS dex_value_circuit_breaker_change (
 -- One step of an execution trace.
 CREATE TABLE IF NOT EXISTS trace_step (
   id SERIAL PRIMARY KEY,
-  value Value,
+  value Value
 );
 
 -- A single trace, showing what a small amount of an input asset was exchanged for.
 CREATE TABLE IF NOT EXISTS trace (
   id SERIAL PRIMARY KEY,
   step_start INTEGER REFERENCES trace_step(id),
-  step_end INTEGER REFERENCES trace_step(id),
+  step_end INTEGER REFERENCES trace_step(id)
 );
 
 --- Represents instances where arb executions happened.
@@ -44,6 +48,6 @@ CREATE TABLE IF NOT EXISTS arb (
   height BIGINT PRIMARY KEY,
   input Value,
   output Value,
-  trace_start INTEGER REFERENCES arb_traces(id),
-  trace_end INTEGER REFERENCES arb_traces(id),
+  trace_start INTEGER REFERENCES trace(id),
+  trace_end INTEGER REFERENCES trace(id)
 );
