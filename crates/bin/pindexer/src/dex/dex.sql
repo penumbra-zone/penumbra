@@ -9,12 +9,16 @@
 -- that given an `penumbra_asset::asset::Id`, we always know exactly how to filter
 -- tables, rather than needing to do a join with another table.
 
-CREATE DOMAIN IF NOT EXISTS Amount AS NUMERIC(39, 0) NOT NULL;
 
+DROP TYPE IF EXISTS Value CASCADE;
+DROP DOMAIN IF EXISTS Amount;
+
+CREATE DOMAIN Amount AS NUMERIC(39, 0) NOT NULL;
 CREATE TYPE Value AS (
   amount Amount,
-  asset BYTEA NOT NULL
+  asset BYTEA
 );
+
 
 -- Keeps track of changes to the dex's value circuit breaker.
 CREATE TABLE IF NOT EXISTS dex_value_circuit_breaker_change (
