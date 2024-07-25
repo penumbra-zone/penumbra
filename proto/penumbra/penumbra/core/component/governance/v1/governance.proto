@@ -323,6 +323,17 @@ message Proposal {
   }
 }
 
+// All the different kinds of proposals.
+enum ProposalKind {
+  PROPOSAL_KIND_SIGNALING = 0;
+  PROPOSAL_KIND_EMERGENCY = 1;
+  PROPOSAL_KIND_PARAMETER_CHANGE = 2;
+  PROPOSAL_KIND_COMMUNITY_POOL_SPEND = 3;
+  PROPOSAL_KIND_UPGRADE_PLAN = 4;
+  PROPOSAL_KIND_FREEZE_IBC_CLIENT = 5;
+  PROPOSAL_KIND_UNFREEZE_IBC_CLIENT = 6;
+}
+
 // Query operations for the governance component.
 service QueryService {
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);

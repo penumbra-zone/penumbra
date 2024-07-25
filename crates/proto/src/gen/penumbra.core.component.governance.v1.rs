@@ -1330,6 +1330,48 @@ impl ::prost::Name for EventProposalSlashed {
         ::prost::alloc::format!("penumbra.core.component.governance.v1.{}", Self::NAME)
     }
 }
+/// All the different kinds of proposals.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum ProposalKind {
+    Signaling = 0,
+    Emergency = 1,
+    ParameterChange = 2,
+    CommunityPoolSpend = 3,
+    UpgradePlan = 4,
+    FreezeIbcClient = 5,
+    UnfreezeIbcClient = 6,
+}
+impl ProposalKind {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            ProposalKind::Signaling => "PROPOSAL_KIND_SIGNALING",
+            ProposalKind::Emergency => "PROPOSAL_KIND_EMERGENCY",
+            ProposalKind::ParameterChange => "PROPOSAL_KIND_PARAMETER_CHANGE",
+            ProposalKind::CommunityPoolSpend => "PROPOSAL_KIND_COMMUNITY_POOL_SPEND",
+            ProposalKind::UpgradePlan => "PROPOSAL_KIND_UPGRADE_PLAN",
+            ProposalKind::FreezeIbcClient => "PROPOSAL_KIND_FREEZE_IBC_CLIENT",
+            ProposalKind::UnfreezeIbcClient => "PROPOSAL_KIND_UNFREEZE_IBC_CLIENT",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PROPOSAL_KIND_SIGNALING" => Some(Self::Signaling),
+            "PROPOSAL_KIND_EMERGENCY" => Some(Self::Emergency),
+            "PROPOSAL_KIND_PARAMETER_CHANGE" => Some(Self::ParameterChange),
+            "PROPOSAL_KIND_COMMUNITY_POOL_SPEND" => Some(Self::CommunityPoolSpend),
+            "PROPOSAL_KIND_UPGRADE_PLAN" => Some(Self::UpgradePlan),
+            "PROPOSAL_KIND_FREEZE_IBC_CLIENT" => Some(Self::FreezeIbcClient),
+            "PROPOSAL_KIND_UNFREEZE_IBC_CLIENT" => Some(Self::UnfreezeIbcClient),
+            _ => None,
+        }
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

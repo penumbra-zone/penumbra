@@ -257,6 +257,34 @@ impl Proposal {
     }
 }
 
+impl From<ProposalKind> for pb::ProposalKind {
+    fn from(kind: ProposalKind) -> pb::ProposalKind {
+        match kind {
+            ProposalKind::Signaling => pb::ProposalKind::Signaling,
+            ProposalKind::Emergency => pb::ProposalKind::Emergency,
+            ProposalKind::ParameterChange => pb::ProposalKind::ParameterChange,
+            ProposalKind::CommunityPoolSpend => pb::ProposalKind::CommunityPoolSpend,
+            ProposalKind::UpgradePlan => pb::ProposalKind::UpgradePlan,
+            ProposalKind::FreezeIbcClient => pb::ProposalKind::FreezeIbcClient,
+            ProposalKind::UnfreezeIbcClient => pb::ProposalKind::UnfreezeIbcClient,
+        }
+    }
+}
+
+impl From<pb::ProposalKind> for ProposalKind {
+    fn from(kind: pb::ProposalKind) -> ProposalKind {
+        match kind {
+            pb::ProposalKind::Signaling => ProposalKind::Signaling,
+            pb::ProposalKind::Emergency => ProposalKind::Emergency,
+            pb::ProposalKind::ParameterChange => ProposalKind::ParameterChange,
+            pb::ProposalKind::CommunityPoolSpend => ProposalKind::CommunityPoolSpend,
+            pb::ProposalKind::UpgradePlan => ProposalKind::UpgradePlan,
+            pb::ProposalKind::FreezeIbcClient => ProposalKind::FreezeIbcClient,
+            pb::ProposalKind::UnfreezeIbcClient => ProposalKind::UnfreezeIbcClient,
+        }
+    }
+}
+
 /// The machine-interpretable body of a proposal.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ProposalPayload {
