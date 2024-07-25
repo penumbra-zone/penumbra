@@ -7,3 +7,5 @@ pub mod dex;
 pub mod shielded_pool;
 mod sql;
 pub mod stake;
+
+pub const PD_COMPAT: &'static str = " Check that your pd and pindexer versions match. See pd compatibility section in README for more information.";
