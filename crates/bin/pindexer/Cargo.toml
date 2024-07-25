@@ -15,6 +15,7 @@ anyhow = {workspace = true}
 clap = {workspace = true}
 cometindex = {workspace = true}
 num-bigint = { version = "0.4" }
+penumbra-governance = {workspace = true}
 penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
 penumbra-app = {workspace = true, default-features = false}

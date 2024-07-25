@@ -4,6 +4,7 @@ mod indexer_ext;
 pub use indexer_ext::IndexerExt;
 pub mod block;
 pub mod dex;
+pub mod governance;
 pub mod shielded_pool;
 mod sql;
 pub mod stake;
