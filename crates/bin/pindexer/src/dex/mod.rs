@@ -9,7 +9,7 @@ use penumbra_proto::{event::ProtoEvent, penumbra::core::component::dex::v1 as pb
 use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::sql::Sql;
-use crate::{AppView, ContextualizedEvent, PgTransaction, PD_COMPAT};
+use crate::{AppView, ContextualizedEvent, PgTransaction};
 
 /// One of the possible events that we care about.
 #[derive(Clone, Debug)]
