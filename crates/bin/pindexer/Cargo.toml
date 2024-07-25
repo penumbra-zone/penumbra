@@ -24,5 +24,5 @@ penumbra-asset = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, default-features = false}
 tokio = {workspace = true, features = ["full"]}
 serde_json = {workspace = true}
-sqlx = { workspace = true, features = ["bigdecimal", "chrono", "postgres"] }
+sqlx = { workspace = true, features = ["chrono", "postgres"] }
 tracing = {workspace = true}

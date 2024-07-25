@@ -56,11 +56,11 @@ impl Event {
                 sqlx::query(
                     r#"
                 INSERT INTO dex_value_circuit_breaker_change
-                VALUES ($1, $2);
+                VALUES ($1, CAST($2 AS Amount));
                 "#,
                 )
                 .bind(Sql::from(*asset_id))
-                .bind(Sql::from(amount))
+                .bind(amount.to_string())
                 .execute(dbtx.as_mut())
                 .await?;
                 Ok(())
@@ -78,11 +78,11 @@ impl Event {
                 sqlx::query(
                     r#"
                 INSERT INTO dex_value_circuit_breaker_change
-                VALUES ($1, -$2);
+                VALUES ($1, -(CAST($2 AS Amount)));
                 "#,
                 )
                 .bind(Sql::from(*asset_id))
-                .bind(Sql::from(amount))
+                .bind(amount.to_string())
                 .execute(dbtx.as_mut())
                 .await?;
                 Ok(())
@@ -94,10 +94,10 @@ impl Event {
                     let mut step_start = None;
                     let mut step_end = None;
                     for step in trace {
-                        let (id,): (i64,) = sqlx::query_as(
-                            r#"INSERT INTO trace_step VALUES (DEFAULT, ($1, $2)) RETURNING id;"#,
+                        let (id,): (i32,) = sqlx::query_as(
+                            r#"INSERT INTO trace_step VALUES (DEFAULT, (CAST($1 AS Amount), $2)) RETURNING id;"#,
                         )
-                        .bind(Sql::from(step.amount))
+                        .bind(step.amount.to_string())
                         .bind(Sql::from(step.asset_id))
                         .fetch_one(dbtx.as_mut())
                         .await?;
@@ -106,7 +106,7 @@ impl Event {
                         }
                         step_end = Some(id);
                     }
-                    let (id,): (i64,) = sqlx::query_as(
+                    let (id,): (i32,) = sqlx::query_as(
                         r#"INSERT INTO trace VALUES (DEFAULT, $1, $2) RETURNING id;"#,
                     )
                     .bind(step_start)
@@ -118,11 +118,11 @@ impl Event {
                     }
                     trace_end = Some(id);
                 }
-                sqlx::query(r#"INSERT INTO arb VALUES ($1, ($2, $3), ($4, $5), $6, $7);"#)
+                sqlx::query(r#"INSERT INTO arb VALUES ($1, (CAST($2 AS Amount), $3), (CAST($4 AS AMOUNT), $5), $6, $7);"#)
                     .bind(i64::try_from(*height)?)
-                    .bind(Sql::from(execution.input.amount))
+                    .bind(execution.input.amount.to_string())
                     .bind(Sql::from(execution.input.asset_id))
-                    .bind(Sql::from(execution.output.amount))
+                    .bind(execution.output.amount.to_string())
                     .bind(Sql::from(execution.output.asset_id))
                     .bind(trace_start)
                     .bind(trace_end)
