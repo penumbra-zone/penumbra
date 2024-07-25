@@ -29,6 +29,7 @@ impl AppView for ValidatorSet {
             "CREATE TABLE stake_validator_set (
                 id SERIAL PRIMARY KEY,
                 ik BYTEA NOT NULL,
+                ik_text TEXT NOT NULL,
                 name TEXT NOT NULL,
                 definition TEXT NOT NULL,
                 voting_power BIGINT NOT NULL,
@@ -176,12 +177,13 @@ async fn add_genesis_validators<'a>(
         // insert sql
         sqlx::query(
             "INSERT INTO stake_validator_set (
-                ik, name, definition, voting_power, queued_delegations, 
+                ik, ik_text, name, definition, voting_power, queued_delegations, 
                 queued_undelegations, validator_state, bonding_state
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         )
         .bind(val.identity_key.to_bytes())
+        .bind(val.identity_key.to_string())
         .bind(val.name.clone())
         .bind(serde_json::to_string(&val).expect("can serialize"))
         .bind(delegation_amount.value() as i64)
@@ -221,12 +223,13 @@ async fn handle_upload<'a>(dbtx: &mut PgTransaction<'a>, val: Validator) -> Resu
         // Insert new validator
         sqlx::query(
             "INSERT INTO stake_validator_set (
-                ik, name, definition, voting_power, queued_delegations, 
+                ik, ik_text, name, definition, voting_power, queued_delegations, 
                 queued_undelegations, validator_state, bonding_state
             )
-            VALUES ($1, $2, $3, 0, 0, 0, $4, $5)",
+            VALUES ($1, $2, $3, $4, 0, 0, 0, $5, $6)",
         )
         .bind(val.identity_key.to_bytes())
+        .bind(val.identity_key.to_string())
         .bind(val.name.clone())
         .bind(serde_json::to_string(&val).expect("can serialize"))
         .bind(serde_json::to_string(&validator::State::Defined).expect("can serialize")) // ValidatorManager::add_validator
