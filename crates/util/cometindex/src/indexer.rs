@@ -88,27 +88,33 @@ impl Indexer {
         .await?;
 
         if !dst_db_initialized {
-            tracing::info!("no watermark found, initializing with genesis data");
+            tracing::info!("no watermark found, creating index_watermark and initializing dst_db with genesis data");
 
             // Create the table if it doesn't exist
             sqlx::query("CREATE TABLE index_watermark (events_rowid BIGINT NOT NULL)")
                 .execute(&dst_db)
                 .await?;
-
-            // Load the genesis JSON to be used populating initial tables
-            let genesis_content: serde_json::Value = serde_json::from_str(
-                &std::fs::read_to_string(genesis_json)
-                    .context("error reading provided genesis.json file")?,
-            )
-            .context("error parsing provided genesis.json file")?;
-            let app_state = genesis_content
-                .get("app_state")
-                .ok_or_else(|| anyhow::anyhow!("no app_state key in genesis.json"))?;
-
-            Self::create_dst_tables(&dst_db, &indexes, app_state).await?;
         } else {
-            tracing::info!("skipping genesis initialization");
+            tracing::info!("skipping dst_db index_watermark initialization");
         }
+
+        // TODO: I assume the genesis file will never change for a given release of pd which is what makes this safe to perform each time
+        //       an AppView is initialized. If that presumption is true, however, it might make sense to slightly rework the initialization of
+        //       indexing for where the dst db has been watermarked but without confirming that the AppView's own schemas have been
+        //       initialized.
+        //       Another reason for this is that create_dst_tables already tacitly assumes that all AppView impls exercise sanitary schema initialization,
+        //       along with any instance where the schema may already exists, i.e.  IF NOT EXISTS and/or DROP IF EXISTS
+        let genesis_content: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(genesis_json)
+                .context("error reading provided genesis.json file")?,
+        )
+        .context("error parsing provided genesis.json file")?;
+
+        let app_state = genesis_content
+            .get("app_state")
+            .ok_or_else(|| anyhow::anyhow!("no app_state key in genesis.json"))?;
+
+        Self::create_dst_tables(&dst_db, &indexes, app_state).await?;
 
         loop {
             Self::tick(&src_db, &dst_db, &indexes).await?;
