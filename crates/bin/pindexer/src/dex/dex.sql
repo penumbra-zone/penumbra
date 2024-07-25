@@ -33,14 +33,14 @@ CREATE TABLE IF NOT EXISTS dex_value_circuit_breaker_change (
 -- One step of an execution trace.
 CREATE TABLE IF NOT EXISTS trace_step (
   id SERIAL PRIMARY KEY,
-  value Value,
+  value Value
 );
 
 -- A single trace, showing what a small amount of an input asset was exchanged for.
 CREATE TABLE IF NOT EXISTS trace (
   id SERIAL PRIMARY KEY,
   step_start INTEGER REFERENCES trace_step(id),
-  step_end INTEGER REFERENCES trace_step(id),
+  step_end INTEGER REFERENCES trace_step(id)
 );
 
 --- Represents instances where arb executions happened.
@@ -48,6 +48,6 @@ CREATE TABLE IF NOT EXISTS arb (
   height BIGINT PRIMARY KEY,
   input Value,
   output Value,
-  trace_start INTEGER REFERENCES arb_traces(id),
-  trace_end INTEGER REFERENCES arb_traces(id),
+  trace_start INTEGER REFERENCES trace(id),
+  trace_end INTEGER REFERENCES trace(id)
 );
