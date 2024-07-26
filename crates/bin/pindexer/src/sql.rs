@@ -1,10 +1,7 @@
 use std::error::Error;
 
-use anyhow::anyhow;
-use num_bigint::{BigInt, Sign};
 use penumbra_asset::asset::Id as AssetId;
-use penumbra_num::Amount;
-use sqlx::{types::BigDecimal, Decode, Encode, Postgres, Type};
+use sqlx::{Decode, Encode, Postgres, Type};
 
 /// An extension trait to make it easier to implement serialization for existing Penumbra types.
 ///
@@ -71,33 +68,6 @@ where
 {
     fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
         <[u8; 32]>::type_info()
-    }
-}
-
-impl SqlExt for Amount {
-    type SqlT = BigDecimal;
-
-    fn to_sql_type(&self) -> Self::SqlT {
-        BigDecimal::from(BigInt::from_bytes_le(
-            Sign::Plus,
-            self.to_le_bytes().as_slice(),
-        ))
-    }
-
-    fn from_sql_type(value: Self::SqlT) -> anyhow::Result<Self> {
-        if !value.is_integer() {
-            return Err(anyhow!("database value is not an integer").into());
-        }
-        let big_int = value.as_bigint_and_exponent().0;
-        // Get the bytes only from a positive BigInt
-        let bytes = match big_int.to_bytes_le() {
-            (Sign::Plus | Sign::NoSign, bytes) => bytes,
-            (Sign::Minus, bytes) => bytes,
-        };
-        let bytes: [u8; 16] = bytes
-            .try_into()
-            .map_err(|_| anyhow!("failed to convert slice to 16 bytes"))?;
-        Ok(Amount::from_le_bytes(bytes))
     }
 }
 
