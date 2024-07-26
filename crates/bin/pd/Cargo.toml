@@ -13,13 +13,6 @@ rust-version = "1.75"
 [package.metadata.dist]
 dist = true
 
-[package.metadata.release]
-# Update the guide docs to use the most recent version, to reduce tedium.
-# Preview the changes with `cargo release replace`.
-pre-release-replacements = [
-    { file = "../../../docs/guide/src/penumbra_version.md", search = "^v.*", replace = "{{tag_name}}", exactly = 1 },
-]
-
 [features]
 default = ["download-proving-keys"]
 std = ["ibc-types/std"]
