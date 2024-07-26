@@ -179,8 +179,8 @@ impl Event {
             } => {
                 sqlx::query(
                     "
-            INSERT INTO lp_updates (height, type, position_id, asset_1, asset_2, reserves_1, reserves_2, trading_fee)
-            VALUES ($1, $2, $3)
+            INSERT INTO lp_updates (height, type, position_id, pair, reserves_1, reserves_2, trading_fee)
+            VALUES ($1, $2, $3, ($4, $5), $6, $7, $8)
             ",
                 )
                 .bind(*height as i64)
@@ -223,8 +223,8 @@ impl Event {
             } => {
                 sqlx::query(
                     "
-            INSERT INTO lp_updates (height, type, position_id, asset_1, asset_2, reserves_1, reserves_2)
-            VALUES ($1, $2, $3)
+            INSERT INTO lp_updates (height, type, position_id, pair, reserves_1, reserves_2)
+            VALUES ($1, $2, $3, ($4, $5), $6, $7)
             ",
                 )
                 .bind(*height as i64)
@@ -251,9 +251,9 @@ impl Event {
             } => {
                 sqlx::query(
                     "
-            INSERT INTO lp_updates (height, type, position_id, asset_1, asset_2, reserves_1,
+            INSERT INTO lp_updates (height, type, position_id, pair, reserves_1,
              reserves_2, prev_reserves_1, prev_reserves_2, start_asset, end_asset)
-            VALUES ($1, $2, $3)
+            VALUES ($1, $2, $3, ($4, $5), $6, $7, $8, $9, $10, $11)
             ",
                 )
                 .bind(*height as i64)
