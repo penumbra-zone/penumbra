@@ -130,6 +130,8 @@
             pcli.program = "${penumbra}/bin/pcli";
             pclientd.type = "app";
             pclientd.program = "${penumbra}/bin/pclientd";
+            pindexer.type = "app";
+            pindexer.program = "${penumbra}/bin/pindexer";
             cometbft.type = "app";
             cometbft.program = "${cometbft}/bin/cometbft";
           };
