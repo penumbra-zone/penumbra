@@ -184,7 +184,7 @@ pub enum ThresholdInitCmd {
         num_participants: u16,
     },
     /// Generate a config file without using a trusted dealer, over authenticated P2P network channels
-    /// (using iroh.computer for direct p2p routing, with QUIC+TLS for encryption and authentication).
+    /// (using Magic Wormhole, which uses a PAKE for mutual authentication).
     OnlineDkg {
         /// The minimum number of signers required to make a signature (>= 2).
         #[clap(short, long)]

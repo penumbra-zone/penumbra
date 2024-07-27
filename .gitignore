@@ -65,3 +65,4 @@ build
 # psql
 .data
 logfile
+.aider*
