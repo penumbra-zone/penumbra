@@ -275,3 +275,8 @@ message AssetMetadataByIdsResponse {
   // A single asset metadata streamed from the node.
   core.asset.v1.Metadata denom_metadata = 1;
 }
+
+message EventDenomRegistered {
+  core.asset.v1.AssetId asset_id = 1;
+  core.asset.v1.Metadata denom_metadata = 2;
+}

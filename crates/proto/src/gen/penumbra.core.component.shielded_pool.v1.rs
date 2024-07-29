@@ -12,9 +12,7 @@ impl ::prost::Name for ShieldedPoolParameters {
     const NAME: &'static str = "ShieldedPoolParameters";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// Genesis data for the shielded pool component.
@@ -37,16 +35,15 @@ pub mod genesis_content {
         #[prost(string, tag = "2")]
         pub denom: ::prost::alloc::string::String,
         #[prost(message, optional, tag = "3")]
-        pub address: ::core::option::Option<
-            super::super::super::super::keys::v1::Address,
-        >,
+        pub address: ::core::option::Option<super::super::super::super::keys::v1::Address>,
     }
     impl ::prost::Name for Allocation {
         const NAME: &'static str = "Allocation";
         const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.core.component.shielded_pool.v1.GenesisContent.{}", Self::NAME
+                "penumbra.core.component.shielded_pool.v1.GenesisContent.{}",
+                Self::NAME
             )
         }
     }
@@ -55,9 +52,7 @@ impl ::prost::Name for GenesisContent {
     const NAME: &'static str = "GenesisContent";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// The parameters which control how the FMD parameters evolve over time.
@@ -110,9 +105,7 @@ impl ::prost::Name for FmdMetaParameters {
     const NAME: &'static str = "FmdMetaParameters";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// Used to potentially store state for the FMD Meta Parameters algorithm.
@@ -169,9 +162,7 @@ impl ::prost::Name for FmdMetaParametersAlgorithmState {
     const NAME: &'static str = "FmdMetaParametersAlgorithmState";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// Parameters for Fuzzy Message Detection
@@ -187,9 +178,7 @@ impl ::prost::Name for FmdParameters {
     const NAME: &'static str = "FmdParameters";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -206,9 +195,7 @@ impl ::prost::Name for Note {
     const NAME: &'static str = "Note";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -225,9 +212,7 @@ impl ::prost::Name for NoteView {
     const NAME: &'static str = "NoteView";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// An encrypted note.
@@ -242,9 +227,7 @@ impl ::prost::Name for NoteCiphertext {
     const NAME: &'static str = "NoteCiphertext";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// The body of an output description, including only the minimal
@@ -254,9 +237,8 @@ impl ::prost::Name for NoteCiphertext {
 pub struct NotePayload {
     /// The note commitment for the output note. 32 bytes.
     #[prost(message, optional, tag = "1")]
-    pub note_commitment: ::core::option::Option<
-        super::super::super::super::crypto::tct::v1::StateCommitment,
-    >,
+    pub note_commitment:
+        ::core::option::Option<super::super::super::super::crypto::tct::v1::StateCommitment>,
     /// The encoding of an ephemeral public key. 32 bytes.
     #[prost(bytes = "vec", tag = "2")]
     pub ephemeral_key: ::prost::alloc::vec::Vec<u8>,
@@ -269,9 +251,7 @@ impl ::prost::Name for NotePayload {
     const NAME: &'static str = "NotePayload";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// A Penumbra ZK output proof.
@@ -285,9 +265,7 @@ impl ::prost::Name for ZkOutputProof {
     const NAME: &'static str = "ZKOutputProof";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// A Penumbra ZK spend proof.
@@ -301,9 +279,7 @@ impl ::prost::Name for ZkSpendProof {
     const NAME: &'static str = "ZKSpendProof";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// A Penumbra ZK nullifier derivation proof.
@@ -317,9 +293,7 @@ impl ::prost::Name for ZkNullifierDerivationProof {
     const NAME: &'static str = "ZKNullifierDerivationProof";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// Spends a shielded note.
@@ -342,9 +316,7 @@ impl ::prost::Name for Spend {
     const NAME: &'static str = "Spend";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// ABCI Event recording a spend.
@@ -358,9 +330,7 @@ impl ::prost::Name for EventSpend {
     const NAME: &'static str = "EventSpend";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// ABCI Event recording an output.
@@ -368,17 +338,14 @@ impl ::prost::Name for EventSpend {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventOutput {
     #[prost(message, optional, tag = "1")]
-    pub note_commitment: ::core::option::Option<
-        super::super::super::super::crypto::tct::v1::StateCommitment,
-    >,
+    pub note_commitment:
+        ::core::option::Option<super::super::super::super::crypto::tct::v1::StateCommitment>,
 }
 impl ::prost::Name for EventOutput {
     const NAME: &'static str = "EventOutput";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// ABCI Event recording a clue.
@@ -386,9 +353,7 @@ impl ::prost::Name for EventOutput {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventBroadcastClue {
     #[prost(message, optional, tag = "1")]
-    pub clue: ::core::option::Option<
-        super::super::super::super::crypto::decaf377_fmd::v1::Clue,
-    >,
+    pub clue: ::core::option::Option<super::super::super::super::crypto::decaf377_fmd::v1::Clue>,
     #[prost(message, optional, tag = "2")]
     pub tx: ::core::option::Option<super::super::super::txhash::v1::TransactionId>,
 }
@@ -396,9 +361,7 @@ impl ::prost::Name for EventBroadcastClue {
     const NAME: &'static str = "EventBroadcastClue";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// The body of a spend description, containing only the effecting data
@@ -409,9 +372,8 @@ impl ::prost::Name for EventBroadcastClue {
 pub struct SpendBody {
     /// A commitment to the value of the input note.
     #[prost(message, optional, tag = "1")]
-    pub balance_commitment: ::core::option::Option<
-        super::super::super::asset::v1::BalanceCommitment,
-    >,
+    pub balance_commitment:
+        ::core::option::Option<super::super::super::asset::v1::BalanceCommitment>,
     /// The nullifier of the input note.
     #[prost(message, optional, tag = "6")]
     pub nullifier: ::core::option::Option<super::super::sct::v1::Nullifier>,
@@ -425,9 +387,7 @@ impl ::prost::Name for SpendBody {
     const NAME: &'static str = "SpendBody";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -451,7 +411,8 @@ pub mod spend_view {
         const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.core.component.shielded_pool.v1.SpendView.{}", Self::NAME
+                "penumbra.core.component.shielded_pool.v1.SpendView.{}",
+                Self::NAME
             )
         }
     }
@@ -466,7 +427,8 @@ pub mod spend_view {
         const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.core.component.shielded_pool.v1.SpendView.{}", Self::NAME
+                "penumbra.core.component.shielded_pool.v1.SpendView.{}",
+                Self::NAME
             )
         }
     }
@@ -483,9 +445,7 @@ impl ::prost::Name for SpendView {
     const NAME: &'static str = "SpendView";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -514,9 +474,7 @@ impl ::prost::Name for SpendPlan {
     const NAME: &'static str = "SpendPlan";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// Creates a new shielded note.
@@ -534,9 +492,7 @@ impl ::prost::Name for Output {
     const NAME: &'static str = "Output";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// The body of an output description, containing only the effecting data
@@ -550,9 +506,8 @@ pub struct OutputBody {
     pub note_payload: ::core::option::Option<NotePayload>,
     /// A commitment to the value of the output note. 32 bytes.
     #[prost(message, optional, tag = "2")]
-    pub balance_commitment: ::core::option::Option<
-        super::super::super::asset::v1::BalanceCommitment,
-    >,
+    pub balance_commitment:
+        ::core::option::Option<super::super::super::asset::v1::BalanceCommitment>,
     /// An encrypted key for decrypting the memo.
     #[prost(bytes = "vec", tag = "3")]
     pub wrapped_memo_key: ::prost::alloc::vec::Vec<u8>,
@@ -565,9 +520,7 @@ impl ::prost::Name for OutputBody {
     const NAME: &'static str = "OutputBody";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -586,16 +539,15 @@ pub mod output_view {
         #[prost(message, optional, tag = "2")]
         pub note: ::core::option::Option<super::NoteView>,
         #[prost(message, optional, tag = "3")]
-        pub payload_key: ::core::option::Option<
-            super::super::super::super::keys::v1::PayloadKey,
-        >,
+        pub payload_key: ::core::option::Option<super::super::super::super::keys::v1::PayloadKey>,
     }
     impl ::prost::Name for Visible {
         const NAME: &'static str = "Visible";
         const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.core.component.shielded_pool.v1.OutputView.{}", Self::NAME
+                "penumbra.core.component.shielded_pool.v1.OutputView.{}",
+                Self::NAME
             )
         }
     }
@@ -610,7 +562,8 @@ pub mod output_view {
         const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.core.component.shielded_pool.v1.OutputView.{}", Self::NAME
+                "penumbra.core.component.shielded_pool.v1.OutputView.{}",
+                Self::NAME
             )
         }
     }
@@ -627,9 +580,7 @@ impl ::prost::Name for OutputView {
     const NAME: &'static str = "OutputView";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -658,9 +609,7 @@ impl ::prost::Name for OutputPlan {
     const NAME: &'static str = "OutputPlan";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// Requests information on an asset by asset id
@@ -675,9 +624,7 @@ impl ::prost::Name for AssetMetadataByIdRequest {
     const NAME: &'static str = "AssetMetadataByIdRequest";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -693,9 +640,7 @@ impl ::prost::Name for AssetMetadataByIdResponse {
     const NAME: &'static str = "AssetMetadataByIdResponse";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// Requests information on an asset by multiple asset ids
@@ -711,9 +656,7 @@ impl ::prost::Name for AssetMetadataByIdsRequest {
     const NAME: &'static str = "AssetMetadataByIdsRequest";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -727,17 +670,30 @@ impl ::prost::Name for AssetMetadataByIdsResponse {
     const NAME: &'static str = "AssetMetadataByIdsResponse";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDenomRegistered {
+    #[prost(message, optional, tag = "1")]
+    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    #[prost(message, optional, tag = "2")]
+    pub denom_metadata: ::core::option::Option<super::super::super::asset::v1::Metadata>,
+}
+impl ::prost::Name for EventDenomRegistered {
+    const NAME: &'static str = "EventDenomRegistered";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.shielded_pool.v1.{}", Self::NAME)
     }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     /// Query operations for the shielded pool component.
     #[derive(Debug, Clone)]
     pub struct QueryServiceClient<T> {
@@ -782,9 +738,8 @@ pub mod query_service_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             QueryServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -822,31 +777,23 @@ pub mod query_service_client {
         pub async fn asset_metadata_by_id(
             &mut self,
             request: impl tonic::IntoRequest<super::AssetMetadataByIdRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::AssetMetadataByIdResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> std::result::Result<tonic::Response<super::AssetMetadataByIdResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.shielded_pool.v1.QueryService/AssetMetadataById",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.shielded_pool.v1.QueryService",
-                        "AssetMetadataById",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.shielded_pool.v1.QueryService",
+                "AssetMetadataById",
+            ));
             self.inner.unary(req, path, codec).await
         }
         /// Requests a stream of asset metadata, given an array of asset IDs. Responses
@@ -861,27 +808,21 @@ pub mod query_service_client {
             tonic::Response<tonic::codec::Streaming<super::AssetMetadataByIdsResponse>>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.shielded_pool.v1.QueryService/AssetMetadataByIds",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.shielded_pool.v1.QueryService",
-                        "AssetMetadataByIds",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.shielded_pool.v1.QueryService",
+                "AssetMetadataByIds",
+            ));
             self.inner.server_streaming(req, path, codec).await
         }
     }
@@ -897,18 +838,11 @@ pub mod query_service_server {
         async fn asset_metadata_by_id(
             &self,
             request: tonic::Request<super::AssetMetadataByIdRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::AssetMetadataByIdResponse>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<super::AssetMetadataByIdResponse>, tonic::Status>;
         /// Server streaming response type for the AssetMetadataByIds method.
         type AssetMetadataByIdsStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<
-                    super::AssetMetadataByIdsResponse,
-                    tonic::Status,
-                >,
-            >
-            + Send
+                Item = std::result::Result<super::AssetMetadataByIdsResponse, tonic::Status>,
+            > + Send
             + 'static;
         /// Requests a stream of asset metadata, given an array of asset IDs. Responses
         /// may be streamed in a different order from that of the asset IDs in the
@@ -918,10 +852,7 @@ pub mod query_service_server {
         async fn asset_metadata_by_ids(
             &self,
             request: tonic::Request<super::AssetMetadataByIdsRequest>,
-        ) -> std::result::Result<
-            tonic::Response<Self::AssetMetadataByIdsStream>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<Self::AssetMetadataByIdsStream>, tonic::Status>;
     }
     /// Query operations for the shielded pool component.
     #[derive(Debug)]
@@ -947,10 +878,7 @@ pub mod query_service_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -1006,23 +934,19 @@ pub mod query_service_server {
                 "/penumbra.core.component.shielded_pool.v1.QueryService/AssetMetadataById" => {
                     #[allow(non_camel_case_types)]
                     struct AssetMetadataByIdSvc<T: QueryService>(pub Arc<T>);
-                    impl<
-                        T: QueryService,
-                    > tonic::server::UnaryService<super::AssetMetadataByIdRequest>
-                    for AssetMetadataByIdSvc<T> {
+                    impl<T: QueryService>
+                        tonic::server::UnaryService<super::AssetMetadataByIdRequest>
+                        for AssetMetadataByIdSvc<T>
+                    {
                         type Response = super::AssetMetadataByIdResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AssetMetadataByIdRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as QueryService>::asset_metadata_by_id(&inner, request)
-                                    .await
+                                <T as QueryService>::asset_metadata_by_id(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1053,25 +977,21 @@ pub mod query_service_server {
                 "/penumbra.core.component.shielded_pool.v1.QueryService/AssetMetadataByIds" => {
                     #[allow(non_camel_case_types)]
                     struct AssetMetadataByIdsSvc<T: QueryService>(pub Arc<T>);
-                    impl<
-                        T: QueryService,
-                    > tonic::server::ServerStreamingService<
-                        super::AssetMetadataByIdsRequest,
-                    > for AssetMetadataByIdsSvc<T> {
+                    impl<T: QueryService>
+                        tonic::server::ServerStreamingService<super::AssetMetadataByIdsRequest>
+                        for AssetMetadataByIdsSvc<T>
+                    {
                         type Response = super::AssetMetadataByIdsResponse;
                         type ResponseStream = T::AssetMetadataByIdsStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
+                        type Future =
+                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AssetMetadataByIdsRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as QueryService>::asset_metadata_by_ids(&inner, request)
-                                    .await
+                                <T as QueryService>::asset_metadata_by_ids(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1099,18 +1019,14 @@ pub mod query_service_server {
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }

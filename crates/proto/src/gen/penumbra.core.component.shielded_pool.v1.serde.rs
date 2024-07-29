@@ -9,7 +9,10 @@ impl serde::Serialize for AssetMetadataByIdRequest {
         if self.asset_id.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.AssetMetadataByIdRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.AssetMetadataByIdRequest",
+            len,
+        )?;
         if let Some(v) = self.asset_id.as_ref() {
             struct_ser.serialize_field("assetId", v)?;
         }
@@ -22,10 +25,7 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdRequest {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "asset_id",
-            "assetId",
-        ];
+        const FIELDS: &[&str] = &["asset_id", "assetId"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -42,7 +42,10 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdRequest {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -65,12 +68,17 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdRequest {
             type Value = AssetMetadataByIdRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.AssetMetadataByIdRequest")
+                formatter.write_str(
+                    "struct penumbra.core.component.shielded_pool.v1.AssetMetadataByIdRequest",
+                )
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AssetMetadataByIdRequest, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<AssetMetadataByIdRequest, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut asset_id__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -91,7 +99,11 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.AssetMetadataByIdRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.AssetMetadataByIdRequest",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for AssetMetadataByIdResponse {
@@ -105,7 +117,10 @@ impl serde::Serialize for AssetMetadataByIdResponse {
         if self.denom_metadata.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.AssetMetadataByIdResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.AssetMetadataByIdResponse",
+            len,
+        )?;
         if let Some(v) = self.denom_metadata.as_ref() {
             struct_ser.serialize_field("denomMetadata", v)?;
         }
@@ -118,10 +133,7 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdResponse {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "denom_metadata",
-            "denomMetadata",
-        ];
+        const FIELDS: &[&str] = &["denom_metadata", "denomMetadata"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -138,7 +150,10 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdResponse {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -161,12 +176,17 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdResponse {
             type Value = AssetMetadataByIdResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.AssetMetadataByIdResponse")
+                formatter.write_str(
+                    "struct penumbra.core.component.shielded_pool.v1.AssetMetadataByIdResponse",
+                )
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AssetMetadataByIdResponse, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<AssetMetadataByIdResponse, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut denom_metadata__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -187,7 +207,11 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdResponse {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.AssetMetadataByIdResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.AssetMetadataByIdResponse",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for AssetMetadataByIdsRequest {
@@ -201,7 +225,10 @@ impl serde::Serialize for AssetMetadataByIdsRequest {
         if !self.asset_id.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsRequest",
+            len,
+        )?;
         if !self.asset_id.is_empty() {
             struct_ser.serialize_field("assetId", &self.asset_id)?;
         }
@@ -214,10 +241,7 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdsRequest {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "asset_id",
-            "assetId",
-        ];
+        const FIELDS: &[&str] = &["asset_id", "assetId"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -234,7 +258,10 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdsRequest {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -257,12 +284,17 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdsRequest {
             type Value = AssetMetadataByIdsRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsRequest")
+                formatter.write_str(
+                    "struct penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsRequest",
+                )
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AssetMetadataByIdsRequest, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<AssetMetadataByIdsRequest, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut asset_id__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -283,7 +315,11 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdsRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsRequest",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for AssetMetadataByIdsResponse {
@@ -297,7 +333,10 @@ impl serde::Serialize for AssetMetadataByIdsResponse {
         if self.denom_metadata.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsResponse",
+            len,
+        )?;
         if let Some(v) = self.denom_metadata.as_ref() {
             struct_ser.serialize_field("denomMetadata", v)?;
         }
@@ -310,10 +349,7 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdsResponse {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "denom_metadata",
-            "denomMetadata",
-        ];
+        const FIELDS: &[&str] = &["denom_metadata", "denomMetadata"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -330,7 +366,10 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdsResponse {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -353,12 +392,17 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdsResponse {
             type Value = AssetMetadataByIdsResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsResponse")
+                formatter.write_str(
+                    "struct penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsResponse",
+                )
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AssetMetadataByIdsResponse, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<AssetMetadataByIdsResponse, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut denom_metadata__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -379,7 +423,11 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdsResponse {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsResponse",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for EventBroadcastClue {
@@ -396,7 +444,10 @@ impl serde::Serialize for EventBroadcastClue {
         if self.tx.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.EventBroadcastClue", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.EventBroadcastClue",
+            len,
+        )?;
         if let Some(v) = self.clue.as_ref() {
             struct_ser.serialize_field("clue", v)?;
         }
@@ -412,10 +463,7 @@ impl<'de> serde::Deserialize<'de> for EventBroadcastClue {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "clue",
-            "tx",
-        ];
+        const FIELDS: &[&str] = &["clue", "tx"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -433,7 +481,10 @@ impl<'de> serde::Deserialize<'de> for EventBroadcastClue {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -457,12 +508,13 @@ impl<'de> serde::Deserialize<'de> for EventBroadcastClue {
             type Value = EventBroadcastClue;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.EventBroadcastClue")
+                formatter
+                    .write_str("struct penumbra.core.component.shielded_pool.v1.EventBroadcastClue")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventBroadcastClue, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut clue__ = None;
                 let mut tx__ = None;
@@ -491,7 +543,135 @@ impl<'de> serde::Deserialize<'de> for EventBroadcastClue {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.EventBroadcastClue", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.EventBroadcastClue",
+            FIELDS,
+            GeneratedVisitor,
+        )
+    }
+}
+impl serde::Serialize for EventDenomRegistered {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.asset_id.is_some() {
+            len += 1;
+        }
+        if self.denom_metadata.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.EventDenomRegistered",
+            len,
+        )?;
+        if let Some(v) = self.asset_id.as_ref() {
+            struct_ser.serialize_field("assetId", v)?;
+        }
+        if let Some(v) = self.denom_metadata.as_ref() {
+            struct_ser.serialize_field("denomMetadata", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventDenomRegistered {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &["asset_id", "assetId", "denom_metadata", "denomMetadata"];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            AssetId,
+            DenomMetadata,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "denomMetadata" | "denom_metadata" => Ok(GeneratedField::DenomMetadata),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventDenomRegistered;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str(
+                    "struct penumbra.core.component.shielded_pool.v1.EventDenomRegistered",
+                )
+            }
+
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<EventDenomRegistered, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
+            {
+                let mut asset_id__ = None;
+                let mut denom_metadata__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::AssetId => {
+                            if asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetId"));
+                            }
+                            asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::DenomMetadata => {
+                            if denom_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("denomMetadata"));
+                            }
+                            denom_metadata__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventDenomRegistered {
+                    asset_id: asset_id__,
+                    denom_metadata: denom_metadata__,
+                })
+            }
+        }
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.EventDenomRegistered",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for EventOutput {
@@ -505,7 +685,8 @@ impl serde::Serialize for EventOutput {
         if self.note_commitment.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.EventOutput", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.EventOutput", len)?;
         if let Some(v) = self.note_commitment.as_ref() {
             struct_ser.serialize_field("noteCommitment", v)?;
         }
@@ -518,10 +699,7 @@ impl<'de> serde::Deserialize<'de> for EventOutput {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "note_commitment",
-            "noteCommitment",
-        ];
+        const FIELDS: &[&str] = &["note_commitment", "noteCommitment"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -538,7 +716,10 @@ impl<'de> serde::Deserialize<'de> for EventOutput {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -548,7 +729,9 @@ impl<'de> serde::Deserialize<'de> for EventOutput {
                         E: serde::de::Error,
                     {
                         match value {
-                            "noteCommitment" | "note_commitment" => Ok(GeneratedField::NoteCommitment),
+                            "noteCommitment" | "note_commitment" => {
+                                Ok(GeneratedField::NoteCommitment)
+                            }
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -565,8 +748,8 @@ impl<'de> serde::Deserialize<'de> for EventOutput {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventOutput, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut note_commitment__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -587,7 +770,11 @@ impl<'de> serde::Deserialize<'de> for EventOutput {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.EventOutput", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.EventOutput",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for EventSpend {
@@ -601,7 +788,8 @@ impl serde::Serialize for EventSpend {
         if self.nullifier.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.EventSpend", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.EventSpend", len)?;
         if let Some(v) = self.nullifier.as_ref() {
             struct_ser.serialize_field("nullifier", v)?;
         }
@@ -614,9 +802,7 @@ impl<'de> serde::Deserialize<'de> for EventSpend {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "nullifier",
-        ];
+        const FIELDS: &[&str] = &["nullifier"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -633,7 +819,10 @@ impl<'de> serde::Deserialize<'de> for EventSpend {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -660,8 +849,8 @@ impl<'de> serde::Deserialize<'de> for EventSpend {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventSpend, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut nullifier__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -682,7 +871,11 @@ impl<'de> serde::Deserialize<'de> for EventSpend {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.EventSpend", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.EventSpend",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for FmdMetaParameters {
@@ -699,10 +892,16 @@ impl serde::Serialize for FmdMetaParameters {
         if self.algorithm.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParameters", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.FmdMetaParameters",
+            len,
+        )?;
         if self.fmd_grace_period_blocks != 0 {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("fmdGracePeriodBlocks", ToString::to_string(&self.fmd_grace_period_blocks).as_str())?;
+            struct_ser.serialize_field(
+                "fmdGracePeriodBlocks",
+                ToString::to_string(&self.fmd_grace_period_blocks).as_str(),
+            )?;
         }
         if let Some(v) = self.algorithm.as_ref() {
             match v {
@@ -749,7 +948,10 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -759,8 +961,12 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
                         E: serde::de::Error,
                     {
                         match value {
-                            "fmdGracePeriodBlocks" | "fmd_grace_period_blocks" => Ok(GeneratedField::FmdGracePeriodBlocks),
-                            "fixedPrecisionBits" | "fixed_precision_bits" => Ok(GeneratedField::FixedPrecisionBits),
+                            "fmdGracePeriodBlocks" | "fmd_grace_period_blocks" => {
+                                Ok(GeneratedField::FmdGracePeriodBlocks)
+                            }
+                            "fixedPrecisionBits" | "fixed_precision_bits" => {
+                                Ok(GeneratedField::FixedPrecisionBits)
+                            }
                             "slidingWindow" | "sliding_window" => Ok(GeneratedField::SlidingWindow),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -774,12 +980,13 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
             type Value = FmdMetaParameters;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.FmdMetaParameters")
+                formatter
+                    .write_str("struct penumbra.core.component.shielded_pool.v1.FmdMetaParameters")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<FmdMetaParameters, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut fmd_grace_period_blocks__ = None;
                 let mut algorithm__ = None;
@@ -787,15 +994,20 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
                     match k {
                         GeneratedField::FmdGracePeriodBlocks => {
                             if fmd_grace_period_blocks__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("fmdGracePeriodBlocks"));
+                                return Err(serde::de::Error::duplicate_field(
+                                    "fmdGracePeriodBlocks",
+                                ));
                             }
-                            fmd_grace_period_blocks__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            fmd_grace_period_blocks__ = Some(
+                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::FixedPrecisionBits => {
                             if algorithm__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("fixedPrecisionBits"));
+                                return Err(serde::de::Error::duplicate_field(
+                                    "fixedPrecisionBits",
+                                ));
                             }
                             algorithm__ = map_.next_value::<::std::option::Option<::pbjson::private::NumberDeserialize<_>>>()?.map(|x| fmd_meta_parameters::Algorithm::FixedPrecisionBits(x.0));
                         }
@@ -803,8 +1015,9 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
                             if algorithm__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("slidingWindow"));
                             }
-                            algorithm__ = map_.next_value::<::std::option::Option<_>>()?.map(fmd_meta_parameters::Algorithm::SlidingWindow)
-;
+                            algorithm__ = map_
+                                .next_value::<::std::option::Option<_>>()?
+                                .map(fmd_meta_parameters::Algorithm::SlidingWindow);
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -817,7 +1030,11 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParameters", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.FmdMetaParameters",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for fmd_meta_parameters::AlgorithmSlidingWindow {
@@ -834,12 +1051,18 @@ impl serde::Serialize for fmd_meta_parameters::AlgorithmSlidingWindow {
         if self.targeted_detections_per_window != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParameters.AlgorithmSlidingWindow", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.FmdMetaParameters.AlgorithmSlidingWindow",
+            len,
+        )?;
         if self.window_update_periods != 0 {
             struct_ser.serialize_field("windowUpdatePeriods", &self.window_update_periods)?;
         }
         if self.targeted_detections_per_window != 0 {
-            struct_ser.serialize_field("targetedDetectionsPerWindow", &self.targeted_detections_per_window)?;
+            struct_ser.serialize_field(
+                "targetedDetectionsPerWindow",
+                &self.targeted_detections_per_window,
+            )?;
         }
         struct_ser.end()
     }
@@ -873,7 +1096,10 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters::AlgorithmSlidingWindo
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -883,8 +1109,12 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters::AlgorithmSlidingWindo
                         E: serde::de::Error,
                     {
                         match value {
-                            "windowUpdatePeriods" | "window_update_periods" => Ok(GeneratedField::WindowUpdatePeriods),
-                            "targetedDetectionsPerWindow" | "targeted_detections_per_window" => Ok(GeneratedField::TargetedDetectionsPerWindow),
+                            "windowUpdatePeriods" | "window_update_periods" => {
+                                Ok(GeneratedField::WindowUpdatePeriods)
+                            }
+                            "targetedDetectionsPerWindow" | "targeted_detections_per_window" => {
+                                Ok(GeneratedField::TargetedDetectionsPerWindow)
+                            }
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -900,9 +1130,12 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters::AlgorithmSlidingWindo
                 formatter.write_str("struct penumbra.core.component.shielded_pool.v1.FmdMetaParameters.AlgorithmSlidingWindow")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<fmd_meta_parameters::AlgorithmSlidingWindow, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<fmd_meta_parameters::AlgorithmSlidingWindow, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut window_update_periods__ = None;
                 let mut targeted_detections_per_window__ = None;
@@ -910,19 +1143,25 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters::AlgorithmSlidingWindo
                     match k {
                         GeneratedField::WindowUpdatePeriods => {
                             if window_update_periods__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("windowUpdatePeriods"));
+                                return Err(serde::de::Error::duplicate_field(
+                                    "windowUpdatePeriods",
+                                ));
                             }
-                            window_update_periods__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            window_update_periods__ = Some(
+                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::TargetedDetectionsPerWindow => {
                             if targeted_detections_per_window__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("targetedDetectionsPerWindow"));
+                                return Err(serde::de::Error::duplicate_field(
+                                    "targetedDetectionsPerWindow",
+                                ));
                             }
-                            targeted_detections_per_window__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            targeted_detections_per_window__ = Some(
+                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -931,11 +1170,16 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters::AlgorithmSlidingWindo
                 }
                 Ok(fmd_meta_parameters::AlgorithmSlidingWindow {
                     window_update_periods: window_update_periods__.unwrap_or_default(),
-                    targeted_detections_per_window: targeted_detections_per_window__.unwrap_or_default(),
+                    targeted_detections_per_window: targeted_detections_per_window__
+                        .unwrap_or_default(),
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParameters.AlgorithmSlidingWindow", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.FmdMetaParameters.AlgorithmSlidingWindow",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for FmdMetaParametersAlgorithmState {
@@ -949,7 +1193,10 @@ impl serde::Serialize for FmdMetaParametersAlgorithmState {
         if self.state.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState",
+            len,
+        )?;
         if let Some(v) = self.state.as_ref() {
             match v {
                 fmd_meta_parameters_algorithm_state::State::Fixed(v) => {
@@ -969,11 +1216,7 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParametersAlgorithmState {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "fixed",
-            "sliding_window",
-            "slidingWindow",
-        ];
+        const FIELDS: &[&str] = &["fixed", "sliding_window", "slidingWindow"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -991,7 +1234,10 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParametersAlgorithmState {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1018,9 +1264,12 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParametersAlgorithmState {
                 formatter.write_str("struct penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<FmdMetaParametersAlgorithmState, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<FmdMetaParametersAlgorithmState, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut state__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -1029,27 +1278,31 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParametersAlgorithmState {
                             if state__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("fixed"));
                             }
-                            state__ = map_.next_value::<::std::option::Option<_>>()?.map(fmd_meta_parameters_algorithm_state::State::Fixed)
-;
+                            state__ = map_
+                                .next_value::<::std::option::Option<_>>()?
+                                .map(fmd_meta_parameters_algorithm_state::State::Fixed);
                         }
                         GeneratedField::SlidingWindow => {
                             if state__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("slidingWindow"));
                             }
-                            state__ = map_.next_value::<::std::option::Option<_>>()?.map(fmd_meta_parameters_algorithm_state::State::SlidingWindow)
-;
+                            state__ = map_
+                                .next_value::<::std::option::Option<_>>()?
+                                .map(fmd_meta_parameters_algorithm_state::State::SlidingWindow);
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
-                Ok(FmdMetaParametersAlgorithmState {
-                    state: state__,
-                })
+                Ok(FmdMetaParametersAlgorithmState { state: state__ })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for fmd_meta_parameters_algorithm_state::FixedState {
@@ -1060,7 +1313,10 @@ impl serde::Serialize for fmd_meta_parameters_algorithm_state::FixedState {
     {
         use serde::ser::SerializeStruct;
         let len = 0;
-        let struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState.FixedState", len)?;
+        let struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState.FixedState",
+            len,
+        )?;
         struct_ser.end()
     }
 }
@@ -1070,8 +1326,7 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters_algorithm_state::Fixed
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-        ];
+        const FIELDS: &[&str] = &[];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1087,7 +1342,10 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters_algorithm_state::Fixed
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1096,7 +1354,7 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters_algorithm_state::Fixed
                     where
                         E: serde::de::Error,
                     {
-                            Ok(GeneratedField::__SkipField__)
+                        Ok(GeneratedField::__SkipField__)
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -1110,18 +1368,24 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters_algorithm_state::Fixed
                 formatter.write_str("struct penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState.FixedState")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<fmd_meta_parameters_algorithm_state::FixedState, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<fmd_meta_parameters_algorithm_state::FixedState, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 while map_.next_key::<GeneratedField>()?.is_some() {
                     let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
-                Ok(fmd_meta_parameters_algorithm_state::FixedState {
-                })
+                Ok(fmd_meta_parameters_algorithm_state::FixedState {})
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState.FixedState", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState.FixedState",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for fmd_meta_parameters_algorithm_state::SlidingWindowState {
@@ -1148,10 +1412,7 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters_algorithm_state::Slidi
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "approximate_clue_count",
-            "approximateClueCount",
-        ];
+        const FIELDS: &[&str] = &["approximate_clue_count", "approximateClueCount"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1168,7 +1429,10 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters_algorithm_state::Slidi
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1178,7 +1442,9 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters_algorithm_state::Slidi
                         E: serde::de::Error,
                     {
                         match value {
-                            "approximateClueCount" | "approximate_clue_count" => Ok(GeneratedField::ApproximateClueCount),
+                            "approximateClueCount" | "approximate_clue_count" => {
+                                Ok(GeneratedField::ApproximateClueCount)
+                            }
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1194,20 +1460,29 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters_algorithm_state::Slidi
                 formatter.write_str("struct penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState.SlidingWindowState")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<fmd_meta_parameters_algorithm_state::SlidingWindowState, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<
+                fmd_meta_parameters_algorithm_state::SlidingWindowState,
+                V::Error,
+            >
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut approximate_clue_count__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ApproximateClueCount => {
                             if approximate_clue_count__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("approximateClueCount"));
+                                return Err(serde::de::Error::duplicate_field(
+                                    "approximateClueCount",
+                                ));
                             }
-                            approximate_clue_count__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            approximate_clue_count__ = Some(
+                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -1236,13 +1511,19 @@ impl serde::Serialize for FmdParameters {
         if self.as_of_block_height != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.FmdParameters", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.FmdParameters",
+            len,
+        )?;
         if self.precision_bits != 0 {
             struct_ser.serialize_field("precisionBits", &self.precision_bits)?;
         }
         if self.as_of_block_height != 0 {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("asOfBlockHeight", ToString::to_string(&self.as_of_block_height).as_str())?;
+            struct_ser.serialize_field(
+                "asOfBlockHeight",
+                ToString::to_string(&self.as_of_block_height).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -1276,7 +1557,10 @@ impl<'de> serde::Deserialize<'de> for FmdParameters {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1287,7 +1571,9 @@ impl<'de> serde::Deserialize<'de> for FmdParameters {
                     {
                         match value {
                             "precisionBits" | "precision_bits" => Ok(GeneratedField::PrecisionBits),
-                            "asOfBlockHeight" | "as_of_block_height" => Ok(GeneratedField::AsOfBlockHeight),
+                            "asOfBlockHeight" | "as_of_block_height" => {
+                                Ok(GeneratedField::AsOfBlockHeight)
+                            }
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1304,8 +1590,8 @@ impl<'de> serde::Deserialize<'de> for FmdParameters {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<FmdParameters, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut precision_bits__ = None;
                 let mut as_of_block_height__ = None;
@@ -1315,17 +1601,19 @@ impl<'de> serde::Deserialize<'de> for FmdParameters {
                             if precision_bits__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("precisionBits"));
                             }
-                            precision_bits__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            precision_bits__ = Some(
+                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::AsOfBlockHeight => {
                             if as_of_block_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("asOfBlockHeight"));
                             }
-                            as_of_block_height__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            as_of_block_height__ = Some(
+                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -1338,7 +1626,11 @@ impl<'de> serde::Deserialize<'de> for FmdParameters {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.FmdParameters", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.FmdParameters",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for GenesisContent {
@@ -1355,7 +1647,10 @@ impl serde::Serialize for GenesisContent {
         if !self.allocations.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.GenesisContent", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.GenesisContent",
+            len,
+        )?;
         if let Some(v) = self.shielded_pool_params.as_ref() {
             struct_ser.serialize_field("shieldedPoolParams", v)?;
         }
@@ -1371,11 +1666,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "shielded_pool_params",
-            "shieldedPoolParams",
-            "allocations",
-        ];
+        const FIELDS: &[&str] = &["shielded_pool_params", "shieldedPoolParams", "allocations"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1393,7 +1684,10 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1403,7 +1697,9 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                         E: serde::de::Error,
                     {
                         match value {
-                            "shieldedPoolParams" | "shielded_pool_params" => Ok(GeneratedField::ShieldedPoolParams),
+                            "shieldedPoolParams" | "shielded_pool_params" => {
+                                Ok(GeneratedField::ShieldedPoolParams)
+                            }
                             "allocations" => Ok(GeneratedField::Allocations),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -1417,12 +1713,13 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
             type Value = GenesisContent;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.GenesisContent")
+                formatter
+                    .write_str("struct penumbra.core.component.shielded_pool.v1.GenesisContent")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<GenesisContent, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut shielded_pool_params__ = None;
                 let mut allocations__ = None;
@@ -1430,7 +1727,9 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     match k {
                         GeneratedField::ShieldedPoolParams => {
                             if shielded_pool_params__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("shieldedPoolParams"));
+                                return Err(serde::de::Error::duplicate_field(
+                                    "shieldedPoolParams",
+                                ));
                             }
                             shielded_pool_params__ = map_.next_value()?;
                         }
@@ -1451,7 +1750,11 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.GenesisContent", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.GenesisContent",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for genesis_content::Allocation {
@@ -1471,7 +1774,10 @@ impl serde::Serialize for genesis_content::Allocation {
         if self.address.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.GenesisContent.Allocation", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.GenesisContent.Allocation",
+            len,
+        )?;
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
         }
@@ -1490,11 +1796,7 @@ impl<'de> serde::Deserialize<'de> for genesis_content::Allocation {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "amount",
-            "denom",
-            "address",
-        ];
+        const FIELDS: &[&str] = &["amount", "denom", "address"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1513,7 +1815,10 @@ impl<'de> serde::Deserialize<'de> for genesis_content::Allocation {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1538,12 +1843,17 @@ impl<'de> serde::Deserialize<'de> for genesis_content::Allocation {
             type Value = genesis_content::Allocation;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.GenesisContent.Allocation")
+                formatter.write_str(
+                    "struct penumbra.core.component.shielded_pool.v1.GenesisContent.Allocation",
+                )
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<genesis_content::Allocation, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<genesis_content::Allocation, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut amount__ = None;
                 let mut denom__ = None;
@@ -1580,7 +1890,11 @@ impl<'de> serde::Deserialize<'de> for genesis_content::Allocation {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.GenesisContent.Allocation", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.GenesisContent.Allocation",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for Note {
@@ -1600,13 +1914,17 @@ impl serde::Serialize for Note {
         if self.address.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.Note", len)?;
+        let mut struct_ser =
+            serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.Note", len)?;
         if let Some(v) = self.value.as_ref() {
             struct_ser.serialize_field("value", v)?;
         }
         if !self.rseed.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("rseed", pbjson::private::base64::encode(&self.rseed).as_str())?;
+            struct_ser.serialize_field(
+                "rseed",
+                pbjson::private::base64::encode(&self.rseed).as_str(),
+            )?;
         }
         if let Some(v) = self.address.as_ref() {
             struct_ser.serialize_field("address", v)?;
@@ -1620,11 +1938,7 @@ impl<'de> serde::Deserialize<'de> for Note {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "value",
-            "rseed",
-            "address",
-        ];
+        const FIELDS: &[&str] = &["value", "rseed", "address"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1643,7 +1957,10 @@ impl<'de> serde::Deserialize<'de> for Note {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1672,8 +1989,8 @@ impl<'de> serde::Deserialize<'de> for Note {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Note, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut value__ = None;
                 let mut rseed__ = None;
@@ -1690,9 +2007,10 @@ impl<'de> serde::Deserialize<'de> for Note {
                             if rseed__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("rseed"));
                             }
-                            rseed__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            rseed__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::Address => {
                             if address__.is_some() {
@@ -1712,7 +2030,11 @@ impl<'de> serde::Deserialize<'de> for Note {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.Note", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.Note",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for NoteCiphertext {
@@ -1726,10 +2048,16 @@ impl serde::Serialize for NoteCiphertext {
         if !self.inner.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.NoteCiphertext", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.NoteCiphertext",
+            len,
+        )?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
+            struct_ser.serialize_field(
+                "inner",
+                pbjson::private::base64::encode(&self.inner).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -1740,9 +2068,7 @@ impl<'de> serde::Deserialize<'de> for NoteCiphertext {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "inner",
-        ];
+        const FIELDS: &[&str] = &["inner"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -1759,7 +2085,10 @@ impl<'de> serde::Deserialize<'de> for NoteCiphertext {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1782,12 +2111,13 @@ impl<'de> serde::Deserialize<'de> for NoteCiphertext {
             type Value = NoteCiphertext;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.NoteCiphertext")
+                formatter
+                    .write_str("struct penumbra.core.component.shielded_pool.v1.NoteCiphertext")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<NoteCiphertext, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -1796,9 +2126,10 @@ impl<'de> serde::Deserialize<'de> for NoteCiphertext {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
-                            inner__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            inner__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -1810,7 +2141,11 @@ impl<'de> serde::Deserialize<'de> for NoteCiphertext {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.NoteCiphertext", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.NoteCiphertext",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for NotePayload {
@@ -1830,13 +2165,17 @@ impl serde::Serialize for NotePayload {
         if self.encrypted_note.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.NotePayload", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.NotePayload", len)?;
         if let Some(v) = self.note_commitment.as_ref() {
             struct_ser.serialize_field("noteCommitment", v)?;
         }
         if !self.ephemeral_key.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("ephemeralKey", pbjson::private::base64::encode(&self.ephemeral_key).as_str())?;
+            struct_ser.serialize_field(
+                "ephemeralKey",
+                pbjson::private::base64::encode(&self.ephemeral_key).as_str(),
+            )?;
         }
         if let Some(v) = self.encrypted_note.as_ref() {
             struct_ser.serialize_field("encryptedNote", v)?;
@@ -1876,7 +2215,10 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -1886,7 +2228,9 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
                         E: serde::de::Error,
                     {
                         match value {
-                            "noteCommitment" | "note_commitment" => Ok(GeneratedField::NoteCommitment),
+                            "noteCommitment" | "note_commitment" => {
+                                Ok(GeneratedField::NoteCommitment)
+                            }
                             "ephemeralKey" | "ephemeral_key" => Ok(GeneratedField::EphemeralKey),
                             "encryptedNote" | "encrypted_note" => Ok(GeneratedField::EncryptedNote),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -1905,8 +2249,8 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<NotePayload, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut note_commitment__ = None;
                 let mut ephemeral_key__ = None;
@@ -1923,9 +2267,10 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
                             if ephemeral_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("ephemeralKey"));
                             }
-                            ephemeral_key__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            ephemeral_key__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::EncryptedNote => {
                             if encrypted_note__.is_some() {
@@ -1945,7 +2290,11 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.NotePayload", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.NotePayload",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for NoteView {
@@ -1965,13 +2314,17 @@ impl serde::Serialize for NoteView {
         if self.address.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.NoteView", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.NoteView", len)?;
         if let Some(v) = self.value.as_ref() {
             struct_ser.serialize_field("value", v)?;
         }
         if !self.rseed.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("rseed", pbjson::private::base64::encode(&self.rseed).as_str())?;
+            struct_ser.serialize_field(
+                "rseed",
+                pbjson::private::base64::encode(&self.rseed).as_str(),
+            )?;
         }
         if let Some(v) = self.address.as_ref() {
             struct_ser.serialize_field("address", v)?;
@@ -1985,11 +2338,7 @@ impl<'de> serde::Deserialize<'de> for NoteView {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "value",
-            "rseed",
-            "address",
-        ];
+        const FIELDS: &[&str] = &["value", "rseed", "address"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -2008,7 +2357,10 @@ impl<'de> serde::Deserialize<'de> for NoteView {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2037,8 +2389,8 @@ impl<'de> serde::Deserialize<'de> for NoteView {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<NoteView, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut value__ = None;
                 let mut rseed__ = None;
@@ -2055,9 +2407,10 @@ impl<'de> serde::Deserialize<'de> for NoteView {
                             if rseed__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("rseed"));
                             }
-                            rseed__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            rseed__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::Address => {
                             if address__.is_some() {
@@ -2077,7 +2430,11 @@ impl<'de> serde::Deserialize<'de> for NoteView {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.NoteView", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.NoteView",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for Output {
@@ -2094,7 +2451,8 @@ impl serde::Serialize for Output {
         if self.proof.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.Output", len)?;
+        let mut struct_ser =
+            serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.Output", len)?;
         if let Some(v) = self.body.as_ref() {
             struct_ser.serialize_field("body", v)?;
         }
@@ -2110,10 +2468,7 @@ impl<'de> serde::Deserialize<'de> for Output {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "body",
-            "proof",
-        ];
+        const FIELDS: &[&str] = &["body", "proof"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -2131,7 +2486,10 @@ impl<'de> serde::Deserialize<'de> for Output {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2159,8 +2517,8 @@ impl<'de> serde::Deserialize<'de> for Output {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Output, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut body__ = None;
                 let mut proof__ = None;
@@ -2189,7 +2547,11 @@ impl<'de> serde::Deserialize<'de> for Output {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.Output", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.Output",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for OutputBody {
@@ -2212,7 +2574,8 @@ impl serde::Serialize for OutputBody {
         if !self.ovk_wrapped_key.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.OutputBody", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.OutputBody", len)?;
         if let Some(v) = self.note_payload.as_ref() {
             struct_ser.serialize_field("notePayload", v)?;
         }
@@ -2221,11 +2584,17 @@ impl serde::Serialize for OutputBody {
         }
         if !self.wrapped_memo_key.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("wrappedMemoKey", pbjson::private::base64::encode(&self.wrapped_memo_key).as_str())?;
+            struct_ser.serialize_field(
+                "wrappedMemoKey",
+                pbjson::private::base64::encode(&self.wrapped_memo_key).as_str(),
+            )?;
         }
         if !self.ovk_wrapped_key.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("ovkWrappedKey", pbjson::private::base64::encode(&self.ovk_wrapped_key).as_str())?;
+            struct_ser.serialize_field(
+                "ovkWrappedKey",
+                pbjson::private::base64::encode(&self.ovk_wrapped_key).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -2265,7 +2634,10 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2276,9 +2648,15 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
                     {
                         match value {
                             "notePayload" | "note_payload" => Ok(GeneratedField::NotePayload),
-                            "balanceCommitment" | "balance_commitment" => Ok(GeneratedField::BalanceCommitment),
-                            "wrappedMemoKey" | "wrapped_memo_key" => Ok(GeneratedField::WrappedMemoKey),
-                            "ovkWrappedKey" | "ovk_wrapped_key" => Ok(GeneratedField::OvkWrappedKey),
+                            "balanceCommitment" | "balance_commitment" => {
+                                Ok(GeneratedField::BalanceCommitment)
+                            }
+                            "wrappedMemoKey" | "wrapped_memo_key" => {
+                                Ok(GeneratedField::WrappedMemoKey)
+                            }
+                            "ovkWrappedKey" | "ovk_wrapped_key" => {
+                                Ok(GeneratedField::OvkWrappedKey)
+                            }
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2295,8 +2673,8 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<OutputBody, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut note_payload__ = None;
                 let mut balance_commitment__ = None;
@@ -2320,17 +2698,19 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
                             if wrapped_memo_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("wrappedMemoKey"));
                             }
-                            wrapped_memo_key__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            wrapped_memo_key__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::OvkWrappedKey => {
                             if ovk_wrapped_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("ovkWrappedKey"));
                             }
-                            ovk_wrapped_key__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            ovk_wrapped_key__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -2345,7 +2725,11 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.OutputBody", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.OutputBody",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for OutputPlan {
@@ -2374,7 +2758,8 @@ impl serde::Serialize for OutputPlan {
         if !self.proof_blinding_s.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.OutputPlan", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.OutputPlan", len)?;
         if let Some(v) = self.value.as_ref() {
             struct_ser.serialize_field("value", v)?;
         }
@@ -2383,19 +2768,31 @@ impl serde::Serialize for OutputPlan {
         }
         if !self.rseed.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("rseed", pbjson::private::base64::encode(&self.rseed).as_str())?;
+            struct_ser.serialize_field(
+                "rseed",
+                pbjson::private::base64::encode(&self.rseed).as_str(),
+            )?;
         }
         if !self.value_blinding.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("valueBlinding", pbjson::private::base64::encode(&self.value_blinding).as_str())?;
+            struct_ser.serialize_field(
+                "valueBlinding",
+                pbjson::private::base64::encode(&self.value_blinding).as_str(),
+            )?;
         }
         if !self.proof_blinding_r.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
+            struct_ser.serialize_field(
+                "proofBlindingR",
+                pbjson::private::base64::encode(&self.proof_blinding_r).as_str(),
+            )?;
         }
         if !self.proof_blinding_s.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
+            struct_ser.serialize_field(
+                "proofBlindingS",
+                pbjson::private::base64::encode(&self.proof_blinding_s).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -2439,7 +2836,10 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2453,8 +2853,12 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
                             "destAddress" | "dest_address" => Ok(GeneratedField::DestAddress),
                             "rseed" => Ok(GeneratedField::Rseed),
                             "valueBlinding" | "value_blinding" => Ok(GeneratedField::ValueBlinding),
-                            "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
-                            "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
+                            "proofBlindingR" | "proof_blinding_r" => {
+                                Ok(GeneratedField::ProofBlindingR)
+                            }
+                            "proofBlindingS" | "proof_blinding_s" => {
+                                Ok(GeneratedField::ProofBlindingS)
+                            }
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2471,8 +2875,8 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<OutputPlan, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut value__ = None;
                 let mut dest_address__ = None;
@@ -2498,33 +2902,37 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
                             if rseed__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("rseed"));
                             }
-                            rseed__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            rseed__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::ValueBlinding => {
                             if value_blinding__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("valueBlinding"));
                             }
-                            value_blinding__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            value_blinding__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::ProofBlindingR => {
                             if proof_blinding_r__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proofBlindingR"));
                             }
-                            proof_blinding_r__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            proof_blinding_r__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::ProofBlindingS => {
                             if proof_blinding_s__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proofBlindingS"));
                             }
-                            proof_blinding_s__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            proof_blinding_s__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -2541,7 +2949,11 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.OutputPlan", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.OutputPlan",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for OutputView {
@@ -2555,7 +2967,8 @@ impl serde::Serialize for OutputView {
         if self.output_view.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.OutputView", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.OutputView", len)?;
         if let Some(v) = self.output_view.as_ref() {
             match v {
                 output_view::OutputView::Visible(v) => {
@@ -2575,10 +2988,7 @@ impl<'de> serde::Deserialize<'de> for OutputView {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "visible",
-            "opaque",
-        ];
+        const FIELDS: &[&str] = &["visible", "opaque"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -2596,7 +3006,10 @@ impl<'de> serde::Deserialize<'de> for OutputView {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2624,8 +3037,8 @@ impl<'de> serde::Deserialize<'de> for OutputView {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<OutputView, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut output_view__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -2634,15 +3047,17 @@ impl<'de> serde::Deserialize<'de> for OutputView {
                             if output_view__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("visible"));
                             }
-                            output_view__ = map_.next_value::<::std::option::Option<_>>()?.map(output_view::OutputView::Visible)
-;
+                            output_view__ = map_
+                                .next_value::<::std::option::Option<_>>()?
+                                .map(output_view::OutputView::Visible);
                         }
                         GeneratedField::Opaque => {
                             if output_view__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("opaque"));
                             }
-                            output_view__ = map_.next_value::<::std::option::Option<_>>()?.map(output_view::OutputView::Opaque)
-;
+                            output_view__ = map_
+                                .next_value::<::std::option::Option<_>>()?
+                                .map(output_view::OutputView::Opaque);
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -2654,7 +3069,11 @@ impl<'de> serde::Deserialize<'de> for OutputView {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.OutputView", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.OutputView",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for output_view::Opaque {
@@ -2668,7 +3087,10 @@ impl serde::Serialize for output_view::Opaque {
         if self.output.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.OutputView.Opaque", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.OutputView.Opaque",
+            len,
+        )?;
         if let Some(v) = self.output.as_ref() {
             struct_ser.serialize_field("output", v)?;
         }
@@ -2681,9 +3103,7 @@ impl<'de> serde::Deserialize<'de> for output_view::Opaque {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "output",
-        ];
+        const FIELDS: &[&str] = &["output"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -2700,7 +3120,10 @@ impl<'de> serde::Deserialize<'de> for output_view::Opaque {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2723,12 +3146,13 @@ impl<'de> serde::Deserialize<'de> for output_view::Opaque {
             type Value = output_view::Opaque;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.OutputView.Opaque")
+                formatter
+                    .write_str("struct penumbra.core.component.shielded_pool.v1.OutputView.Opaque")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<output_view::Opaque, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut output__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -2744,12 +3168,14 @@ impl<'de> serde::Deserialize<'de> for output_view::Opaque {
                         }
                     }
                 }
-                Ok(output_view::Opaque {
-                    output: output__,
-                })
+                Ok(output_view::Opaque { output: output__ })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.OutputView.Opaque", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.OutputView.Opaque",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for output_view::Visible {
@@ -2769,7 +3195,10 @@ impl serde::Serialize for output_view::Visible {
         if self.payload_key.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.OutputView.Visible", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.OutputView.Visible",
+            len,
+        )?;
         if let Some(v) = self.output.as_ref() {
             struct_ser.serialize_field("output", v)?;
         }
@@ -2788,12 +3217,7 @@ impl<'de> serde::Deserialize<'de> for output_view::Visible {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "output",
-            "note",
-            "payload_key",
-            "payloadKey",
-        ];
+        const FIELDS: &[&str] = &["output", "note", "payload_key", "payloadKey"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -2812,7 +3236,10 @@ impl<'de> serde::Deserialize<'de> for output_view::Visible {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2837,12 +3264,16 @@ impl<'de> serde::Deserialize<'de> for output_view::Visible {
             type Value = output_view::Visible;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.OutputView.Visible")
+                formatter
+                    .write_str("struct penumbra.core.component.shielded_pool.v1.OutputView.Visible")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<output_view::Visible, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<output_view::Visible, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut output__ = None;
                 let mut note__ = None;
@@ -2879,7 +3310,11 @@ impl<'de> serde::Deserialize<'de> for output_view::Visible {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.OutputView.Visible", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.OutputView.Visible",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for ShieldedPoolParameters {
@@ -2896,7 +3331,10 @@ impl serde::Serialize for ShieldedPoolParameters {
         if self.fmd_meta_params.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.ShieldedPoolParameters", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.ShieldedPoolParameters",
+            len,
+        )?;
         if let Some(v) = self.fixed_fmd_params.as_ref() {
             struct_ser.serialize_field("fixedFmdParams", v)?;
         }
@@ -2935,7 +3373,10 @@ impl<'de> serde::Deserialize<'de> for ShieldedPoolParameters {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -2945,8 +3386,12 @@ impl<'de> serde::Deserialize<'de> for ShieldedPoolParameters {
                         E: serde::de::Error,
                     {
                         match value {
-                            "fixedFmdParams" | "fixed_fmd_params" => Ok(GeneratedField::FixedFmdParams),
-                            "fmdMetaParams" | "fmd_meta_params" => Ok(GeneratedField::FmdMetaParams),
+                            "fixedFmdParams" | "fixed_fmd_params" => {
+                                Ok(GeneratedField::FixedFmdParams)
+                            }
+                            "fmdMetaParams" | "fmd_meta_params" => {
+                                Ok(GeneratedField::FmdMetaParams)
+                            }
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2959,12 +3404,17 @@ impl<'de> serde::Deserialize<'de> for ShieldedPoolParameters {
             type Value = ShieldedPoolParameters;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.ShieldedPoolParameters")
+                formatter.write_str(
+                    "struct penumbra.core.component.shielded_pool.v1.ShieldedPoolParameters",
+                )
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ShieldedPoolParameters, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<ShieldedPoolParameters, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut fixed_fmd_params__ = None;
                 let mut fmd_meta_params__ = None;
@@ -2993,7 +3443,11 @@ impl<'de> serde::Deserialize<'de> for ShieldedPoolParameters {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.ShieldedPoolParameters", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.ShieldedPoolParameters",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for Spend {
@@ -3013,7 +3467,8 @@ impl serde::Serialize for Spend {
         if self.proof.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.Spend", len)?;
+        let mut struct_ser =
+            serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.Spend", len)?;
         if let Some(v) = self.body.as_ref() {
             struct_ser.serialize_field("body", v)?;
         }
@@ -3032,12 +3487,7 @@ impl<'de> serde::Deserialize<'de> for Spend {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "body",
-            "auth_sig",
-            "authSig",
-            "proof",
-        ];
+        const FIELDS: &[&str] = &["body", "auth_sig", "authSig", "proof"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -3056,7 +3506,10 @@ impl<'de> serde::Deserialize<'de> for Spend {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -3085,8 +3538,8 @@ impl<'de> serde::Deserialize<'de> for Spend {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Spend, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut body__ = None;
                 let mut auth_sig__ = None;
@@ -3123,7 +3576,11 @@ impl<'de> serde::Deserialize<'de> for Spend {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.Spend", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.Spend",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for SpendBody {
@@ -3143,7 +3600,8 @@ impl serde::Serialize for SpendBody {
         if self.rk.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.SpendBody", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.SpendBody", len)?;
         if let Some(v) = self.balance_commitment.as_ref() {
             struct_ser.serialize_field("balanceCommitment", v)?;
         }
@@ -3162,12 +3620,7 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "balance_commitment",
-            "balanceCommitment",
-            "nullifier",
-            "rk",
-        ];
+        const FIELDS: &[&str] = &["balance_commitment", "balanceCommitment", "nullifier", "rk"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -3186,7 +3639,10 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -3196,7 +3652,9 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                         E: serde::de::Error,
                     {
                         match value {
-                            "balanceCommitment" | "balance_commitment" => Ok(GeneratedField::BalanceCommitment),
+                            "balanceCommitment" | "balance_commitment" => {
+                                Ok(GeneratedField::BalanceCommitment)
+                            }
                             "nullifier" => Ok(GeneratedField::Nullifier),
                             "rk" => Ok(GeneratedField::Rk),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -3215,8 +3673,8 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<SpendBody, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut balance_commitment__ = None;
                 let mut nullifier__ = None;
@@ -3253,7 +3711,11 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.SpendBody", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.SpendBody",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for SpendPlan {
@@ -3282,7 +3744,8 @@ impl serde::Serialize for SpendPlan {
         if !self.proof_blinding_s.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.SpendPlan", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.SpendPlan", len)?;
         if let Some(v) = self.note.as_ref() {
             struct_ser.serialize_field("note", v)?;
         }
@@ -3292,19 +3755,31 @@ impl serde::Serialize for SpendPlan {
         }
         if !self.randomizer.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("randomizer", pbjson::private::base64::encode(&self.randomizer).as_str())?;
+            struct_ser.serialize_field(
+                "randomizer",
+                pbjson::private::base64::encode(&self.randomizer).as_str(),
+            )?;
         }
         if !self.value_blinding.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("valueBlinding", pbjson::private::base64::encode(&self.value_blinding).as_str())?;
+            struct_ser.serialize_field(
+                "valueBlinding",
+                pbjson::private::base64::encode(&self.value_blinding).as_str(),
+            )?;
         }
         if !self.proof_blinding_r.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
+            struct_ser.serialize_field(
+                "proofBlindingR",
+                pbjson::private::base64::encode(&self.proof_blinding_r).as_str(),
+            )?;
         }
         if !self.proof_blinding_s.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
+            struct_ser.serialize_field(
+                "proofBlindingS",
+                pbjson::private::base64::encode(&self.proof_blinding_s).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -3347,7 +3822,10 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -3361,8 +3839,12 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
                             "position" => Ok(GeneratedField::Position),
                             "randomizer" => Ok(GeneratedField::Randomizer),
                             "valueBlinding" | "value_blinding" => Ok(GeneratedField::ValueBlinding),
-                            "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
-                            "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
+                            "proofBlindingR" | "proof_blinding_r" => {
+                                Ok(GeneratedField::ProofBlindingR)
+                            }
+                            "proofBlindingS" | "proof_blinding_s" => {
+                                Ok(GeneratedField::ProofBlindingS)
+                            }
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3379,8 +3861,8 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<SpendPlan, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut note__ = None;
                 let mut position__ = None;
@@ -3400,41 +3882,46 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
                             if position__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("position"));
                             }
-                            position__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            position__ = Some(
+                                map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::Randomizer => {
                             if randomizer__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("randomizer"));
                             }
-                            randomizer__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            randomizer__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::ValueBlinding => {
                             if value_blinding__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("valueBlinding"));
                             }
-                            value_blinding__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            value_blinding__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::ProofBlindingR => {
                             if proof_blinding_r__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proofBlindingR"));
                             }
-                            proof_blinding_r__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            proof_blinding_r__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::ProofBlindingS => {
                             if proof_blinding_s__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proofBlindingS"));
                             }
-                            proof_blinding_s__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            proof_blinding_s__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -3451,7 +3938,11 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.SpendPlan", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.SpendPlan",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for SpendView {
@@ -3465,7 +3956,8 @@ impl serde::Serialize for SpendView {
         if self.spend_view.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.SpendView", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.SpendView", len)?;
         if let Some(v) = self.spend_view.as_ref() {
             match v {
                 spend_view::SpendView::Visible(v) => {
@@ -3485,10 +3977,7 @@ impl<'de> serde::Deserialize<'de> for SpendView {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "visible",
-            "opaque",
-        ];
+        const FIELDS: &[&str] = &["visible", "opaque"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -3506,7 +3995,10 @@ impl<'de> serde::Deserialize<'de> for SpendView {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -3534,8 +4026,8 @@ impl<'de> serde::Deserialize<'de> for SpendView {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<SpendView, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut spend_view__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -3544,15 +4036,17 @@ impl<'de> serde::Deserialize<'de> for SpendView {
                             if spend_view__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("visible"));
                             }
-                            spend_view__ = map_.next_value::<::std::option::Option<_>>()?.map(spend_view::SpendView::Visible)
-;
+                            spend_view__ = map_
+                                .next_value::<::std::option::Option<_>>()?
+                                .map(spend_view::SpendView::Visible);
                         }
                         GeneratedField::Opaque => {
                             if spend_view__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("opaque"));
                             }
-                            spend_view__ = map_.next_value::<::std::option::Option<_>>()?.map(spend_view::SpendView::Opaque)
-;
+                            spend_view__ = map_
+                                .next_value::<::std::option::Option<_>>()?
+                                .map(spend_view::SpendView::Opaque);
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -3564,7 +4058,11 @@ impl<'de> serde::Deserialize<'de> for SpendView {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.SpendView", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.SpendView",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for spend_view::Opaque {
@@ -3578,7 +4076,10 @@ impl serde::Serialize for spend_view::Opaque {
         if self.spend.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.SpendView.Opaque", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.SpendView.Opaque",
+            len,
+        )?;
         if let Some(v) = self.spend.as_ref() {
             struct_ser.serialize_field("spend", v)?;
         }
@@ -3591,9 +4092,7 @@ impl<'de> serde::Deserialize<'de> for spend_view::Opaque {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "spend",
-        ];
+        const FIELDS: &[&str] = &["spend"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -3610,7 +4109,10 @@ impl<'de> serde::Deserialize<'de> for spend_view::Opaque {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -3633,12 +4135,13 @@ impl<'de> serde::Deserialize<'de> for spend_view::Opaque {
             type Value = spend_view::Opaque;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.SpendView.Opaque")
+                formatter
+                    .write_str("struct penumbra.core.component.shielded_pool.v1.SpendView.Opaque")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<spend_view::Opaque, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut spend__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -3654,12 +4157,14 @@ impl<'de> serde::Deserialize<'de> for spend_view::Opaque {
                         }
                     }
                 }
-                Ok(spend_view::Opaque {
-                    spend: spend__,
-                })
+                Ok(spend_view::Opaque { spend: spend__ })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.SpendView.Opaque", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.SpendView.Opaque",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for spend_view::Visible {
@@ -3676,7 +4181,10 @@ impl serde::Serialize for spend_view::Visible {
         if self.note.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.SpendView.Visible", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.SpendView.Visible",
+            len,
+        )?;
         if let Some(v) = self.spend.as_ref() {
             struct_ser.serialize_field("spend", v)?;
         }
@@ -3692,10 +4200,7 @@ impl<'de> serde::Deserialize<'de> for spend_view::Visible {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "spend",
-            "note",
-        ];
+        const FIELDS: &[&str] = &["spend", "note"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -3713,7 +4218,10 @@ impl<'de> serde::Deserialize<'de> for spend_view::Visible {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -3737,12 +4245,13 @@ impl<'de> serde::Deserialize<'de> for spend_view::Visible {
             type Value = spend_view::Visible;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.SpendView.Visible")
+                formatter
+                    .write_str("struct penumbra.core.component.shielded_pool.v1.SpendView.Visible")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<spend_view::Visible, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut spend__ = None;
                 let mut note__ = None;
@@ -3771,7 +4280,11 @@ impl<'de> serde::Deserialize<'de> for spend_view::Visible {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.SpendView.Visible", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.SpendView.Visible",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for ZkNullifierDerivationProof {
@@ -3785,10 +4298,16 @@ impl serde::Serialize for ZkNullifierDerivationProof {
         if !self.inner.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.ZKNullifierDerivationProof", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.ZKNullifierDerivationProof",
+            len,
+        )?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
+            struct_ser.serialize_field(
+                "inner",
+                pbjson::private::base64::encode(&self.inner).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -3799,9 +4318,7 @@ impl<'de> serde::Deserialize<'de> for ZkNullifierDerivationProof {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "inner",
-        ];
+        const FIELDS: &[&str] = &["inner"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -3818,7 +4335,10 @@ impl<'de> serde::Deserialize<'de> for ZkNullifierDerivationProof {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -3841,12 +4361,17 @@ impl<'de> serde::Deserialize<'de> for ZkNullifierDerivationProof {
             type Value = ZkNullifierDerivationProof;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.ZKNullifierDerivationProof")
+                formatter.write_str(
+                    "struct penumbra.core.component.shielded_pool.v1.ZKNullifierDerivationProof",
+                )
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ZkNullifierDerivationProof, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            fn visit_map<V>(
+                self,
+                mut map_: V,
+            ) -> std::result::Result<ZkNullifierDerivationProof, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -3855,9 +4380,10 @@ impl<'de> serde::Deserialize<'de> for ZkNullifierDerivationProof {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
-                            inner__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            inner__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -3869,7 +4395,11 @@ impl<'de> serde::Deserialize<'de> for ZkNullifierDerivationProof {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.ZKNullifierDerivationProof", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.ZKNullifierDerivationProof",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for ZkOutputProof {
@@ -3883,10 +4413,16 @@ impl serde::Serialize for ZkOutputProof {
         if !self.inner.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.ZKOutputProof", len)?;
+        let mut struct_ser = serializer.serialize_struct(
+            "penumbra.core.component.shielded_pool.v1.ZKOutputProof",
+            len,
+        )?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
+            struct_ser.serialize_field(
+                "inner",
+                pbjson::private::base64::encode(&self.inner).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -3897,9 +4433,7 @@ impl<'de> serde::Deserialize<'de> for ZkOutputProof {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "inner",
-        ];
+        const FIELDS: &[&str] = &["inner"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -3916,7 +4450,10 @@ impl<'de> serde::Deserialize<'de> for ZkOutputProof {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -3943,8 +4480,8 @@ impl<'de> serde::Deserialize<'de> for ZkOutputProof {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<ZkOutputProof, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -3953,9 +4490,10 @@ impl<'de> serde::Deserialize<'de> for ZkOutputProof {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
-                            inner__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            inner__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -3967,7 +4505,11 @@ impl<'de> serde::Deserialize<'de> for ZkOutputProof {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.ZKOutputProof", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.ZKOutputProof",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }
 impl serde::Serialize for ZkSpendProof {
@@ -3981,10 +4523,14 @@ impl serde::Serialize for ZkSpendProof {
         if !self.inner.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.ZKSpendProof", len)?;
+        let mut struct_ser = serializer
+            .serialize_struct("penumbra.core.component.shielded_pool.v1.ZKSpendProof", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
+            struct_ser.serialize_field(
+                "inner",
+                pbjson::private::base64::encode(&self.inner).as_str(),
+            )?;
         }
         struct_ser.end()
     }
@@ -3995,9 +4541,7 @@ impl<'de> serde::Deserialize<'de> for ZkSpendProof {
     where
         D: serde::Deserializer<'de>,
     {
-        const FIELDS: &[&str] = &[
-            "inner",
-        ];
+        const FIELDS: &[&str] = &["inner"];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
@@ -4014,7 +4558,10 @@ impl<'de> serde::Deserialize<'de> for ZkSpendProof {
                 impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
                     type Value = GeneratedField;
 
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut std::fmt::Formatter<'_>,
+                    ) -> std::fmt::Result {
                         write!(formatter, "expected one of: {:?}", &FIELDS)
                     }
 
@@ -4041,8 +4588,8 @@ impl<'de> serde::Deserialize<'de> for ZkSpendProof {
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<ZkSpendProof, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -4051,9 +4598,10 @@ impl<'de> serde::Deserialize<'de> for ZkSpendProof {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
-                            inner__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            inner__ = Some(
+                                map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?
+                                    .0,
+                            );
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -4065,6 +4613,10 @@ impl<'de> serde::Deserialize<'de> for ZkSpendProof {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.ZKSpendProof", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct(
+            "penumbra.core.component.shielded_pool.v1.ZKSpendProof",
+            FIELDS,
+            GeneratedVisitor,
+        )
     }
 }

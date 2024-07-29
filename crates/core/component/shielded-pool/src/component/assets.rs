@@ -3,6 +3,8 @@ use cnidarium::{StateRead, StateWrite};
 use penumbra_asset::asset::{self, Metadata};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
+use penumbra_proto::core::asset::v1::AssetId;
+use penumbra_proto::core::component::shielded_pool::v1::EventDenomRegistered;
 use tracing::instrument;
 
 use crate::state_key;
@@ -32,6 +34,11 @@ pub trait AssetRegistry: StateWrite {
                 state_key::denom_metadata_by_asset::by_asset_id(&asset_id),
                 denom.clone(),
             );
+
+            self.record_proto(EventDenomRegistered {
+                asset_id: Some(AssetId::from(asset_id)),
+                denom_metadata: Some(denom.clone().into()),
+            });
         }
     }
 }
