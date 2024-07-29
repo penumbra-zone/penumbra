@@ -14,19 +14,21 @@ DROP DOMAIN IF EXISTS Amount;
 CREATE DOMAIN Amount AS NUMERIC(39, 0) NOT NULL;
 
 DROP TYPE IF EXISTS Value CASCADE;
-CREATE TYPE Value AS (
-  amount Amount,
-  asset BYTEA
+CREATE TYPE Value AS
+(
+    amount Amount,
+    asset  BYTEA
 );
 
 -- Keeps track of changes to the dex's value circuit breaker.
-CREATE TABLE IF NOT EXISTS dex_value_circuit_breaker_change (
-  -- The asset being moved into or out of the dex.
-  asset_id BYTEA NOT NULL,
-  -- The flow, either positive, or negative, into the dex via this particular asset.
-  --
-  -- Because we're dealing with arbitrary assets, we need to use something which can store u128
-  flow Amount
+CREATE TABLE IF NOT EXISTS dex_value_circuit_breaker_change
+(
+    -- The asset being moved into or out of the dex.
+    asset_id BYTEA NOT NULL,
+    -- The flow, either positive, or negative, into the dex via this particular asset.
+    --
+    -- Because we're dealing with arbitrary assets, we need to use something which can store u128
+    flow     Amount
 );
 
 -- One step of an execution trace.
@@ -112,4 +114,14 @@ CREATE TABLE IF NOT EXISTS dex_lp_execution (
   context_start BYTEA NOT NULL,
   -- The end asset for this execution.
   context_end BYTEA NOT NULL
+);
+
+--- Represents instances where swap executions happened.
+CREATE TABLE IF NOT EXISTS swap
+(
+    height      BIGINT PRIMARY KEY,
+    input       Value,
+    output      Value,
+    trace_start INTEGER REFERENCES dex_trace (id),
+    trace_end   INTEGER REFERENCES dex_trace (id)
 );

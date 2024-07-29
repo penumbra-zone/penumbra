@@ -7,6 +7,7 @@ use penumbra_dex::lp::position::{Id, Position};
 use penumbra_dex::lp::{self, TradingFunction};
 use penumbra_dex::{DirectedTradingPair, SwapExecution};
 use penumbra_num::Amount;
+use penumbra_proto::core::component::dex::v1::BatchSwapOutputData;
 use penumbra_proto::{event::ProtoEvent, penumbra::core::component::dex::v1 as pb};
 use sqlx::{PgPool, Postgres, Transaction};
 
@@ -30,6 +31,11 @@ enum Event {
     },
     /// A parsed version of [pb::EventArbExecution]
     ArbExecution {
+        height: u64,
+        execution: SwapExecution,
+    },
+    /// A parsed version of [pb::EventBatchSwap]
+    Swap {
         height: u64,
         execution: SwapExecution,
     },
@@ -58,10 +64,11 @@ enum Event {
 }
 
 impl Event {
-    const NAMES: [&'static str; 7] = [
+    const NAMES: [&'static str; 8] = [
         "penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit",
         "penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit",
         "penumbra.core.component.dex.v1.EventArbExecution",
+        "penumbra.core.component.dex.v1.EventBatchSwap",
         "penumbra.core.component.dex.v1.EventPositionWithdraw",
         "penumbra.core.component.dex.v1.EventPositionOpen",
         "penumbra.core.component.dex.v1.EventPositionClose",
@@ -328,6 +335,49 @@ impl Event {
                 .await?;
                 Ok(())
             }
+            Event::Swap { height, execution } => {
+                let mut trace_start = None;
+                let mut trace_end = None;
+                for trace in &execution.traces {
+                    let mut step_start = None;
+                    let mut step_end = None;
+                    for step in trace {
+                        let (id,): (i32,) = sqlx::query_as(
+                            r#"INSERT INTO trace_step VALUES (DEFAULT, (CAST($1 AS Amount), $2)) RETURNING id;"#,
+                        )
+                            .bind(step.amount.to_string())
+                            .bind(Sql::from(step.asset_id))
+                            .fetch_one(dbtx.as_mut())
+                            .await?;
+                        if let None = step_start {
+                            step_start = Some(id);
+                        }
+                        step_end = Some(id);
+                    }
+                    let (id,): (i32,) = sqlx::query_as(
+                        r#"INSERT INTO trace VALUES (DEFAULT, $1, $2) RETURNING id;"#,
+                    )
+                    .bind(step_start)
+                    .bind(step_end)
+                    .fetch_one(dbtx.as_mut())
+                    .await?;
+                    if let None = trace_start {
+                        trace_start = Some(id);
+                    }
+                    trace_end = Some(id);
+                }
+                sqlx::query(r#"INSERT INTO swap VALUES ($1, (CAST($2 AS Amount), $3), (CAST($4 AS AMOUNT), $5), $6, $7);"#)
+                    .bind(i64::try_from(*height)?)
+                    .bind(execution.input.amount.to_string())
+                    .bind(Sql::from(execution.input.asset_id))
+                    .bind(execution.output.amount.to_string())
+                    .bind(Sql::from(execution.output.asset_id))
+                    .bind(trace_start)
+                    .bind(trace_end)
+                    .execute(dbtx.as_mut())
+                    .await?;
+                Ok(())
+            }
         }
     }
 }
@@ -466,6 +516,16 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     prev_reserves_2,
                     context,
                 })
+            }
+            // Batch Swap
+            x if x == Event::NAMES[3] => {
+                let pe = pb::EventBatchSwap::from_event(event.as_ref())?;
+                let height = event.block_height;
+                let execution = pe
+                    .swap_execution_1_for_2
+                    .ok_or(anyhow!("missing swap execution"))?
+                    .try_into()?;
+                Ok(Self::Swap { height, execution })
             }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }
