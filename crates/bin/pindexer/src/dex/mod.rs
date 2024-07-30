@@ -7,7 +7,6 @@ use penumbra_dex::lp::position::{Id, Position};
 use penumbra_dex::lp::{self, TradingFunction};
 use penumbra_dex::{DirectedTradingPair, SwapExecution};
 use penumbra_num::Amount;
-use penumbra_proto::core::component::dex::v1::BatchSwapOutputData;
 use penumbra_proto::{event::ProtoEvent, penumbra::core::component::dex::v1 as pb};
 use sqlx::{PgPool, Postgres, Transaction};
 
