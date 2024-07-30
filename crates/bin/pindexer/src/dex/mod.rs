@@ -370,7 +370,7 @@ impl Event {
                     }
                     trace_end = Some(id);
                 }
-                sqlx::query(r#"INSERT INTO swap VALUES ($1, (CAST($2 AS Amount), $3),
+                sqlx::query(r#"INSERT INTO dex_swap VALUES ($1, (CAST($2 AS Amount), $3),
                  (CAST($4 AS AMOUNT), $5), $6, $7, $8, $9, CAST($10 AS AMOUNT), CAST($11 AS AMOUNT),
                   CAST($12 AS AMOUNT), CAST($13 AS AMOUNT), CAST($14 AS AMOUNT), CAST($15 AS AMOUNT),;"#)
                     .bind(i64::try_from(*height)?)

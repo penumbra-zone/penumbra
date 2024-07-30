@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS dex_lp_execution (
 );
 
 --- Represents instances where swap executions happened.
-CREATE TABLE IF NOT EXISTS swap
+CREATE TABLE IF NOT EXISTS dex_swap
 (
     height      BIGINT PRIMARY KEY,
     input       Value,
