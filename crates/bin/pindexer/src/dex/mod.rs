@@ -5,7 +5,7 @@ use cometindex::async_trait;
 use penumbra_asset::asset::Id as AssetId;
 use penumbra_dex::lp::position::{Id, Position};
 use penumbra_dex::lp::{self, TradingFunction};
-use penumbra_dex::{DirectedTradingPair, SwapExecution};
+use penumbra_dex::{BatchSwapOutputData, DirectedTradingPair, SwapExecution};
 use penumbra_num::Amount;
 use penumbra_proto::{event::ProtoEvent, penumbra::core::component::dex::v1 as pb};
 use sqlx::{PgPool, Postgres, Transaction};
@@ -37,6 +37,7 @@ enum Event {
     BatchSwap {
         height: u64,
         execution: SwapExecution,
+        output_data: BatchSwapOutputData,
     },
     /// A parsed version of [pb::EventPositionOpen]
     PositionOpen { height: u64, position: Position },
@@ -334,7 +335,11 @@ impl Event {
                 .await?;
                 Ok(())
             }
-            Event::BatchSwap { height, execution } => {
+            Event::BatchSwap {
+                height,
+                execution,
+                output_data,
+            } => {
                 let mut trace_start = None;
                 let mut trace_end = None;
                 for trace in &execution.traces {
@@ -365,7 +370,9 @@ impl Event {
                     }
                     trace_end = Some(id);
                 }
-                sqlx::query(r#"INSERT INTO swap VALUES ($1, (CAST($2 AS Amount), $3), (CAST($4 AS AMOUNT), $5), $6, $7);"#)
+                sqlx::query(r#"INSERT INTO swap VALUES ($1, (CAST($2 AS Amount), $3),
+                 (CAST($4 AS AMOUNT), $5), $6, $7, $8, $9, CAST($10 AS AMOUNT), CAST($11 AS AMOUNT),
+                  CAST($12 AS AMOUNT), CAST($13 AS AMOUNT), CAST($14 AS AMOUNT), CAST($15 AS AMOUNT),;"#)
                     .bind(i64::try_from(*height)?)
                     .bind(execution.input.amount.to_string())
                     .bind(Sql::from(execution.input.asset_id))
@@ -373,6 +380,14 @@ impl Event {
                     .bind(Sql::from(execution.output.asset_id))
                     .bind(trace_start)
                     .bind(trace_end)
+                    .bind(Sql::from(output_data.trading_pair.asset_1()))
+                    .bind(Sql::from(output_data.trading_pair.asset_2()))
+                    .bind(output_data.unfilled_1.to_string())
+                    .bind(output_data.unfilled_2.to_string())
+                    .bind(output_data.delta_1.to_string())
+                    .bind(output_data.delta_2.to_string())
+                    .bind(output_data.lambda_1.to_string())
+                    .bind(output_data.lambda_2.to_string())
                     .execute(dbtx.as_mut())
                     .await?;
                 Ok(())
@@ -520,11 +535,19 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
             x if x == Event::NAMES[7] => {
                 let pe = pb::EventBatchSwap::from_event(event.as_ref())?;
                 let height = event.block_height;
+                let output_data = pe
+                    .batch_swap_output_data
+                    .ok_or(anyhow!("missing swap execution"))?
+                    .try_into()?;
                 let execution = pe
                     .swap_execution_1_for_2
                     .ok_or(anyhow!("missing swap execution"))?
                     .try_into()?;
-                Ok(Self::BatchSwap { height, execution })
+                Ok(Self::BatchSwap {
+                    height,
+                    execution,
+                    output_data: batch_swap_output_data,
+                })
             }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }

@@ -123,5 +123,13 @@ CREATE TABLE IF NOT EXISTS swap
     input       Value,
     output      Value,
     trace_start INTEGER REFERENCES dex_trace (id),
-    trace_end   INTEGER REFERENCES dex_trace (id)
+    trace_end   INTEGER REFERENCES dex_trace (id),
+    pair_asset_id_1  BYTEA NOT NULL,
+    pair_asset_id_2  BYTEA NOT NULL,
+    unfilled_1 Amount NOT NULL,
+    unfilled_2 Amount NOT NULL,
+    delta_1 Amount NOT NULL,
+    delta_2 Amount NOT NULL,
+    lambda_1 Amount NOT NULL,
+    lambda_2 Amount NOT NULL
 );
