@@ -220,6 +220,17 @@ impl Event {
                 .bind(state.to_string())
                 .execute(dbtx.as_mut())
                 .await?;
+                sqlx::query(
+                    "
+                UPDATE dex_lp
+                SET state = $2
+                WHERE id = $1;
+                ",
+                )
+                .bind(position_id.0)
+                .bind(state.to_string())
+                .execute(dbtx.as_mut())
+                .await?;
                 Ok(())
             }
             Event::PositionWithdraw {
@@ -232,6 +243,8 @@ impl Event {
                 let state = lp::position::State::Withdrawn {
                     sequence: *sequence,
                 };
+                let reserves1 = reserves1.to_string();
+                let reserves2 = reserves2.to_string();
                 sqlx::query(
                     "
                 INSERT INTO dex_lp_update (height, position_id, state, reserves1, reserves2)
@@ -241,8 +254,21 @@ impl Event {
                 .bind(i64::try_from(*height)?)
                 .bind(position_id.0)
                 .bind(state.to_string())
-                .bind(reserves1.to_string())
-                .bind(reserves2.to_string())
+                .bind(&reserves1)
+                .bind(&reserves2)
+                .execute(dbtx.as_mut())
+                .await?;
+                sqlx::query(
+                    "
+                UPDATE dex_lp
+                SET state = $2, reserves1 = CAST($3 AS Amount), reserves2 = CAST($4 AS Amount)
+                WHERE id = $1;
+                ",
+                )
+                .bind(position_id.0)
+                .bind(state.to_string())
+                .bind(&reserves1)
+                .bind(&reserves2)
                 .execute(dbtx.as_mut())
                 .await?;
                 Ok(())
@@ -286,6 +312,18 @@ impl Event {
                 .bind(&reserves1)
                 .bind(&reserves2)
                 .bind(id)
+                .execute(dbtx.as_mut())
+                .await?;
+                sqlx::query(
+                    "
+                UPDATE dex_lp
+                SET reserves1 = CAST($2 AS Amount), reserves2 = CAST($3 AS Amount)
+                WHERE id = $1;
+                ",
+                )
+                .bind(position_id.0)
+                .bind(&reserves1)
+                .bind(&reserves2)
                 .execute(dbtx.as_mut())
                 .await?;
                 Ok(())
