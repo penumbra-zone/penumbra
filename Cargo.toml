@@ -138,7 +138,7 @@ cnidarium                        = { default-features = false, path = "crates/cn
 cnidarium-component              = { default-features = false, path = "crates/cnidarium-component" }
 cometindex                       = { path = "crates/util/cometindex" }
 criterion                        = { version = "0.4" }
-decaf377                         = { default-features = false, version = "0.10.1" }
+decaf377                         = { git = "https://github.com/penumbra-zone/decaf377", branch = "debug-features", default-features = false }
 decaf377-fmd                     = { path = "crates/crypto/decaf377-fmd" }
 decaf377-ka                      = { path = "crates/crypto/decaf377-ka" }
 decaf377-rdsa                    = { version = "0.11.0" }
