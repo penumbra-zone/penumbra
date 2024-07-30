@@ -1,11 +1,12 @@
 use std::collections::HashSet;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use cometindex::async_trait;
 use penumbra_asset::asset::Id as AssetId;
-use penumbra_dex::SwapExecution;
+use penumbra_dex::lp::position::{Id, Position};
+use penumbra_dex::lp::{self, TradingFunction};
+use penumbra_dex::{DirectedTradingPair, SwapExecution};
 use penumbra_num::Amount;
-use penumbra_proto::core::component::dex::v1::{DirectedTradingPair, PositionId, TradingPair};
 use penumbra_proto::{event::ProtoEvent, penumbra::core::component::dex::v1 as pb};
 use sqlx::{PgPool, Postgres, Transaction};
 
@@ -33,38 +34,26 @@ enum Event {
         execution: SwapExecution,
     },
     /// A parsed version of [pb::EventPositionOpen]
-    PositionOpen {
-        height: u64,
-        position_id: PositionId,
-        trading_pair: TradingPair,
-        reserves_1: Amount,
-        reserves_2: Amount,
-        trading_fee: u32,
-    },
+    PositionOpen { height: u64, position: Position },
     /// A parsed version of [pb::EventPositionWithdraw]
     PositionWithdraw {
         height: u64,
-        position_id: PositionId,
-        trading_pair: TradingPair,
+        position_id: Id,
         reserves_1: Amount,
         reserves_2: Amount,
+        sequence: u64,
     },
     /// A parsed version of [pb::EventPositionClose]
-    PositionClose {
-        height: u64,
-        position_id: PositionId,
-    },
+    PositionClose { height: u64, position_id: Id },
     /// A parsed version of [pb::EventPositionExecution]
     PositionExecution {
         height: u64,
-        position_id: PositionId,
-        trading_pair: TradingPair,
+        position_id: Id,
         reserves_1: Amount,
         reserves_2: Amount,
         prev_reserves_1: Amount,
         prev_reserves_2: Amount,
-        start: AssetId,
-        end: AssetId,
+        context: DirectedTradingPair,
     },
 }
 
@@ -134,7 +123,7 @@ impl Event {
                     let mut step_end = None;
                     for step in trace {
                         let (id,): (i32,) = sqlx::query_as(
-                            r#"INSERT INTO trace_step VALUES (DEFAULT, (CAST($1 AS Amount), $2)) RETURNING id;"#,
+                            r#"INSERT INTO dex_trace_step VALUES (DEFAULT, (CAST($1 AS Amount), $2)) RETURNING id;"#,
                         )
                         .bind(step.amount.to_string())
                         .bind(Sql::from(step.asset_id))
@@ -146,7 +135,7 @@ impl Event {
                         step_end = Some(id);
                     }
                     let (id,): (i32,) = sqlx::query_as(
-                        r#"INSERT INTO trace VALUES (DEFAULT, $1, $2) RETURNING id;"#,
+                        r#"INSERT INTO dex_trace VALUES (DEFAULT, $1, $2) RETURNING id;"#,
                     )
                     .bind(step_start)
                     .bind(step_end)
@@ -157,7 +146,7 @@ impl Event {
                     }
                     trace_end = Some(id);
                 }
-                sqlx::query(r#"INSERT INTO arb VALUES ($1, (CAST($2 AS Amount), $3), (CAST($4 AS AMOUNT), $5), $6, $7);"#)
+                sqlx::query(r#"INSERT INTO dex_arb VALUES ($1, (CAST($2 AS Amount), $3), (CAST($4 AS Amount), $5), $6, $7);"#)
                     .bind(i64::try_from(*height)?)
                     .bind(execution.input.amount.to_string())
                     .bind(Sql::from(execution.input.asset_id))
@@ -169,28 +158,48 @@ impl Event {
                     .await?;
                 Ok(())
             }
-            Event::PositionOpen {
-                height,
-                position_id,
-                trading_pair,
-                trading_fee,
-                reserves_1,
-                reserves_2,
-            } => {
+            Event::PositionOpen { height, position } => {
+                let Position {
+                    state,
+                    phi: TradingFunction { pair, component },
+                    ..
+                } = position;
+                let id = position.id().0;
+                tracing::debug!(
+                    p = component.p.to_string(),
+                    q = component.q.to_string(),
+                    r1 = position.reserves_1().amount.to_string(),
+                    r2 = position.reserves_2().amount.to_string()
+                );
                 sqlx::query(
                     "
-            INSERT INTO lp_updates (height, type, position_id, pair, reserves_1, reserves_2, trading_fee)
-            VALUES ($1, $2, $3, ($4, $5), $6, $7, $8)
-            ",
+                INSERT INTO dex_lp (id, state, asset1, asset2, p, q, fee_bps, close_on_fill, reserves1, reserves2)
+                VALUES ($1, $2, $3, $4, CAST($5 as Amount), CAST($6 AS Amount), $7, $8, CAST($9 AS Amount), CAST($10 AS Amount));
+                ",
                 )
-                .bind(*height as i64)
-                .bind(0)
-                .bind(&position_id.inner)
-                .bind(trading_pair.clone().asset_1.unwrap().inner)
-                .bind(trading_pair.clone().asset_2.unwrap().inner)
-                .bind(reserves_1.value() as i64)
-                .bind(reserves_2.value() as i64)
-                .bind(*trading_fee as i64)
+                .bind(id)
+                .bind(state.to_string())
+                .bind(pair.asset_1().to_bytes())
+                .bind(pair.asset_2().to_bytes())
+                .bind(component.p.to_string())
+                .bind(component.q.to_string())
+                .bind(i32::try_from(component.fee)?)
+                .bind(position.close_on_fill)
+                .bind(position.reserves_1().amount.to_string())
+                .bind(position.reserves_2().amount.to_string())
+                .execute(dbtx.as_mut())
+                .await?;
+                sqlx::query(
+                    "
+                INSERT INTO dex_lp_update (height, position_id, state, reserves1, reserves2)
+                VALUES ($1, $2, $3, CAST($4 AS Amount), CAST($5 AS Amount));
+                ",
+                )
+                .bind(i64::try_from(*height)?)
+                .bind(id)
+                .bind(state.to_string())
+                .bind(position.reserves_1().amount.to_string())
+                .bind(position.reserves_2().amount.to_string())
                 .execute(dbtx.as_mut())
                 .await?;
                 Ok(())
@@ -198,17 +207,17 @@ impl Event {
             Event::PositionClose {
                 height,
                 position_id,
-                ..
             } => {
+                let state = lp::position::State::Closed;
                 sqlx::query(
                     "
-            INSERT INTO lp_updates (height, type, position_id)
-            VALUES ($1, $2, $3)
-            ",
+                INSERT INTO dex_lp_update (height, position_id, state)
+                VALUES ($1, $2, $3)
+                ",
                 )
-                .bind(*height as i64)
-                .bind(1)
-                .bind(&position_id.inner)
+                .bind(i64::try_from(*height)?)
+                .bind(position_id.0)
+                .bind(state.to_string())
                 .execute(dbtx.as_mut())
                 .await?;
                 Ok(())
@@ -216,24 +225,24 @@ impl Event {
             Event::PositionWithdraw {
                 height,
                 position_id,
-                trading_pair,
-                reserves_1,
-                reserves_2,
-                ..
+                reserves_1: reserves1,
+                reserves_2: reserves2,
+                sequence,
             } => {
+                let state = lp::position::State::Withdrawn {
+                    sequence: *sequence,
+                };
                 sqlx::query(
                     "
-            INSERT INTO lp_updates (height, type, position_id, pair, reserves_1, reserves_2)
-            VALUES ($1, $2, $3, ($4, $5), $6, $7)
-            ",
+                INSERT INTO dex_lp_update (height, position_id, state, reserves1, reserves2)
+                VALUES ($1, $2, $3, CAST($4 AS Amount), CAST($5 AS Amount))
+                ",
                 )
-                .bind(*height as i64)
-                .bind(2)
-                .bind(&position_id.inner)
-                .bind(trading_pair.clone().asset_1.unwrap().inner)
-                .bind(trading_pair.clone().asset_2.unwrap().inner)
-                .bind(reserves_1.value() as i64)
-                .bind(reserves_2.value() as i64)
+                .bind(i64::try_from(*height)?)
+                .bind(position_id.0)
+                .bind(state.to_string())
+                .bind(reserves1.to_string())
+                .bind(reserves2.to_string())
                 .execute(dbtx.as_mut())
                 .await?;
                 Ok(())
@@ -241,32 +250,42 @@ impl Event {
             Event::PositionExecution {
                 height,
                 position_id,
-                trading_pair,
-                reserves_1,
-                reserves_2,
-                start,
-                end,
-                prev_reserves_1,
-                prev_reserves_2,
+                reserves_1: reserves1,
+                reserves_2: reserves2,
+                context,
+                prev_reserves_1: prev_reserves1,
+                prev_reserves_2: prev_reserves2,
             } => {
+                let state = lp::position::State::Opened;
+                let reserves1 = reserves1.to_string();
+                let reserves2 = reserves2.to_string();
+                let prev_reserves1 = prev_reserves1.to_string();
+                let prev_reserves2 = prev_reserves2.to_string();
+                let id: i32 = sqlx::query_scalar(
+                    "
+                INSERT INTO dex_lp_execution (inflow1, inflow2, context_start, context_end)
+                VALUES (CAST($1 AS Amount) - CAST($2 AS Amount), CAST($3 AS Amount) - CAST($4 AS Amount), $5, $6)
+                RETURNING id;
+            ",)
+                .bind(&reserves1)
+                .bind(prev_reserves1)
+                .bind(&reserves2)
+                .bind(prev_reserves2)
+                .bind(context.start.to_bytes())
+                .bind(context.end.to_bytes())
+                .fetch_one(dbtx.as_mut()).await?;
                 sqlx::query(
                     "
-            INSERT INTO lp_updates (height, type, position_id, pair, reserves_1,
-             reserves_2, prev_reserves_1, prev_reserves_2, start_asset, end_asset)
-            VALUES ($1, $2, $3, ($4, $5), $6, $7, $8, $9, $10, $11)
+            INSERT INTO dex_lp_update (height, position_id, state, reserves1, reserves2, execution_id)
+            VALUES ($1, $2, $3, CAST($4 AS Amount), CAST($5 AS Amount), $6)
             ",
                 )
-                .bind(*height as i64)
-                .bind(3)
-                .bind(&position_id.inner)
-                .bind(trading_pair.clone().asset_1.unwrap().inner)
-                .bind(trading_pair.clone().asset_2.unwrap().inner)
-                .bind(reserves_1.value() as i64)
-                .bind(reserves_2.value() as i64)
-                .bind(prev_reserves_1.value() as i64)
-                .bind(prev_reserves_2.value() as i64)
-                .bind(Sql::from(*start))
-                .bind(Sql::from(*end))
+                .bind(i64::try_from(*height)?)
+                .bind(position_id.0)
+                .bind(state.to_string())
+                .bind(&reserves1)
+                .bind(&reserves2)
+                .bind(id)
                 .execute(dbtx.as_mut())
                 .await?;
                 Ok(())
@@ -332,10 +351,6 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     .position_id
                     .ok_or(anyhow!("missing position id"))?
                     .try_into()?;
-                let trading_pair = pe
-                    .trading_pair
-                    .ok_or(anyhow!("missing trading pair"))?
-                    .try_into()?;
                 let reserves_1 = pe
                     .reserves_1
                     .ok_or(anyhow!("missing reserves_1"))?
@@ -344,43 +359,25 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     .reserves_2
                     .ok_or(anyhow!("missing reserves_2"))?
                     .try_into()?;
+                let sequence = pe.sequence;
                 Ok(Self::PositionWithdraw {
                     height,
                     position_id,
-                    trading_pair,
                     reserves_1,
                     reserves_2,
+                    sequence,
                 })
             }
             // LP Open
             x if x == Event::NAMES[4] => {
                 let pe = pb::EventPositionOpen::from_event(event.as_ref())?;
                 let height = event.block_height;
-                let position_id = pe
-                    .position_id
-                    .ok_or(anyhow!("missing position id"))?
+                let position = pe
+                    .position
+                    .ok_or(anyhow!("missing position"))
+                    .context("(make sure you're using pd >= 0.79.3)")?
                     .try_into()?;
-                let trading_pair = pe
-                    .trading_pair
-                    .ok_or(anyhow!("missing trading pair"))?
-                    .try_into()?;
-                let reserves_1 = pe
-                    .reserves_1
-                    .ok_or(anyhow!("missing reserves_1"))?
-                    .try_into()?;
-                let reserves_2 = pe
-                    .reserves_2
-                    .ok_or(anyhow!("missing reserves_2"))?
-                    .try_into()?;
-                let trading_fee = pe.trading_fee.try_into()?;
-                Ok(Self::PositionOpen {
-                    height,
-                    position_id,
-                    trading_pair,
-                    reserves_1,
-                    reserves_2,
-                    trading_fee,
-                })
+                Ok(Self::PositionOpen { height, position })
             }
             // LP Close
             x if x == Event::NAMES[5] => {
@@ -404,10 +401,6 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     .position_id
                     .ok_or(anyhow!("missing position id"))?
                     .try_into()?;
-                let trading_pair = pe
-                    .trading_pair
-                    .ok_or(anyhow!("missing trading pair"))?
-                    .try_into()?;
                 let reserves_1 = pe
                     .reserves_1
                     .ok_or(anyhow!("missing reserves_1"))?
@@ -426,21 +419,14 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     .try_into()?;
                 let context: DirectedTradingPair =
                     pe.context.ok_or(anyhow!("missing context"))?.try_into()?;
-                let start = context
-                    .start
-                    .ok_or(anyhow!("missing start pair"))?
-                    .try_into()?;
-                let end = context.end.ok_or(anyhow!("missing end pair"))?.try_into()?;
                 Ok(Self::PositionExecution {
                     height,
                     position_id,
-                    trading_pair,
                     reserves_1,
                     reserves_2,
                     prev_reserves_1,
                     prev_reserves_2,
-                    start,
-                    end,
+                    context,
                 })
             }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),

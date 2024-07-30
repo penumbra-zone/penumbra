@@ -1,5 +1,3 @@
-use crate::PD_COMPAT;
-use anyhow::anyhow;
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_proto::{core::component::sct::v1 as pb, event::ProtoEvent};
 use sqlx::{types::chrono::DateTime, PgPool};
@@ -49,10 +47,10 @@ CREATE TABLE IF NOT EXISTS block_details (
             ",
         )
         .bind(i64::try_from(pe.height)?)
-        .bind(
-            DateTime::from_timestamp(timestamp.seconds, u32::try_from(timestamp.nanos)?)
-                .ok_or(anyhow!(format!("failed to convert timestamp. {PD_COMPAT}")))?,
-        )
+        .bind(DateTime::from_timestamp(
+            timestamp.seconds,
+            u32::try_from(timestamp.nanos)?,
+        ))
         .bind(pe.root.unwrap().inner)
         .execute(dbtx.as_mut())
         .await?;
