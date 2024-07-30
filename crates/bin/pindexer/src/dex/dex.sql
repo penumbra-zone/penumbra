@@ -68,9 +68,9 @@ CREATE TABLE IF NOT EXISTS dex_lp (
   -- The fee, in basis points
   fee_bps Bps,
   -- How much of asset2 you get when swapping asset1.
-  price12 NUMERIC(39, 0) GENERATED ALWAYS AS (((1 - fee_bps::NUMERIC / 10000) * (p / q))::Amount) STORED,
+  price12 NUMERIC GENERATED ALWAYS AS (((1 - fee_bps::NUMERIC / 10000) * (p / q))) STORED,
   -- How much of asset1 you get when swapping asset2.
-  price21 NUMERIC(39, 0) GENERATED ALWAYS AS (((1 - fee_bps::NUMERIC / 10000) * (q / p))::Amount) STORED,
+  price21 NUMERIC GENERATED ALWAYS AS (((1 - fee_bps::NUMERIC / 10000) * (q / p))) STORED,
   -- Whether the position will be closed when all reserves are depleted
   close_on_fill BOOLEAN NOT NULL,
   -- The amount of reserves of asset 1.
