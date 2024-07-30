@@ -35,7 +35,7 @@ enum Event {
         execution: SwapExecution,
     },
     /// A parsed version of [pb::EventBatchSwap]
-    Swap {
+    BatchSwap {
         height: u64,
         execution: SwapExecution,
     },
@@ -68,11 +68,11 @@ impl Event {
         "penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit",
         "penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit",
         "penumbra.core.component.dex.v1.EventArbExecution",
-        "penumbra.core.component.dex.v1.EventBatchSwap",
         "penumbra.core.component.dex.v1.EventPositionWithdraw",
         "penumbra.core.component.dex.v1.EventPositionOpen",
         "penumbra.core.component.dex.v1.EventPositionClose",
         "penumbra.core.component.dex.v1.EventPositionExecution",
+        "penumbra.core.component.dex.v1.EventBatchSwap",
     ];
 
     /// Index this event, using the handle to the postgres transaction.
@@ -335,7 +335,7 @@ impl Event {
                 .await?;
                 Ok(())
             }
-            Event::Swap { height, execution } => {
+            Event::BatchSwap { height, execution } => {
                 let mut trace_start = None;
                 let mut trace_end = None;
                 for trace in &execution.traces {
@@ -518,14 +518,14 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                 })
             }
             // Batch Swap
-            x if x == Event::NAMES[3] => {
+            x if x == Event::NAMES[7] => {
                 let pe = pb::EventBatchSwap::from_event(event.as_ref())?;
                 let height = event.block_height;
                 let execution = pe
                     .swap_execution_1_for_2
                     .ok_or(anyhow!("missing swap execution"))?
                     .try_into()?;
-                Ok(Self::Swap { height, execution })
+                Ok(Self::BatchSwap { height, execution })
             }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }
