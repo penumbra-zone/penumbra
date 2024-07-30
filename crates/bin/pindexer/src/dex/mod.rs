@@ -546,7 +546,7 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                 Ok(Self::BatchSwap {
                     height,
                     execution,
-                    output_data: batch_swap_output_data,
+                    output_data,
                 })
             }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
