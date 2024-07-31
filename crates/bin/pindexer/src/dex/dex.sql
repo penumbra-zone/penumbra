@@ -120,8 +120,6 @@ CREATE TABLE IF NOT EXISTS dex_lp_execution (
 CREATE TABLE IF NOT EXISTS dex_swap
 (
     height      BIGINT PRIMARY KEY,
-    input       Value,
-    output      Value,
     trace_start INTEGER REFERENCES dex_trace (id),
     trace_end   INTEGER REFERENCES dex_trace (id),
     pair_asset_id_1  BYTEA NOT NULL,
