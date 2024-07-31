@@ -1,0 +1,25 @@
+---
+# A process-compose configuration for running a dev-centric debugging and introspection
+# tooling for Penumbra, such as gRPC UI, for exploring protobuf interfaces.
+version: "0.5"
+log_level: info
+is_strict: true
+
+processes:
+  # Run gRPC UI for interactive protobuf exploration in a web UI: http://localhost:8100
+  grpcui:
+    command: grpcui -v -open-browser=false -port 8100 -plaintext localhost:8080
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        scheme: http
+        path: "/"
+        port: 8100
+      initial_delay_seconds: 10
+      period_seconds: 5
+      failure_threshold: 3
+    availability:
+      restart: exit_on_failure
+    depends_on:
+      pd:
+        condition: process_healthy

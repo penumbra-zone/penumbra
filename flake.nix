@@ -31,6 +31,17 @@
             vendorHash = "sha256-0iqI/Z8rqDyQ7JqSrsqA9kADqF6qZy8NxTDNjAYYHts=";
           };
 
+          # Build grpcui from source, for Reflection v1 support.
+          # https://github.com/fullstorydev/grpcui/issues/322
+          # To update the grpcui hash values, run:
+          # nix-prefetch-git --url https://github.com/fullstorydev/grpcui --rev 483f037ec98b89200353c696d990324318f8df98
+          grpcUiRelease = {
+            version = "1.4.2-pre.1";
+            sha256 = "sha256-3vjJNa1bXoMGZXPRyVqhxYZPX5FDp8Efy+w6gdx0pXE=";
+            vendorHash = "sha256-j7ZJeO9vhjOoR8aOOJymDM6D7mPAJQoD4O6AyAsErRY=";
+            rev = "483f037ec98b89200353c696d990324318f8df98";
+          };
+
           # Set up for Rust builds, pinned to the Rust toolchain version in the Penumbra repository
           overlays = [ (import rust-overlay) ];
           pkgs = import nixpkgs { inherit system overlays; };
@@ -91,6 +102,25 @@
               license = licenses.asl20;
             };
           }).overrideAttrs (_: { doCheck = false; }); # Disable tests to improve build times
+
+          # grpcui
+          grpcui = (buildGoModule rec {
+            pname = "grpcui";
+            version = grpcUiRelease.version;
+            subPackages = [ "cmd/grpcui" ];
+            src = fetchFromGitHub {
+              owner = "fullstorydev";
+              repo = "grpcui";
+              rev = "${grpcUiRelease.rev}";
+              hash = grpcUiRelease.sha256;
+            };
+            vendorHash = grpcUiRelease.vendorHash;
+            meta = {
+              description = "An interactive web UI for gRPC, along the lines of postman";
+              homepage = "https://github.com/fullstorydev/grpcui";
+              license = licenses.mit;
+            };
+          }).overrideAttrs (_: { doCheck = false; }); # Disable tests to improve build times
         in rec {
           packages = { inherit penumbra cometbft; };
           apps = {
@@ -117,6 +147,7 @@
               cometbft
               grafana
               grpcurl
+              grpcui
               just
               mdbook
               mdbook-katex
