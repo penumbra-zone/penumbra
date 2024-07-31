@@ -205,6 +205,7 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         self.update_position(id, Some(prev_state), new_state)
             .await?;
+        self.record_proto(event::position_close_by_id(*id));
 
         Ok(())
     }
