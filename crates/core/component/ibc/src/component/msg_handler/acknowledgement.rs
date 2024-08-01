@@ -119,7 +119,7 @@ impl MsgHandler for MsgAcknowledgement {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            AH::acknowledge_packet_execute(state, self).await;
+            AH::acknowledge_packet_execute(state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }

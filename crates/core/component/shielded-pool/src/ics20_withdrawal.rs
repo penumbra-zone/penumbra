@@ -37,6 +37,10 @@ pub struct Ics20Withdrawal {
     pub timeout_time: u64,
     // the source channel used for the withdrawal
     pub source_channel: ChannelId,
+
+    // Whether to use a "compat" (bech32, non-m) address for the return address in the withdrawal,
+    // for compatability with chains that expect to be able to parse the return address as bech32.
+    pub use_compat_address: bool,
 }
 
 #[cfg(feature = "component")]
@@ -113,6 +117,7 @@ impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
             timeout_height: Some(w.timeout_height.into()),
             timeout_time: w.timeout_time,
             source_channel: w.source_channel.to_string(),
+            use_compat_address: w.use_compat_address,
         }
     }
 }
@@ -142,17 +147,23 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
                 .try_into()?,
             timeout_time: s.timeout_time,
             source_channel: ChannelId::from_str(&s.source_channel)?,
+            use_compat_address: s.use_compat_address,
         })
     }
 }
 
 impl From<Ics20Withdrawal> for pb::FungibleTokenPacketData {
     fn from(w: Ics20Withdrawal) -> Self {
+        let return_address = match w.use_compat_address {
+            true => w.return_address.compat_encoding(),
+            false => w.return_address.to_string(),
+        };
+
         pb::FungibleTokenPacketData {
             amount: w.value().amount.to_string(),
             denom: w.denom.to_string(),
             receiver: w.destination_chain_address,
-            sender: w.return_address.to_string(),
+            sender: return_address,
             memo: "".to_string(),
         }
     }
