@@ -577,7 +577,12 @@ mod tests {
         async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) -> Result<()> {
             Ok(())
         }
-        async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
+        async fn acknowledge_packet_execute<S: StateWrite>(
+            _state: S,
+            _msg: &MsgAcknowledgement,
+        ) -> Result<()> {
+            Ok(())
+        }
     }
 
     #[async_trait]
