@@ -7,6 +7,7 @@ use crate::{
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
+use ibc_types::core::channel::Packet;
 use ibc_types::{
     core::channel::{
         channel::Order as ChannelOrder,
@@ -406,8 +407,8 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 }
 
 // see: https://github.com/cosmos/ibc/blob/8326e26e7e1188b95c32481ff00348a705b23700/spec/app/ics-020-fungible-token-transfer/README.md?plain=1#L297
-async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
-    let packet_data: FungibleTokenPacketData = serde_json::from_slice(msg.packet.data.as_slice())?;
+async fn timeout_packet_inner<S: StateWrite>(mut state: S, packet: &Packet) -> Result<()> {
+    let packet_data: FungibleTokenPacketData = serde_json::from_slice(packet.data.as_slice())?;
     let denom: asset::Metadata = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
         .denom
         .as_str()
@@ -430,11 +431,11 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
         asset_id: denom.id(),
     };
 
-    if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom, true) {
+    if is_source(&packet.port_on_a, &packet.chan_on_a, &denom, true) {
         // sender was source chain, unescrow tokens back to sender
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance::by_asset_id(
-                &msg.packet.chan_on_a,
+                &packet.chan_on_a,
                 &denom.id(),
             ))
             .await?
@@ -449,8 +450,8 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
                 value,
                 &receiver,
                 CommitmentSource::Ics20Transfer {
-                    packet_seq: msg.packet.sequence.0,
-                    channel_id: msg.packet.chan_on_a.0.clone(),
+                    packet_seq: packet.sequence.0,
+                    channel_id: packet.chan_on_a.0.clone(),
                     sender: packet_data.sender.clone(),
                 },
             )
@@ -460,7 +461,7 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
         // update the value balance
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance::by_asset_id(
-                &msg.packet.chan_on_a,
+                &packet.chan_on_a,
                 &denom.id(),
             ))
             .await?
@@ -471,13 +472,13 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             .checked_sub(&amount)
             .context("underflow in ics20 timeout packet value balance subtraction")?;
         state.put(
-            state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_a, &denom.id()),
+            state_key::ics20_value_balance::by_asset_id(&packet.chan_on_a, &denom.id()),
             new_value_balance,
         );
     } else {
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance::by_asset_id(
-                &msg.packet.chan_on_a,
+                &packet.chan_on_a,
                 &denom.id(),
             ))
             .await?
@@ -489,8 +490,8 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
                 &receiver,
                 // NOTE: should this be Ics20TransferTimeout?
                 CommitmentSource::Ics20Transfer {
-                    packet_seq: msg.packet.sequence.0,
-                    channel_id: msg.packet.chan_on_a.0.clone(),
+                    packet_seq: packet.sequence.0,
+                    channel_id: packet.chan_on_a.0.clone(),
                     sender: packet_data.sender.clone(),
                 },
             )
@@ -499,7 +500,7 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
 
         let new_value_balance = value_balance.saturating_add(&value.amount);
         state.put(
-            state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_a, &denom.id()),
+            state_key::ics20_value_balance::by_asset_id(&packet.chan_on_a, &denom.id()),
             new_value_balance,
         );
     }
@@ -540,14 +541,30 @@ impl AppHandlerExecute for Ics20Transfer {
 
     async fn timeout_packet_execute<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
         // timeouts may fail due to counterparty chains sending transfers of u128-1
-        timeout_packet_inner(&mut state, msg)
+        timeout_packet_inner(&mut state, &msg.packet)
             .await
             .context("able to timeout packet")?;
 
         Ok(())
     }
 
-    async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
+    async fn acknowledge_packet_execute<S: StateWrite>(
+        mut state: S,
+        msg: &MsgAcknowledgement,
+    ) -> Result<()> {
+        let ack: TokenTransferAcknowledgement =
+            serde_json::from_slice(msg.acknowledgement.as_slice())?;
+        if !ack.is_successful() {
+            // in the case where a counterparty chain acknowledges a packet with an error,
+            // for example due to a middleware processing issue or other behavior,
+            // the funds should be unescrowed back to the packet sender.
+            timeout_packet_inner(&mut state, &msg.packet)
+                .await
+                .context("unable to refund packet acknowledgement")?;
+        }
+
+        Ok(())
+    }
 }
 
 impl AppHandler for Ics20Transfer {}

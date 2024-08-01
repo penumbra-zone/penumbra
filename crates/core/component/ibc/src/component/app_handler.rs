@@ -55,7 +55,10 @@ pub trait AppHandlerExecute: Send + Sync {
 
     async fn recv_packet_execute<S: StateWrite>(state: S, msg: &MsgRecvPacket) -> Result<()>;
     async fn timeout_packet_execute<S: StateWrite>(state: S, msg: &MsgTimeout) -> Result<()>;
-    async fn acknowledge_packet_execute<S: StateWrite>(state: S, msg: &MsgAcknowledgement);
+    async fn acknowledge_packet_execute<S: StateWrite>(
+        state: S,
+        msg: &MsgAcknowledgement,
+    ) -> Result<()>;
 }
 
 pub trait AppHandler: AppHandlerCheck + AppHandlerExecute {}

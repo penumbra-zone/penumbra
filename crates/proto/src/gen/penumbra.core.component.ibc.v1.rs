@@ -69,6 +69,10 @@ pub struct Ics20Withdrawal {
     /// The source channel used for the withdrawal
     #[prost(string, tag = "7")]
     pub source_channel: ::prost::alloc::string::String,
+    /// Whether to use a "compat" (bech32, non-m) address for the return address in the withdrawal,
+    /// for compatability with chains that expect to be able to parse the return address as bech32.
+    #[prost(bool, tag = "8")]
+    pub use_compat_address: bool,
 }
 impl ::prost::Name for Ics20Withdrawal {
     const NAME: &'static str = "Ics20Withdrawal";
