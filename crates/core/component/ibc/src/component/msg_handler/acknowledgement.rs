@@ -45,6 +45,16 @@ impl MsgHandler for MsgAcknowledgement {
         if channel.counterparty().port_id().ne(&self.packet.port_on_b) {
             anyhow::bail!("packet destination port does not match channel");
         }
+        if channel
+            .counterparty()
+            .channel_id()
+            .ok_or_else(|| {
+                anyhow::anyhow!("missing channel id for counterparty channel in acknowledgement")
+            })?
+            .ne(&self.packet.chan_on_b)
+        {
+            anyhow::bail!("packet destination channel does not match channel");
+        }
 
         let connection = state
             .get_connection(&channel.connection_hops[0])
