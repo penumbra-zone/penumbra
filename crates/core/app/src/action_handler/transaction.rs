@@ -19,8 +19,8 @@ use self::stateful::{
     claimed_anchor_is_valid, fmd_parameters_valid, tx_parameters_historical_check,
 };
 use stateless::{
-    check_memo_exists_if_outputs_absent_if_not, num_clues_equal_to_num_outputs,
-    valid_binding_signature,
+    check_memo_exists_if_outputs_absent_if_not, check_non_empty_transaction,
+    num_clues_equal_to_num_outputs, valid_binding_signature,
 };
 
 #[async_trait]
@@ -46,6 +46,8 @@ impl AppActionHandler for Transaction {
         // Other checks probably too cheap to be worth splitting into tasks.
         num_clues_equal_to_num_outputs(self)?;
         check_memo_exists_if_outputs_absent_if_not(self)?;
+        // This check ensures that transactions contain at least one action.
+        check_non_empty_transaction(self)?;
 
         let context = self.context();
 
