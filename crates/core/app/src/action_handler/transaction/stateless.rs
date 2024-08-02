@@ -48,3 +48,14 @@ pub fn check_memo_exists_if_outputs_absent_if_not(tx: &Transaction) -> anyhow::R
         ))
     }
 }
+
+pub fn check_non_empty_transaction(tx: &Transaction) -> anyhow::Result<()> {
+    let num_actions = tx.actions().count();
+    if num_actions > 0 {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "consensus rule violated: transaction must have more than 0 actions"
+        ))
+    }
+}
