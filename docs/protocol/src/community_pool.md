@@ -22,7 +22,7 @@ To query the current Community Pool balance, use `pcli query community-pool bala
 asset or its asset ID (display denominations are not currently accepted). For example:
 
 ```bash
-pcli query Community Pool balance upenumbra
+pcli query community-pool balance upenumbra
 ```
 
 Community Pool spend proposals are only accepted for voting if they would not overdraw the current funds in the
