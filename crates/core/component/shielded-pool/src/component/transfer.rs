@@ -407,7 +407,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 }
 
 // see: https://github.com/cosmos/ibc/blob/8326e26e7e1188b95c32481ff00348a705b23700/spec/app/ics-020-fungible-token-transfer/README.md?plain=1#L297
-async fn timeout_packet_inner<S: StateWrite>(mut state: S, packet: &Packet) -> Result<()> {
+async fn refund_tokens<S: StateWrite>(mut state: S, packet: &Packet) -> Result<()> {
     let packet_data: FungibleTokenPacketData = serde_json::from_slice(packet.data.as_slice())?;
     let denom: asset::Metadata = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
         .denom
@@ -541,7 +541,7 @@ impl AppHandlerExecute for Ics20Transfer {
 
     async fn timeout_packet_execute<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
         // timeouts may fail due to counterparty chains sending transfers of u128-1
-        timeout_packet_inner(&mut state, &msg.packet)
+        refund_tokens(&mut state, &msg.packet)
             .await
             .context("able to timeout packet")?;
 
@@ -558,7 +558,7 @@ impl AppHandlerExecute for Ics20Transfer {
             // in the case where a counterparty chain acknowledges a packet with an error,
             // for example due to a middleware processing issue or other behavior,
             // the funds should be unescrowed back to the packet sender.
-            timeout_packet_inner(&mut state, &msg.packet)
+            refund_tokens(&mut state, &msg.packet)
                 .await
                 .context("unable to refund packet acknowledgement")?;
         }
