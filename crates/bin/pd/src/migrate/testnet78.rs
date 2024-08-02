@@ -1,4 +1,5 @@
 //! Contains functions related to the migration script of Testnet78.
+#![allow(dead_code)]
 use anyhow::Context;
 use cnidarium::StateRead;
 use cnidarium::{Snapshot, StateDelta, StateWrite, Storage};
