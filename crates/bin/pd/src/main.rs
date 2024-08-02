@@ -12,7 +12,7 @@ use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{NetworkCommand, Opt, RootCommand},
-    migrate::Migration::{ReadyToStart, Testnet78},
+    migrate::Migration::{ReadyToStart, Mainnet1},
     network::{
         config::{get_network_dir, parse_tm_address, url_has_necessary_parts},
         generate::NetworkConfig,
@@ -243,11 +243,11 @@ async fn main() -> anyhow::Result<()> {
         } => {
             let network_dir = get_network_dir(network_dir);
             if network_dir.exists() {
-                tracing::info!("Removing testnet directory: {}", network_dir.display());
+                tracing::info!("removing network directory: {}", network_dir.display());
                 std::fs::remove_dir_all(network_dir)?;
             } else {
                 tracing::info!(
-                    "Testnet directory does not exist, so not removing: {}",
+                    "network directory does not exist, so not removing: {}",
                     network_dir.display()
                 );
             }
@@ -468,7 +468,7 @@ async fn main() -> anyhow::Result<()> {
 
             let genesis_start = pd::migrate::last_block_timestamp(pd_home.clone()).await?;
             tracing::info!(?genesis_start, "last block timestamp");
-            Testnet78
+            Mainnet1
                 .migrate(pd_home.clone(), comet_home, Some(genesis_start), force)
                 .instrument(pd_migrate_span)
                 .await

@@ -11,6 +11,7 @@ mod testnet74;
 mod testnet76;
 mod testnet77;
 mod testnet78;
+mod mainnet1;
 
 use anyhow::{ensure, Context};
 use penumbra_governance::StateReadExt;
@@ -52,6 +53,9 @@ pub enum Migration {
     /// - Truncate various user-supplied `String` fields to a maximum length.
     /// - Populate the DEX NV price idnexes with position data
     Testnet78,
+    /// Mainnet-1 migration:
+    /// - Reset the halt bit
+    Mainnet1,
 }
 
 impl Migration {
@@ -87,19 +91,8 @@ impl Migration {
             Migration::SimpleMigration => {
                 simple::migrate(storage, pd_home.clone(), genesis_start).await?
             }
-
-            Migration::Testnet78 => {
-                testnet78::migrate(storage, pd_home.clone(), genesis_start).await?;
-                // Testnet78 migration munges CometBFT config TOML directly
-                if let Some(comet_home) = comet_home.clone() {
-                    // Don't bail out on error: the TendermintConfig struct doesn't understand some
-                    // valid config files, so we should just warn, not abort the overall migration.
-                    let _ = testnet78::update_cometbft_mempool_settings(comet_home).map_err(|e| {
-                        tracing::warn!(%e, "failed to update 'max_txs_bytes' value in cometbft config, set it manually before restarting")
-                    });
-                } else {
-                    tracing::warn!("cometbft home not specified, update 'max_txs_bytes' value manually before restarting");
-                }
+            Migration::Mainnet1 => {
+                mainnet1::migrate(storage, pd_home.clone(), genesis_start).await?;
             }
             // We keep historical migrations around for now, this will help inform an abstracted
             // design. Feel free to remove it if it's causing you trouble.
