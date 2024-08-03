@@ -266,7 +266,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
     // NOTE: spec says proto but this is actually JSON according to the ibc-go implementation
     let packet_data: FungibleTokenPacketData = serde_json::from_slice(msg.packet.data.as_slice())
         .with_context(|| "failed to decode FTPD packet")?;
-    let denom: asset::Metadata = packet_data
+    let packet_denom: asset::Metadata = packet_data
         .denom
         .as_str()
         .try_into()
@@ -280,7 +280,12 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
     // NOTE: here we assume we are chain A.
 
     // 2. check if we are the source chain for the denom.
-    if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom, false) {
+    if is_source(
+        &msg.packet.port_on_a,
+        &msg.packet.chan_on_a,
+        &packet_denom,
+        false,
+    ) {
         // mint tokens to receiver in the amount of packet_data.amount in the denom of denom (with
         // the source removed, since we're the source)
         let prefix = format!(
@@ -289,7 +294,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             source_chan = msg.packet.chan_on_a
         );
 
-        let unprefixed_denom: asset::Metadata = packet_data
+        let denom: asset::Metadata = packet_data
             .denom
             .strip_prefix(&prefix)
             .context(format!(
@@ -301,7 +306,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
         let value: Value = Value {
             amount: receiver_amount,
-            asset_id: unprefixed_denom.id(),
+            asset_id: denom.id(),
         };
 
         // assume AppHandlerCheck has already been called, and we have enough balance to mint tokens to receiver
@@ -309,7 +314,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance::by_asset_id(
                 &msg.packet.chan_on_b,
-                &unprefixed_denom.id(),
+                &denom.id(),
             ))
             .await?
             .unwrap_or_else(Amount::zero);
@@ -334,14 +339,6 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .context("unable to mint note when receiving ics20 transfer packet")?;
 
         // update the value balance
-        let value_balance: Amount = state
-            .get(&state_key::ics20_value_balance::by_asset_id(
-                &msg.packet.chan_on_b,
-                &unprefixed_denom.id(),
-            ))
-            .await?
-            .unwrap_or_else(Amount::zero);
-
         // note: this arithmetic was checked above, but we do it again anyway.
         let new_value_balance = value_balance
             .checked_sub(&receiver_amount)
@@ -459,14 +456,6 @@ async fn refund_tokens<S: StateWrite>(mut state: S, packet: &Packet) -> Result<(
             .context("couldn't mint note in timeout_packet_inner")?;
 
         // update the value balance
-        let value_balance: Amount = state
-            .get(&state_key::ics20_value_balance::by_asset_id(
-                &packet.chan_on_a,
-                &denom.id(),
-            ))
-            .await?
-            .unwrap_or_else(Amount::zero);
-
         // note: this arithmetic was checked above, but we do it again anyway.
         let new_value_balance = value_balance
             .checked_sub(&amount)
