@@ -1,9 +1,6 @@
 //! Migration for shipping consensus-breaking IBC changes, fixing
 //! how withdrawals from Penumbra to Noble are handled, and ensures that IBC
 //! error messages from counterparty chains are processed.
-//!
-//! There's no state-altering logic in this migration: the migration simply
-//! flips the halt bit off, permitting the chain to restart post-upgrade.
 use cnidarium::Snapshot;
 use cnidarium::{StateDelta, Storage};
 use ibc_types::core::channel::{Packet, PortId};
@@ -102,6 +99,7 @@ pub async fn migrate(
         .root_hash()
         .await
         .expect("chain state has a root hash");
+    // We obtain the pre-upgrade hash solely to log it as a result.
     let pre_upgrade_root_hash: RootHash = root_hash.into();
     let pre_upgrade_height = initial_state
         .get_block_height()
@@ -139,7 +137,7 @@ pub async fn migrate(
         ..Default::default()
     };
     let mut genesis = NetworkConfig::make_genesis(app_state.clone()).expect("can make genesis");
-    genesis.app_hash = pre_upgrade_root_hash
+    genesis.app_hash = post_upgrade_root_hash
         .0
         .to_vec()
         .try_into()
@@ -151,7 +149,7 @@ pub async fn migrate(
         tracing::info!(%now, "no genesis time provided, detecting a testing setup");
         now
     });
-    let checkpoint = pre_upgrade_root_hash.0.to_vec();
+    let checkpoint = post_upgrade_root_hash.0.to_vec();
     let genesis = NetworkConfig::make_checkpoint(genesis, Some(checkpoint));
     let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
     tracing::info!("genesis: {}", genesis_json);
