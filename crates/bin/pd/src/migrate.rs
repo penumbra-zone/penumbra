@@ -54,7 +54,7 @@ pub enum Migration {
     /// - Populate the DEX NV price idnexes with position data
     Testnet78,
     /// Mainnet-1 migration:
-    /// - Reset the halt bit
+    /// - Restore IBC packet commitments for improperly handled withdrawal attempts
     Mainnet1,
 }
 
