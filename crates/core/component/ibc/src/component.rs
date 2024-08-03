@@ -25,6 +25,7 @@ use msg_handler::MsgHandler;
 
 pub use self::metrics::register_metrics;
 pub use channel::StateReadExt as ChannelStateReadExt;
+pub use channel::StateWriteExt as ChannelStateWriteExt;
 pub use client::StateReadExt as ClientStateReadExt;
 pub use client::StateWriteExt as ClientStateWriteExt;
 pub use connection::StateReadExt as ConnectionStateReadExt;
