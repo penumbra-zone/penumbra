@@ -956,7 +956,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
     /// Records the next upgrade height.
     /// After commititng the height, the chain should halt and wait for an upgrade.
     /// It re-uses the same mechanism as emergency halting that prevents the chain from
-    /// restarting without incrementing the application `TOTAL_HALT_COUNT`.
+    /// restarting, without setting `halt_bit`.
     async fn signal_upgrade(&mut self, height: u64) -> Result<()> {
         self.nonverifiable_put_raw(
             state_key::upgrades::next_upgrade().into(),
