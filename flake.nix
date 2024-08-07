@@ -64,8 +64,13 @@
                 sha256 = "${penumbraRelease.sha256}";
               };
               filter = path: type:
-                # Retain proving and verification parameters, and no-lfs marker file ...
-                (builtins.match ".*\.(no_lfs|param|bin)$" path != null) ||
+                # Retain non-rust asset files as build inputs:
+                # * no_lfs, param, bin: proving and verification parameters
+                # * zip: frontend bundled assets
+                # * sql: database schema files for indexing
+                # * csv: default genesis allocations for testnet generation
+                # * json: default validator info for testnet generation
+                (builtins.match ".*\.(no_lfs|param|bin|zip|sql|csv|json)$" path != null) ||
                 # ... as well as all the normal cargo source files:
                 (craneLib.filterCargoSources path type);
             };
