@@ -97,7 +97,11 @@ pub fn validate_penumbra_client_state(
     // https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283
     let chain_id = ChainId::from_string(chain_id);
     if chain_id != tm_client_state.chain_id {
-        anyhow::bail!("invalid client state: chain id does not match");
+        anyhow::bail!(
+            "invalid client state: chain id {} does not match {}",
+            tm_client_state.chain_id,
+            chain_id
+        );
     }
 
     // check that the revision number is the same as our chain ID's version
