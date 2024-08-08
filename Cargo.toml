@@ -141,7 +141,7 @@ criterion                        = { version = "0.4" }
 decaf377                         = { git = "https://github.com/penumbra-zone/decaf377", branch = "enable-lto", default-features = false }
 decaf377-fmd                     = { path = "crates/crypto/decaf377-fmd" }
 decaf377-ka                      = { path = "crates/crypto/decaf377-ka" }
-decaf377-rdsa                    = { version = "0.11.0" }
+decaf377-rdsa                    = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "enable-lto" }
 derivative                       = { version = "2.2" }
 directories                      = { version = "4.0.1" }
 ed25519-consensus                = { version = "2.1" }
