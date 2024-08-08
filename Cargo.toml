@@ -138,7 +138,7 @@ cnidarium                        = { default-features = false, path = "crates/cn
 cnidarium-component              = { default-features = false, path = "crates/cnidarium-component" }
 cometindex                       = { path = "crates/util/cometindex" }
 criterion                        = { version = "0.4" }
-decaf377                         = { default-features = false, version = "0.10.1" }
+decaf377                         = { git = "https://github.com/penumbra-zone/decaf377", branch = "enable-lto", default-features = false }
 decaf377-fmd                     = { path = "crates/crypto/decaf377-fmd" }
 decaf377-ka                      = { path = "crates/crypto/decaf377-ka" }
 decaf377-rdsa                    = { version = "0.11.0" }
@@ -199,7 +199,7 @@ penumbra-wallet                  = { path = "crates/wallet" }
 penumbra-extension               = { path = "crates/penumbra-extension", default-features = false }
 pin-project                      = { version = "1.0.12" }
 pin-project-lite                 = { version = "0.2.9" }
-poseidon377                      = { version = "1.2.0" }
+poseidon377                      = { git = "https://github.com/penumbra-zone/poseidon377", branch = "enable-lto", default-features = false }
 proptest                         = { version = "1" }
 proptest-derive                  = { version = "0.3" }
 prost                            = { version = "0.12.3" }
