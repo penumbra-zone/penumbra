@@ -17,11 +17,33 @@ mod sign {
     /// Returns a [commit signature] saying this validator voted for the block.
     ///
     /// [commit signature]: CommitSig
-    pub(super) fn commit(validator_address: Id, timestamp: Time) -> CommitSig {
+    pub(super) fn commit(
+        validator_address: Id,
+        validator_key: &ed25519_consensus::SigningKey,
+        canonical: &tendermint::vote::CanonicalVote,
+    ) -> CommitSig {
+        // Create a vote to be signed
+        // https://github.com/informalsystems/tendermint-rs/blob/14fd628e82ae51b9f15c135a6db8870219fe3c33/testgen/src/commit.rs#L214
+        // https://github.com/informalsystems/tendermint-rs/blob/14fd628e82ae51b9f15c135a6db8870219fe3c33/testgen/src/commit.rs#L104
+
+        use tendermint_proto::v0_37::types::CanonicalVote as RawCanonicalVote;
+        let sign_bytes =
+            tendermint_proto::Protobuf::<RawCanonicalVote>::encode_length_delimited_vec(
+                canonical.clone(),
+            );
+
+        let signature: tendermint::Signature = validator_key
+            .sign(sign_bytes.as_slice())
+            .try_into()
+            .unwrap();
+
+        // encode to stable-json deterministic JSON wire encoding,
+        // https://github.com/informalsystems/tendermint-rs/blob/14fd628e82ae51b9f15c135a6db8870219fe3c33/testgen/src/helpers.rs#L43C1-L44C1
+
         CommitSig::BlockIdFlagCommit {
             validator_address,
-            timestamp,
-            signature: None,
+            timestamp: canonical.timestamp.expect("timestamp should be present"),
+            signature: Some(signature.into()),
         }
     }
 
@@ -46,18 +68,42 @@ impl<C> TestNode<C> {
     // commit signatures from all of the validators.
 
     /// Returns an [`Iterator`] of signatures for validators in the keyring.
-    pub(super) fn generate_signatures(&self) -> impl Iterator<Item = CommitSig> + '_ {
-        self.keyring
-            .keys()
-            .map(|vk| {
+    /// Signatures sign the given block header.
+    pub(super) fn generate_signatures(
+        &self,
+        header: &tendermint::block::Header,
+    ) -> impl Iterator<Item = CommitSig> + '_ {
+        let block_id = tendermint::block::Id {
+            hash: header.hash(),
+            part_set_header: tendermint::block::parts::Header::new(0, tendermint::Hash::None)
+                .unwrap(),
+        };
+        let canonical = tendermint::vote::CanonicalVote {
+            // The mock consensus engine ONLY has precommit votes right now
+            vote_type: tendermint::vote::Type::Precommit,
+            height: tendermint::block::Height::from(header.height),
+            // round is always 0
+            round: 0u8.into(),
+            block_id: Some(block_id),
+            // Block header time is used throughout
+            timestamp: Some(header.time.clone()),
+            // timestamp: Some(last_commit_info.timestamp),
+            chain_id: self.chain_id.clone(),
+        };
+        tracing::trace!(vote=?canonical,"canonical vote constructed");
+
+        return self
+            .keyring
+            .iter()
+            .map(|(vk, sk)| {
                 (
                     <Sha256 as Digest>::digest(vk).as_slice()[0..20]
                         .try_into()
                         .expect(""),
-                    self.timestamp.clone(),
+                    sk,
                 )
             })
-            .map(|(a, b)| (self::sign::commit(account::Id::new(a), b)))
+            .map(move |(id, sk)| self::sign::commit(account::Id::new(id), sk, &canonical));
     }
 }
 

@@ -5167,10 +5167,15 @@ dependencies = [
  "anyhow",
  "bytes",
  "ed25519-consensus",
+ "hex",
+ "prost",
  "rand_core",
+ "serde",
+ "serde_json",
  "sha2 0.10.8",
  "tap",
  "tendermint",
+ "tendermint-proto",
  "tower",
  "tracing",
 ]
@@ -5179,6 +5184,7 @@ dependencies = [
 name = "penumbra-mock-tendermint-proxy"
 version = "0.80.2"
 dependencies = [
+ "hex",
  "pbjson-types",
  "penumbra-mock-consensus",
  "penumbra-proto",

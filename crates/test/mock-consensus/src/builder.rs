@@ -7,9 +7,11 @@ mod init_chain;
 
 use {
     crate::{Keyring, OnBlockFn, TestNode, TsCallbackFn},
+    anyhow::Result,
     bytes::Bytes,
+    ed25519_consensus::{SigningKey, VerificationKey},
     std::time::Duration,
-    tendermint::Time,
+    tendermint::{Genesis, Time},
 };
 
 // Default timestamp callback will increment the time by 5 seconds.
@@ -26,6 +28,17 @@ pub struct Builder {
     pub on_block: Option<OnBlockFn>,
     pub ts_callback: Option<TsCallbackFn>,
     pub initial_timestamp: Option<Time>,
+    pub chain_id: Option<String>,
+    /// Hardcodes a genesis to be used for the chain.
+    /// Useful if you're trying to test cometbft compatibility
+    /// but should not be used typically.
+    pub hardcoded_genesis: Option<Genesis>,
+    /// Specifies hardcoded keys to be assigned to validators.
+    /// Lowest indices are assigned first. If not enough are provided,
+    /// random keys will be generated for the remaining validators.
+    /// The default behavior is to generate random keys if none are
+    /// supplied.
+    pub keys: Vec<(SigningKey, VerificationKey)>,
 }
 
 impl TestNode<()> {
@@ -70,7 +83,12 @@ impl Builder {
 
         // Generate a key and place it in the keyring.
         let mut keyring = Keyring::new();
-        Self::add_key(&mut keyring);
+        if self.keys.len() >= 1 {
+            Self::add_key(&mut keyring, self.keys[0].clone());
+        } else {
+            let key = Self::generate_key();
+            Self::add_key(&mut keyring, key);
+        }
 
         Self { keyring, ..self }
     }
@@ -89,17 +107,31 @@ impl Builder {
 
         // Generate two keys and place them in the keyring.
         let mut keyring = Keyring::new();
-        Self::add_key(&mut keyring);
-        Self::add_key(&mut keyring);
+        if self.keys.len() >= 2 {
+            Self::add_key(&mut keyring, self.keys[0].clone());
+            Self::add_key(&mut keyring, self.keys[1].clone());
+        } else {
+            let key = Self::generate_key();
+            Self::add_key(&mut keyring, key);
+            let key = Self::generate_key();
+            Self::add_key(&mut keyring, key);
+        }
 
         Self { keyring, ..self }
     }
 
-    /// Generates consensus keys and places them in the provided keyring.
-    fn add_key(keyring: &mut Keyring) {
+    /// Generates consensus keys.
+    fn generate_key() -> (SigningKey, VerificationKey) {
         let sk = ed25519_consensus::SigningKey::new(rand_core::OsRng);
         let vk = sk.verification_key();
         tracing::trace!(verification_key = ?vk, "generated consensus key");
+
+        (sk, vk)
+    }
+
+    /// Places keys in the provided keyring.
+    fn add_key(keyring: &mut Keyring, key: (SigningKey, VerificationKey)) {
+        let (sk, vk) = key;
         keyring.insert(vk, sk);
     }
 
@@ -131,6 +163,33 @@ impl Builder {
     pub fn with_initial_timestamp(self, initial_time: Time) -> Self {
         Self {
             initial_timestamp: Some(initial_time),
+            ..self
+        }
+    }
+
+    /// Sets the keys used by validators.
+    pub fn with_keys(self, keys: Vec<(SigningKey, VerificationKey)>) -> Self {
+        let Self {
+            keyring: ref prev, ..
+        } = self;
+
+        // Fail with a warning if we are about to overwrite any existing keys.
+        if !prev.is_empty() {
+            panic!("with_keys should be called prior to constructing the keyring");
+        }
+
+        Self { keys: keys, ..self }
+    }
+
+    /// Add the provided Tendermint [`Genesis`] to the builder.
+    ///
+    /// This will override other configurations and hardcode the genesis data.
+    pub fn with_tendermint_genesis(self, genesis: Genesis) -> Self {
+        let Self { .. } = &self;
+        Self {
+            app_state: Some(serde_json::to_vec(&genesis.app_state).unwrap().into()),
+            initial_timestamp: Some(genesis.genesis_time),
+            hardcoded_genesis: Some(genesis),
             ..self
         }
     }
