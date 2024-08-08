@@ -121,6 +121,11 @@ pub trait EpochManager: StateWrite {
 
     /// Index the current epoch by height.
     fn put_epoch_by_height(&mut self, height: u64, epoch: Epoch) {
+        println!("put_epoch_by_height: {}, epoch: {:?}", height, epoch);
+        println!(
+            "state_key::epoch_manager::epoch_by_height(height): {}",
+            state_key::epoch_manager::epoch_by_height(height)
+        );
         self.put(state_key::epoch_manager::epoch_by_height(height), epoch)
     }
 }

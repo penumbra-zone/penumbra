@@ -185,7 +185,6 @@ where
         // The first (non-genesis) block has height 1.
         let height = {
             let height = test_node.height.increment();
-            test_node.height = height;
             tracing::Span::current().record("height", height.value());
             height
         };

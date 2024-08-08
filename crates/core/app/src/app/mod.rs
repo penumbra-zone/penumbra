@@ -628,6 +628,7 @@ impl App {
         }
 
         tracing::debug!(?jmt_root, "finished committing state");
+        println!("finished committing state {}", hex::encode(jmt_root));
 
         // Get the latest version of the state, now that we've committed it.
         self.state = Arc::new(StateDelta::new(storage.latest_snapshot()));

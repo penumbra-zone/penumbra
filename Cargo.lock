@@ -4568,6 +4568,7 @@ dependencies = [
  "tap",
  "tempfile",
  "tendermint",
+ "tendermint-config",
  "tendermint-light-client-verifier",
  "tendermint-proto",
  "tokio",
@@ -5719,7 +5720,6 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tracing",
- "tracing-subscriber 0.3.18",
  "url",
 ]
 

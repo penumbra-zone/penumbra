@@ -42,6 +42,7 @@ mod sign {
 
         CommitSig::BlockIdFlagCommit {
             validator_address,
+            // TODO: this time needs to be one block forward
             timestamp: canonical.timestamp.expect("timestamp should be present"),
             signature: Some(signature.into()),
         }
