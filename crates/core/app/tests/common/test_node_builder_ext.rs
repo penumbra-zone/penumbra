@@ -26,7 +26,7 @@ pub trait BuilderExt: Sized {
 
 impl BuilderExt for Builder {
     type Error = anyhow::Error;
-    fn with_penumbra_auto_app_state(self, app_state: AppState) -> Result<Self, Self::Error> {
+    fn with_penumbra_auto_app_state(mut self, app_state: AppState) -> Result<Self, Self::Error> {
         let Self { keyring, .. } = &self;
         let mut content = match app_state {
             AppState::Content(c) => c,
@@ -34,9 +34,13 @@ impl BuilderExt for Builder {
         };
 
         for (consensus_vk, _) in keyring {
+            // Let the seed for the penumbra validator be derived from the verification key,
+            // that way tests can operate with no rng.
+            let seed = Some(SpendKeyBytes(consensus_vk.to_bytes()));
+
             // Generate a penumbra validator with this consensus key, and a corresponding
             // allocation of delegation tokens.
-            let (validator, allocation) = generate_penumbra_validator(consensus_vk);
+            let (validator, allocation) = generate_penumbra_validator(consensus_vk, seed);
 
             // Add the validator to the staking component's genesis content.
             trace!(?validator, "adding validator to staking genesis content");
@@ -50,6 +54,11 @@ impl BuilderExt for Builder {
             content.shielded_pool_content.allocations.push(allocation);
         }
 
+        // Set the chain ID from the content
+        if !content.chain_id.is_empty() {
+            self.chain_id = Some(content.chain_id.clone());
+        }
+
         // Serialize the app state into bytes, and add it to the builder.
         let app_state = AppState::Content(content);
         serde_json::to_vec(&app_state)
@@ -61,8 +70,9 @@ impl BuilderExt for Builder {
 /// Generates a [`Validator`][PenumbraValidator] given a consensus verification key.
 fn generate_penumbra_validator(
     consensus_key: &ed25519_consensus::VerificationKey,
+    seed: Option<SpendKeyBytes>,
 ) -> (PenumbraValidator, Allocation) {
-    let seed = SpendKeyBytes(OsRng.gen());
+    let seed = seed.unwrap_or(SpendKeyBytes(OsRng.gen()));
     let spend_key = SpendKey::from(seed.clone());
     let validator_id_sk = spend_key.spend_auth_key();
     let validator_id_vk = VerificationKey::from(validator_id_sk);

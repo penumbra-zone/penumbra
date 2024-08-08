@@ -32,7 +32,10 @@
 use {
     ed25519_consensus::{SigningKey, VerificationKey},
     std::collections::BTreeMap,
-    tendermint::Time,
+    tendermint::{
+        block::{Commit, Height},
+        Time,
+    },
 };
 
 pub mod block;
@@ -77,6 +80,16 @@ pub struct TestNode<C> {
     consensus: C,
     /// The last `app_hash` value.
     last_app_hash: Vec<u8>,
+    /// The last validator set hash value.
+    last_validator_set_hash: Option<tendermint::Hash>,
+    /// The tendermint validators associated with the node.
+    /// Updated via processing updates within `BeginBlock` requests.
+    // pub validators: ValidatorSet,
+    /// The last tendermint commit.
+    // TODO: move the create_tendermint_header into TestNode and change vis on this
+    pub last_commit: Option<Commit>,
+    /// The consensus params hash.
+    consensus_params_hash: Vec<u8>,
     /// The current block [`Height`][tendermint::block::Height].
     height: tendermint::block::Height,
     /// Validators' consensus keys.
@@ -89,6 +102,8 @@ pub struct TestNode<C> {
     ts_callback: TsCallbackFn,
     /// The current timestamp of the node.
     timestamp: Time,
+    /// The chain ID.
+    chain_id: tendermint::chain::Id,
 }
 
 /// A type alias for the `TestNode::on_block` callback.
@@ -112,7 +127,7 @@ impl<C> TestNode<C> {
         &self.last_app_hash
     }
 
-    /// Returns the last `timestamp` value.
+    /// Returns the most recent `timestamp` value.
     pub fn timestamp(&self) -> &Time {
         &self.timestamp
     }
@@ -121,7 +136,11 @@ impl<C> TestNode<C> {
     pub fn last_app_hash_hex(&self) -> String {
         // Use upper-case hexadecimal integers, include leading zeroes.
         // - https://doc.rust-lang.org/std/fmt/#formatting-traits
-        format!("{:02X?}", self.last_app_hash)
+        self.last_app_hash
+            .iter()
+            .map(|b| format!("{:02X}", b).to_string())
+            .collect::<Vec<String>>()
+            .join("")
     }
 
     /// Returns a reference to the test node's set of consensus keys.
@@ -132,6 +151,10 @@ impl<C> TestNode<C> {
     /// Returns a mutable reference to the test node's set of consensus keys.
     pub fn keyring_mut(&mut self) -> &mut Keyring {
         &mut self.keyring
+    }
+
+    pub fn height(&self) -> &Height {
+        &self.height
     }
 }
 

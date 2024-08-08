@@ -160,6 +160,7 @@ where
                     retain_height,
                 } = &response;
                 trace!(?data, ?retain_height, "received Commit response");
+
                 Ok(response)
             }
             response => {

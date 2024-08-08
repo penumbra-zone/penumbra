@@ -42,6 +42,16 @@ impl MockClient {
         Ok(self)
     }
 
+    pub async fn with_sync_to_inner_storage(
+        mut self,
+        storage: cnidarium::Storage,
+    ) -> anyhow::Result<Self> {
+        let latest = storage.latest_snapshot();
+        self.sync_to_latest(latest).await?;
+
+        Ok(self)
+    }
+
     pub async fn sync_to_latest<R: StateRead>(&mut self, state: R) -> anyhow::Result<()> {
         let height = state.get_block_height().await?;
         self.sync_to(height, state).await?;

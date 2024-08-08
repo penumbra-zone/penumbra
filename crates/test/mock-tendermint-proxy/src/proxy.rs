@@ -52,8 +52,8 @@ impl TestNodeProxy {
         Box::new(move |block| inner.on_block(block))
     }
 
-    /// Returns the latest block height.
-    fn latest_block_height(&self) -> tendermint::block::Height {
+    /// Returns the last committed block height.
+    fn last_block_height(&self) -> tendermint::block::Height {
         self.inner
             .blocks()
             .last_key_value()
@@ -164,12 +164,21 @@ impl TendermintProxyService for TestNodeProxy {
         req: tonic::Request<GetStatusRequest>,
     ) -> Result<tonic::Response<GetStatusResponse>, Status> {
         let GetStatusRequest { .. } = req.into_inner();
-        let latest_block_height = self.latest_block_height().into();
+        let latest_block_height = self.last_block_height().into();
         let block_ts: tendermint_proto::google::protobuf::Timestamp = self.timestamp().into();
         let sync_info = SyncInfo {
-            // TODO: these should get set
-            latest_block_hash: vec![],
-            latest_app_hash: vec![],
+            latest_block_hash: self
+                .inner
+                .blocks()
+                .last_key_value()
+                .map(|(_, b)| b.header.hash().into())
+                .unwrap_or_default(),
+            latest_app_hash: self
+                .inner
+                .blocks()
+                .last_key_value()
+                .map(|(_, b)| b.header.app_hash.clone().into())
+                .unwrap_or_default(),
             latest_block_height,
             latest_block_time: Some(pbjson_types::Timestamp {
                 seconds: block_ts.seconds,
@@ -205,23 +214,27 @@ impl TendermintProxyService for TestNodeProxy {
         let height =
             tendermint::block::Height::try_from(height).expect("height should be less than 2^63");
 
-        let block = self
-            .inner
-            .blocks()
-            .get(&height)
-            .cloned()
+        let block = self.inner.blocks().get(&height).cloned();
+        // the response uses the penumbra type but internally we use the tendermint type
+        let proto_block = block
+            .clone()
             .map(penumbra_proto::tendermint::types::Block::try_from)
             .transpose()
             .or_else(|e| {
                 tracing::warn!(?height, error = ?e, "proxy: error fetching blocks");
                 Err(tonic::Status::internal("error fetching blocks"))
             })?;
-        let block_id = block
-            .as_ref() // is this off-by-one? should we be getting the id of the last commit?
-            .and_then(|b| b.last_commit.as_ref())
-            .and_then(|c| c.block_id.as_ref())
-            .cloned();
 
-        Ok(GetBlockByHeightResponse { block_id, block }).map(tonic::Response::new)
+        Ok(GetBlockByHeightResponse {
+            block_id: block.map(|b| penumbra_proto::tendermint::types::BlockId {
+                hash: b.header.hash().into(),
+                part_set_header: Some(penumbra_proto::tendermint::types::PartSetHeader {
+                    total: 0,
+                    hash: vec![],
+                }),
+            }),
+            block: proto_block,
+        })
+        .map(tonic::Response::new)
     }
 }

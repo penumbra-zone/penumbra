@@ -61,7 +61,7 @@ async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Res
     let height = 4;
     for i in 1..=height {
         node.block()
-            .with_signatures(vec![])
+            .without_signatures()
             .execute()
             .tap(|_| trace!(%i, "executing block with no signatures"))
             .instrument(error_span!("executing block with no signatures", %i))
