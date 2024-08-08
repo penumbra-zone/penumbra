@@ -53,12 +53,14 @@ pub struct ConstantProduct {
 
     #[clap(short, long, default_value_t = 0u32)]
     pub fee_bps: u32,
+
+    #[clap(short, long, hide(true))]
+    pub debug_file: Option<PathBuf>,
+
     /// `--yes` means all prompt interaction are skipped and agreed.
     #[clap(short, long)]
     pub yes: bool,
 
-    #[clap(short, long, hide(true))]
-    pub debug_file: Option<PathBuf>,
     #[clap(long, default_value = "0", hide(true))]
     pub source: u32,
 }
@@ -71,8 +73,8 @@ impl ConstantProduct {
             Some(user_supplied_price) => user_supplied_price,
             None => self.get_spread(app).await?,
         };
-
-        let positions = dex_utils::replicate::xyk::replicate(
+        // Generate the replicating portfolio of the constant-product curve.
+        let positions = dex_utils::replicate::xyk::replicate_clipped(
             &pair,
             &self.input,
             current_price.try_into()?,

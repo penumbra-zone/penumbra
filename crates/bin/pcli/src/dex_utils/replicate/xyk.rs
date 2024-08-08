@@ -173,6 +173,73 @@ pub fn replicate(
     Ok(positions)
 }
 
+#[tracing::instrument(name = "replicate_clipped_xyk")]
+/// Similar to [`ConstantProduct::replicate`], but "clips" the tail positions
+/// creating a replicated portfolio with more uniform liquidity.
+pub fn replicate_clipped(
+    pair: &DirectedUnitPair,
+    raw_r1: &Value,
+    current_price: U128x128,
+    fee_bps: u32,
+) -> anyhow::Result<Vec<Position>> {
+    // Generate the naive, "full-range", replicating portfolio of the constant-product curve.
+    let mut positions = replicate(&pair, raw_r1, current_price, fee_bps)?;
+
+    // Note on approach:
+    // We have generated `NUM_PRECISION_POOLS` positions. The naive approximation
+    // covers the full price range, which means that tail positions will emebed a
+    // lot of inventory that will likely stay inert.
+    // To improve the usefulness of the approximation, we can clip the tail LPs that
+    // account for [0, \alpha_1] and [\alpha_n, +inf) and redistribute their reserves
+    // uniformly (weighting can be tuned).
+
+    // First, we pick the tail LPs:
+    let lower_inf = positions.remove(0);
+    let upper_inf = positions.pop().unwrap();
+
+    // We want to track how many LPs provide for each asset respectively
+    // so that we can distribute reserves transparently (user only provides
+    // R1 of asset 1, and `R1*p` of asset2.
+    let mut num_lp_r1 = 0usize;
+    let mut num_lp_r2 = 0usize;
+
+    for lp in positions.iter() {
+        if lp.reserves_1().amount != Amount::zero() {
+            num_lp_r1 += 1;
+        } else {
+            num_lp_r2 += 1;
+        }
+    }
+
+    // We have the number of LPs for each asset, now we compute the amount
+    // of bonus reserves remaining positions will get to cover for the clipped LPs:
+    let chunk_r1 = if lower_inf.reserves_1().amount != Amount::zero() {
+        lower_inf.reserves_1().amount.value() / num_lp_r1 as u128
+    } else {
+        upper_inf.reserves_1().amount.value() / num_lp_r1 as u128
+    };
+
+    let chunk_r2 = if upper_inf.reserves_2().amount != Amount::zero() {
+        upper_inf.reserves_2().amount.value() / num_lp_r2 as u128
+    } else {
+        lower_inf.reserves_2().amount.value() / num_lp_r2 as u128
+    };
+
+    // Finally, we add the redistributed reserve to each LP:
+    let positions = positions
+        .iter_mut()
+        .map(|lp| {
+            if lp.reserves_1().amount != Amount::zero() {
+                lp.reserves.r1 += chunk_r1.into();
+            } else {
+                lp.reserves.r2 += chunk_r2.into();
+            }
+            lp.to_owned()
+        })
+        .collect::<Vec<_>>();
+    Ok(positions)
+}
+
 pub fn solve(
     alpha: &[f64],
     k: f64,
