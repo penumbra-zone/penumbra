@@ -13,6 +13,45 @@ use sqlx::{PgPool, Postgres, Transaction};
 use crate::sql::Sql;
 use crate::{AppView, ContextualizedEvent, PgTransaction};
 
+/// Insert a swap execution into the database.
+///
+/// This returns the start and end indices of its trace.
+async fn insert_swap_execution<'d>(
+    dbtx: &mut Transaction<'d, Postgres>,
+    execution: &SwapExecution,
+) -> anyhow::Result<(Option<i32>, Option<i32>)> {
+    let mut trace_start = None;
+    let mut trace_end = None;
+    for trace in &execution.traces {
+        let mut step_start = None;
+        let mut step_end = None;
+        for step in trace {
+            let (id,): (i32,) = sqlx::query_as(
+                            r#"INSERT INTO trace_step VALUES (DEFAULT, (CAST($1 AS Amount), $2)) RETURNING id;"#,
+                        )
+                            .bind(step.amount.to_string())
+                            .bind(Sql::from(step.asset_id))
+                            .fetch_one(dbtx.as_mut())
+                            .await?;
+            if let None = step_start {
+                step_start = Some(id);
+            }
+            step_end = Some(id);
+        }
+        let (id,): (i32,) =
+            sqlx::query_as(r#"INSERT INTO trace VALUES (DEFAULT, $1, $2) RETURNING id;"#)
+                .bind(step_start)
+                .bind(step_end)
+                .fetch_one(dbtx.as_mut())
+                .await?;
+        if let None = trace_start {
+            trace_start = Some(id);
+        }
+        trace_end = Some(id);
+    }
+    Ok((trace_start, trace_end))
+}
+
 /// One of the possible events that we care about.
 #[derive(Clone, Debug)]
 enum Event {
@@ -36,7 +75,8 @@ enum Event {
     /// A parsed version of [pb::EventBatchSwap]
     BatchSwap {
         height: u64,
-        execution: SwapExecution,
+        execution12: SwapExecution,
+        execution21: SwapExecution,
         output_data: BatchSwapOutputData,
     },
     /// A parsed version of [pb::EventPositionOpen]
@@ -123,36 +163,7 @@ impl Event {
                 Ok(())
             }
             Event::ArbExecution { height, execution } => {
-                let mut trace_start = None;
-                let mut trace_end = None;
-                for trace in &execution.traces {
-                    let mut step_start = None;
-                    let mut step_end = None;
-                    for step in trace {
-                        let (id,): (i32,) = sqlx::query_as(
-                            r#"INSERT INTO dex_trace_step VALUES (DEFAULT, (CAST($1 AS Amount), $2)) RETURNING id;"#,
-                        )
-                        .bind(step.amount.to_string())
-                        .bind(Sql::from(step.asset_id))
-                        .fetch_one(dbtx.as_mut())
-                        .await?;
-                        if let None = step_start {
-                            step_start = Some(id);
-                        }
-                        step_end = Some(id);
-                    }
-                    let (id,): (i32,) = sqlx::query_as(
-                        r#"INSERT INTO dex_trace VALUES (DEFAULT, $1, $2) RETURNING id;"#,
-                    )
-                    .bind(step_start)
-                    .bind(step_end)
-                    .fetch_one(dbtx.as_mut())
-                    .await?;
-                    if let None = trace_start {
-                        trace_start = Some(id);
-                    }
-                    trace_end = Some(id);
-                }
+                let (trace_start, trace_end) = insert_swap_execution(dbtx, execution).await?;
                 sqlx::query(r#"INSERT INTO dex_arb VALUES ($1, (CAST($2 AS Amount), $3), (CAST($4 AS Amount), $5), $6, $7);"#)
                     .bind(i64::try_from(*height)?)
                     .bind(execution.input.amount.to_string())
@@ -337,49 +348,18 @@ impl Event {
             }
             Event::BatchSwap {
                 height,
-                execution,
+                execution12,
+                execution21,
                 output_data,
             } => {
-                let mut trace_start = None;
-                let mut trace_end = None;
-                for trace in &execution.traces {
-                    let mut step_start = None;
-                    let mut step_end = None;
-                    for step in trace {
-                        let (id,): (i32,) = sqlx::query_as(
-                            r#"INSERT INTO trace_step VALUES (DEFAULT, (CAST($1 AS Amount), $2)) RETURNING id;"#,
-                        )
-                            .bind(step.amount.to_string())
-                            .bind(Sql::from(step.asset_id))
-                            .fetch_one(dbtx.as_mut())
-                            .await?;
-                        if let None = step_start {
-                            step_start = Some(id);
-                        }
-                        step_end = Some(id);
-                    }
-                    let (id,): (i32,) = sqlx::query_as(
-                        r#"INSERT INTO trace VALUES (DEFAULT, $1, $2) RETURNING id;"#,
-                    )
-                    .bind(step_start)
-                    .bind(step_end)
-                    .fetch_one(dbtx.as_mut())
-                    .await?;
-                    if let None = trace_start {
-                        trace_start = Some(id);
-                    }
-                    trace_end = Some(id);
-                }
-                sqlx::query(r#"INSERT INTO dex_batch_swap VALUES ($1, (CAST($2 AS Amount), $3),
-                 (CAST($4 AS AMOUNT), $5), $6, $7, $8, $9, CAST($10 AS AMOUNT), CAST($11 AS AMOUNT),
-                  CAST($12 AS AMOUNT), CAST($13 AS AMOUNT), CAST($14 AS AMOUNT), CAST($15 AS AMOUNT),;"#)
+                let (trace12_start, trace12_end) = insert_swap_execution(dbtx, execution12).await?;
+                let (trace21_start, trace21_end) = insert_swap_execution(dbtx, execution21).await?;
+                sqlx::query(r#"INSERT INTO dex_batch_swap VALUES ($1, $2, $3, $4, $5, $6, $7, CAST($8 AS Amount), CAST($9 AS Amount), CAST($10 AS Amount), CAST($11 AS Amount), CAST($12 AS Amount), CAST($13 AS Amount));"#)
                     .bind(i64::try_from(*height)?)
-                    .bind(execution.input.amount.to_string())
-                    .bind(Sql::from(execution.input.asset_id))
-                    .bind(execution.output.amount.to_string())
-                    .bind(Sql::from(execution.output.asset_id))
-                    .bind(trace_start)
-                    .bind(trace_end)
+                    .bind(trace12_start)
+                    .bind(trace12_end)
+                    .bind(trace21_start)
+                    .bind(trace21_end)
                     .bind(Sql::from(output_data.trading_pair.asset_1()))
                     .bind(Sql::from(output_data.trading_pair.asset_2()))
                     .bind(output_data.unfilled_1.to_string())
@@ -539,13 +519,18 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     .batch_swap_output_data
                     .ok_or(anyhow!("missing swap execution"))?
                     .try_into()?;
-                let execution = pe
+                let execution12 = pe
                     .swap_execution_1_for_2
+                    .ok_or(anyhow!("missing swap execution"))?
+                    .try_into()?;
+                let execution21 = pe
+                    .swap_execution_2_for_1
                     .ok_or(anyhow!("missing swap execution"))?
                     .try_into()?;
                 Ok(Self::BatchSwap {
                     height,
-                    execution,
+                    execution12,
+                    execution21,
                     output_data,
                 })
             }

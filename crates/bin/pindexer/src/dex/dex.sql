@@ -117,14 +117,16 @@ CREATE TABLE IF NOT EXISTS dex_lp_execution (
 --- Represents instances where swap executions happened.
 CREATE TABLE IF NOT EXISTS dex_batch_swap (
   height BIGINT PRIMARY KEY,
-  trace_start INTEGER REFERENCES dex_trace (id),
-  trace_end INTEGER REFERENCES dex_trace (id),
-  pair_asset_id_1 BYTEA NOT NULL,
-  pair_asset_id_2 BYTEA NOT NULL,
-  unfilled_1 Amount NOT NULL,
-  unfilled_2 Amount NOT NULL,
-  delta_1 Amount NOT NULL,
-  delta_2 Amount NOT NULL,
-  lambda_1 Amount NOT NULL,
-  lambda_2 Amount NOT NULL
+  trace12_start INTEGER REFERENCES dex_trace (id),
+  trace12_end INTEGER REFERENCES dex_trace (id),
+  trace21_start INTEGER REFERENCES dex_trace (id),
+  trace21_end INTEGER REFERENCES dex_trace (id),
+  pair_asset1 BYTEA NOT NULL,
+  pair_asset2 BYTEA NOT NULL,
+  unfilled1 Amount NOT NULL,
+  unfilled2 Amount NOT NULL,
+  delta1 Amount NOT NULL,
+  delta2 Amount NOT NULL,
+  lambda1 Amount NOT NULL,
+  lambda2 Amount NOT NULL
 );
