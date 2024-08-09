@@ -5,7 +5,7 @@ use cometindex::async_trait;
 use penumbra_asset::asset::Id as AssetId;
 use penumbra_dex::lp::position::{Id, Position};
 use penumbra_dex::lp::{self, TradingFunction};
-use penumbra_dex::{BatchSwapOutputData, DirectedTradingPair, SwapExecution};
+use penumbra_dex::{BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair};
 use penumbra_num::Amount;
 use penumbra_proto::{event::ProtoEvent, penumbra::core::component::dex::v1 as pb};
 use sqlx::{PgPool, Postgres, Transaction};
@@ -101,10 +101,17 @@ enum Event {
         prev_reserves_2: Amount,
         context: DirectedTradingPair,
     },
+    /// A parsed version of [pb::EventSwap]
+    Swap {
+        height: u64,
+        trading_pair: TradingPair,
+        delta_1_i: Amount,
+        delta_2_i: Amount,
+    },
 }
 
 impl Event {
-    const NAMES: [&'static str; 8] = [
+    const NAMES: [&'static str; 9] = [
         "penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit",
         "penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit",
         "penumbra.core.component.dex.v1.EventArbExecution",
@@ -113,6 +120,7 @@ impl Event {
         "penumbra.core.component.dex.v1.EventPositionClose",
         "penumbra.core.component.dex.v1.EventPositionExecution",
         "penumbra.core.component.dex.v1.EventBatchSwap",
+        "penumbra.core.component.dex.v1.EventSwap",
     ];
 
     /// Index this event, using the handle to the postgres transaction.
@@ -372,6 +380,22 @@ impl Event {
                     .await?;
                 Ok(())
             }
+            Event::Swap {
+                height,
+                trading_pair,
+                delta_1_i,
+                delta_2_i,
+            } => {
+                sqlx::query(r#"INSERT INTO dex_swap VALUES (DEFAULT, $1, (CAST($2 AS Amount), $3), (CAST($4 AS Amount), $5));"#)
+                    .bind(i64::try_from(*height)?)
+                    .bind(delta_1_i.to_string())
+                    .bind(Sql::from(trading_pair.asset_1()))
+                    .bind(delta_2_i.to_string())
+                    .bind(Sql::from(trading_pair.asset_2()))
+                    .execute(dbtx.as_mut())
+                    .await?;
+                Ok(())
+            }
         }
     }
 }
@@ -532,6 +556,29 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     execution12,
                     execution21,
                     output_data,
+                })
+            }
+            // Swap
+            x if x == Event::NAMES[8] => {
+                let pe = pb::EventSwap::from_event(event.as_ref())?;
+                let height = event.block_height;
+                let trading_pair = pe
+                    .trading_pair
+                    .expect("trading_pair should be present")
+                    .try_into()?;
+                let delta_1_i = pe
+                    .delta_1_i
+                    .expect("delta_1_i should be present")
+                    .try_into()?;
+                let delta_2_i = pe
+                    .delta_2_i
+                    .expect("delta_2_i should be present")
+                    .try_into()?;
+                Ok(Self::Swap {
+                    height,
+                    trading_pair,
+                    delta_1_i,
+                    delta_2_i,
                 })
             }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),

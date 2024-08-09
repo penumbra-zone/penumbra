@@ -130,3 +130,15 @@ CREATE TABLE IF NOT EXISTS dex_batch_swap (
   lambda1 Amount NOT NULL,
   lambda2 Amount NOT NULL
 );
+
+-- Represents instances of invididual swaps into the batch.
+CREATE TABLE IF NOT EXISTS dex_swap (
+  id SERIAL PRIMARY KEY,
+  height BIGINT NOT NULL,
+  value1 Value,
+  value2 Value,
+);
+
+CREATE INDEX ON dex_swap(height, id);
+CREATE INDEX ON dex_swap(((value1).asset));
+CREATE INDEX ON dex_swap(((value2).asset));
