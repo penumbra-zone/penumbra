@@ -957,7 +957,7 @@ impl TxCmd {
                 let position = order.as_position(&asset_cache, OsRng)?;
                 tracing::info!(?position);
 
-                println!("Position id:{}", position.id().to_string());
+                println!("Position id: {}", position.id());
 
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
