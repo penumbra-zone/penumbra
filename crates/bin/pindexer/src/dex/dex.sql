@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS dex_swap (
   id SERIAL PRIMARY KEY,
   height BIGINT NOT NULL,
   value1 Value,
-  value2 Value,
+  value2 Value
 );
 
 CREATE INDEX ON dex_swap(height, id);

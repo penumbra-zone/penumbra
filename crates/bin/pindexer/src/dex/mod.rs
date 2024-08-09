@@ -18,8 +18,12 @@ use crate::{AppView, ContextualizedEvent, PgTransaction};
 /// This returns the start and end indices of its trace.
 async fn insert_swap_execution<'d>(
     dbtx: &mut Transaction<'d, Postgres>,
-    execution: &SwapExecution,
+    execution: Option<&SwapExecution>,
 ) -> anyhow::Result<(Option<i32>, Option<i32>)> {
+    let execution = match execution {
+        None => return Ok((None, None)),
+        Some(e) => e,
+    };
     let mut trace_start = None;
     let mut trace_end = None;
     for trace in &execution.traces {
@@ -27,7 +31,7 @@ async fn insert_swap_execution<'d>(
         let mut step_end = None;
         for step in trace {
             let (id,): (i32,) = sqlx::query_as(
-                            r#"INSERT INTO trace_step VALUES (DEFAULT, (CAST($1 AS Amount), $2)) RETURNING id;"#,
+                            r#"INSERT INTO dex_trace_step VALUES (DEFAULT, (CAST($1 AS Amount), $2)) RETURNING id;"#,
                         )
                             .bind(step.amount.to_string())
                             .bind(Sql::from(step.asset_id))
@@ -39,7 +43,7 @@ async fn insert_swap_execution<'d>(
             step_end = Some(id);
         }
         let (id,): (i32,) =
-            sqlx::query_as(r#"INSERT INTO trace VALUES (DEFAULT, $1, $2) RETURNING id;"#)
+            sqlx::query_as(r#"INSERT INTO dex_trace VALUES (DEFAULT, $1, $2) RETURNING id;"#)
                 .bind(step_start)
                 .bind(step_end)
                 .fetch_one(dbtx.as_mut())
@@ -75,8 +79,8 @@ enum Event {
     /// A parsed version of [pb::EventBatchSwap]
     BatchSwap {
         height: u64,
-        execution12: SwapExecution,
-        execution21: SwapExecution,
+        execution12: Option<SwapExecution>,
+        execution21: Option<SwapExecution>,
         output_data: BatchSwapOutputData,
     },
     /// A parsed version of [pb::EventPositionOpen]
@@ -171,7 +175,7 @@ impl Event {
                 Ok(())
             }
             Event::ArbExecution { height, execution } => {
-                let (trace_start, trace_end) = insert_swap_execution(dbtx, execution).await?;
+                let (trace_start, trace_end) = insert_swap_execution(dbtx, Some(execution)).await?;
                 sqlx::query(r#"INSERT INTO dex_arb VALUES ($1, (CAST($2 AS Amount), $3), (CAST($4 AS Amount), $5), $6, $7);"#)
                     .bind(i64::try_from(*height)?)
                     .bind(execution.input.amount.to_string())
@@ -360,8 +364,10 @@ impl Event {
                 execution21,
                 output_data,
             } => {
-                let (trace12_start, trace12_end) = insert_swap_execution(dbtx, execution12).await?;
-                let (trace21_start, trace21_end) = insert_swap_execution(dbtx, execution21).await?;
+                let (trace12_start, trace12_end) =
+                    insert_swap_execution(dbtx, execution12.as_ref()).await?;
+                let (trace21_start, trace21_end) =
+                    insert_swap_execution(dbtx, execution21.as_ref()).await?;
                 sqlx::query(r#"INSERT INTO dex_batch_swap VALUES ($1, $2, $3, $4, $5, $6, $7, CAST($8 AS Amount), CAST($9 AS Amount), CAST($10 AS Amount), CAST($11 AS Amount), CAST($12 AS Amount), CAST($13 AS Amount));"#)
                     .bind(i64::try_from(*height)?)
                     .bind(trace12_start)
@@ -545,12 +551,12 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     .try_into()?;
                 let execution12 = pe
                     .swap_execution_1_for_2
-                    .ok_or(anyhow!("missing swap execution"))?
-                    .try_into()?;
+                    .map(|x| x.try_into())
+                    .transpose()?;
                 let execution21 = pe
                     .swap_execution_2_for_1
-                    .ok_or(anyhow!("missing swap execution"))?
-                    .try_into()?;
+                    .map(|x| x.try_into())
+                    .transpose()?;
                 Ok(Self::BatchSwap {
                     height,
                     execution12,
