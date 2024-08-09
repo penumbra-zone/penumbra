@@ -121,8 +121,8 @@ CREATE TABLE IF NOT EXISTS dex_batch_swap (
   trace12_end INTEGER REFERENCES dex_trace (id),
   trace21_start INTEGER REFERENCES dex_trace (id),
   trace21_end INTEGER REFERENCES dex_trace (id),
-  pair_asset1 BYTEA NOT NULL,
-  pair_asset2 BYTEA NOT NULL,
+  asset1 BYTEA NOT NULL,
+  asset2 BYTEA NOT NULL,
   unfilled1 Amount NOT NULL,
   unfilled2 Amount NOT NULL,
   delta1 Amount NOT NULL,
@@ -130,6 +130,10 @@ CREATE TABLE IF NOT EXISTS dex_batch_swap (
   lambda1 Amount NOT NULL,
   lambda2 Amount NOT NULL
 );
+
+CREATE INDEX ON dex_batch_swap(height);
+CREATE INDEX ON dex_batch_swap(asset1, height);
+CREATE INDEX ON dex_batch_swap(asset2, height);
 
 -- Represents instances of invididual swaps into the batch.
 CREATE TABLE IF NOT EXISTS dex_swap (
