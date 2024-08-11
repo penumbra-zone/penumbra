@@ -30,6 +30,7 @@ pub struct Metadata {
 }
 
 // These are constructed by the asset registry.
+#[derive(Debug)]
 pub(super) struct Inner {
     // The Penumbra asset ID
     id: Id,

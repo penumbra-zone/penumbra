@@ -16,7 +16,7 @@ use tap::{Tap, TapFallible};
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
 use tonic::{async_trait, transport::Channel, Request, Response, Status};
-use tracing::instrument;
+use tracing::{instrument, Instrument};
 use url::Url;
 
 use penumbra_asset::{asset, asset::Metadata, Value};
@@ -91,13 +91,6 @@ pub struct ViewServer {
 
 impl ViewServer {
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
-    #[instrument(
-        skip_all,
-        fields(
-            path = ?storage_path.as_ref().map(|p| p.as_ref().as_str()),
-            url = %node,
-        )
-    )]
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
         registry_path: Option<impl AsRef<Utf8Path>>,
@@ -126,22 +119,25 @@ impl ViewServer {
     /// To create multiple [`ViewService`]s, clone the [`ViewService`] returned
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
-    #[instrument(skip_all)]
     pub async fn new(storage: Storage, node: Url) -> anyhow::Result<Self> {
+        let span = tracing::error_span!(parent: None, "view");
         let channel = Channel::from_shared(node.to_string())
             .with_context(|| "could not parse node URI")?
             .connect()
+            .instrument(span.clone())
             .await
             .with_context(|| "could not connect to grpc server")
             .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
 
         let (worker, state_commitment_tree, error_slot, sync_height_rx) =
             Worker::new(storage.clone(), channel)
+                .instrument(span.clone())
                 .tap(|_| tracing::trace!("constructing view server worker"))
                 .await?
                 .tap(|_| tracing::debug!("constructed view server worker"));
 
-        tokio::spawn(worker.run()).tap(|_| tracing::debug!("spawned view server worker"));
+        tokio::spawn(worker.run().instrument(span))
+            .tap(|_| tracing::debug!("spawned view server worker"));
 
         Ok(Self {
             storage,
