@@ -255,6 +255,36 @@ impl Storage {
         .await?
     }
 
+    /// Loads asset metadata from a JSON file and use to update the database.
+    pub async fn load_asset_metadata(
+        &self,
+        registry_path: impl AsRef<Utf8Path>,
+    ) -> anyhow::Result<()> {
+        tracing::debug!(registry_path = ?registry_path.as_ref(), "loading asset metadata");
+        let registry_path = registry_path.as_ref();
+        // Parse into a serde_json::Value first so we can get the bits we care about
+        let mut registry_json: serde_json::Value = serde_json::from_str(
+            std::fs::read_to_string(registry_path)
+                .context("failed to read file")?
+                .as_str(),
+        )
+        .context("failed to parse JSON")?;
+
+        let registry: BTreeMap<String, Metadata> = serde_json::value::from_value(
+            registry_json
+                .get_mut("assetById")
+                .ok_or_else(|| anyhow::anyhow!("missing assetById"))?
+                .take(),
+        )
+        .context("could not parse asset registry")?;
+
+        for metadata in registry.into_values() {
+            self.record_asset(metadata).await?;
+        }
+
+        Ok(())
+    }
+
     /// Query for account balance by address
     pub async fn balances(
         &self,
@@ -1030,7 +1060,10 @@ impl Storage {
         }).await?
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn record_asset(&self, asset: Metadata) -> anyhow::Result<()> {
+        tracing::debug!(?asset);
+
         let asset_id = asset.id().to_bytes().to_vec();
         let denom = asset.base_denom().denom;
 

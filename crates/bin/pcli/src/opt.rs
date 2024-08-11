@@ -155,8 +155,17 @@ impl Opt {
                 let path = self.home.join(crate::VIEW_FILE_NAME);
                 tracing::info!(%path, "using local view service");
 
+                let registry_path = self.home.join("registry.json");
+                // Check if the path exists or set it to nojne
+                let registry_path = if registry_path.exists() {
+                    Some(registry_path)
+                } else {
+                    None
+                };
+
                 let svc = ViewServer::load_or_initialize(
                     Some(path),
+                    registry_path,
                     &config.full_viewing_key,
                     config.grpc_url.clone(),
                 )

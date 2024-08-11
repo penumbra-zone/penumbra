@@ -100,6 +100,7 @@ impl ViewServer {
     )]
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
+        registry_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {
@@ -107,6 +108,10 @@ impl ViewServer {
             .tap(|_| tracing::trace!("loading or initializing storage"))
             .await?
             .tap(|_| tracing::debug!("storage is ready"));
+
+        if let Some(registry_path) = registry_path {
+            storage.load_asset_metadata(registry_path).await?;
+        }
 
         Self::new(storage, node)
             .tap(|_| tracing::trace!("constructing view server"))
