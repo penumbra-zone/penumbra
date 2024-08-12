@@ -113,3 +113,36 @@ CREATE TABLE IF NOT EXISTS dex_lp_execution (
   -- The end asset for this execution.
   context_end BYTEA NOT NULL
 );
+
+--- Represents instances where swap executions happened.
+CREATE TABLE IF NOT EXISTS dex_batch_swap (
+  height BIGINT PRIMARY KEY,
+  trace12_start INTEGER REFERENCES dex_trace (id),
+  trace12_end INTEGER REFERENCES dex_trace (id),
+  trace21_start INTEGER REFERENCES dex_trace (id),
+  trace21_end INTEGER REFERENCES dex_trace (id),
+  asset1 BYTEA NOT NULL,
+  asset2 BYTEA NOT NULL,
+  unfilled1 Amount NOT NULL,
+  unfilled2 Amount NOT NULL,
+  delta1 Amount NOT NULL,
+  delta2 Amount NOT NULL,
+  lambda1 Amount NOT NULL,
+  lambda2 Amount NOT NULL
+);
+
+CREATE INDEX ON dex_batch_swap(height);
+CREATE INDEX ON dex_batch_swap(asset1, height);
+CREATE INDEX ON dex_batch_swap(asset2, height);
+
+-- Represents instances of invididual swaps into the batch.
+CREATE TABLE IF NOT EXISTS dex_swap (
+  id SERIAL PRIMARY KEY,
+  height BIGINT NOT NULL,
+  value1 Value,
+  value2 Value
+);
+
+CREATE INDEX ON dex_swap(height, id);
+CREATE INDEX ON dex_swap(((value1).asset));
+CREATE INDEX ON dex_swap(((value2).asset));
