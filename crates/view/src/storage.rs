@@ -255,6 +255,36 @@ impl Storage {
         .await?
     }
 
+    /// Loads asset metadata from a JSON file and use to update the database.
+    pub async fn load_asset_metadata(
+        &self,
+        registry_path: impl AsRef<Utf8Path>,
+    ) -> anyhow::Result<()> {
+        tracing::debug!(registry_path = ?registry_path.as_ref(), "loading asset metadata");
+        let registry_path = registry_path.as_ref();
+        // Parse into a serde_json::Value first so we can get the bits we care about
+        let mut registry_json: serde_json::Value = serde_json::from_str(
+            std::fs::read_to_string(registry_path)
+                .context("failed to read file")?
+                .as_str(),
+        )
+        .context("failed to parse JSON")?;
+
+        let registry: BTreeMap<String, Metadata> = serde_json::value::from_value(
+            registry_json
+                .get_mut("assetById")
+                .ok_or_else(|| anyhow::anyhow!("missing assetById"))?
+                .take(),
+        )
+        .context("could not parse asset registry")?;
+
+        for metadata in registry.into_values() {
+            self.record_asset(metadata).await?;
+        }
+
+        Ok(())
+    }
+
     /// Query for account balance by address
     pub async fn balances(
         &self,
@@ -793,14 +823,10 @@ impl Storage {
 
         spawn_blocking(move || {
             pool.get()?
-                .prepare_cached("SELECT * FROM assets")?
+                .prepare_cached("SELECT metadata FROM assets")?
                 .query_and_then([], |row| {
-                    let _asset_id: Vec<u8> = row.get("asset_id")?;
-                    let denom: String = row.get("denom")?;
-
-                    let denom_metadata = asset::REGISTRY
-                        .parse_denom(&denom)
-                        .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?;
+                    let metadata_json = row.get::<_, String>("metadata")?;
+                    let denom_metadata = serde_json::from_str(&metadata_json)?;
 
                     anyhow::Ok(denom_metadata)
                 })?
@@ -816,13 +842,10 @@ impl Storage {
 
         spawn_blocking(move || {
             pool.get()?
-                .prepare_cached("SELECT * FROM assets WHERE asset_id = ?1")?
+                .prepare_cached("SELECT metadata FROM assets WHERE asset_id = ?1")?
                 .query_and_then([id], |row| {
-                    let _asset_id: Vec<u8> = row.get("asset_id")?;
-                    let denom: String = row.get("denom")?;
-                    let denom_metadata = asset::REGISTRY
-                        .parse_denom(&denom)
-                        .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?;
+                    let metadata_json = row.get::<_, String>("metadata")?;
+                    let denom_metadata = serde_json::from_str(&metadata_json)?;
                     anyhow::Ok(denom_metadata)
                 })?
                 .next()
@@ -840,13 +863,10 @@ impl Storage {
 
         spawn_blocking(move || {
             pool.get()?
-                .prepare_cached("SELECT * FROM assets WHERE denom LIKE ?1 ESCAPE '\\'")?
+                .prepare_cached("SELECT metadata FROM assets WHERE denom LIKE ?1 ESCAPE '\\'")?
                 .query_and_then([pattern], |row| {
-                    let _asset_id: Vec<u8> = row.get("asset_id")?;
-                    let denom: String = row.get("denom")?;
-                    let denom_metadata = asset::REGISTRY
-                        .parse_denom(&denom)
-                        .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?;
+                    let metadata_json = row.get::<_, String>("metadata")?;
+                    let denom_metadata = serde_json::from_str(&metadata_json)?;
                     anyhow::Ok(denom_metadata)
                 })?
                 .collect()
@@ -1030,17 +1050,21 @@ impl Storage {
         }).await?
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn record_asset(&self, asset: Metadata) -> anyhow::Result<()> {
+        tracing::debug!(?asset);
+
         let asset_id = asset.id().to_bytes().to_vec();
         let denom = asset.base_denom().denom;
+        let metadata_json = serde_json::to_string(&asset)?;
 
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
             pool.get()?
                 .execute(
-                    "INSERT OR IGNORE INTO assets (asset_id, denom) VALUES (?1, ?2)",
-                    (asset_id, denom),
+                    "INSERT OR REPLACE INTO assets (asset_id, denom, metadata) VALUES (?1, ?2, ?3)",
+                    (asset_id, denom, metadata_json),
                 )
                 .map_err(anyhow::Error::from)
         })
