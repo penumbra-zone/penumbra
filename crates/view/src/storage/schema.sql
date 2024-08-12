@@ -15,7 +15,8 @@ CREATE TABLE sync_height (height BIGINT NOT NULL);
 -- used for storing a cache of known assets
 CREATE TABLE assets (
     asset_id                BLOB PRIMARY KEY NOT NULL,
-    denom                   TEXT NOT NULL
+    denom                   TEXT NOT NULL,
+    metadata                TEXT NOT NULL
 );
 
 -- the shape information about the sct

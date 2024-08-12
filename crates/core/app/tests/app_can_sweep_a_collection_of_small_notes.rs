@@ -116,6 +116,7 @@ async fn app_can_sweep_a_collection_of_small_notes() -> anyhow::Result<()> {
     let view_server = {
         penumbra_view::ViewServer::load_or_initialize(
             None::<&camino::Utf8Path>,
+            None::<&camino::Utf8Path>,
             &*test_keys::FULL_VIEWING_KEY,
             grpc_url,
         )

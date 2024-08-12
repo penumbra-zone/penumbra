@@ -92,6 +92,7 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
     let view_server = {
         penumbra_view::ViewServer::load_or_initialize(
             None::<&camino::Utf8Path>,
+            None::<&camino::Utf8Path>,
             &*test_keys::FULL_VIEWING_KEY,
             grpc_url,
         )
