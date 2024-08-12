@@ -30,6 +30,7 @@ pub struct Metadata {
 }
 
 // These are constructed by the asset registry.
+#[derive(Debug)]
 pub(super) struct Inner {
     // The Penumbra asset ID
     id: Id,
@@ -317,16 +318,19 @@ impl Metadata {
         if amount == 0u64.into() {
             return self.default_unit();
         }
+        let mut selected_index = 0;
+        let mut selected_exponent = 0;
         for (unit_index, unit) in self.inner.units.iter().enumerate() {
             let unit_amount = Amount::from(10u128.pow(unit.exponent as u32));
-            if amount >= unit_amount {
-                return Unit {
-                    unit_index,
-                    inner: self.inner.clone(),
-                };
+            if unit_amount <= amount && unit.exponent >= selected_exponent {
+                selected_index = unit_index;
+                selected_exponent = unit.exponent;
             }
         }
-        self.base_unit()
+        return Unit {
+            unit_index: selected_index,
+            inner: self.inner.clone(),
+        };
     }
 
     pub fn starts_with(&self, prefix: &str) -> bool {
