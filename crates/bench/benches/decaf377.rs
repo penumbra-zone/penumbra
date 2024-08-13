@@ -14,7 +14,7 @@ fn bench_base_field_addition(c: &mut Criterion) {
 
     c.bench_function("decaf377: fp field addition", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) + black_box(y);
             }
         })
@@ -27,7 +27,7 @@ fn bench_base_field_subtraction(c: &mut Criterion) {
 
     c.bench_function("decaf377: fp field subtraction", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) - black_box(y);
             }
         })
@@ -40,7 +40,7 @@ fn bench_base_field_multiplication(c: &mut Criterion) {
 
     c.bench_function("decaf377: fp field multiplication", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) * black_box(y);
             }
         })
@@ -53,7 +53,7 @@ fn bench_base_field_negation(c: &mut Criterion) {
 
     c.bench_function("decaf377: fp field negation", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) + black_box(-y);
             }
         })
@@ -65,7 +65,7 @@ fn bench_base_field_square(c: &mut Criterion) {
 
     c.bench_function("decaf377: fp field squaring", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x).square()
             }
         })
@@ -77,7 +77,7 @@ fn bench_base_field_inverse(c: &mut Criterion) {
 
     c.bench_function("decaf377: fp field inverse", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x).inverse().expect("inverse")
             }
         })
@@ -97,7 +97,7 @@ fn bench_scalar_field_addition(c: &mut Criterion) {
 
     c.bench_function("decaf377: fq field addition", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) + black_box(y);
             }
         })
@@ -105,12 +105,12 @@ fn bench_scalar_field_addition(c: &mut Criterion) {
 }
 
 fn bench_scalar_field_subtraction(c: &mut Criterion) {
-    let mut x = generate_fp();
-    let y = generate_fp();
+    let mut x = generate_fq();
+    let y = generate_fq();
 
     c.bench_function("decaf377: fq field subtraction", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) - black_box(y);
             }
         })
@@ -118,12 +118,12 @@ fn bench_scalar_field_subtraction(c: &mut Criterion) {
 }
 
 fn bench_scalar_field_multiplication(c: &mut Criterion) {
-    let mut x = generate_fp();
-    let y = generate_fp();
+    let mut x = generate_fq();
+    let y = generate_fq();
 
     c.bench_function("decaf377: fq field multiplication", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) * black_box(y);
             }
         })
@@ -136,7 +136,7 @@ fn bench_scalar_field_negation(c: &mut Criterion) {
 
     c.bench_function("decaf377: fq field negation", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) + black_box(-y);
             }
         })
@@ -148,7 +148,7 @@ fn bench_scalar_field_square(c: &mut Criterion) {
 
     c.bench_function("decaf377: fq field squaring", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x).square()
             }
         })
@@ -160,7 +160,7 @@ fn bench_scalar_field_inverse(c: &mut Criterion) {
 
     c.bench_function("decaf377: fq field inverse", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x).inverse().expect("inverse")
             }
         })

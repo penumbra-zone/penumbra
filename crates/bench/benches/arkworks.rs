@@ -16,7 +16,7 @@ fn bench_base_field_addition(c: &mut Criterion) {
 
     c.bench_function("arkworks:fq field addition", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) + black_box(y);
             }
         })
@@ -29,7 +29,7 @@ fn bench_base_field_subtraction(c: &mut Criterion) {
 
     c.bench_function("arkworks: fq field subtraction", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) - black_box(y);
             }
         })
@@ -42,7 +42,7 @@ fn bench_base_field_mutliplication(c: &mut Criterion) {
 
     c.bench_function("arkworks: fq field multiplication", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) * black_box(y);
             }
         })
@@ -55,7 +55,7 @@ fn bench_base_field_negation(c: &mut Criterion) {
 
     c.bench_function("arkworks: fq field negation", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) + black_box(-y);
             }
         })
@@ -66,7 +66,7 @@ fn bench_base_field_square(c: &mut Criterion) {
     let mut x = generate_fq_arkworks();
     c.bench_function("arkworks: fq field squaring", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = Fp384::square(&x)
             }
         })
@@ -78,7 +78,7 @@ fn bench_base_field_inverse(c: &mut Criterion) {
 
     c.bench_function("arkworks: fq field inverse", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = Fp384::inverse(&x).expect("inverse")
             }
         })
@@ -98,7 +98,7 @@ fn bench_scalar_field_addition(c: &mut Criterion) {
 
     c.bench_function("arkworks: fr field addition", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) + black_box(y);
             }
         })
@@ -111,7 +111,7 @@ fn bench_scalar_field_subtraction(c: &mut Criterion) {
 
     c.bench_function("arkworks: fr field subtraction", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) - black_box(y);
             }
         })
@@ -124,7 +124,7 @@ fn bench_scalar_field_mutliplication(c: &mut Criterion) {
 
     c.bench_function("arkworks: fr field multiplication", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) * black_box(y);
             }
         })
@@ -137,7 +137,7 @@ fn bench_scalar_field_negation(c: &mut Criterion) {
 
     c.bench_function("arkworks: fr field negation", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = black_box(x) + black_box(-y);
             }
         })
@@ -148,7 +148,7 @@ fn bench_scalar_field_square(c: &mut Criterion) {
     let mut x = generate_fr_arkworks();
     c.bench_function("arkworks: fr field squaring", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = Fp256::square(&x)
             }
         })
@@ -160,7 +160,7 @@ fn bench_scalar_field_inverse(c: &mut Criterion) {
 
     c.bench_function("arkworks: fr field inverse", |b| {
         b.iter(|| {
-            for _ in 0..1000 {
+            for _ in 0..100000 {
                 x = Fp256::inverse(&x).expect("inverse")
             }
         })
