@@ -251,4 +251,4 @@ tonic-reflection                 = { git = "https://github.com/penumbra-zone/ton
 tonic-web                        = { git = "https://github.com/penumbra-zone/tonic.git", tag = "v0.10.3-penumbra" }
 
 [profile.release]
-opt-level = "s"
+lto = true
