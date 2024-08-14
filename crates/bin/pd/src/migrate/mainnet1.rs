@@ -18,7 +18,7 @@ use tracing::instrument;
 use crate::network::generate::NetworkConfig;
 
 /// The block where proposal #2 passed, enabling outbound ICS20 transfers.
-const ICS20_TRANSFER_START_HEIGHT: u64 = 411616;
+const ICS20_TRANSFER_START_HEIGHT: u64 = 1;
 
 /// Find all of the lost transfers inside of a transaction.
 ///
