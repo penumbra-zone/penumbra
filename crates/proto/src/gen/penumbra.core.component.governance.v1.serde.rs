@@ -4834,13 +4834,14 @@ impl serde::Serialize for ProposalKind {
         S: serde::Serializer,
     {
         let variant = match self {
-            Self::Signaling => "SIGNALING",
-            Self::Emergency => "EMERGENCY",
-            Self::ParameterChange => "PARAMETER_CHANGE",
-            Self::CommunityPoolSpend => "COMMUNITY_POOL_SPEND",
-            Self::UpgradePlan => "UPGRADE_PLAN",
-            Self::FreezeIbcClient => "FREEZE_IBC_CLIENT",
-            Self::UnfreezeIbcClient => "UNFREEZE_IBC_CLIENT",
+            Self::Unspecified => "PROPOSAL_KIND_UNSPECIFIED",
+            Self::Signaling => "PROPOSAL_KIND_SIGNALING",
+            Self::Emergency => "PROPOSAL_KIND_EMERGENCY",
+            Self::ParameterChange => "PROPOSAL_KIND_PARAMETER_CHANGE",
+            Self::CommunityPoolSpend => "PROPOSAL_KIND_COMMUNITY_POOL_SPEND",
+            Self::UpgradePlan => "PROPOSAL_KIND_UPGRADE_PLAN",
+            Self::FreezeIbcClient => "PROPOSAL_KIND_FREEZE_IBC_CLIENT",
+            Self::UnfreezeIbcClient => "PROPOSAL_KIND_UNFREEZE_IBC_CLIENT",
         };
         serializer.serialize_str(variant)
     }
@@ -4852,13 +4853,14 @@ impl<'de> serde::Deserialize<'de> for ProposalKind {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "SIGNALING",
-            "EMERGENCY",
-            "PARAMETER_CHANGE",
-            "COMMUNITY_POOL_SPEND",
-            "UPGRADE_PLAN",
-            "FREEZE_IBC_CLIENT",
-            "UNFREEZE_IBC_CLIENT",
+            "PROPOSAL_KIND_UNSPECIFIED",
+            "PROPOSAL_KIND_SIGNALING",
+            "PROPOSAL_KIND_EMERGENCY",
+            "PROPOSAL_KIND_PARAMETER_CHANGE",
+            "PROPOSAL_KIND_COMMUNITY_POOL_SPEND",
+            "PROPOSAL_KIND_UPGRADE_PLAN",
+            "PROPOSAL_KIND_FREEZE_IBC_CLIENT",
+            "PROPOSAL_KIND_UNFREEZE_IBC_CLIENT",
         ];
 
         struct GeneratedVisitor;
@@ -4899,13 +4901,14 @@ impl<'de> serde::Deserialize<'de> for ProposalKind {
                 E: serde::de::Error,
             {
                 match value {
-                    "SIGNALING" => Ok(ProposalKind::Signaling),
-                    "EMERGENCY" => Ok(ProposalKind::Emergency),
-                    "PARAMETER_CHANGE" => Ok(ProposalKind::ParameterChange),
-                    "COMMUNITY_POOL_SPEND" => Ok(ProposalKind::CommunityPoolSpend),
-                    "UPGRADE_PLAN" => Ok(ProposalKind::UpgradePlan),
-                    "FREEZE_IBC_CLIENT" => Ok(ProposalKind::FreezeIbcClient),
-                    "UNFREEZE_IBC_CLIENT" => Ok(ProposalKind::UnfreezeIbcClient),
+                    "PROPOSAL_KIND_UNSPECIFIED" => Ok(ProposalKind::Unspecified),
+                    "PROPOSAL_KIND_SIGNALING" => Ok(ProposalKind::Signaling),
+                    "PROPOSAL_KIND_EMERGENCY" => Ok(ProposalKind::Emergency),
+                    "PROPOSAL_KIND_PARAMETER_CHANGE" => Ok(ProposalKind::ParameterChange),
+                    "PROPOSAL_KIND_COMMUNITY_POOL_SPEND" => Ok(ProposalKind::CommunityPoolSpend),
+                    "PROPOSAL_KIND_UPGRADE_PLAN" => Ok(ProposalKind::UpgradePlan),
+                    "PROPOSAL_KIND_FREEZE_IBC_CLIENT" => Ok(ProposalKind::FreezeIbcClient),
+                    "PROPOSAL_KIND_UNFREEZE_IBC_CLIENT" => Ok(ProposalKind::UnfreezeIbcClient),
                     _ => Err(serde::de::Error::unknown_variant(value, FIELDS)),
                 }
             }

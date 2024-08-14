@@ -13,6 +13,7 @@ use penumbra_proto::{
     event::ProtoEvent,
 };
 use penumbra_stake::IdentityKey;
+use sqlx::PgPool;
 
 #[derive(Debug)]
 pub struct GovernanceProposals {}
@@ -225,6 +226,7 @@ impl AppView for GovernanceProposals {
         &self,
         dbtx: &mut PgTransaction,
         event: &ContextualizedEvent,
+        _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         match event.event.kind.as_str() {
             EVENT_PROPOSAL_SUBMIT => {
