@@ -25,7 +25,10 @@ use std::{ops::Deref, sync::Arc};
 /// This bug was fixed in #4643.
 async fn dex_vcb_tracks_multiswap() -> anyhow::Result<()> {
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1776);
-    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes()
+        .await?
+        .apply_default_genesis()
+        .await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
 
     // Create the first swap:

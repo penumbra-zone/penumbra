@@ -1,6 +1,7 @@
 use {
     self::common::{BuilderExt, TestNodeExt, ValidatorDataReadExt},
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
     penumbra_app::{
         genesis::{self, AppState},
@@ -32,7 +33,7 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
 
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
     let app_state = AppState::Content(

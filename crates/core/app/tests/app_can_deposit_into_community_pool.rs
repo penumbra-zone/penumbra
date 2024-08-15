@@ -2,6 +2,7 @@ use {
     self::common::BuilderExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     penumbra_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
@@ -28,7 +29,7 @@ mod common;
 async fn app_can_deposit_into_community_pool() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Define our application state, and start the test node.
     let mut test_node = {

@@ -30,7 +30,10 @@ use tendermint::abci;
 async fn swap_and_swap_claim() -> anyhow::Result<()> {
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1312);
 
-    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes()
+        .await?
+        .apply_default_genesis()
+        .await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
 
     let height = 1;
@@ -141,7 +144,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 async fn swap_claim_duplicate_nullifier_previous_transaction() {
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1312);
 
-    let storage = TempStorage::new()
+    let storage = TempStorage::new_with_penumbra_prefixes()
         .await
         .unwrap()
         .apply_default_genesis()
@@ -267,7 +270,10 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
 async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1312);
 
-    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes()
+        .await?
+        .apply_default_genesis()
+        .await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
 
     let height = 1;

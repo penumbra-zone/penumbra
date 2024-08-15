@@ -2,18 +2,19 @@ use {
     self::common::BuilderExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     penumbra_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
     penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID},
-    penumbra_auction::StateReadExt as _,
     penumbra_auction::{
         auction::{
             dutch::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule, DutchAuctionDescription},
             AuctionNft,
         },
         component::AuctionStoreRead,
+        StateReadExt as _,
     },
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
@@ -65,7 +66,7 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
 
         common::set_tracing_subscriber_with_env_filter(filter)
     };
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
     let app_state = AppState::Content(
         genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
     );

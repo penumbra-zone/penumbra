@@ -2,6 +2,7 @@ use {
     self::common::ValidatorDataReadExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     decaf377_rdsa::VerificationKey,
     penumbra_app::{
         genesis::{AppState, Content},
@@ -49,7 +50,7 @@ const PROPOSAL_VOTING_BLOCKS: u64 = 3;
 async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Define a helper to get the current community pool balance.
     let pool_balance = || async { storage.latest_snapshot().community_pool_balance().await };
