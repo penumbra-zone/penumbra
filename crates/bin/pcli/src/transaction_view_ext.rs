@@ -1,6 +1,8 @@
 use comfy_table::presets;
 use comfy_table::Table;
 use penumbra_asset::asset::Id;
+use penumbra_asset::asset::Metadata;
+use penumbra_asset::Value;
 use penumbra_asset::ValueView;
 use penumbra_dex::swap::SwapView;
 use penumbra_dex::swap_claim::SwapClaimView;
@@ -15,6 +17,22 @@ use penumbra_transaction::TransactionView;
 // TODO: FeeView
 // TODO: TradingPairView
 // Implemented some helper functions which may make more sense as methods on existing Structs
+
+// helper function to create a value view from a value and optional metadata
+fn create_value_view(value: Value, metadata: Option<Metadata>) -> ValueView {
+    match metadata {
+        Some(metadata) => ValueView::KnownAssetId {
+            amount: value.amount,
+            metadata,
+            equivalent_values: Vec::new(),
+            extended_metadata: None,
+        },
+        None => ValueView::UnknownAssetId {
+            amount: value.amount,
+            asset_id: value.asset_id,
+        },
+    }
+}
 
 // a helper function to create pretty placeholders for encrypted information
 fn format_opaque_bytes(bytes: &[u8]) -> String {
@@ -112,6 +130,26 @@ fn format_value_view(value_view: &ValueView) -> String {
         ValueView::UnknownAssetId { amount, asset_id } => {
             format!("{}{}", amount, asset_id)
         }
+    }
+}
+
+fn format_amount_range(
+    start: Amount,
+    stop: Amount,
+    asset_id: &Id,
+    metadata: Option<&Metadata>,
+) -> String {
+    match metadata {
+        Some(denom) => {
+            let unit = denom.default_unit();
+            format!(
+                "({}..{}){}",
+                unit.format_value(start),
+                unit.format_value(stop),
+                unit
+            )
+        }
+        None => format!("({}..{}){}", start, stop, asset_id),
     }
 }
 
@@ -378,12 +416,43 @@ impl TransactionViewExt for TransactionView {
                 penumbra_transaction::ActionView::Delegate(_) => ["Delegation", ""],
                 penumbra_transaction::ActionView::Undelegate(_) => ["Undelegation", ""],
                 penumbra_transaction::ActionView::UndelegateClaim(_) => ["Undelegation Claim", ""],
-                penumbra_transaction::ActionView::ActionDutchAuctionSchedule(_) => todo!(),
-                penumbra_transaction::ActionView::ActionDutchAuctionEnd(_) => {
-                    todo!()
+                penumbra_transaction::ActionView::ActionDutchAuctionSchedule(x) => {
+                    let description = &x.action.description;
+
+                    let input: String = format_value_view(&create_value_view(
+                        description.input,
+                        x.input_metadata.clone(),
+                    ));
+                    let output: String = format_amount_range(
+                        description.min_output,
+                        description.max_output,
+                        &description.output_id,
+                        x.output_metadata.as_ref(),
+                    );
+                    let start = description.start_height;
+                    let stop = description.end_height;
+                    let steps = description.step_count;
+                    let auction_id = x.auction_id;
+                    action = format!(
+                        "{} -> {}, blocks {}..{}, in {} steps ({})",
+                        input, output, start, stop, steps, auction_id
+                    );
+                    ["Dutch Auction Schedule", &action]
                 }
-                penumbra_transaction::ActionView::ActionDutchAuctionWithdraw(_) => {
-                    todo!()
+                penumbra_transaction::ActionView::ActionDutchAuctionEnd(x) => {
+                    action = format!("{}", x.auction_id);
+                    ["Dutch Auction End", &action]
+                }
+                penumbra_transaction::ActionView::ActionDutchAuctionWithdraw(x) => {
+                    let inside = x
+                        .reserves
+                        .iter()
+                        .map(|value| format_value_view(value))
+                        .collect::<Vec<_>>()
+                        .as_slice()
+                        .join(", ");
+                    action = format!("{} -> [{}]", x.action.auction_id, inside);
+                    ["Dutch Auction Withdraw", &action]
                 }
             };
 
