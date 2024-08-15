@@ -8,7 +8,7 @@ use penumbra_dex::{
     },
     TradingPair,
 };
-use rand_core::CryptoRngCore;
+use rand_core::OsRng;
 
 use super::{replicate::ReplicateCmd, FeeTier};
 
@@ -104,6 +104,9 @@ pub enum OrderCmd {
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
+        /// Duplicate the order for the given number of times.
+        #[clap(short, long, default_value = "1")]
+        duplicate: u32,
     },
     Sell {
         /// The desired sale, formatted as a string, e.g. `100penumbra@1.2gm` would attempt
@@ -121,6 +124,9 @@ pub enum OrderCmd {
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
+        /// Duplicate the order for the given number of times.
+        #[clap(short, long, default_value = "1")]
+        duplicate: u32,
     },
 }
 
@@ -146,30 +152,48 @@ impl OrderCmd {
         }
     }
 
-    pub fn as_position<R: CryptoRngCore>(
+    pub fn duplicate(&self) -> u32 {
+        match self {
+            OrderCmd::Buy { duplicate, .. } => *duplicate,
+            OrderCmd::Sell { duplicate, .. } => *duplicate,
+        }
+    }
+
+    pub fn as_position(
         &self,
         // Preserved since we'll need it after denom metadata refactor
         _asset_cache: &asset::Cache,
-        rng: R,
-    ) -> Result<Position> {
-        let mut position = match self {
+    ) -> Result<Vec<Position>> {
+        let positions = match self {
             OrderCmd::Buy { buy_order, .. } => {
                 tracing::info!(?buy_order, "parsing buy order");
                 let order = BuyOrder::parse_str(buy_order)?;
-                order.into_position(rng)
+                let mut positions = Vec::new();
+                for _ in 0..self.duplicate() {
+                    let mut position = order.into_position(OsRng);
+                    if self.is_auto_closing() {
+                        position.close_on_fill = true;
+                    }
+                    positions.push(position);
+                }
+                positions
             }
             OrderCmd::Sell { sell_order, .. } => {
                 tracing::info!(?sell_order, "parsing sell order");
                 let order = SellOrder::parse_str(sell_order)?;
-                order.into_position(rng)
+                let mut positions = Vec::new();
+
+                for _ in 0..self.duplicate() {
+                    let mut position = order.into_position(OsRng);
+                    if self.is_auto_closing() {
+                        position.close_on_fill = true;
+                    }
+                    positions.push(position);
+                }
+                positions
             }
         };
-        tracing::info!(?position);
 
-        if self.is_auto_closing() {
-            position.close_on_fill = true;
-        }
-
-        Ok(position)
+        Ok(positions)
     }
 }
