@@ -2,6 +2,7 @@ use {
     self::common::{BuilderExt, TestNodeExt, ValidatorDataReadExt},
     anyhow::anyhow,
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
     penumbra_app::{
         genesis::{self, AppState},
@@ -32,7 +33,7 @@ const EPOCH_DURATION: u64 = 8;
 async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
     let app_state = AppState::Content(

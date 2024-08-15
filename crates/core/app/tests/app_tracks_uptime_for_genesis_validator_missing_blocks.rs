@@ -2,6 +2,7 @@ use {
     self::common::{BuilderExt, ValidatorDataReadExt},
     anyhow::Context,
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     penumbra_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
@@ -18,7 +19,7 @@ mod common;
 async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Start the test node.
     let mut node = {
@@ -60,7 +61,7 @@ async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Res
     let height = 4;
     for i in 1..=height {
         node.block()
-            .with_signatures(Default::default())
+            .with_signatures(vec![])
             .execute()
             .tap(|_| trace!(%i, "executing block with no signatures"))
             .instrument(error_span!("executing block with no signatures", %i))

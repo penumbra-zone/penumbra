@@ -1,6 +1,7 @@
 use {
     self::common::{BuilderExt, ValidatorDataReadExt},
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
     penumbra_app::{
         genesis::{self, AppState},
@@ -23,7 +24,7 @@ mod common;
 async fn app_rejects_validator_definitions_with_invalid_auth_sigs() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Start the test node.
     let mut node = {

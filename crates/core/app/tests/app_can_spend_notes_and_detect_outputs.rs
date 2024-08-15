@@ -2,6 +2,7 @@ use {
     self::common::BuilderExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     penumbra_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
@@ -27,7 +28,7 @@ mod common;
 async fn app_can_spend_notes_and_detect_outputs() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
     let mut test_node = {
         let app_state = AppState::Content(
             genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),

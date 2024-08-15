@@ -2,6 +2,7 @@ use {
     self::common::BuilderExt,
     anyhow::Context,
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     penumbra_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
@@ -30,7 +31,7 @@ mod common;
 async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Instantiate a mock tendermint proxy, which we will connect to the test node.
     let proxy = penumbra_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();

@@ -2,6 +2,7 @@ use {
     self::common::{BuilderExt, TestNodeExt, ValidatorDataReadExt},
     anyhow::anyhow,
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     decaf377_fmd::Precision,
     penumbra_app::{
         genesis::{self, AppState},
@@ -37,7 +38,7 @@ const UNBONDING_DELAY: u64 = 4;
 async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Helper function to get the latest block height.
     let get_latest_height = || async {

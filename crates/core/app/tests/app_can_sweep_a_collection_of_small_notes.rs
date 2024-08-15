@@ -1,6 +1,7 @@
 use {
     anyhow::Context,
     cnidarium::TempStorage,
+    common::TempStorageExt as _,
     penumbra_app::{
         genesis::{AppState, Content},
         server::consensus::Consensus,
@@ -37,7 +38,7 @@ const COUNT: usize = SWEEP_COUNT + 1;
 async fn app_can_sweep_a_collection_of_small_notes() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber_with_env_filter("info".into());
-    let storage = TempStorage::new().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Instantiate a mock tendermint proxy, which we will connect to the test node.
     let proxy = penumbra_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
