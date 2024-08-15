@@ -197,7 +197,15 @@ impl TendermintProxyService for TendermintProxy {
             .block(height)
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {e}")))
-            .and_then(GetBlockByHeightResponse::try_from)
+            .and_then(|b| {
+                match GetBlockByHeightResponse::try_from(b) {
+                    Ok(b) => Ok(b),
+                    Err(e) => {
+                        tracing::warn!(?height, error = ?e, "proxy: error deserializing GetBlockByHeightResponse");
+                        Err(tonic::Status::internal("error deserializing GetBlockByHeightResponse"))
+                    }
+                }
+            })
             .map(tonic::Response::new)
     }
 }
