@@ -6,9 +6,17 @@
 mod init_chain;
 
 use {
-    crate::{Keyring, OnBlockFn, TestNode},
+    crate::{Keyring, OnBlockFn, TestNode, TsCallbackFn},
     bytes::Bytes,
+    std::time::Duration,
+    tendermint::Time,
 };
+
+// Default timestamp callback will increment the time by 5 seconds.
+// can't be const :(
+fn default_ts_callback(t: Time) -> Time {
+    t.checked_add(Duration::from_secs(5)).unwrap()
+}
 
 /// A builder, used to prepare and instantiate a new [`TestNode`].
 #[derive(Default)]
@@ -16,6 +24,8 @@ pub struct Builder {
     pub app_state: Option<Bytes>,
     pub keyring: Keyring,
     pub on_block: Option<OnBlockFn>,
+    pub ts_callback: Option<TsCallbackFn>,
+    pub initial_timestamp: Option<Time>,
 }
 
 impl TestNode<()> {
@@ -100,6 +110,27 @@ impl Builder {
     {
         Self {
             on_block: Some(Box::new(f)),
+            ..self
+        }
+    }
+
+    /// Sets a callback that will be invoked when a block is committed, to increment
+    /// the timestamp.
+    pub fn ts_callback<F>(self, f: F) -> Self
+    where
+        F: Fn(Time) -> Time + Send + Sync + 'static,
+    {
+        Self {
+            ts_callback: Some(Box::new(f)),
+            ..self
+        }
+    }
+
+    /// Sets the starting time for the test node. If not called,
+    /// the current timestamp will be used.
+    pub fn with_initial_timestamp(self, initial_time: Time) -> Self {
+        Self {
+            initial_timestamp: Some(initial_time),
             ..self
         }
     }
