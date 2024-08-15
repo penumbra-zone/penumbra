@@ -53,7 +53,6 @@ penumbra-sct                     = { workspace = true, default-features = true }
 penumbra-shielded-pool           = { workspace = true, features = ["component"], default-features = true }
 penumbra-stake                   = { workspace = true, default-features = true }
 penumbra-tct                     = { workspace = true, default-features = true }
-penumbra-tendermint-proxy        = { path = "../../util/tendermint-proxy" }
 penumbra-test-subscriber         = { workspace = true }
 penumbra-tower-trace             = {  path = "../../util/tower-trace"  }
 penumbra-transaction             = { workspace = true, features = ["parallel"], default-features = true }
