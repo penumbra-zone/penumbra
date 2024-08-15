@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
 use penumbra_num::Amount;
 use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
+use penumbra_stake::IdentityKey;
 
 #[derive(Debug)]
 pub struct DelegationTxs {}
@@ -17,7 +18,7 @@ impl AppView for DelegationTxs {
         sqlx::query(
             "CREATE TABLE stake_delegation_txs (
                 id SERIAL PRIMARY KEY,
-                validator_ik BYTEA NOT NULL,
+                ik TEXT NOT NULL,
                 amount BIGINT NOT NULL,
                 height BIGINT NOT NULL,
                 tx_hash BYTEA NOT NULL
@@ -26,8 +27,8 @@ impl AppView for DelegationTxs {
         .execute(dbtx.as_mut())
         .await?;
 
-        // Create index on validator_ik
-        sqlx::query("CREATE INDEX idx_stake_delegation_txs_validator_ik ON stake_delegation_txs(validator_ik);")
+        // Create index on ik
+        sqlx::query("CREATE INDEX idx_stake_delegation_txs_ik ON stake_delegation_txs(ik);")
             .execute(dbtx.as_mut())
             .await?;
 
@@ -38,8 +39,8 @@ impl AppView for DelegationTxs {
         .execute(dbtx.as_mut())
         .await?;
 
-        // Create composite index on validator_ik and height (descending)
-        sqlx::query("CREATE INDEX idx_stake_delegation_txs_validator_ik_height ON stake_delegation_txs(validator_ik, height DESC);")
+        // Create composite index on ik and height (descending)
+        sqlx::query("CREATE INDEX idx_stake_delegation_txs_validator_ik_height ON stake_delegation_txs(ik, height DESC);")
             .execute(dbtx.as_mut())
             .await?;
 
@@ -58,10 +59,10 @@ impl AppView for DelegationTxs {
     ) -> Result<()> {
         let pe = pb::EventDelegate::from_event(event.as_ref())?;
 
-        let ik_bytes = pe
+        let ik: IdentityKey = pe
             .identity_key
             .ok_or_else(|| anyhow::anyhow!("missing ik in event"))?
-            .ik;
+            .try_into()?;
 
         let amount = Amount::try_from(
             pe.amount
@@ -69,9 +70,9 @@ impl AppView for DelegationTxs {
         )?;
 
         sqlx::query(
-            "INSERT INTO stake_delegation_txs (validator_ik, amount, height, tx_hash) VALUES ($1, $2, $3, $4)"
+            "INSERT INTO stake_delegation_txs (ik, amount, height, tx_hash) VALUES ($1, $2, $3, $4)"
         )
-        .bind(&ik_bytes)
+        .bind(ik.to_string())
         .bind(amount.value() as i64)
         .bind(event.block_height as i64)
         .bind(event.tx_hash.ok_or_else(|| anyhow!("missing tx hash in event"))?)

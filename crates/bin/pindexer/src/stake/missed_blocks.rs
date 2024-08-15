@@ -2,6 +2,7 @@ use anyhow::Result;
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
 
 use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
+use penumbra_stake::IdentityKey;
 
 #[derive(Debug)]
 pub struct MissedBlocks {}
@@ -18,7 +19,7 @@ impl AppView for MissedBlocks {
             "CREATE TABLE stake_missed_blocks (
                 id SERIAL PRIMARY KEY,
                 height BIGINT NOT NULL,
-                ik BYTEA NOT NULL
+                ik TEXT NOT NULL
             );",
         )
         .execute(dbtx.as_mut())
@@ -55,16 +56,16 @@ impl AppView for MissedBlocks {
         _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         let pe = pb::EventValidatorMissedBlock::from_event(event.as_ref())?;
-        let ik_bytes = pe
+        let ik: IdentityKey = pe
             .identity_key
             .ok_or_else(|| anyhow::anyhow!("missing ik in event"))?
-            .ik;
+            .try_into()?;
 
         let height = event.block_height;
 
         sqlx::query("INSERT INTO stake_missed_blocks (height, ik) VALUES ($1, $2)")
             .bind(height as i64)
-            .bind(ik_bytes)
+            .bind(ik.to_string())
             .execute(dbtx.as_mut())
             .await?;
 

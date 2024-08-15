@@ -7,3 +7,5 @@ pub mod dex;
 pub mod shielded_pool;
 mod sql;
 pub mod stake;
+
+pub mod governance;

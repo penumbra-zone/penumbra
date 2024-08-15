@@ -18,7 +18,7 @@ impl AppView for Slashings {
             "CREATE TABLE stake_slashings (
                 id SERIAL PRIMARY KEY,
                 height BIGINT NOT NULL,
-                ik BYTEA NOT NULL,
+                ik TEXT NOT NULL,
                 epoch_index BIGINT NOT NULL,
                 penalty TEXT NOT NULL
             );",
@@ -73,7 +73,7 @@ impl AppView for Slashings {
              VALUES ($1, $2, $3, $4)",
         )
         .bind(height as i64)
-        .bind(ik.to_bytes())
+        .bind(ik.to_string())
         .bind(epoch_index as i64)
         .bind(penalty_json)
         .execute(dbtx.as_mut())

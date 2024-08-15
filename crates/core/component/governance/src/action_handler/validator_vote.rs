@@ -114,6 +114,7 @@ impl ActionHandler for ValidatorVote {
             }
         }
 
+        // Get the validator's voting power for the proposal
         let voting_power = state
             .specific_validator_voting_power_at_proposal_start(*proposal, *identity_key)
             .await?;
