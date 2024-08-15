@@ -954,13 +954,23 @@ impl TxCmd {
 
                 tracing::info!(?order);
                 let source = AddressIndex::new(order.source());
-                let position = order.as_position(&asset_cache, OsRng)?;
-                tracing::info!(?position);
+                let positions = order.as_position(&asset_cache)?;
+                tracing::info!(?positions);
 
-                let plan = Planner::new(OsRng)
+                for position in &positions {
+                    println!("Position id: {}", position.id());
+                }
+
+                let mut planner = Planner::new(OsRng);
+                planner
                     .set_gas_prices(gas_prices)
-                    .set_fee_tier(order.fee_tier().into())
-                    .position_open(position)
+                    .set_fee_tier(order.fee_tier().into());
+
+                for position in positions {
+                    planner.position_open(position);
+                }
+
+                let plan = planner
                     .plan(
                         app.view
                             .as_mut()
@@ -968,6 +978,7 @@ impl TxCmd {
                         source,
                     )
                     .await?;
+
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Withdraw {
