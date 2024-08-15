@@ -5,6 +5,7 @@
 //  library. accordingly, it is grouped by conversions needed for each RPC endpoint.
 
 use crate::util::tendermint_proxy::v1 as penumbra_pb;
+use anyhow::anyhow;
 
 // === get_tx ===
 
@@ -323,9 +324,7 @@ impl From<tendermint::merkle::proof::ProofOp> for crate::tendermint::crypto::Pro
 // === get_block_by_height ===
 
 impl TryFrom<tendermint_rpc::endpoint::block::Response> for penumbra_pb::GetBlockByHeightResponse {
-    // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
-    // now to avoid invasively refactoring this code.
-    type Error = tonic::Status;
+    type Error = anyhow::Error;
     fn try_from(
         tendermint_rpc::endpoint::block::Response {
                 block,
@@ -338,11 +337,8 @@ impl TryFrom<tendermint_rpc::endpoint::block::Response> for penumbra_pb::GetBloc
         })
     }
 }
-
 impl TryFrom<tendermint::Block> for crate::tendermint::types::Block {
-    // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
-    // now to avoid invasively refactoring this code.
-    type Error = tonic::Status;
+    type Error = anyhow::Error;
     fn try_from(
         tendermint::Block {
             header,
@@ -356,14 +352,76 @@ impl TryFrom<tendermint::Block> for crate::tendermint::types::Block {
             header: header.try_into().map(Some)?,
             data: Some(crate::tendermint::types::Data { txs: data }),
             evidence: evidence.try_into().map(Some)?,
-            last_commit: Some(
-                last_commit
-                    .map(crate::tendermint::types::Commit::try_from)
-                    .transpose()?
-                    // TODO(kate): this probably should not panic, but this is here to preserve
-                    // existing behavior. panic if no last commit is set.
-                    .expect("last_commit"),
-            ),
+            last_commit: last_commit
+                .map(crate::tendermint::types::Commit::try_from)
+                .transpose()?,
+        })
+    }
+}
+
+impl TryFrom<crate::tendermint::types::PartSetHeader> for tendermint::block::parts::Header {
+    type Error = anyhow::Error;
+    fn try_from(
+        crate::tendermint::types::PartSetHeader { total, hash }: crate::tendermint::types::PartSetHeader,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self::new(total, hash.try_into()?)?)
+    }
+}
+
+impl TryFrom<crate::tendermint::types::Header> for tendermint::block::Header {
+    type Error = anyhow::Error;
+    fn try_from(
+        crate::tendermint::types::Header {
+            version,
+            chain_id,
+            height,
+            time,
+            last_block_id,
+            last_commit_hash,
+            data_hash,
+            validators_hash,
+            next_validators_hash,
+            consensus_hash,
+            app_hash,
+            last_results_hash,
+            evidence_hash,
+            proposer_address,
+        }: crate::tendermint::types::Header,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            version: tendermint::block::header::Version {
+                block: version.clone().ok_or(anyhow!("version"))?.block,
+                app: version.ok_or(anyhow!("version"))?.app,
+            },
+            chain_id: tendermint::chain::Id::try_from(chain_id)?,
+            height: tendermint::block::Height::try_from(height)?,
+            time: tendermint::Time::from_unix_timestamp(
+                time.clone().ok_or(anyhow!("time"))?.seconds,
+                time.clone()
+                    .ok_or(anyhow!("missing time"))?
+                    .nanos
+                    .try_into()?,
+            )?,
+            last_block_id: match last_block_id {
+                Some(last_block_id) => Some(tendermint::block::Id {
+                    hash: tendermint::Hash::try_from(last_block_id.hash)?,
+                    part_set_header: tendermint::block::parts::Header::try_from(
+                        last_block_id
+                            .part_set_header
+                            .ok_or(anyhow::anyhow!("bad part set header"))?,
+                    )?,
+                }),
+                None => None,
+            },
+            last_commit_hash: Some(last_commit_hash.try_into()?),
+            data_hash: Some(data_hash.try_into()?),
+            validators_hash: validators_hash.try_into()?,
+            next_validators_hash: next_validators_hash.try_into()?,
+            consensus_hash: consensus_hash.try_into()?,
+            app_hash: app_hash.try_into()?,
+            last_results_hash: Some(last_results_hash.try_into()?),
+            evidence_hash: Some(evidence_hash.try_into()?),
+            proposer_address: proposer_address.try_into()?,
         })
     }
 }
@@ -394,7 +452,11 @@ impl TryFrom<tendermint::block::Header> for crate::tendermint::types::Header {
         // around a `time::PrimitiveDateTime` however it's private so we
         // have to use string parsing to get to the prost type we want :(
         let header_time = chrono::DateTime::parse_from_rfc3339(time.to_rfc3339().as_str())
-            .expect("timestamp should roundtrip to string");
+            .or_else(|_| {
+                Err(tonic::Status::invalid_argument(
+                    "timestamp should roundtrip to string",
+                ))
+            })?;
         Ok(Self {
             version: Some(crate::tendermint::version::Consensus {
                 block: version.block,
@@ -404,10 +466,7 @@ impl TryFrom<tendermint::block::Header> for crate::tendermint::types::Header {
             height: height.into(),
             time: Some(pbjson_types::Timestamp {
                 seconds: header_time.timestamp(),
-                nanos: header_time
-                    .timestamp_nanos_opt()
-                    .ok_or_else(|| tonic::Status::invalid_argument("missing header_time nanos"))?
-                    as i32,
+                nanos: header_time.timestamp_subsec_nanos() as i32,
             }),
             last_block_id: last_block_id.map(|id| crate::tendermint::types::BlockId {
                 hash: id.hash.into(),
@@ -430,9 +489,7 @@ impl TryFrom<tendermint::block::Header> for crate::tendermint::types::Header {
 }
 
 impl TryFrom<tendermint::evidence::List> for crate::tendermint::types::EvidenceList {
-    // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
-    // now to avoid invasively refactoring this code.
-    type Error = tonic::Status;
+    type Error = anyhow::Error;
     fn try_from(list: tendermint::evidence::List) -> Result<Self, Self::Error> {
         list.into_vec()
             .into_iter()
@@ -443,11 +500,9 @@ impl TryFrom<tendermint::evidence::List> for crate::tendermint::types::EvidenceL
 }
 
 // TODO(kate): this should be decomposed further at a later point, i am refraining from doing
-// so right now. there are `Option::expect()` calls below that should be considered.
+// so right now.
 impl TryFrom<tendermint::evidence::Evidence> for crate::tendermint::types::Evidence {
-    // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
-    // now to avoid invasively refactoring this code.
-    type Error = tonic::Status;
+    type Error = anyhow::Error;
     fn try_from(evidence: tendermint::evidence::Evidence) -> Result<Self, Self::Error> {
         use {chrono::DateTime, std::ops::Deref};
         Ok(Self {
@@ -469,21 +524,27 @@ impl TryFrom<tendermint::evidence::Evidence> for crate::tendermint::types::Evide
                                 height: e.votes().0.height.into(),
                                 round: e.votes().0.round.into(),
                                 block_id: Some(crate::tendermint::types::BlockId {
-                                    hash: e.votes().0.block_id.expect("block id").hash.into(),
+                                    hash: e
+                                        .votes()
+                                        .0
+                                        .block_id
+                                        .ok_or(anyhow!("block id"))?
+                                        .hash
+                                        .into(),
                                     part_set_header: Some(
                                         crate::tendermint::types::PartSetHeader {
                                             total: e
                                                 .votes()
                                                 .0
                                                 .block_id
-                                                .expect("block id")
+                                                .ok_or(anyhow!("block id"))?
                                                 .part_set_header
                                                 .total,
                                             hash: e
                                                 .votes()
                                                 .0
                                                 .block_id
-                                                .expect("block id")
+                                                .ok_or(anyhow!("block id"))?
                                                 .part_set_header
                                                 .hash
                                                 .into(),
@@ -492,18 +553,25 @@ impl TryFrom<tendermint::evidence::Evidence> for crate::tendermint::types::Evide
                                 }),
                                 timestamp: Some(pbjson_types::Timestamp {
                                     seconds: DateTime::parse_from_rfc3339(
-                                        &e.votes().0.timestamp.expect("timestamp").to_rfc3339(),
+                                        &e.votes()
+                                            .0
+                                            .timestamp
+                                            .ok_or(tonic::Status::invalid_argument(
+                                                "bad timestamp",
+                                            ))?
+                                            .to_rfc3339(),
                                     )
-                                    .expect("timestamp should roundtrip to string")
+                                    .or_else(|_| {
+                                        Err(tonic::Status::invalid_argument("bad timestamp"))
+                                    })?
                                     .timestamp(),
                                     nanos: DateTime::parse_from_rfc3339(
                                         &e.votes().0.timestamp.expect("timestamp").to_rfc3339(),
                                     )
                                     .expect("timestamp should roundtrip to string")
-                                    .timestamp_nanos_opt()
-                                    .ok_or_else(|| {
-                                        tonic::Status::invalid_argument("missing timestamp nanos")
-                                    })? as i32,
+                                    .timestamp_subsec_nanos()
+                                    .try_into()
+                                    .expect("good round trip timestamps"),
                                 }),
                                 validator_address: e.votes().0.validator_address.into(),
                                 validator_index: e.votes().0.validator_index.into(),
@@ -558,10 +626,9 @@ impl TryFrom<tendermint::evidence::Evidence> for crate::tendermint::types::Evide
                                         &e.votes().1.timestamp.expect("timestamp").to_rfc3339(),
                                     )
                                     .expect("timestamp should roundtrip to string")
-                                    .timestamp_nanos_opt()
-                                    .ok_or_else(|| {
-                                        tonic::Status::invalid_argument("missing timestamp nanos")
-                                    })? as i32,
+                                    .timestamp_subsec_nanos()
+                                    .try_into()
+                                    .expect("good round trip timestamps"),
                                 }),
                                 validator_address: e.votes().1.validator_address.into(),
                                 validator_index: e.votes().1.validator_index.into(),
@@ -652,12 +719,11 @@ impl TryFrom<tendermint::block::CommitSig> for crate::tendermint::types::CommitS
                             .timestamp(),
                         nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339())
                             .expect("timestamp should roundtrip to string")
-                            .timestamp_nanos_opt()
-                            .ok_or_else(|| {
-                                tonic::Status::invalid_argument("missing timestamp nanos")
-                            })? as i32,
+                            .timestamp_subsec_nanos()
+                            .try_into()
+                            .expect("good round trip timestamps"),
                     }),
-                    signature: signature.expect("signature").into(),
+                    signature: signature.map(Into::into).unwrap_or_default(),
                 },
                 tendermint::block::CommitSig::BlockIdFlagNil {
                     validator_address,
@@ -672,10 +738,9 @@ impl TryFrom<tendermint::block::CommitSig> for crate::tendermint::types::CommitS
                             .timestamp(),
                         nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339())
                             .expect("timestamp should roundtrip to string")
-                            .timestamp_nanos_opt()
-                            .ok_or_else(|| {
-                                tonic::Status::invalid_argument("missing timestamp nanos")
-                            })? as i32,
+                            .timestamp_subsec_nanos()
+                            .try_into()
+                            .expect("good round trip timestamps"),
                     }),
                     signature: signature.expect("signature").into(),
                 },

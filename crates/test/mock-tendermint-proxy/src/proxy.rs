@@ -211,7 +211,11 @@ impl TendermintProxyService for TestNodeProxy {
             .get(&height)
             .cloned()
             .map(penumbra_proto::tendermint::types::Block::try_from)
-            .transpose()?;
+            .transpose()
+            .or_else(|e| {
+                tracing::warn!(?height, error = ?e, "proxy: error fetching blocks");
+                Err(tonic::Status::internal("error fetching blocks"))
+            })?;
         let block_id = block
             .as_ref() // is this off-by-one? should we be getting the id of the last commit?
             .and_then(|b| b.last_commit.as_ref())
