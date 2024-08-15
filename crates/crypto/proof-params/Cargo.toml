@@ -44,7 +44,6 @@ ark-snark = {workspace = true}
 ark-std = {workspace = true, default-features = false}
 bech32 = {workspace = true}
 decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
-lazy_static = "1.4.0"
 num-bigint = {workspace = true}
 once_cell = {workspace = true}
 rand = {workspace = true}
