@@ -39,6 +39,8 @@ impl Builder {
             app_state: Some(app_state),
             keyring,
             on_block,
+            initial_timestamp,
+            ts_callback,
         } = self
         else {
             bail!("builder was not fully initialized")
@@ -71,6 +73,8 @@ impl Builder {
             last_app_hash: app_hash.as_bytes().to_owned(),
             keyring,
             on_block,
+            timestamp: initial_timestamp.unwrap_or(Time::now()),
+            ts_callback: ts_callback.unwrap_or(Box::new(default_ts_callback)),
         })
     }
 

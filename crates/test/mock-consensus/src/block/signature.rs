@@ -17,10 +17,10 @@ mod sign {
     /// Returns a [commit signature] saying this validator voted for the block.
     ///
     /// [commit signature]: CommitSig
-    pub(super) fn commit(validator_address: Id) -> CommitSig {
+    pub(super) fn commit(validator_address: Id, timestamp: Time) -> CommitSig {
         CommitSig::BlockIdFlagCommit {
             validator_address,
-            timestamp: timestamp(),
+            timestamp,
             signature: None,
         }
     }
@@ -29,20 +29,12 @@ mod sign {
     ///
     /// [commit signature]: CommitSig
     #[allow(dead_code)]
-    pub(super) fn nil(validator_address: Id) -> CommitSig {
+    pub(super) fn nil(validator_address: Id, timestamp: Time) -> CommitSig {
         CommitSig::BlockIdFlagNil {
             validator_address,
-            timestamp: timestamp(),
+            timestamp,
             signature: None,
         }
-    }
-
-    /// Generates a new timestamp, marked at the current time.
-    //
-    //  TODO(kate): see https://github.com/penumbra-zone/penumbra/issues/3759, re: timestamps.
-    //              eventually, we will add hooks so that we can control these timestamps.
-    fn timestamp() -> Time {
-        Time::now()
     }
 }
 
@@ -58,12 +50,14 @@ impl<C> TestNode<C> {
         self.keyring
             .keys()
             .map(|vk| {
-                <Sha256 as Digest>::digest(vk).as_slice()[0..20]
-                    .try_into()
-                    .expect("")
+                (
+                    <Sha256 as Digest>::digest(vk).as_slice()[0..20]
+                        .try_into()
+                        .expect(""),
+                    self.timestamp.clone(),
+                )
             })
-            .map(account::Id::new)
-            .map(self::sign::commit)
+            .map(|(a, b)| (self::sign::commit(account::Id::new(a), b)))
     }
 }
 

@@ -14,7 +14,10 @@ use {
         sync::{Arc, RwLock},
     },
     tap::{Tap, TapFallible, TapOptional},
-    tendermint::block::{Block, Height},
+    tendermint::{
+        block::{Block, Height},
+        Time,
+    },
     tonic::Status,
     tracing::instrument,
 };
@@ -56,6 +59,17 @@ impl TestNodeProxy {
             .last_key_value()
             .map(|(height, _)| *height)
             .expect("blocks should not be empty")
+    }
+
+    /// Returns the latest block timestamp.
+    fn timestamp(&self) -> Time {
+        self.inner
+            .blocks()
+            .last_key_value()
+            .map(|(_, block)| block)
+            .expect("blocks should not be empty")
+            .header
+            .time
     }
 }
 
@@ -151,12 +165,16 @@ impl TendermintProxyService for TestNodeProxy {
     ) -> Result<tonic::Response<GetStatusResponse>, Status> {
         let GetStatusRequest { .. } = req.into_inner();
         let latest_block_height = self.latest_block_height().into();
-
+        let block_ts: tendermint_proto::google::protobuf::Timestamp = self.timestamp().into();
         let sync_info = SyncInfo {
+            // TODO: these should get set
             latest_block_hash: vec![],
             latest_app_hash: vec![],
             latest_block_height,
-            latest_block_time: None,
+            latest_block_time: Some(pbjson_types::Timestamp {
+                seconds: block_ts.seconds,
+                nanos: block_ts.nanos,
+            }),
             // Tests run with a single node, so it is never catching up.
             catching_up: false,
         };

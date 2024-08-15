@@ -8,9 +8,11 @@ homepage.workspace   = true
 license.workspace    = true
 
 [dependencies]
+pbjson-types            = { workspace = true }
 penumbra-mock-consensus = { workspace = true }
 penumbra-proto          = { workspace = true, features = ["rpc", "tendermint"] }
 tap                     = { workspace = true }
 tendermint              = { workspace = true }
+tendermint-proto        = { workspace = true }
 tonic                   = { workspace = true }
 tracing                 = { workspace = true }

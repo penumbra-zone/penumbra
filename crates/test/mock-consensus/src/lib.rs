@@ -32,6 +32,7 @@
 use {
     ed25519_consensus::{SigningKey, VerificationKey},
     std::collections::BTreeMap,
+    tendermint::Time,
 };
 
 pub mod block;
@@ -84,10 +85,17 @@ pub struct TestNode<C> {
     keyring: Keyring,
     /// A callback that will be invoked when a new block is constructed.
     on_block: Option<OnBlockFn>,
+    /// A callback that will be invoked when a new block is committed, to produce the next timestamp.
+    ts_callback: TsCallbackFn,
+    /// The current timestamp of the node.
+    timestamp: Time,
 }
 
 /// A type alias for the `TestNode::on_block` callback.
 pub type OnBlockFn = Box<dyn FnMut(tendermint::Block) + Send + Sync + 'static>;
+
+/// A type alias for the `TestNode::ts_callback` callback.
+pub type TsCallbackFn = Box<dyn Fn(Time) -> Time + Send + Sync + 'static>;
 
 /// An ordered map of consensus keys.
 ///
@@ -102,6 +110,11 @@ impl<C> TestNode<C> {
     /// Returns the last `app_hash` value, represented as a slice of bytes.
     pub fn last_app_hash(&self) -> &[u8] {
         &self.last_app_hash
+    }
+
+    /// Returns the last `timestamp` value.
+    pub fn timestamp(&self) -> &Time {
+        &self.timestamp
     }
 
     /// Returns the last `app_hash` value, represented as a hexadecimal string.

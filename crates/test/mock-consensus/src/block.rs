@@ -10,7 +10,7 @@ use {
         block::{self, header::Version, Block, Commit, Header, Round},
         chain, evidence,
         v0_37::abci::{ConsensusRequest, ConsensusResponse},
-        AppHash, Hash,
+        AppHash, Hash, Time,
     },
     tower::{BoxError, Service},
     tracing::{instrument, trace},
@@ -36,6 +36,8 @@ pub struct Builder<'e, C> {
     evidence: evidence::List,
     /// The list of signatures.
     signatures: Vec<block::CommitSig>,
+    /// The timestamp of the block.
+    timestamp: Time,
 }
 
 // === impl TestNode ===
@@ -47,12 +49,15 @@ impl<C> TestNode<C> {
     /// included in the block. Use [`Builder::with_signatures()`] to set a different set of
     /// validator signatures.
     pub fn block(&mut self) -> Builder<'_, C> {
+        let ts = self.timestamp.clone();
         let signatures = self.generate_signatures().collect();
+        // set default TS hook
         Builder {
             test_node: self,
             data: Default::default(),
             evidence: Default::default(),
             signatures,
+            timestamp: ts,
         }
     }
 }
@@ -133,6 +138,9 @@ where
         // If an `on_block` callback was set, call it now.
         test_node.on_block.as_mut().map(move |f| f(block));
 
+        // Call the timestamp callback to increment the node's current timestamp.
+        test_node.timestamp = (test_node.ts_callback)(test_node.timestamp.clone());
+
         Ok(())
     }
 
@@ -149,6 +157,7 @@ where
             evidence,
             test_node,
             signatures,
+            timestamp,
         } = self;
 
         let height = {
@@ -177,7 +186,7 @@ where
             version: Version { block: 1, app: 1 },
             chain_id: chain::Id::try_from("test".to_owned())?,
             height,
-            time: tendermint::Time::now(),
+            time: timestamp,
             last_block_id: None,
             last_commit_hash: None,
             data_hash: None,
