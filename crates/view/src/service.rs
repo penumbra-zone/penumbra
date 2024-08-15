@@ -9,7 +9,9 @@ use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;
 use futures::stream::{self, StreamExt, TryStreamExt};
-use penumbra_auction::auction::dutch::actions::view::ActionDutchAuctionWithdrawView;
+use penumbra_auction::auction::dutch::actions::view::{
+    ActionDutchAuctionScheduleView, ActionDutchAuctionWithdrawView,
+};
 use rand::Rng;
 use rand_core::OsRng;
 use tap::{Tap, TapFallible};
@@ -996,8 +998,22 @@ impl ViewService for ViewServer {
                 }
                 ActionView::ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawView {
                     action: _,
-                    reserves: _,
-                }) => { /* no-op for now - i'm not totally sure we have all the necessary data to attribute specific note openings to this view */
+                    reserves,
+                }) => {
+                    // previous comment: /* no-op for now - i'm not totally sure we have all the necessary data to attribute specific note openings to this view */
+                    // to this cronokirby replied: well, we can however at least fill in some asset ids!
+                    for value in reserves {
+                        asset_ids.insert(value.asset_id());
+                    }
+                }
+                // We can populate asset ids for the assets involved in the auction
+                ActionView::ActionDutchAuctionSchedule(ActionDutchAuctionScheduleView {
+                    action,
+                    ..
+                }) => {
+                    let description = &action.description;
+                    asset_ids.insert(description.input.asset_id);
+                    asset_ids.insert(description.output_id);
                 }
                 _ => {}
             }
