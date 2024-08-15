@@ -8,7 +8,7 @@ use penumbra_dex::{
     },
     TradingPair,
 };
-use rand_core::OsRng;
+use rand_core::CryptoRngCore;
 
 use super::{replicate::ReplicateCmd, FeeTier};
 
@@ -106,7 +106,7 @@ pub enum OrderCmd {
         fee_tier: FeeTier,
         /// Duplicate the order for the given number of times.
         #[clap(short, long, default_value = "1")]
-        duplicate: u32,
+        num_copies: u32,
     },
     Sell {
         /// The desired sale, formatted as a string, e.g. `100penumbra@1.2gm` would attempt
@@ -126,7 +126,7 @@ pub enum OrderCmd {
         fee_tier: FeeTier,
         /// Duplicate the order for the given number of times.
         #[clap(short, long, default_value = "1")]
-        duplicate: u32,
+        num_copies: u32,
     },
 }
 
@@ -152,10 +152,10 @@ impl OrderCmd {
         }
     }
 
-    pub fn duplicate(&self) -> u32 {
+    pub fn num_copies(&self) -> u32 {
         match self {
-            OrderCmd::Buy { duplicate, .. } => *duplicate,
-            OrderCmd::Sell { duplicate, .. } => *duplicate,
+            OrderCmd::Buy { num_copies, .. } => *num_copies,
+            OrderCmd::Sell { num_copies, .. } => *num_copies,
         }
     }
 
@@ -163,14 +163,15 @@ impl OrderCmd {
         &self,
         // Preserved since we'll need it after denom metadata refactor
         _asset_cache: &asset::Cache,
+        mut rng: impl CryptoRngCore,
     ) -> Result<Vec<Position>> {
         let positions = match self {
             OrderCmd::Buy { buy_order, .. } => {
                 tracing::info!(?buy_order, "parsing buy order");
                 let order = BuyOrder::parse_str(buy_order)?;
                 let mut positions = Vec::new();
-                for _ in 0..self.duplicate() {
-                    let mut position = order.into_position(OsRng);
+                for _ in 0..self.num_copies() {
+                    let mut position = order.into_position(&mut rng);
                     if self.is_auto_closing() {
                         position.close_on_fill = true;
                     }
@@ -183,8 +184,8 @@ impl OrderCmd {
                 let order = SellOrder::parse_str(sell_order)?;
                 let mut positions = Vec::new();
 
-                for _ in 0..self.duplicate() {
-                    let mut position = order.into_position(OsRng);
+                for _ in 0..self.num_copies() {
+                    let mut position = order.into_position(&mut rng);
                     if self.is_auto_closing() {
                         position.close_on_fill = true;
                     }
