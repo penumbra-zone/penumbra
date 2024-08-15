@@ -954,7 +954,7 @@ impl TxCmd {
 
                 tracing::info!(?order);
                 let source = AddressIndex::new(order.source());
-                let positions = order.as_position(&asset_cache)?;
+                let positions = order.as_position(&asset_cache, OsRng)?;
                 tracing::info!(?positions);
                 for position in &positions {
                     println!("Position id: {}", position.id());
