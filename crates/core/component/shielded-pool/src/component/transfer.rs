@@ -33,7 +33,7 @@ use penumbra_ibc::component::{
     packet::{
         IBCPacket, SendPacketRead as _, SendPacketWrite as _, Unchecked, WriteAcknowledgement as _,
     },
-    state_key, HostInterface,
+    state_key,
 };
 use tendermint::Time;
 
