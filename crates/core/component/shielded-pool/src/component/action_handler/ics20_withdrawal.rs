@@ -1,16 +1,11 @@
 use std::sync::Arc;
 
 use anyhow::{ensure, Result};
-use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use cnidarium_component::ActionHandler;
 use penumbra_ibc::{component::HostInterface, StateReadExt as _};
 
+use crate::component::transfer::{Ics20TransferReadExt as _, Ics20TransferWriteExt as _};
 use crate::ics20_withdrawal::Ics20WithdrawalWithHandler;
-use crate::{
-    component::transfer::{Ics20TransferReadExt as _, Ics20TransferWriteExt as _},
-    Ics20Withdrawal,
-};
 
 impl<HI: HostInterface> Ics20WithdrawalWithHandler<HI> {
     pub async fn check_stateless(&self, _context: ()) -> Result<()> {
