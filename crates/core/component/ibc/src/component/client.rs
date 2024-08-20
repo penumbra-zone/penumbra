@@ -240,7 +240,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
 #[async_trait]
-pub trait StateReadExt: StateRead + penumbra_sct::component::clock::EpochRead {
+pub trait StateReadExt: StateRead {
     async fn client_counter(&self) -> Result<ClientCounter> {
         self.get("ibc_client_counter")
             .await
@@ -266,7 +266,11 @@ pub trait StateReadExt: StateRead + penumbra_sct::component::clock::EpochRead {
         client_state.context(format!("could not find client state for {client_id}"))
     }
 
-    async fn get_client_status(&self, client_id: &ClientId) -> ClientStatus {
+    async fn get_client_status(
+        &self,
+        client_id: &ClientId,
+        current_block_time: tendermint::Time,
+    ) -> ClientStatus {
         let client_type = self.get_client_type(client_id).await;
 
         if client_type.is_err() {
@@ -303,13 +307,6 @@ pub trait StateReadExt: StateRead + penumbra_sct::component::clock::EpochRead {
 
         let latest_consensus_state = latest_consensus_state.expect("latest consensus state is Ok");
 
-        let current_block_time = self.get_current_block_timestamp().await;
-
-        if current_block_time.is_err() {
-            return ClientStatus::Unknown;
-        }
-
-        let current_block_time = current_block_time.expect("current block time is Ok");
         let time_elapsed = current_block_time.duration_since(latest_consensus_state.timestamp);
         if time_elapsed.is_err() {
             return ClientStatus::Unknown;

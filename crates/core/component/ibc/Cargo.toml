@@ -7,7 +7,6 @@ edition = {workspace = true}
 component = [
     "cnidarium",
     "penumbra-proto/cnidarium",
-    "penumbra-sct/component",
 ]
 default = ["component", "std"]
 std = ["ibc-types/std"]
@@ -33,7 +32,6 @@ pbjson-types = {workspace = true}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
 penumbra-txhash = {workspace = true, default-features = false}
 prost = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
@@ -47,4 +45,5 @@ tower = {workspace = true}
 tracing = {workspace = true}
 
 [dev-dependencies]
+penumbra-sct = {workspace = true, features = ["component"]}
 tokio = {workspace = true, features = ["full"]}
