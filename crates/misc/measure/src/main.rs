@@ -1,20 +1,25 @@
 #[macro_use]
 extern crate tracing;
 
+use std::path::PathBuf;
+
 use clap::Parser;
 use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
 
 use penumbra_compact_block::CompactBlock;
 use penumbra_proto::{
-    penumbra::core::component::compact_block::v1::{
-        query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
-        CompactBlockRangeRequest,
+    core::component::compact_block::v1::CompactBlockRequest,
+    penumbra::{
+        core::component::compact_block::v1::{
+            query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
+            CompactBlockRangeRequest,
+        },
+        util::tendermint_proxy::v1::{
+            tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
+        },
     },
-    penumbra::util::tendermint_proxy::v1::{
-        tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
-    },
-    Message,
+    DomainType, Message,
 };
 
 use tonic::transport::{Channel, ClientTlsConfig};
@@ -82,11 +87,40 @@ pub enum Command {
         #[clap(long)]
         full_sync: bool,
     },
+    /// Fetch a specified compact block.
+    FetchCompactBlock {
+        /// The height of the block to fetch.
+        height: u64,
+        /// The output file path.
+        #[clap(short, long)]
+        output_file: PathBuf,
+    },
 }
 
 impl Opt {
     pub async fn run(&self) -> anyhow::Result<()> {
         match self.cmd {
+            Command::FetchCompactBlock {
+                height,
+                ref output_file,
+            } => {
+                let mut client = CompactBlockQueryServiceClient::connect(self.node.to_string())
+                    .await
+                    .unwrap()
+                    .max_decoding_message_size(MAX_CB_SIZE_BYTES);
+                let compact_block = client
+                    .compact_block(CompactBlockRequest { height })
+                    .await?
+                    .into_inner()
+                    .compact_block
+                    .expect("response has compact block");
+                let compact_block_bin = compact_block.encode_to_vec();
+                std::fs::write(output_file.clone(), compact_block_bin)?;
+                // Now read back the data and do sanity checking
+                let compact_block_bin_2 = std::fs::read(output_file.clone())?;
+                let compact_block_2 = CompactBlock::decode(compact_block_bin_2.as_ref())?;
+                println!("Fetched and saved compact block: {} bytes, height: {}, nullifiers: {}, state payloads: {}", compact_block_bin_2.len(), compact_block_2.height, compact_block_2.nullifiers.len(), compact_block_2.state_payloads.len());
+            }
             Command::OpenConnections {
                 num_connections,
                 full_sync,
