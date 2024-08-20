@@ -3,7 +3,6 @@ use penumbra_asset::{
     asset::{self, Metadata},
     Balance, Value,
 };
-use penumbra_ibc::component::HostInterface;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
@@ -12,7 +11,6 @@ use penumbra_proto::{
 };
 use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
 use std::str::FromStr;
 
 #[cfg(feature = "component")]
@@ -168,33 +166,5 @@ impl From<Ics20Withdrawal> for pb::FungibleTokenPacketData {
             sender: return_address,
             memo: "".to_string(),
         }
-    }
-}
-
-pub struct Ics20WithdrawalWithHandler<HI>(Ics20Withdrawal, PhantomData<HI>);
-
-impl<HI> Ics20WithdrawalWithHandler<HI> {
-    pub fn new(action: Ics20Withdrawal) -> Self {
-        Self(action, PhantomData)
-    }
-
-    pub fn action(&self) -> &Ics20Withdrawal {
-        &self.0
-    }
-
-    pub fn into_inner(self) -> Ics20Withdrawal {
-        self.0
-    }
-}
-
-impl<HI> From<Ics20WithdrawalWithHandler<HI>> for Ics20Withdrawal {
-    fn from(value: Ics20WithdrawalWithHandler<HI>) -> Self {
-        value.0
-    }
-}
-
-impl Ics20Withdrawal {
-    pub fn with_handler<HI: HostInterface>(self) -> Ics20WithdrawalWithHandler<HI> {
-        Ics20WithdrawalWithHandler::new(self)
     }
 }

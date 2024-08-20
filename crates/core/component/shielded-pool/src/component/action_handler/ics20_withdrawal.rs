@@ -5,7 +5,7 @@ use cnidarium::{StateRead, StateWrite};
 use penumbra_ibc::{component::HostInterface, StateReadExt as _};
 
 use crate::component::transfer::{Ics20TransferReadExt as _, Ics20TransferWriteExt as _};
-use crate::ics20_withdrawal::Ics20WithdrawalWithHandler;
+use crate::component::Ics20WithdrawalWithHandler;
 
 impl<HI: HostInterface> Ics20WithdrawalWithHandler<HI> {
     pub async fn check_stateless(&self, _context: ()) -> Result<()> {
