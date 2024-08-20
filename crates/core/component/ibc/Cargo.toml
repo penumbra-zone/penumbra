@@ -45,5 +45,5 @@ tower = {workspace = true}
 tracing = {workspace = true}
 
 [dev-dependencies]
-penumbra-sct = {workspace = true, features = ["component"]}
+penumbra-sct = {workspace = true, default-features = false, features = ["component"]}
 tokio = {workspace = true, features = ["full"]}
