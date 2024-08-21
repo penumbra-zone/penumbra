@@ -83,7 +83,9 @@ impl BalanceCmd {
                 // Exclude withdrawn LPNFTs and withdrawn auction NFTs.
                 .filter(|(_, value)| match asset_cache.get(&value.asset_id) {
                     None => true,
-                    Some(denom) => !denom.is_withdrawn_position_nft() && !denom.is_withdrawn_auction_nft(),
+                    Some(denom) => {
+                        !denom.is_withdrawn_position_nft() && !denom.is_withdrawn_auction_nft()
+                    }
                 });
 
             for (index, value) in rows {
