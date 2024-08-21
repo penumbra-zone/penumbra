@@ -389,9 +389,20 @@ impl MockRelayer {
 
     // Send an ACK message to chain A
     // https://github.com/penumbra-zone/hermes/blob/a34a11fec76de3b573b539c237927e79cb74ec00/crates/relayer/src/connection.rs#L1126
-    async fn _build_and_send_connection_open_ack(&mut self) -> Result<()> {
+    pub async fn _build_and_send_connection_open_ack(&mut self) -> Result<()> {
+        // This is a load-bearing block execution that should be removed
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        self._sync_chains().await?;
+
         let chain_b_connection_id = self.chain_b_ibc.connection_id.clone();
         let chain_a_connection_id = self.chain_a_ibc.connection_id.clone();
+
+        // Build message(s) for updating client on source
+        let src_client_height = self._build_and_send_update_client_a().await?;
+        // Build message(s) for updating client on destination
+        let dst_client_height = self._build_and_send_update_client_b().await?;
+
         let connection_of_a_on_b_response = self
             .chain_b_ibc
             .ibc_connection_query_client
@@ -400,14 +411,6 @@ impl MockRelayer {
             })
             .await?
             .into_inner();
-
-        // Build message(s) for updating client on source
-        let src_client_target_height = self.chain_a_ibc.get_latest_height().await?;
-        self._build_and_send_update_client_a().await?;
-        // Build message(s) for updating client on destination
-        let dst_client_target_height = self.chain_b_ibc.get_latest_height().await?;
-        self._build_and_send_update_client_b().await?;
-
         let client_state_of_a_on_b_response = self
             .chain_b_ibc
             .ibc_client_query_client
@@ -427,6 +430,21 @@ impl MockRelayer {
             })
             .await?
             .into_inner();
+        assert_eq!(
+            connection_of_a_on_b_response.clone().proof_height,
+            consensus_state_of_a_on_b_response.clone().proof_height
+        );
+        assert_eq!(
+            client_state_of_a_on_b_response.clone().proof_height,
+            consensus_state_of_a_on_b_response.clone().proof_height
+        );
+
+        let proof_height_on_b = client_state_of_a_on_b_response.clone().proof_height;
+
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        self._build_and_send_update_client_a().await?;
+        self._sync_chains().await?;
 
         let plan = {
             // This mocks the relayer constructing a connection open try message on behalf
@@ -443,7 +461,7 @@ impl MockRelayer {
                         .client_state
                         .unwrap(),
                 ),
-                proof_height: Some(connection_of_a_on_b_response.clone().proof_height.unwrap()),
+                proof_height: Some(proof_height_on_b.unwrap()),
                 proof_try: connection_of_a_on_b_response.proof,
                 proof_client: client_state_of_a_on_b_response.clone().proof,
                 proof_consensus: consensus_state_of_a_on_b_response.proof,
