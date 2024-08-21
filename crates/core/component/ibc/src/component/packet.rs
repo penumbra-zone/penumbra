@@ -5,7 +5,7 @@ use ibc_types::core::{
     channel::{channel::State as ChannelState, events, ChannelId, Packet, PortId},
     client::Height,
 };
-use penumbra_sct::component::clock::EpochRead;
+use tendermint::Time;
 
 use crate::component::{
     channel::{StateReadExt as _, StateWriteExt as _},
@@ -96,7 +96,11 @@ impl<S: CheckStatus> IBCPacket<S> {
 #[async_trait]
 pub trait SendPacketRead: StateRead {
     /// send_packet_check verifies that a packet can be sent using the provided parameters.
-    async fn send_packet_check(&self, packet: IBCPacket<Unchecked>) -> Result<IBCPacket<Checked>> {
+    async fn send_packet_check(
+        &self,
+        packet: IBCPacket<Unchecked>,
+        current_block_time: Time,
+    ) -> Result<IBCPacket<Checked>> {
         let channel = self
             .get_channel(&packet.source_channel, &packet.source_port)
             .await?
@@ -134,7 +138,6 @@ pub trait SendPacketRead: StateRead {
             .get_verified_consensus_state(&client_state.latest_height(), &connection.client_id)
             .await?;
 
-        let current_block_time = self.get_current_block_timestamp().await?;
         let time_elapsed = current_block_time.duration_since(latest_consensus_state.timestamp)?;
 
         if client_state.expired(time_elapsed) {

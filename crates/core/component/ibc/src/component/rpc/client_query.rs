@@ -228,8 +228,10 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
         let snapshot = self.storage.latest_snapshot();
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
-
-        let client_status = snapshot.get_client_status(&client_id).await;
+        let timestamp = HI::get_block_timestamp(snapshot.clone())
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get block timestamp: {e}")))?;
+        let client_status = snapshot.get_client_status(&client_id, timestamp).await;
         let resp = QueryClientStatusResponse {
             status: client_status.to_string(),
         };

@@ -43,7 +43,13 @@ impl AppActionHandler for Action {
                     .check_stateless(())
                     .await
             }
-            Action::Ics20Withdrawal(action) => action.check_stateless(()).await,
+            Action::Ics20Withdrawal(action) => {
+                action
+                    .clone()
+                    .with_handler::<PenumbraHost>()
+                    .check_stateless(())
+                    .await
+            }
             Action::CommunityPoolSpend(action) => action.check_stateless(()).await,
             Action::CommunityPoolOutput(action) => action.check_stateless(()).await,
             Action::CommunityPoolDeposit(action) => action.check_stateless(()).await,
@@ -78,7 +84,13 @@ impl AppActionHandler for Action {
                     .check_historical(state)
                     .await
             }
-            Action::Ics20Withdrawal(action) => action.check_historical(state).await,
+            Action::Ics20Withdrawal(action) => {
+                action
+                    .clone()
+                    .with_handler::<PenumbraHost>()
+                    .check_historical(state)
+                    .await
+            }
             Action::CommunityPoolSpend(action) => action.check_historical(state).await,
             Action::CommunityPoolOutput(action) => action.check_historical(state).await,
             Action::CommunityPoolDeposit(action) => action.check_historical(state).await,
@@ -113,7 +125,13 @@ impl AppActionHandler for Action {
                     .check_and_execute(state)
                     .await
             }
-            Action::Ics20Withdrawal(action) => action.check_and_execute(state).await,
+            Action::Ics20Withdrawal(action) => {
+                action
+                    .clone()
+                    .with_handler::<PenumbraHost>()
+                    .check_and_execute(state)
+                    .await
+            }
             Action::CommunityPoolSpend(action) => action.check_and_execute(state).await,
             Action::CommunityPoolOutput(action) => action.check_and_execute(state).await,
             Action::CommunityPoolDeposit(action) => action.check_and_execute(state).await,

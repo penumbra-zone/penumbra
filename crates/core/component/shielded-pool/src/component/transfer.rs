@@ -35,6 +35,7 @@ use penumbra_ibc::component::{
     },
     state_key,
 };
+use tendermint::Time;
 
 // returns a bool indicating if the provided denom was issued locally or if it was bridged in.
 // this logic is a bit tricky, and adapted from https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (sendFungibleTokens).
@@ -68,12 +69,16 @@ pub struct Ics20Transfer {}
 
 #[async_trait]
 pub trait Ics20TransferReadExt: StateRead {
-    async fn withdrawal_check(&self, withdrawal: &Ics20Withdrawal) -> Result<()> {
+    async fn withdrawal_check(
+        &self,
+        withdrawal: &Ics20Withdrawal,
+        current_block_time: Time,
+    ) -> Result<()> {
         // create packet
         let packet: IBCPacket<Unchecked> = withdrawal.clone().into();
 
         // send packet
-        self.send_packet_check(packet).await?;
+        self.send_packet_check(packet, current_block_time).await?;
 
         Ok(())
     }
