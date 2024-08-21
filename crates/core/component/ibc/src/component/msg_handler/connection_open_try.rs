@@ -188,6 +188,8 @@ impl MsgHandler for MsgConnectionOpenTry {
                 .0,
         );
 
+        println!("PUTTING NEW CONNECTION: {:?}", new_conn);
+
         state
             .put_new_connection(&new_connection_id, new_conn)
             .await

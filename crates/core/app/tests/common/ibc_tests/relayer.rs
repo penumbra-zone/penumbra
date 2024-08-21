@@ -361,32 +361,30 @@ impl MockRelayer {
     }
 
     // tell chain b about chain a
-    pub async fn _build_and_send_update_client_b(&mut self, target_height: Height) -> Result<()> {
+    pub async fn _build_and_send_update_client_b(&mut self) -> Result<Height> {
         tracing::info!(
-            "send update client for chain {} to chain {} about height {}",
+            "send update client for chain {} to chain {}",
             self.chain_a_ibc.chain_id,
             self.chain_b_ibc.chain_id,
-            target_height
         );
         // reverse these because we're sending to chain B
         let chain_a_ibc = &mut self.chain_b_ibc;
         let chain_b_ibc = &mut self.chain_a_ibc;
 
-        _build_and_send_update_client(chain_a_ibc, chain_b_ibc, target_height).await
+        _build_and_send_update_client(chain_a_ibc, chain_b_ibc).await
     }
 
     // helper function to build UpdateClient to send to chain A
-    pub async fn _build_and_send_update_client_a(&mut self, target_height: Height) -> Result<()> {
+    pub async fn _build_and_send_update_client_a(&mut self) -> Result<Height> {
         tracing::info!(
-            "send update client for chain {} to chain {} about height {}",
+            "send update client for chain {} to chain {}",
             self.chain_b_ibc.chain_id,
             self.chain_a_ibc.chain_id,
-            target_height
         );
         let chain_a_ibc = &mut self.chain_a_ibc;
         let chain_b_ibc = &mut self.chain_b_ibc;
 
-        _build_and_send_update_client(chain_a_ibc, chain_b_ibc, target_height).await
+        _build_and_send_update_client(chain_a_ibc, chain_b_ibc).await
     }
 
     // Send an ACK message to chain A
@@ -405,12 +403,10 @@ impl MockRelayer {
 
         // Build message(s) for updating client on source
         let src_client_target_height = self.chain_a_ibc.get_latest_height().await?;
-        self._build_and_send_update_client_a(src_client_target_height)
-            .await?;
+        self._build_and_send_update_client_a().await?;
         // Build message(s) for updating client on destination
         let dst_client_target_height = self.chain_b_ibc.get_latest_height().await?;
-        self._build_and_send_update_client_b(dst_client_target_height)
-            .await?;
+        self._build_and_send_update_client_b().await?;
 
         let client_state_of_a_on_b_response = self
             .chain_b_ibc
@@ -548,18 +544,8 @@ impl MockRelayer {
             .await?
             .into_inner();
 
-        let src_client_target_height = self.chain_b_ibc.get_latest_height().await?;
-        let client_msgs = self
-            ._build_and_send_update_client_a(src_client_target_height)
-            .await?;
-
-        // Make sure chain B has a client state for this height
-        println!("UPDATE1");
-        // self._build_and_send_update_client_b().await?;
-        // self._sync_chains().await?;
-
-        // the height chain b's client for chain a should have state for
-        let chain_b_client_a_target_height = self.chain_a_ibc.get_latest_height().await?;
+        let chain_b_height = self._build_and_send_update_client_a().await?;
+        let chain_a_height = self._build_and_send_update_client_b().await?;
 
         let client_state_of_b_on_a_response = self
             .chain_a_ibc
@@ -577,118 +563,53 @@ impl MockRelayer {
             })
             .await?
             .into_inner();
+        let consensus_state_of_b_on_a_response = self
+            .chain_a_ibc
+            .ibc_client_query_client
+            .consensus_state(QueryConsensusStateRequest {
+                client_id: self.chain_b_ibc.client_id.to_string(),
+                revision_number: 0,
+                revision_height: 0,
+                latest_height: true,
+            })
+            .await?
+            .into_inner();
+
+        // Then construct the ConnectionOpenTry message
+        let proof_consensus_state_of_b_on_a =
+            MerkleProof::decode(consensus_state_of_b_on_a_response.clone().proof.as_slice())?;
+
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        self._sync_chains().await?;
+
+        assert_eq!(
+            consensus_state_of_b_on_a_response.proof_height,
+            client_state_of_b_on_a_response.proof_height
+        );
+        assert_eq!(
+            connection_of_b_on_a_response.proof_height,
+            client_state_of_b_on_a_response.proof_height
+        );
 
         let proofs_height_on_a: Height = connection_of_b_on_a_response
             .proof_height
             .clone()
             .unwrap()
             .try_into()?;
-        // the proof was included in proof_height, but the root for the proof
-        // will be available in the next block's header, so we need to increment
-        // TODO: what do
-        // let proofs_height_on_a = proofs_height_on_a.increment();
-        println!(
-            "fetching consensus state at height: {:?}",
-            proofs_height_on_a
-        );
-
-        assert_eq!(
-            client_state_of_b_on_a_response.proof_height,
-            connection_of_b_on_a_response.proof_height
-        );
 
         let proof_client_state_of_b_on_a =
             MerkleProof::decode(client_state_of_b_on_a_response.clone().proof.as_slice())?;
         let proof_conn_end_on_a =
             MerkleProof::decode(connection_of_b_on_a_response.clone().proof.as_slice())?;
-
-        let existence_proofs: Vec<(Vec<u8>, Vec<u8>)> = proof_conn_end_on_a
-            .proofs
-            .iter()
-            .map(|proof| {
-                let p = proof.proof.clone().unwrap();
-                match p {
-                    ics23::commitment_proof::Proof::Exist(p) => (p.key, p.value),
-                    _ => (vec![], vec![]),
-                }
-            })
-            .inspect(|(k, v)| {
-                println!(
-                    "proof_conn_end_on_a: k {} v {}",
-                    hex::encode(k),
-                    hex::encode(v)
-                );
-            })
-            .collect();
-
-        // https://github.com/penumbra-zone/hermes/blob/a34a11fec76de3b573b539c237927e79cb74ec00/crates/relayer/src/connection.rs#L1010
-        // https://github.com/penumbra-zone/hermes/blob/main/crates/relayer/src/foreign_client.rs#L1144
-        // Send an update to both sides to ensure they are up to date
-        // Build message(s) for updating client on source
-        // chain B needs to know about chain A at the proof height
-        self._build_and_send_update_client_b(proofs_height_on_a.try_into()?)
-            .await?;
-        println!(
-            "client state target height: {:?}",
-            chain_b_client_a_target_height
-        );
+        let proof_consensus_state_of_b_on_a =
+            MerkleProof::decode(consensus_state_of_b_on_a_response.clone().proof.as_slice())?;
 
         // TODO: too side-effecty?
         self.chain_b_ibc.counterparty.connection_id = Some(self.chain_a_ibc.connection_id.clone());
         self.chain_a_ibc.counterparty.connection_id = Some(self.chain_b_ibc.connection_id.clone());
 
-        // Build message(s) for updating client on destination
-        println!(
-            "proof height: {:?}",
-            connection_of_b_on_a_response.proof_height
-        );
-
-        // d01e8818de18fb050c7aff28a59d430db07802f91c14c4370cf8be785381d4c7 is trusted (for height 6)
-        // but the proof comes in for ae0565596d0d8fb9019815400868ecf002b3aa48f4e0134e116f3184cfa49c4a (height 7)
-        self.chain_a_ibc.node.block().execute().await?;
-        self.chain_b_ibc.node.block().execute().await?;
-        println!(
-            "chain b latest height: {:?}",
-            self.chain_b_ibc.get_latest_height().await?
-        );
-        // https://github.com/penumbra-zone/hermes/blob/a34a11fec76de3b573b539c237927e79cb74ec00/crates/relayer/src/connection.rs#L943
-
-        let mut latest_client_state =
-            ibc_types::lightclients::tendermint::client_state::ClientState::try_from(
-                self.chain_b_ibc
-                    .ibc_client_query_client
-                    .client_state(QueryClientStateRequest {
-                        client_id: self.chain_a_ibc.client_id.to_string(),
-                    })
-                    .await?
-                    .into_inner()
-                    .client_state
-                    .unwrap(),
-            )?;
-
-        let consensus_state_of_b_on_a_response = self
-            .chain_a_ibc
-            .ibc_client_query_client
-            .consensus_state(QueryConsensusStateRequest {
-                client_id: self.chain_b_ibc.client_id.to_string(),
-                revision_number: src_client_target_height.revision_number,
-                // use the same height for the consensus state as the connection
-                revision_height: src_client_target_height.revision_height,
-                latest_height: false,
-            })
-            .await?
-            .into_inner();
-        println!(
-            "consensus_state_of_b_on_a_response: {:?}",
-            consensus_state_of_b_on_a_response
-        );
-
-        // Then construct the ConnectionOpenTry message
-        let proof_consensus_state_of_b_on_a =
-            MerkleProof::decode(consensus_state_of_b_on_a_response.clone().proof.as_slice())?;
-
-        self._build_and_send_update_client_b(proofs_height_on_a)
-            .await?;
+        self._build_and_send_update_client_b().await?;
         self._sync_chains().await?;
 
         let cs: TendermintClientState = client_state_of_b_on_a_response
@@ -696,16 +617,6 @@ impl MockRelayer {
             .client_state
             .unwrap()
             .try_into()?;
-        // let cs = ibc_types::lightclients::tendermint::client_state::ClientState::try_from(
-        //     client_state_of_b_on_a_response
-        //         .clone()
-        //         .client_state
-        //         .unwrap(),
-        // )?;
-        println!("cs: {:?}", cs);
-        println!("before send cs latest height: {}", cs.latest_height);
-        let consensus_state_of_b_on_a_proof_height =
-            consensus_state_of_b_on_a_response.proof_height.unwrap();
         let plan = {
             // This mocks the relayer constructing a connection open try message on behalf
             // of the counterparty chain.
@@ -727,14 +638,8 @@ impl MockRelayer {
                 proof_conn_end_on_a,
                 proof_client_state_of_b_on_a,
                 proof_consensus_state_of_b_on_a,
-                proofs_height_on_a: Height {
-                    revision_height: consensus_state_of_b_on_a_proof_height.revision_height,
-                    revision_number: consensus_state_of_b_on_a_proof_height.revision_number,
-                },
-                consensus_height_of_b_on_a: Height {
-                    revision_height: src_client_target_height.revision_height,
-                    revision_number: src_client_target_height.revision_number,
-                },
+                proofs_height_on_a,
+                consensus_height_of_b_on_a: chain_b_height,
                 // this seems to be an optional proof
                 proof_consensus_state_of_b: None,
                 // deprecated
@@ -786,6 +691,7 @@ impl MockRelayer {
             .with_data(vec![tx.encode_to_vec()])
             .execute()
             .await?;
+        self.chain_b_ibc.node.block().execute().await?;
         let post_tx_snapshot = self.chain_b_ibc.storage.latest_snapshot();
 
         // validate the connection state is now "tryopen"
@@ -813,6 +719,7 @@ impl MockRelayer {
         }
 
         self._sync_chains().await?;
+
         Ok(())
     }
 
@@ -836,8 +743,7 @@ impl MockRelayer {
         // Build message(s) for updating client on destination
         println!("UPDATE4");
         let dst_client_target_height = self.chain_a_ibc.get_latest_height().await?;
-        self._build_and_send_update_client_b(dst_client_target_height)
-            .await?;
+        self._build_and_send_update_client_b().await?;
 
         let plan = {
             // This mocks the relayer constructing a connection open try message on behalf
@@ -917,12 +823,11 @@ impl MockRelayer {
     }
 }
 
-// tell chain A about chain B
+// tell chain A about chain B. returns the height of chain b on chain a after update.
 async fn _build_and_send_update_client(
     chain_a_ibc: &mut TestNodeWithIBC,
     chain_b_ibc: &mut TestNodeWithIBC,
-    target_height: Height,
-) -> Result<()> {
+) -> Result<Height> {
     let chain_b_height = chain_b_ibc.get_latest_height().await?;
     println!("chain_b latest height: {:?}", chain_b_height);
     let chain_b_latest_block: penumbra_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse =
@@ -955,6 +860,13 @@ async fn _build_and_send_update_client(
         hex::encode(chain_b_latest_block.clone().block_id.unwrap().hash),
         trusted_height
     );
+    let chain_b_new_height = chain_b_latest_block
+        .block
+        .clone()
+        .unwrap()
+        .header
+        .unwrap()
+        .height;
     // println!(
     //     "header: {:?}",
     //     chain_b_latest_block.block.clone().unwrap().header.unwrap()
@@ -992,7 +904,7 @@ async fn _build_and_send_update_client(
             client_message: chain_b_ibc
                 // The TendermintHeader is derived from the Block
                 // and represents chain B's claims about its current state.
-                .create_tendermint_header(Some(trusted_height), chain_b_latest_block)?
+                .create_tendermint_header(Some(trusted_height), chain_b_latest_block.clone())?
                 .into(),
         })
         .into();
@@ -1021,148 +933,5 @@ async fn _build_and_send_update_client(
         .execute()
         .await?;
 
-    // HERMES IMPL
-    // let consensus_state = chain_b_ibc
-    //     .ibc_client_query_client
-    //     .consensus_state(QueryConsensusStateRequest {
-    //         client_id: chain_a_ibc.client_id.to_string(),
-    //         revision_number: target_height.revision_number,
-    //         revision_height: target_height.revision_height,
-    //         latest_height: false,
-    //     })
-    //     .await?
-    //     .into_inner();
-
-    // if let Some(consensus_state) = consensus_state.consensus_state {
-    //     tracing::info!("consensus state already exists at height {target_height}, skipping update");
-    //     tracing::trace!(?consensus_state, "consensus state");
-    //     return Ok(());
-    // }
-
-    // let mut src_application_latest_height = chain_a_ibc.get_latest_height().await?;
-    // // Wait for the source network to produce block(s) & reach `target_height`.
-    // while src_application_latest_height < target_height {
-    //     // advance both blocks
-    //     chain_a_ibc.node.block().execute().await?;
-    //     chain_b_ibc.node.block().execute().await?;
-    //     src_application_latest_height = chain_a_ibc.get_latest_height().await?;
-    // }
-
-    // // Get the latest client state on destination.
-    // let client_state_of_a_on_b_response = chain_b_ibc
-    //     .ibc_client_query_client
-    //     .client_state(QueryClientStateRequest {
-    //         client_id: chain_a_ibc.client_id.to_string(),
-    //     })
-    //     .await?
-    //     .into_inner();
-
-    // let client_latest_height =
-    //     ibc_types::lightclients::tendermint::client_state::ClientState::try_from(
-    //         client_state_of_a_on_b_response
-    //             .clone()
-    //             .client_state
-    //             .unwrap(),
-    //     )?
-    //     .latest_height;
-    // let trusted_height = if client_latest_height < target_height {
-    //     client_latest_height
-    // } else {
-    //     panic!("unsupported, no sending updates to the past");
-    // };
-
-    // if trusted_height >= target_height {
-    //     tracing::warn!(
-    //         "skipping update: trusted height ({}) >= chain target height ({})",
-    //         trusted_height,
-    //         target_height
-    //     );
-
-    //     return Ok(());
-    // }
-
-    // println!("target chain b height: {:?}", target_height);
-    // let chain_b_latest_block: penumbra_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse =
-    //     chain_b_ibc
-    //         .tendermint_proxy_service_client
-    //         .get_block_by_height(GetBlockByHeightRequest {
-    //             height: target_height.revision_height.try_into()?,
-    //         })
-    //         .await?
-    //         .into_inner();
-
-    // // Look up the last recorded consensus state for the counterparty client on chain A
-    // // to determine the last trusted height.
-    // // let prev_counterparty_consensus_state =
-    // // ConsensusState::try_from(consensus_state.consensus_state.unwrap())?;
-    // println!(
-    //     "Telling chain a about chain b latest block: {}",
-    //     hex::encode(chain_b_latest_block.clone().block_id.unwrap().hash)
-    // );
-    // // println!(
-    // //     "header: {:?}",
-    // //     chain_b_latest_block.block.clone().unwrap().header.unwrap()
-    // // );
-    // println!(
-    //     "chain_id {}, height {}, last_commit_hash: {}",
-    //     chain_b_latest_block
-    //         .block
-    //         .clone()
-    //         .unwrap()
-    //         .header
-    //         .unwrap()
-    //         .chain_id,
-    //     chain_b_latest_block
-    //         .block
-    //         .clone()
-    //         .unwrap()
-    //         .header
-    //         .unwrap()
-    //         .height,
-    //     hex::encode(
-    //         chain_b_latest_block
-    //             .block
-    //             .clone()
-    //             .unwrap()
-    //             .header
-    //             .unwrap()
-    //             .last_commit_hash
-    //     )
-    // );
-    // let plan = {
-    //     let ibc_msg = IbcRelay::UpdateClient(MsgUpdateClient {
-    //         signer: chain_b_ibc.signer.clone(),
-    //         client_id: chain_a_ibc.client_id.clone(),
-    //         client_message: chain_b_ibc
-    //             // The TendermintHeader is derived from the Block
-    //             // and represents chain B's claims about its current state.
-    //             .create_tendermint_header(Some(trusted_height), chain_b_latest_block)?
-    //             .into(),
-    //     })
-    //     .into();
-    //     TransactionPlan {
-    //         actions: vec![ibc_msg],
-    //         // Now fill out the remaining parts of the transaction needed for verification:
-    //         memo: None,
-    //         detection_data: None, // We'll set this automatically below
-    //         transaction_parameters: TransactionParameters {
-    //             chain_id: chain_a_ibc.chain_id.clone(),
-    //             ..Default::default()
-    //         },
-    //     }
-    // };
-    // let tx = chain_a_ibc
-    //     .client()
-    //     .await?
-    //     .witness_auth_build(&plan)
-    //     .await?;
-
-    // // Execute the transaction, applying it to the chain state.
-    // chain_a_ibc
-    //     .node
-    //     .block()
-    //     .with_data(vec![tx.encode_to_vec()])
-    //     .execute()
-    //     .await?;
-    Ok(())
+    Ok(chain_b_height)
 }
