@@ -11,6 +11,7 @@ use ibc_proto::ibc::core::client::v1::{
     QueryUpgradedClientStateResponse, QueryUpgradedConsensusStateRequest,
     QueryUpgradedConsensusStateResponse,
 };
+use penumbra_sct::component::clock::EpochRead;
 use prost::Message;
 
 use ibc_types::core::client::ClientId;
@@ -41,7 +42,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
             revision_number: HI::get_revision_number(&snapshot)
                 .await
                 .map_err(|e| tonic::Status::aborted(e.to_string()))?,
-            revision_height: snapshot.version(),
+            revision_height: snapshot.version() + 1,
         };
 
         // Query for client_state and associated proof.
@@ -139,7 +140,15 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
         let res = QueryConsensusStateResponse {
             consensus_state,
             proof: proof.encode_to_vec(),
-            proof_height: Some(height.into()),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: snapshot
+                    .get_block_height()
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
+            }),
         };
 
         Ok(tonic::Response::new(res))

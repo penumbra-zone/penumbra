@@ -171,24 +171,6 @@ impl MockRelayer {
             );
             let pub_key =
                 tendermint::PublicKey::from_raw_ed25519(pk.as_bytes()).expect("pub key present");
-            let validator_set = tendermint::validator::Set::new(
-                vec![tendermint::validator::Info {
-                    address: proposer_address.try_into()?,
-                    pub_key,
-                    power: 1i64.try_into()?,
-                    name: Some("test validator".to_string()),
-                    proposer_priority: 1i64.try_into()?,
-                }],
-                // Same validator as proposer?
-                Some(tendermint::validator::Info {
-                    address: proposer_address.try_into()?,
-                    pub_key,
-                    power: 1i64.try_into()?,
-                    name: Some("test validator".to_string()),
-                    proposer_priority: 1i64.try_into()?,
-                }),
-            );
-            let validators_hash = validator_set.hash();
             // RIGHT HERE everything is correct.
             // Creating client on penumbra-test-chain-b with height 2 and merkle root 58055...
             // later on, though: proof root for height 3: 58055...
@@ -233,7 +215,11 @@ impl MockRelayer {
                             root: MerkleRoot {
                                 hash: chain_b_ibc.node.last_app_hash().to_vec(),
                             },
-                            next_validators_hash: validators_hash.into(),
+                            next_validators_hash: (*chain_b_ibc
+                                .node
+                                .last_validator_set_hash()
+                                .unwrap())
+                            .into(),
                         }
                         .into(),
                 })
@@ -562,7 +548,7 @@ impl MockRelayer {
             .await?
             .into_inner();
 
-        let src_client_target_height = self.chain_a_ibc.get_latest_height().await?;
+        let src_client_target_height = self.chain_b_ibc.get_latest_height().await?;
         let client_msgs = self
             ._build_and_send_update_client_a(src_client_target_height)
             .await?;
@@ -591,9 +577,19 @@ impl MockRelayer {
             })
             .await?
             .into_inner();
+
+        let proofs_height_on_a: Height = connection_of_b_on_a_response
+            .proof_height
+            .clone()
+            .unwrap()
+            .try_into()?;
+        // the proof was included in proof_height, but the root for the proof
+        // will be available in the next block's header, so we need to increment
+        // TODO: what do
+        // let proofs_height_on_a = proofs_height_on_a.increment();
         println!(
             "fetching consensus state at height: {:?}",
-            connection_of_b_on_a_response.proof_height.clone().unwrap()
+            proofs_height_on_a
         );
 
         assert_eq!(
@@ -601,34 +597,6 @@ impl MockRelayer {
             connection_of_b_on_a_response.proof_height
         );
 
-        let consensus_state_of_b_on_a_response = self
-            .chain_a_ibc
-            .ibc_client_query_client
-            .consensus_state(QueryConsensusStateRequest {
-                client_id: self.chain_b_ibc.client_id.to_string(),
-                revision_number: connection_of_b_on_a_response
-                    .proof_height
-                    .clone()
-                    .unwrap()
-                    .revision_number,
-                // use the same height for the consensus state as the connection
-                revision_height: connection_of_b_on_a_response
-                    .proof_height
-                    .clone()
-                    .unwrap()
-                    .revision_height,
-                latest_height: false,
-            })
-            .await?
-            .into_inner();
-        println!(
-            "consensus_state_of_b_on_a_response: {:?}",
-            consensus_state_of_b_on_a_response
-        );
-
-        // Then construct the ConnectionOpenTry message
-        let proof_consensus_state_of_b_on_a =
-            MerkleProof::decode(consensus_state_of_b_on_a_response.clone().proof.as_slice())?;
         let proof_client_state_of_b_on_a =
             MerkleProof::decode(client_state_of_b_on_a_response.clone().proof.as_slice())?;
         let proof_conn_end_on_a =
@@ -658,14 +626,6 @@ impl MockRelayer {
         // Send an update to both sides to ensure they are up to date
         // Build message(s) for updating client on source
         // chain B needs to know about chain A at the proof height
-        let proofs_height_on_a: Height = connection_of_b_on_a_response
-            .proof_height
-            .clone()
-            .unwrap()
-            .try_into()?;
-        // the proof was included in proof_height, but the root for the proof
-        // will be available in the next block's header, so we need to increment
-        let proofs_height_on_a = proofs_height_on_a.increment();
         self._build_and_send_update_client_b(proofs_height_on_a.try_into()?)
             .await?;
         println!(
@@ -706,6 +666,27 @@ impl MockRelayer {
                     .unwrap(),
             )?;
 
+        let consensus_state_of_b_on_a_response = self
+            .chain_a_ibc
+            .ibc_client_query_client
+            .consensus_state(QueryConsensusStateRequest {
+                client_id: self.chain_b_ibc.client_id.to_string(),
+                revision_number: src_client_target_height.revision_number,
+                // use the same height for the consensus state as the connection
+                revision_height: src_client_target_height.revision_height,
+                latest_height: false,
+            })
+            .await?
+            .into_inner();
+        println!(
+            "consensus_state_of_b_on_a_response: {:?}",
+            consensus_state_of_b_on_a_response
+        );
+
+        // Then construct the ConnectionOpenTry message
+        let proof_consensus_state_of_b_on_a =
+            MerkleProof::decode(consensus_state_of_b_on_a_response.clone().proof.as_slice())?;
+
         self._build_and_send_update_client_b(proofs_height_on_a)
             .await?;
         self._sync_chains().await?;
@@ -723,6 +704,8 @@ impl MockRelayer {
         // )?;
         println!("cs: {:?}", cs);
         println!("before send cs latest height: {}", cs.latest_height);
+        let consensus_state_of_b_on_a_proof_height =
+            consensus_state_of_b_on_a_response.proof_height.unwrap();
         let plan = {
             // This mocks the relayer constructing a connection open try message on behalf
             // of the counterparty chain.
@@ -744,8 +727,14 @@ impl MockRelayer {
                 proof_conn_end_on_a,
                 proof_client_state_of_b_on_a,
                 proof_consensus_state_of_b_on_a,
-                proofs_height_on_a,
-                consensus_height_of_b_on_a: latest_client_state.latest_height,
+                proofs_height_on_a: Height {
+                    revision_height: consensus_state_of_b_on_a_proof_height.revision_height,
+                    revision_number: consensus_state_of_b_on_a_proof_height.revision_number,
+                },
+                consensus_height_of_b_on_a: Height {
+                    revision_height: src_client_target_height.revision_height,
+                    revision_number: src_client_target_height.revision_number,
+                },
                 // this seems to be an optional proof
                 proof_consensus_state_of_b: None,
                 // deprecated
@@ -954,15 +943,13 @@ async fn _build_and_send_update_client(
         })
         .await?
         .into_inner();
-    let client_latest_height =
-        ibc_types::lightclients::tendermint::client_state::ClientState::try_from(
-            client_state_of_b_on_a_response
-                .clone()
-                .client_state
-                .unwrap(),
-        )?
-        .latest_height;
-    let trusted_height = client_latest_height;
+    let trusted_height = ibc_types::lightclients::tendermint::client_state::ClientState::try_from(
+        client_state_of_b_on_a_response
+            .clone()
+            .client_state
+            .unwrap(),
+    )?
+    .latest_height;
     println!(
         "Telling chain a about chain b latest block: {} and trusted height: {}",
         hex::encode(chain_b_latest_block.clone().block_id.unwrap().hash),
@@ -1033,6 +1020,8 @@ async fn _build_and_send_update_client(
         .with_data(vec![tx.encode_to_vec()])
         .execute()
         .await?;
+
+    // HERMES IMPL
     // let consensus_state = chain_b_ibc
     //     .ibc_client_query_client
     //     .consensus_state(QueryConsensusStateRequest {

@@ -60,7 +60,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
 
         let height = Height {
             revision_number: 0,
-            revision_height: snapshot.version(),
+            revision_height: snapshot.version() + 1,
         };
 
         let res = QueryConnectionResponse {

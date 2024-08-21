@@ -139,6 +139,16 @@ impl MsgHandler for MsgConnectionOpenTry {
 
         // 3. verify that the counterparty chain stored the correct consensus state of Penumbra at
         //    the given consensus height
+        println!("expected_consensus: {:?}", expected_consensus);
+        println!(
+            "consensus_height_of_b_on_a: {}",
+            self.consensus_height_of_b_on_a
+        );
+        println!(
+            "trusted_consensus_state.root: {}",
+            hex::encode(trusted_consensus_state.root.clone().hash)
+        );
+        println!("proofs_height_on_a: {}", self.proofs_height_on_a);
         let proof_consensus_state_of_b_on_a = self.proof_consensus_state_of_b_on_a.clone();
         proof_verification::verify_client_consensus_state(
             &trusted_client_state,

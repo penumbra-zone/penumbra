@@ -32,6 +32,7 @@ use {
     tap::{Tap, TapFallible},
     tendermint::{
         v0_37::abci::{ConsensusRequest, ConsensusResponse},
+        vote::Power,
         Time,
     },
     tokio::time,
@@ -286,7 +287,7 @@ impl TestNodeWithIBC {
             vec![tendermint::validator::Info {
                 address: proposer_address.try_into()?,
                 pub_key,
-                power: 1i64.try_into()?,
+                power: Power::try_from(25_000 * 10i64.pow(6))?,
                 name: Some("test validator".to_string()),
                 proposer_priority: 1i64.try_into()?,
             }],
@@ -294,7 +295,7 @@ impl TestNodeWithIBC {
             Some(tendermint::validator::Info {
                 address: proposer_address.try_into()?,
                 pub_key,
-                power: 1i64.try_into()?,
+                power: Power::try_from(25_000 * 10i64.pow(6))?,
                 name: Some("test validator".to_string()),
                 proposer_priority: 1i64.try_into()?,
             }),

@@ -128,6 +128,11 @@ impl<C> TestNode<C> {
         self.last_commit.as_ref()
     }
 
+    /// Returns the last `validator_set_hash` value.
+    pub fn last_validator_set_hash(&self) -> Option<&tendermint::Hash> {
+        self.last_validator_set_hash.as_ref()
+    }
+
     /// Returns the most recent `timestamp` value.
     pub fn timestamp(&self) -> &Time {
         &self.timestamp
