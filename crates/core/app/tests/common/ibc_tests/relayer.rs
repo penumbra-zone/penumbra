@@ -745,6 +745,9 @@ impl MockRelayer {
     // at this point, chain A is in OPEN and B is in TRYOPEN.
     // afterwards, chain A will be in OPEN and chain B will be in OPEN.
     pub async fn _build_and_send_connection_open_confirm(&mut self) -> Result<()> {
+        // This is a load-bearing block execution that should be removed
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
         self._sync_chains().await?;
 
         // https://github.com/penumbra-zone/hermes/blob/a34a11fec76de3b573b539c237927e79cb74ec00/crates/relayer/src/connection.rs#L1296
@@ -758,10 +761,12 @@ impl MockRelayer {
             .await?
             .into_inner();
 
-        // Build message(s) for updating client on destination
-        println!("UPDATE4");
-        let dst_client_target_height = self.chain_a_ibc.get_latest_height().await?;
+        let dst_client_target_height = self._build_and_send_update_client_b().await?;
+
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
         self._build_and_send_update_client_b().await?;
+        self._sync_chains().await?;
 
         let plan = {
             // This mocks the relayer constructing a connection open try message on behalf

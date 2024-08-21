@@ -603,6 +603,10 @@ async fn ibc_handshake() -> anyhow::Result<()> {
 
     relayer._build_and_send_connection_open_ack().await?;
 
+    relayer._sync_chains().await?;
+
+    relayer._build_and_send_connection_open_confirm().await?;
+
     Ok(()).tap(|_| drop(relayer)).tap(|_| drop(guard))
 }
 
