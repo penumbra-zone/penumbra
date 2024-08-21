@@ -78,7 +78,6 @@ impl TestNodeWithIBC {
         let node = {
             let app_state =
                 AppState::Content(genesis::Content::default().with_chain_id(chain_id.clone()));
-            // TODO: genesis contents need to contain validator information in the app state
             let consensus = Consensus::new(storage.as_ref().clone());
             TestNode::builder()
                 .with_keys(vec![keys])

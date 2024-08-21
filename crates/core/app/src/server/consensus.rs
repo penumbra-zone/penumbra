@@ -188,24 +188,7 @@ impl Consensus {
         // included in the span modeling the abci request handling.
         tracing::info!(time = ?begin_block.header.time, "beginning block");
 
-        let storage_revision_height = self.storage.latest_snapshot().version();
-        let storage_root = self.storage.latest_snapshot().root_hash().await?;
-        println!(
-            "BEFORE begin_block {} storage height is {} and storage root is {}",
-            begin_block.header.height,
-            storage_revision_height,
-            hex::encode(storage_root.0)
-        );
         let events = self.app.begin_block(&begin_block).await;
-
-        let storage_revision_height = self.storage.latest_snapshot().version();
-        let storage_root = self.storage.latest_snapshot().root_hash().await?;
-        println!(
-            "AFTER begin_block {} storage height is {} and storage root is {}",
-            begin_block.header.height,
-            storage_revision_height,
-            hex::encode(storage_root.0)
-        );
 
         Ok(response::BeginBlock { events })
     }

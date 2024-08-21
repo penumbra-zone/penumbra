@@ -52,8 +52,8 @@ impl TestNodeProxy {
         Box::new(move |block| inner.on_block(block))
     }
 
-    /// Returns the latest committed block height.
-    fn latest_block_height(&self) -> tendermint::block::Height {
+    /// Returns the last committed block height.
+    fn last_block_height(&self) -> tendermint::block::Height {
         self.inner
             .blocks()
             .last_key_value()
@@ -164,7 +164,7 @@ impl TendermintProxyService for TestNodeProxy {
         req: tonic::Request<GetStatusRequest>,
     ) -> Result<tonic::Response<GetStatusResponse>, Status> {
         let GetStatusRequest { .. } = req.into_inner();
-        let latest_block_height = self.latest_block_height().into();
+        let latest_block_height = self.last_block_height().into();
         let block_ts: tendermint_proto::google::protobuf::Timestamp = self.timestamp().into();
         let sync_info = SyncInfo {
             latest_block_hash: self
@@ -213,7 +213,6 @@ impl TendermintProxyService for TestNodeProxy {
         let GetBlockByHeightRequest { height } = req.into_inner();
         let height =
             tendermint::block::Height::try_from(height).expect("height should be less than 2^63");
-        println!("get block height: {:?}", height);
 
         let block = self.inner.blocks().get(&height).cloned();
         // the response uses the penumbra type but internally we use the tendermint type
@@ -225,6 +224,7 @@ impl TendermintProxyService for TestNodeProxy {
                 tracing::warn!(?height, error = ?e, "proxy: error fetching blocks");
                 Err(tonic::Status::internal("error fetching blocks"))
             })?;
+
         Ok(GetBlockByHeightResponse {
             block_id: block.map(|b| penumbra_proto::tendermint::types::BlockId {
                 hash: b.header.hash().into(),
