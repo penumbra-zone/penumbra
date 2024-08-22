@@ -247,11 +247,11 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
     assert_eq!(u64::from(latest_height), storage_revision_height);
 
     // Try fetching the client state via the IBC API
-    let node_last_app_hash = node.last_app_hash();
+    let node_last_app_hash = node.last_app_hash().to_vec();
     tracing::debug!(
         "making IBC client state request at height {} and hash {}",
         latest_height,
-        hex::encode(node_last_app_hash)
+        hex::encode(&node_last_app_hash)
     );
     let ibc_client_state_response = ibc_client_query_client
         .client_state(QueryClientStateRequest {
@@ -260,10 +260,50 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
         .await?
         .into_inner();
 
+    assert!(
+        ibc_client_state_response.client_state.as_ref().is_some()
+            && !ibc_client_state_response
+                .client_state
+                .as_ref()
+                .unwrap()
+                .value
+                .is_empty()
+    );
+
     let ibc_proof = MerkleProof::decode(ibc_client_state_response.clone().proof.as_slice())?;
     let ibc_value = ibc_client_state_response.client_state.unwrap();
 
     assert_eq!(ibc_value.encode_to_vec(), value);
+
+    // The current height of the node should be one behind the proof height.
+    assert_eq!(
+        u64::from(latest_height) + 1,
+        ibc_client_state_response
+            .proof_height
+            .clone()
+            .unwrap()
+            .revision_height
+    );
+
+    let proof_block: penumbra_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse =
+        tendermint_proxy_service_client
+            .get_block_by_height(GetBlockByHeightRequest {
+                height: ibc_client_state_response
+                    .proof_height
+                    .clone()
+                    .unwrap()
+                    .revision_height
+                    .try_into()?,
+            })
+            .await?
+            .into_inner();
+
+    // The proof block should be nonexistent because we haven't finalized the in-progress
+    // block yet.
+    assert!(proof_block.block.is_none());
+
+    // Execute a block to finalize the proof block.
+    node.block().execute().await?;
 
     // We should be able to get the block from the proof_height associated with
     // the proof and use the app_hash as the jmt root and succeed in proving:
@@ -289,49 +329,19 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
             .revision_height,
         proof_block.block.clone().unwrap().header.unwrap().height as u64
     );
-    // The node height when we directly retrieved the last app hash
-    // should match the proof height
-    assert_eq!(
-        ibc_client_state_response
-            .proof_height
-            .clone()
-            .unwrap()
-            .revision_height,
-        u64::from(latest_height)
-    );
 
-    // TODO: these tests fail
-    if false {
-        // the proof block's app hash should match
-        assert_eq!(
-            node_last_app_hash,
-            proof_block.block.clone().unwrap().header.unwrap().app_hash,
-            "node claimed app hash for height {} was {}, however block header contained {}",
-            latest_height,
-            hex::encode(node_last_app_hash),
-            hex::encode(proof_block.block.clone().unwrap().header.unwrap().app_hash)
-        );
-        println!(
-            "proof height: {} proof_block_root: {:?}",
-            ibc_client_state_response
-                .proof_height
-                .unwrap()
-                .revision_height,
-            hex::encode(proof_block.block.clone().unwrap().header.unwrap().app_hash)
-        );
-        let proof_block_root = MerkleRoot {
-            hash: proof_block.block.unwrap().header.unwrap().app_hash,
-        };
-        ibc_proof
-            .verify_membership(
-                &proof_specs,
-                proof_block_root,
-                merkle_path,
-                ibc_value.encode_to_vec(),
-                0,
-            )
-            .expect("the ibc proof should validate against the root of the proof_height's block");
-    }
+    let proof_block_root = MerkleRoot {
+        hash: proof_block.block.unwrap().header.unwrap().app_hash,
+    };
+    ibc_proof
+        .verify_membership(
+            &proof_specs,
+            proof_block_root,
+            merkle_path,
+            ibc_value.encode_to_vec(),
+            0,
+        )
+        .expect("the ibc proof should validate against the root of the proof_height's block");
 
     Ok(())
         .tap(|_| drop(node))

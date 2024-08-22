@@ -190,7 +190,9 @@ where
             height
         };
 
-        let last_commit = &test_node.last_commit;
+        // Pull the current last_commit out of the node, since it will
+        // be discarded after we build the block.
+        let last_commit = test_node.last_commit.clone();
 
         // Set the validator set based on the current configuration.
         let pk = test_node
@@ -219,8 +221,7 @@ where
             height,
             time: timestamp,
             // MerkleRoot of the lastCommit’s signatures. The signatures represent the validators that committed to the last block. The first block has an empty slices of bytes for the hash.
-            last_commit_hash: test_node
-                .last_commit
+            last_commit_hash: last_commit
                 .as_ref()
                 .map(|c| c.hash().unwrap())
                 .unwrap_or(Some(
@@ -274,11 +275,13 @@ where
             last_commit_height=?last_commit.as_ref().map(|c| c.height.value()),
             "made block"
         );
-        let block = Block::new(header.clone(), data, evidence, last_commit.clone())?;
+        // pass the current value of last_commit with this header
+        let block = Block::new(header.clone(), data, evidence, last_commit)?;
 
         // Now that the block is finalized, we can transition to the next block.
         // Generate a commit for the header we just made, that will be
         // included in the next header.
+        // Update the last_commit.
         test_node.last_commit = Some(Commit {
             height: block.header.height,
             round: Round::default(),

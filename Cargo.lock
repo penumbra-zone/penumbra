@@ -4568,6 +4568,7 @@ dependencies = [
  "tap",
  "tempfile",
  "tendermint",
+ "tendermint-config",
  "tendermint-light-client-verifier",
  "tendermint-proto",
  "tokio",
