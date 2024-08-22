@@ -200,5 +200,5 @@ pub(crate) trait AuctionCircuitBreaker: StateWrite {
 
 impl<T: StateWrite + ?Sized> AuctionCircuitBreaker for T {}
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {}
