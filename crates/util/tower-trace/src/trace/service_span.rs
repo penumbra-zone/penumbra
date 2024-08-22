@@ -101,8 +101,6 @@ pub mod make {
         _p: PhantomData<fn(T, R)>,
     }
 
-    #[cfg(feature = "tower-layer")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "tower-layer")))]
     pub fn layer<T, R, G>(get_span: G) -> MakeLayer<T, R, G>
     where
         G: GetSpan<T> + Clone,

@@ -202,29 +202,21 @@ impl TryFrom<ProposalToml> for Proposal {
 
 /// The specific kind of a proposal.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "clap", derive(clap::Subcommand))]
 #[serde(try_from = "pb::ProposalKind", into = "pb::ProposalKind")]
 pub enum ProposalKind {
     /// A signaling proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 100))]
     Signaling,
     /// An emergency proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 200))]
     Emergency,
     /// A parameter change proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 300))]
     ParameterChange,
     /// A Community Pool spend proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 400))]
     CommunityPoolSpend,
     /// An upgrade proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 500))]
     UpgradePlan,
     /// A proposal to freeze an IBC client.
-    #[cfg_attr(feature = "clap", clap(display_order = 600))]
     FreezeIbcClient,
     /// A proposal to unfreeze an IBC client.
-    #[cfg_attr(feature = "clap", clap(display_order = 700))]
     UnfreezeIbcClient,
 }
 
