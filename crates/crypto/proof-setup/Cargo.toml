@@ -24,7 +24,7 @@ anyhow = {workspace = true}
 ark-ec = {workspace = true, default-features = false}
 ark-ff = {workspace = true, default-features = false}
 ark-groth16 = {workspace = true, default-features = false}
-ark-poly = { version = "0.4.2", default_features = false }
+ark-poly = { version = "0.4.2", default-features = false }
 ark-relations = {workspace = true}
 ark-serialize = {workspace = true}
 blake2b_simd = {workspace = true}

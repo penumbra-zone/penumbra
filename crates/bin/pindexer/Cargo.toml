@@ -17,7 +17,7 @@ cometindex = {workspace = true}
 num-bigint = { version = "0.4" }
 penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
-penumbra-app = {workspace = true, default-features = false}
+penumbra-app = {workspace = true}
 penumbra-dex = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
 penumbra-asset = {workspace = true, default-features = false}
