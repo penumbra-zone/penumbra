@@ -242,24 +242,8 @@ impl Consensus {
     }
 
     async fn commit(&mut self) -> Result<response::Commit> {
-        let storage_revision_height = self.storage.latest_snapshot().version();
-        let storage_root = self.storage.latest_snapshot().root_hash().await?;
-        println!(
-            "BEFORE commit storage height is {} and storage root is {}",
-            storage_revision_height,
-            hex::encode(storage_root.0)
-        );
-
         let app_hash = self.app.commit(self.storage.clone()).await;
         tracing::info!(?app_hash, "committed block");
-
-        let storage_revision_height = self.storage.latest_snapshot().version();
-        let storage_root = self.storage.latest_snapshot().root_hash().await?;
-        println!(
-            "AFTER commit storage height is {} and storage root is {}",
-            storage_revision_height,
-            hex::encode(storage_root.0)
-        );
 
         Ok(response::Commit {
             data: app_hash.0.to_vec().into(),

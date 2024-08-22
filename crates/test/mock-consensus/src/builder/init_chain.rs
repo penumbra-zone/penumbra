@@ -171,9 +171,9 @@ impl Builder {
             timestamp,
             ts_callback: ts_callback.unwrap_or(Box::new(default_ts_callback)),
             chain_id,
+            consensus_params_hash: sha2::Sha256::digest(hashed_params.encode_to_vec()).to_vec(),
             // No last commit for the genesis block.
             last_commit: None,
-            consensus_params_hash: sha2::Sha256::digest(hashed_params.encode_to_vec()).to_vec(),
         })
     }
 

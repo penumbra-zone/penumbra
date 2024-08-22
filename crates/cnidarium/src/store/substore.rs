@@ -229,13 +229,6 @@ impl SubstoreSnapshot {
     ) -> Result<(Option<Vec<u8>>, ics23::CommitmentProof)> {
         let version = self.version();
         let tree = jmt::Sha256Jmt::new(self);
-        let rh = tree.get_root_hash(version)?;
-        println!(
-            "HERE in SubstoreSnapshot get_with_proof, key: {}, version: {}, root hash: {}",
-            hex::encode(key.clone()),
-            version,
-            hex::encode(rh.0)
-        );
         tree.get_with_ics23_proof(key, version)
     }
 

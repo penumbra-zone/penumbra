@@ -90,17 +90,17 @@ impl TestNodeWithIBC {
                 .tap_ok(|e| tracing::info!(hash = %e.last_app_hash_hex(), "finished init chain"))?
         };
 
-        // TODO: hacky lol
-        let (_other_suffix, index) = match suffix {
-            "a" => ("b", 0),
-            "b" => ("a", 1),
+        // to select a port number just index on the suffix for now
+        let index = match suffix {
+            "a" => 0,
+            "b" => 1,
             _ => unreachable!("update this hack"),
         };
         let grpc_url = format!("http://127.0.0.1:808{}", index) // see #4517
             .parse::<url::Url>()?
             .tap(|url| tracing::debug!(%url, "parsed grpc url"));
 
-        println!("spawning gRPC...");
+        tracing::info!("spawning gRPC...");
         // Spawn the node's RPC server.
         let _rpc_server = {
             let make_svc = penumbra_app::rpc::router(
@@ -111,14 +111,14 @@ impl TestNodeWithIBC {
             .into_router()
             .layer(tower_http::cors::CorsLayer::permissive())
             .into_make_service()
-            .tap(|_| println!("initialized rpc service"));
+            .tap(|_| tracing::info!("initialized rpc service"));
             let [addr] = grpc_url
                 .socket_addrs(|| None)?
                 .try_into()
                 .expect("grpc url can be turned into a socket address");
             let server = axum_server::bind(addr).serve(make_svc);
             tokio::spawn(async { server.await.expect("grpc server returned an error") })
-                .tap(|_| println!("grpc server is running"))
+                .tap(|_| tracing::info!("grpc server is running"))
         };
 
         time::sleep(time::Duration::from_secs(1)).await;
@@ -310,11 +310,6 @@ impl TestNodeWithIBC {
                 revision_height: 0,
             }),
         };
-        println!(
-            "Created header: {} with trusted height: {}",
-            hex::encode(header.signed_header.header.app_hash.as_bytes().to_vec()),
-            header.trusted_height
-        );
         Ok(header)
     }
 }
