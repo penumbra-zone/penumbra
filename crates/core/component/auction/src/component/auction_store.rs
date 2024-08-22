@@ -54,5 +54,5 @@ pub trait AuctionStoreRead: StateRead {
 
 impl<T: StateRead + ?Sized> AuctionStoreRead for T {}
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {}
