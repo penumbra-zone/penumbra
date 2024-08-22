@@ -171,16 +171,7 @@ impl MockRelayer {
             );
             let pub_key =
                 tendermint::PublicKey::from_raw_ed25519(pk.as_bytes()).expect("pub key present");
-            // RIGHT HERE everything is correct.
-            // Creating client on penumbra-test-chain-b with height 2 and merkle root 58055...
-            // later on, though: proof root for height 3: 58055...
-            // that is not right
-            println!(
-                "Creating client on {} with height {} and merkle root {}",
-                chain_a_ibc.chain_id,
-                chain_b_ibc.get_latest_height().await?.revision_height,
-                hex::encode(chain_b_ibc.node.last_app_hash())
-            );
+
             // Create the client for chain B on chain A.
             let plan = {
                 let ibc_msg = IbcRelay::CreateClient(MsgCreateClient {
@@ -687,17 +678,9 @@ impl MockRelayer {
 
         // validate the chain b pre-tx storage root hash is what we expect:
         let pre_tx_hash = pre_tx_snapshot.root_hash().await?;
-        // assert_eq!(
-        //     hex::encode(pre_tx_hash),
-        //     "27572242ba7935d5c9acf4ee162fc1418be1f749677aecd0eb11d832bb8d8613".to_string()
-        // );
 
         // Validate the tx hash is what we expect:
         let tx_hash = sha2::Sha256::digest(&tx.encode_to_vec());
-        // assert_eq!(
-        //     hex::encode(tx_hash),
-        //     "8b741a3cfb2bcd4cf665780d3f9e18a6b954f15912591c1acc6d21de015848dc".to_string()
-        // );
 
         self.chain_a_ibc.node.block().execute().await?;
         self.chain_b_ibc.node.block().execute().await?;
@@ -852,7 +835,6 @@ async fn _build_and_send_update_client(
     chain_b_ibc: &mut TestNodeWithIBC,
 ) -> Result<Height> {
     let chain_b_height = chain_b_ibc.get_latest_height().await?;
-    println!("chain_b latest height: {:?}", chain_b_height);
     let chain_b_latest_block: penumbra_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse =
         chain_b_ibc
             .tendermint_proxy_service_client
@@ -878,11 +860,6 @@ async fn _build_and_send_update_client(
             .unwrap(),
     )?
     .latest_height;
-    println!(
-        "Telling chain a about chain b latest block: {} and trusted height: {}",
-        hex::encode(chain_b_latest_block.clone().block_id.unwrap().hash),
-        trusted_height
-    );
     let chain_b_new_height = chain_b_latest_block
         .block
         .clone()
@@ -890,36 +867,6 @@ async fn _build_and_send_update_client(
         .header
         .unwrap()
         .height;
-    // println!(
-    //     "header: {:?}",
-    //     chain_b_latest_block.block.clone().unwrap().header.unwrap()
-    // );
-    println!(
-        "chain_id {}, height {}, last_commit_hash: {}",
-        chain_b_latest_block
-            .block
-            .clone()
-            .unwrap()
-            .header
-            .unwrap()
-            .chain_id,
-        chain_b_latest_block
-            .block
-            .clone()
-            .unwrap()
-            .header
-            .unwrap()
-            .height,
-        hex::encode(
-            chain_b_latest_block
-                .block
-                .clone()
-                .unwrap()
-                .header
-                .unwrap()
-                .last_commit_hash
-        )
-    );
     let plan = {
         let ibc_msg = IbcRelay::UpdateClient(MsgUpdateClient {
             signer: chain_b_ibc.signer.clone(),
