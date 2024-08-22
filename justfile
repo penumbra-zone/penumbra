@@ -14,6 +14,10 @@ dev:
 fmt:
     cargo fmt --all
 
+# Runs 'cargo check' on all rust files in the project.
+check:
+  RUSTFLAGS="-D warnings" cargo check --release --all-targets
+
 # Render livereload environment for editing the Protocol documentation.
 protocol-docs:
     # Access local docs at http://127.0.0.1:3002

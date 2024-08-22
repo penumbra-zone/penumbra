@@ -11,16 +11,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(try_from = "pb::Vote", into = "pb::Vote")]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[cfg_attr(feature = "clap", derive(clap::Subcommand))]
 pub enum Vote {
     /// Vote to approve the proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 100))]
     Yes,
     /// Vote is to reject the proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 200))]
     No,
     /// Vote to abstain from the proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 300))]
     Abstain,
 }
 
