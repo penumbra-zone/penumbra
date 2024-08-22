@@ -1,3 +1,6 @@
+// These mock-consensus helper traits aren't consumed just yet.
+#![allow(dead_code)]
+
 use {
     async_trait::async_trait,
     futures::TryStreamExt,
