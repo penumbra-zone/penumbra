@@ -202,7 +202,7 @@ pin-project                      = { version = "1.0.12" }
 pin-project-lite                 = { version = "0.2.9" }
 poseidon377                      = { version = "1.2.0" }
 proptest                         = { version = "1" }
-proptest-derive                  = { version = "0.3" }
+proptest-derive                  = { version = "0.5" }
 prost                            = { version = "0.12.3" }
 prost-types                      = { version = "0.12" }
 r2d2                             = { version = "0.8" }
