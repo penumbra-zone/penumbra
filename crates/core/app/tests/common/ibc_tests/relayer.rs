@@ -2,12 +2,19 @@ use {
     super::TestNodeWithIBC,
     anyhow::{anyhow, Result},
     ibc_proto::ibc::core::{
+        channel::v1::{IdentifiedChannel, QueryChannelRequest, QueryConnectionChannelsRequest},
         client::v1::{QueryClientStateRequest, QueryConsensusStateRequest},
         connection::v1::QueryConnectionRequest,
     },
-    ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState,
     ibc_types::{
         core::{
+            channel::{
+                channel::{Order, State as ChannelState},
+                msgs::{
+                    MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
+                },
+                IdentifiedChannelEnd, Version as ChannelVersion,
+            },
             client::{
                 msgs::{MsgCreateClient, MsgUpdateClient},
                 Height,
@@ -18,22 +25,27 @@ use {
                     MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
                     MsgConnectionOpenTry,
                 },
-                ConnectionEnd, Counterparty, State as ConnectionState, Version,
+                ConnectionEnd, Counterparty, State as ConnectionState,
+                Version as ConnectionVersion,
             },
         },
         lightclients::tendermint::{
-            client_state::AllowUpdate, consensus_state::ConsensusState,
-            header::Header as TendermintHeader, TrustThreshold,
+            client_state::{AllowUpdate, ClientState as TendermintClientState},
+            consensus_state::ConsensusState,
+            header::Header as TendermintHeader,
+            TrustThreshold,
         },
         DomainType as _,
     },
     penumbra_ibc::{
-        component::ConnectionStateReadExt as _, IbcRelay, IBC_COMMITMENT_PREFIX, IBC_PROOF_SPECS,
+        component::{ChannelStateReadExt as _, ConnectionStateReadExt as _},
+        IbcRelay, IBC_COMMITMENT_PREFIX, IBC_PROOF_SPECS,
     },
     penumbra_proto::{util::tendermint_proxy::v1::GetBlockByHeightRequest, DomainType},
     penumbra_stake::state_key::chain,
     penumbra_transaction::{TransactionParameters, TransactionPlan},
     prost::Message as _,
+    rand_chacha::ChaCha12Core,
     sha2::Digest,
     std::time::Duration,
     tendermint::Time,
@@ -90,7 +102,64 @@ impl MockRelayer {
         )
     }
 
+    pub async fn get_channel_states(&mut self) -> Result<(ChannelState, ChannelState)> {
+        let channel_on_a_response = self
+            .chain_a_ibc
+            .ibc_channel_query_client
+            .connection_channels(QueryConnectionChannelsRequest {
+                connection: self.chain_a_ibc.connection_id.to_string(),
+                pagination: None,
+            })
+            .await?
+            .into_inner();
+        let channel_on_b_response = self
+            .chain_b_ibc
+            .ibc_channel_query_client
+            .connection_channels(QueryConnectionChannelsRequest {
+                connection: self.chain_b_ibc.connection_id.to_string(),
+                pagination: None,
+            })
+            .await?
+            .into_inner();
+
+        let channels_a = channel_on_a_response.channels;
+        let channels_b = channel_on_b_response.channels;
+
+        // Note: Mock relayer expects only a single channel per connection right now
+        let channel_a_state = match channels_a.len() {
+            0 => ChannelState::Uninitialized,
+            _ => {
+                let channel_a: IdentifiedChannelEnd = channels_a[0].clone().try_into().unwrap();
+                channel_a.channel_end.state.try_into()?
+            }
+        };
+        let channel_b_state = match channels_b.len() {
+            0 => ChannelState::Uninitialized,
+            _ => {
+                let channel_b: IdentifiedChannelEnd = channels_b[0].clone().try_into().unwrap();
+                channel_b.channel_end.state.try_into()?
+            }
+        };
+
+        Ok((channel_a_state, channel_b_state))
+    }
+
+    /// Performs a connection handshake followed by a channel handshake
+    /// between the two chains owned by the mock relayer.
     pub async fn _handshake(&mut self) -> Result<(), anyhow::Error> {
+        // Perform connection handshake
+        self._connection_handshake().await?;
+
+        // Perform channel handshake
+        self._channel_handshake().await?;
+
+        // The two chains should now be able to perform IBC transfers
+        // between each other.
+        Ok(())
+    }
+
+    /// Establish a connection between the two chains owned by the mock relayer.
+    pub async fn _connection_handshake(&mut self) -> Result<(), anyhow::Error> {
         // The IBC connection handshake has four steps (Init, Try, Ack, Confirm).
         // https://github.com/penumbra-zone/hermes/blob/a34a11fec76de3b573b539c237927e79cb74ec00/crates/relayer/src/connection.rs#L672
         // https://github.com/cosmos/ibc/blob/main/spec/core/ics-003-connection-semantics/README.md#opening-handshake
@@ -104,7 +173,7 @@ impl MockRelayer {
 
         // 1: send the Init message to chain A
         {
-            tracing::info!("Send Init to chain A");
+            tracing::info!("Send Connection Init to chain A");
             self._build_and_send_connection_open_init().await?;
         }
 
@@ -115,7 +184,7 @@ impl MockRelayer {
 
         // 2. send the OpenTry message to chain B
         {
-            tracing::info!("send OpenTry to chain B");
+            tracing::info!("send Connection OpenTry to chain B");
             self._build_and_send_connection_open_try().await?;
         }
 
@@ -126,7 +195,7 @@ impl MockRelayer {
 
         // 3. Send the OpenAck message to chain A
         {
-            tracing::info!("send OpenAck to chain A");
+            tracing::info!("send Connection OpenAck to chain A");
             self._build_and_send_connection_open_ack().await?;
         }
 
@@ -137,12 +206,71 @@ impl MockRelayer {
 
         // 4. Send the OpenConfirm message to chain B
         {
-            tracing::info!("send OpenConfirm to chain B");
+            tracing::info!("send Connection OpenConfirm to chain B");
             self._build_and_send_connection_open_confirm().await?;
         }
 
         let (a_state, b_state) = self.get_connection_states().await?;
         assert!(a_state == ConnectionState::Open && b_state == ConnectionState::Open);
+
+        // Ensure the chain timestamps remain in sync
+        self._sync_chains().await?;
+
+        Ok(())
+    }
+
+    /// Establish a channel between the two chains owned by the mock relayer.
+    pub async fn _channel_handshake(&mut self) -> Result<(), anyhow::Error> {
+        // The IBC channel handshake has four steps (Init, Try, Ack, Confirm).
+        // https://github.com/penumbra-zone/hermes/blob/a34a11fec76de3b573b539c237927e79cb74ec00/crates/relayer/src/channel.rs#L712
+        // https://github.com/cosmos/ibc/blob/main/spec/core/ics-004-channel-and-packet-semantics/README.md
+
+        self._sync_chains().await?;
+
+        let (a_state, b_state) = self.get_channel_states().await?;
+        assert!(a_state == ChannelState::Uninitialized && b_state == ChannelState::Uninitialized);
+
+        // 1: send the Init message to chain A
+        {
+            tracing::info!("Send Channel Init to chain A");
+            self._build_and_send_channel_open_init().await?;
+        }
+
+        let (a_state, b_state) = self.get_channel_states().await?;
+        assert!(a_state == ChannelState::Init && b_state == ChannelState::Uninitialized);
+
+        self._sync_chains().await?;
+
+        // 2. send the OpenTry message to chain B
+        {
+            tracing::info!("send Channel OpenTry to chain B");
+            self._build_and_send_channel_open_try().await?;
+        }
+
+        let (a_state, b_state) = self.get_channel_states().await?;
+        assert!(a_state == ChannelState::Init && b_state == ChannelState::TryOpen);
+
+        self._sync_chains().await?;
+
+        // 3. Send the OpenAck message to chain A
+        {
+            tracing::info!("send Channel OpenAck to chain A");
+            self._build_and_send_channel_open_ack().await?;
+        }
+
+        let (a_state, b_state) = self.get_channel_states().await?;
+        assert!(a_state == ChannelState::Open && b_state == ChannelState::TryOpen);
+
+        self._sync_chains().await?;
+
+        // 4. Send the OpenConfirm message to chain B
+        {
+            tracing::info!("send Channel OpenConfirm to chain B");
+            self._build_and_send_channel_open_confirm().await?;
+        }
+
+        let (a_state, b_state) = self.get_channel_states().await?;
+        assert!(a_state == ChannelState::Open && b_state == ChannelState::Open);
 
         // Ensure the chain timestamps remain in sync
         self._sync_chains().await?;
@@ -259,7 +387,7 @@ impl MockRelayer {
             let ibc_msg = IbcRelay::ConnectionOpenInit(MsgConnectionOpenInit {
                 client_id_on_a: chain_a_ibc.client_id.clone(),
                 counterparty: chain_a_ibc.counterparty.clone(),
-                version: Some(chain_a_ibc.version.clone()),
+                version: Some(chain_a_ibc.connection_version.clone()),
                 delay_period: Duration::from_secs(1),
                 signer: chain_b_ibc.signer.clone(),
             })
@@ -313,6 +441,217 @@ impl MockRelayer {
             assert_eq!(connection.state.clone(), ConnectionState::Init);
 
             chain_a_ibc.connection = Some(connection.clone());
+        }
+
+        Ok(())
+    }
+
+    // helper function to build ChannelOpenTry to chain B
+    pub async fn _build_and_send_channel_open_try(&mut self) -> Result<()> {
+        // This is a load-bearing block execution that should be removed
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        self._sync_chains().await?;
+
+        let src_connection = self
+            .chain_a_ibc
+            .ibc_connection_query_client
+            .connection(QueryConnectionRequest {
+                connection_id: self.chain_a_ibc.connection_id.to_string(),
+            })
+            .await?
+            .into_inner();
+
+        let chain_b_height = self._build_and_send_update_client_a().await?;
+        let chain_a_height = self._build_and_send_update_client_b().await?;
+
+        let chan_end_on_a_response = self
+            .chain_a_ibc
+            .ibc_channel_query_client
+            .channel(QueryChannelRequest {
+                port_id: self.chain_a_ibc.port_id.to_string(),
+                channel_id: self.chain_a_ibc.channel_id.to_string(),
+            })
+            .await?
+            .into_inner();
+
+        let proof_chan_end_on_a =
+            MerkleProof::decode(chan_end_on_a_response.clone().proof.as_slice())?;
+
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        self._sync_chains().await?;
+
+        let proof_height_on_a: Height = chan_end_on_a_response
+            .proof_height
+            .clone()
+            .unwrap()
+            .try_into()?;
+
+        self._build_and_send_update_client_b().await?;
+        self._sync_chains().await?;
+
+        let plan = {
+            // This mocks the relayer constructing a channel open try message on behalf
+            // of the counterparty chain.
+            #[allow(deprecated)]
+            let ibc_msg = IbcRelay::ChannelOpenTry(MsgChannelOpenTry {
+                signer: self.chain_a_ibc.signer.clone(),
+                port_id_on_b: self.chain_b_ibc.port_id.clone(),
+                connection_hops_on_b: vec![self.chain_b_ibc.connection_id.clone()],
+                port_id_on_a: self.chain_a_ibc.port_id.clone(),
+                chan_id_on_a: self.chain_a_ibc.channel_id.clone(),
+                version_supported_on_a: self.chain_a_ibc.channel_version.clone(),
+                proof_chan_end_on_a,
+                proof_height_on_a,
+                // Ordering must be Unordered for ics20 transfer
+                ordering: Order::Unordered,
+                // Deprecated
+                previous_channel_id: self.chain_a_ibc.channel_id.to_string(),
+                // Deprecated: Only ics20 version is supported
+                version_proposal: ChannelVersion::new("ics20-1".to_string()),
+            })
+            .into();
+            TransactionPlan {
+                actions: vec![ibc_msg],
+                // Now fill out the remaining parts of the transaction needed for verification:
+                memo: None,
+                detection_data: None, // We'll set this automatically below
+                transaction_parameters: TransactionParameters {
+                    chain_id: self.chain_b_ibc.chain_id.clone(),
+                    ..Default::default()
+                },
+            }
+        };
+        let tx = self
+            .chain_b_ibc
+            .client()
+            .await?
+            .witness_auth_build(&plan)
+            .await?;
+
+        // Execute the transaction, applying it to the chain state.
+        let pre_tx_snapshot = self.chain_b_ibc.storage.latest_snapshot();
+
+        // validate the chain b pre-tx storage root hash is what we expect:
+        let pre_tx_hash = pre_tx_snapshot.root_hash().await?;
+
+        // Validate the tx hash is what we expect:
+        let tx_hash = sha2::Sha256::digest(&tx.encode_to_vec());
+
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+
+        // execute the transaction containing the opentry message
+        self.chain_b_ibc
+            .node
+            .block()
+            .with_data(vec![tx.encode_to_vec()])
+            .execute()
+            .await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        let post_tx_snapshot = self.chain_b_ibc.storage.latest_snapshot();
+
+        // validate the channel state is now "tryopen"
+        {
+            // Channel should not exist pre-commit
+            assert!(pre_tx_snapshot
+                .get_channel(&self.chain_b_ibc.channel_id, &self.chain_b_ibc.port_id)
+                .await?
+                .is_none(),);
+
+            // Post-commit, the connection should be in the "tryopen" state.
+            let channel = post_tx_snapshot
+                .get_channel(&self.chain_b_ibc.channel_id, &self.chain_b_ibc.port_id)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "no channel with the specified ID {} exists",
+                        &self.chain_b_ibc.channel_id
+                    )
+                })?;
+
+            assert_eq!(channel.state, ChannelState::TryOpen);
+
+            self.chain_b_ibc.channel = Some(channel);
+        }
+
+        self._sync_chains().await?;
+
+        Ok(())
+    }
+
+    // helper function to build ChannelOpenInit to chain A
+    pub async fn _build_and_send_channel_open_init(&mut self) -> Result<()> {
+        self._sync_chains().await?;
+        let chain_a_ibc = &mut self.chain_a_ibc;
+        let chain_b_ibc = &mut self.chain_b_ibc;
+
+        let plan = {
+            let ibc_msg = IbcRelay::ChannelOpenInit(MsgChannelOpenInit {
+                signer: chain_b_ibc.signer.clone(),
+                port_id_on_a: chain_a_ibc.port_id.clone(),
+                connection_hops_on_a: vec![chain_b_ibc
+                    .counterparty
+                    .connection_id
+                    .clone()
+                    .expect("connection established")],
+                port_id_on_b: chain_b_ibc.port_id.clone(),
+                // ORdering must be unordered for Ics20 transfer
+                ordering: Order::Unordered,
+                // Only ics20 version is supported
+                version_proposal: ChannelVersion::new("ics20-1".to_string()),
+            })
+            .into();
+            TransactionPlan {
+                actions: vec![ibc_msg],
+                // Now fill out the remaining parts of the transaction needed for verification:
+                memo: None,
+                detection_data: None, // We'll set this automatically below
+                transaction_parameters: TransactionParameters {
+                    chain_id: chain_a_ibc.chain_id.clone(),
+                    ..Default::default()
+                },
+            }
+        };
+        let tx = chain_a_ibc
+            .client()
+            .await?
+            .witness_auth_build(&plan)
+            .await?;
+
+        // Execute the transaction, applying it to the chain state.
+        let pre_tx_snapshot = chain_a_ibc.storage.latest_snapshot();
+        chain_a_ibc
+            .node
+            .block()
+            .with_data(vec![tx.encode_to_vec()])
+            .execute()
+            .await?;
+        let post_tx_snapshot = chain_a_ibc.storage.latest_snapshot();
+
+        // validate the connection state is now "init"
+        {
+            // Channel should not exist pre-commit
+            assert!(pre_tx_snapshot
+                .get_channel(&chain_a_ibc.channel_id, &chain_a_ibc.port_id)
+                .await?
+                .is_none(),);
+
+            // Post-commit, the channel should be in the "init" state.
+            let channel = post_tx_snapshot
+                .get_channel(&chain_a_ibc.channel_id, &chain_a_ibc.port_id)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "no channel with the specified ID {} exists",
+                        &chain_a_ibc.channel_id
+                    )
+                })?;
+
+            assert_eq!(channel.state.clone(), ChannelState::Init);
+
+            chain_a_ibc.channel = Some(channel.clone());
         }
 
         Ok(())
@@ -376,6 +715,120 @@ impl MockRelayer {
         let chain_b_ibc = &mut self.chain_b_ibc;
 
         _build_and_send_update_client(chain_a_ibc, chain_b_ibc).await
+    }
+
+    // Send an ACK message to chain A
+    pub async fn _build_and_send_channel_open_ack(&mut self) -> Result<()> {
+        // This is a load-bearing block execution that should be removed
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        self._sync_chains().await?;
+
+        let chain_b_connection_id = self.chain_b_ibc.connection_id.clone();
+        let chain_a_connection_id = self.chain_a_ibc.connection_id.clone();
+
+        // Build message(s) for updating client on source
+        let src_client_height = self._build_and_send_update_client_a().await?;
+        // Build message(s) for updating client on destination
+        let dst_client_height = self._build_and_send_update_client_b().await?;
+
+        let chan_end_on_b_response = self
+            .chain_b_ibc
+            .ibc_channel_query_client
+            .channel(QueryChannelRequest {
+                port_id: self.chain_b_ibc.port_id.to_string(),
+                channel_id: self.chain_b_ibc.channel_id.to_string(),
+            })
+            .await?
+            .into_inner();
+
+        let proof_height_on_b = chan_end_on_b_response
+            .clone()
+            .proof_height
+            .expect("proof height should be present")
+            .try_into()?;
+        let proof_chan_end_on_b =
+            MerkleProof::decode(chan_end_on_b_response.clone().proof.as_slice())?;
+
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        self._build_and_send_update_client_a().await?;
+        self._sync_chains().await?;
+
+        let plan = {
+            // This mocks the relayer constructing a channel open try message on behalf
+            // of the counterparty chain.
+            let ibc_msg = IbcRelay::ChannelOpenAck(MsgChannelOpenAck {
+                port_id_on_a: self.chain_a_ibc.port_id.clone(),
+                chan_id_on_a: self.chain_a_ibc.channel_id.clone(),
+                chan_id_on_b: self.chain_b_ibc.channel_id.clone(),
+                version_on_b: self.chain_b_ibc.channel_version.clone(),
+                proof_chan_end_on_b,
+                proof_height_on_b,
+                signer: self.chain_b_ibc.signer.clone(),
+            })
+            .into();
+            // let ibc_msg = IbcRelay::ChannelOpenAck(MsgChannelOpenAck::try_from(proto_ack)?).into();
+            TransactionPlan {
+                actions: vec![ibc_msg],
+                // Now fill out the remaining parts of the transaction needed for verification:
+                memo: None,
+                detection_data: None, // We'll set this automatically below
+                transaction_parameters: TransactionParameters {
+                    chain_id: self.chain_a_ibc.chain_id.clone(),
+                    ..Default::default()
+                },
+            }
+        };
+        let tx = self
+            .chain_a_ibc
+            .client()
+            .await?
+            .witness_auth_build(&plan)
+            .await?;
+
+        // Execute the transaction, applying it to the chain state.
+        let pre_tx_snapshot = self.chain_a_ibc.storage.latest_snapshot();
+        self.chain_a_ibc
+            .node
+            .block()
+            .with_data(vec![tx.encode_to_vec()])
+            .execute()
+            .await?;
+        let post_tx_snapshot = self.chain_a_ibc.storage.latest_snapshot();
+
+        // validate the channel state is now "OPEN"
+        {
+            // Channel should be in INIT pre-commit
+            let channel = pre_tx_snapshot
+                .get_channel(&self.chain_a_ibc.channel_id, &self.chain_a_ibc.port_id)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "no channel with the specified ID {} exists",
+                        &self.chain_a_ibc.channel_id
+                    )
+                })?;
+
+            assert_eq!(channel.state, ChannelState::Init);
+
+            // Post-commit, the channel should be in the "OPEN" state.
+            let channel = post_tx_snapshot
+                .get_channel(&self.chain_a_ibc.channel_id, &self.chain_a_ibc.port_id)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "no channelwith the specified ID {} exists",
+                        &self.chain_a_ibc.channel_id
+                    )
+                })?;
+
+            assert_eq!(channel.state, ChannelState::Open);
+
+            self.chain_a_ibc.channel = Some(channel);
+        }
+
+        Ok(())
     }
 
     // Send an ACK message to chain A
@@ -445,7 +898,7 @@ impl MockRelayer {
             let proto_ack = ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck {
                 connection_id: self.chain_a_ibc.connection_id.to_string(),
                 counterparty_connection_id: chain_b_connection_id.to_string(),
-                version: Some(Version::default().into()),
+                version: Some(ConnectionVersion::default().into()),
                 client_state: Some(
                     client_state_of_a_on_b_response
                         .clone()
@@ -643,7 +1096,7 @@ impl MockRelayer {
                 client_state_of_b_on_a: client_state_of_b_on_a_response
                     .client_state
                     .expect("client state present"),
-                versions_on_a: vec![Version::default()],
+                versions_on_a: vec![ConnectionVersion::default()],
                 proof_conn_end_on_a,
                 proof_client_state_of_b_on_a,
                 proof_consensus_state_of_b_on_a,
@@ -823,6 +1276,106 @@ impl MockRelayer {
             assert_eq!(connection.state, ConnectionState::Open);
 
             self.chain_b_ibc.connection = Some(connection);
+        }
+
+        Ok(())
+    }
+
+    // sends a ChannelOpenConfirm message to chain B
+    // at this point, chain A is in OPEN and B is in TRYOPEN.
+    // afterwards, chain A will be in OPEN and chain B will be in OPEN.
+    pub async fn _build_and_send_channel_open_confirm(&mut self) -> Result<()> {
+        // This is a load-bearing block execution that should be removed
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        self._sync_chains().await?;
+
+        // https://github.com/penumbra-zone/hermes/blob/a34a11fec76de3b573b539c237927e79cb74ec00/crates/relayer/src/connection.rs#L1296
+        let chan_end_on_a_response = self
+            .chain_a_ibc
+            .ibc_channel_query_client
+            .channel(QueryChannelRequest {
+                port_id: self.chain_a_ibc.port_id.to_string(),
+                channel_id: self.chain_a_ibc.channel_id.to_string(),
+            })
+            .await?
+            .into_inner();
+
+        let dst_client_target_height = self._build_and_send_update_client_b().await?;
+
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        self._build_and_send_update_client_b().await?;
+        self._sync_chains().await?;
+
+        let plan = {
+            // This mocks the relayer constructing a channel open confirm message on behalf
+            // of the counterparty chain.
+            let ibc_msg = IbcRelay::ChannelOpenConfirm(MsgChannelOpenConfirm {
+                proof_height_on_a: chan_end_on_a_response.proof_height.unwrap().try_into()?,
+                signer: self.chain_a_ibc.signer.clone(),
+                port_id_on_b: self.chain_b_ibc.port_id.clone(),
+                chan_id_on_b: self.chain_b_ibc.channel_id.clone(),
+                proof_chan_end_on_a: MerkleProof::decode(chan_end_on_a_response.proof.as_slice())?,
+            })
+            .into();
+            TransactionPlan {
+                actions: vec![ibc_msg],
+                // Now fill out the remaining parts of the transaction needed for verification:
+                memo: None,
+                detection_data: None, // We'll set this automatically below
+                transaction_parameters: TransactionParameters {
+                    chain_id: self.chain_b_ibc.chain_id.clone(),
+                    ..Default::default()
+                },
+            }
+        };
+        let tx = self
+            .chain_b_ibc
+            .client()
+            .await?
+            .witness_auth_build(&plan)
+            .await?;
+
+        // Execute the transaction, applying it to the chain state.
+        let pre_tx_snapshot = self.chain_b_ibc.storage.latest_snapshot();
+        self.chain_b_ibc
+            .node
+            .block()
+            .with_data(vec![tx.encode_to_vec()])
+            .execute()
+            .await?;
+        let post_tx_snapshot = self.chain_b_ibc.storage.latest_snapshot();
+
+        // validate the channel state is now "open"
+        {
+            // Channel should be in TRYOPEN pre-commit
+            let channel = pre_tx_snapshot
+                .get_channel(&self.chain_b_ibc.channel_id, &self.chain_b_ibc.port_id)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "no channel with the specified ID {} exists",
+                        &self.chain_b_ibc.channel_id
+                    )
+                })?;
+
+            assert_eq!(channel.state, ChannelState::TryOpen);
+
+            // Post-commit, the channel should be in the "OPEN" state.
+            let channel = post_tx_snapshot
+                .get_channel(&self.chain_b_ibc.channel_id, &self.chain_b_ibc.port_id)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "no channel with the specified ID {} exists",
+                        &self.chain_b_ibc.channel_id
+                    )
+                })?;
+
+            assert_eq!(channel.state, ChannelState::Open);
+
+            self.chain_b_ibc.channel = Some(channel);
         }
 
         Ok(())

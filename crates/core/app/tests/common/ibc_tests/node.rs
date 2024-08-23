@@ -10,8 +10,11 @@ use {
     },
     ibc_types::{
         core::{
+            channel::{ChannelEnd, ChannelId, PortId, Version as ChannelVersion},
             client::{ClientId, ClientType, Height},
-            connection::{ChainId, ConnectionEnd, ConnectionId, Counterparty, Version},
+            connection::{
+                ChainId, ConnectionEnd, ConnectionId, Counterparty, Version as ConnectionVersion,
+            },
         },
         lightclients::tendermint::{
             consensus_state::ConsensusState, header::Header as TendermintHeader,
@@ -46,17 +49,21 @@ use {
 #[allow(unused)]
 pub struct TestNodeWithIBC {
     pub connection_id: ConnectionId,
+    pub channel_id: ChannelId,
     pub client_id: ClientId,
+    pub port_id: PortId,
     pub chain_id: String,
     pub counterparty: Counterparty,
-    pub version: Version,
+    pub connection_version: ConnectionVersion,
+    pub channel_version: ChannelVersion,
     pub signer: String,
     pub connection: Option<ConnectionEnd>,
+    pub channel: Option<ChannelEnd>,
     pub node: TestNode<Actor<ConsensusRequest, ConsensusResponse, Box<dyn Error + Send + Sync>>>,
     pub storage: TempStorage,
     pub ibc_client_query_client: IbcClientQueryClient<Channel>,
     pub ibc_connection_query_client: IbcConnectionQueryClient<Channel>,
-    pub _ibc_channel_query_client: IbcChannelQueryClient<Channel>,
+    pub ibc_channel_query_client: IbcChannelQueryClient<Channel>,
     pub tendermint_proxy_service_client: TendermintProxyServiceClient<Channel>,
 }
 
@@ -149,6 +156,10 @@ impl TestNodeWithIBC {
         Ok(Self {
             // the test relayer supports only a single connection on each chain as of now
             connection_id: ConnectionId::new(0),
+            // the test relayer supports only a single channel per connection on each chain as of now
+            channel_id: ChannelId::new(0),
+            // Only ICS20 transfers are supported
+            port_id: PortId::transfer(),
             node,
             storage,
             client_id: ClientId::new(ClientType::new("07-tendermint".to_string()), 0)?,
@@ -158,11 +169,13 @@ impl TestNodeWithIBC {
                 connection_id: None,
                 prefix: IBC_COMMITMENT_PREFIX.to_owned(),
             },
-            version: Version::default(),
+            connection_version: ConnectionVersion::default(),
+            channel_version: ChannelVersion::new("ics20-1".to_string()),
             signer: hex::encode_upper(proposer_address),
             connection: None,
+            channel: None,
             ibc_connection_query_client,
-            _ibc_channel_query_client: ibc_channel_query_client,
+            ibc_channel_query_client,
             ibc_client_query_client,
             tendermint_proxy_service_client,
         })

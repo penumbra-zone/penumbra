@@ -69,7 +69,7 @@ async fn ibc_handshake() -> anyhow::Result<()> {
         chain_b_ibc,
     };
 
-    // Perform the IBC connection handshake between the two chains.
+    // Perform the IBC connection and channel handshakes between the two chains.
     // TODO: some testing of failure cases of the handshake process would be good
     relayer.handshake().await?;
 
