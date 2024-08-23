@@ -96,7 +96,9 @@ impl TestNodeWithIBC {
             "b" => 1,
             _ => unreachable!("update this hack"),
         };
-        let grpc_url = format!("http://127.0.0.1:808{}", index) // see #4517
+        // We use a non-standard port range, to avoid conflicting with other
+        // integration tests that bind to the more typical 8080/8081 ports.
+        let grpc_url = format!("http://127.0.0.1:999{}", index) // see #4517
             .parse::<url::Url>()?
             .tap(|url| tracing::debug!(%url, "parsed grpc url"));
 
