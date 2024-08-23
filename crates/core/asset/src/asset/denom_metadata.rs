@@ -345,6 +345,10 @@ impl Metadata {
         self.starts_with("auctionnft_")
     }
 
+    pub fn is_withdrawn_auction_nft(&self) -> bool {
+        self.starts_with("auctionnft_2")
+    }
+
     pub fn is_opened_position_nft(&self) -> bool {
         let prefix = "lpnft_opened_".to_string();
 
