@@ -22,6 +22,7 @@ else
         --unbonding-delay 50 \
         --epoch-duration 50 \
         --proposal-voting-blocks 50 \
+        --gas-price-simple 500 \
         --timeout-commit 1s
     # opt in to cometbft abci indexing to postgres
     postgresql_db_url="postgresql://penumbra:penumbra@localhost:5432/penumbra_cometbft?sslmode=disable"
