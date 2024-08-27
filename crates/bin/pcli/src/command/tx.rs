@@ -1177,9 +1177,9 @@ impl TxCmd {
                         .set_gas_prices(gas_prices)
                         .set_fee_tier((*fee_tier).into());
 
-                    for position_id in positions_to_close_now {
+                    for (id, _) in positions_to_close_now {
                         // Close the position
-                        planner.position_close(*position_id);
+                        planner.position_close(*id);
                     }
 
                     let final_plan = planner
@@ -1229,13 +1229,13 @@ impl TxCmd {
                         .set_gas_prices(gas_prices)
                         .set_fee_tier((*fee_tier).into());
 
-                    for position_id in positions_to_withdraw_now {
+                    for (id, _) in positions_to_withdraw_now {
                         // Withdraw the position
 
                         // Fetch the information regarding the position from the view service.
                         let position = client
                             .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                                position_id: Some((*position_id).into()),
+                                position_id: Some((*id).into()),
                             })
                             .await?
                             .into_inner();
@@ -1254,7 +1254,7 @@ impl TxCmd {
                             .pair
                             .expect("missing trading function pair");
                         planner.position_withdraw(
-                            *position_id,
+                            *id,
                             reserves.try_into().expect("invalid reserves"),
                             pair.try_into().expect("invalid pair"),
                         );

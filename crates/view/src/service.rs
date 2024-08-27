@@ -1725,16 +1725,17 @@ impl ViewService for ViewServer {
             .map_err(|e: anyhow::Error| e.context("could not decode trading pair"))
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
-        let ids = self
+        let positions = self
             .storage
-            .owned_position_ids(position_state, trading_pair)
+            .owned_positions(position_state, trading_pair)
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error getting position ids: {e}")))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error getting positions: {e}")))?;
 
         let stream = try_stream! {
-            for id in ids {
+            for (id, position) in positions {
                 yield pb::OwnedPositionIdsResponse{
                     position_id: Some(id.into()),
+                    position: Some(position.into())
                 }
             }
         };

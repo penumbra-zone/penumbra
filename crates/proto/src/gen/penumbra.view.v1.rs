@@ -1529,6 +1529,10 @@ pub struct OwnedPositionIdsResponse {
     pub position_id: ::core::option::Option<
         super::super::core::component::dex::v1::PositionId,
     >,
+    #[prost(message, optional, tag = "2")]
+    pub position: ::core::option::Option<
+        super::super::core::component::dex::v1::Position,
+    >,
 }
 impl ::prost::Name for OwnedPositionIdsResponse {
     const NAME: &'static str = "OwnedPositionIdsResponse";

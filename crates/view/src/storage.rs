@@ -21,6 +21,7 @@ use url::Url;
 
 use penumbra_app::params::AppParameters;
 use penumbra_asset::{asset, asset::Id, asset::Metadata, Value};
+use penumbra_dex::lp::{BareTradingFunction, TradingFunction};
 use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
@@ -1097,7 +1098,7 @@ impl Storage {
 
             tx.commit()?;
             Ok::<(), anyhow::Error>(())
-            })
+        })
             .await??;
 
         Ok(())
@@ -1679,11 +1680,11 @@ impl Storage {
         Ok(())
     }
 
-    pub async fn owned_position_ids(
+    pub async fn owned_positions(
         &self,
         position_state: Option<State>,
         trading_pair: Option<TradingPair>,
-    ) -> anyhow::Result<Vec<position::Id>> {
+    ) -> anyhow::Result<Vec<(position::Id, Position)>> {
         let pool = self.pool.clone();
 
         let state_clause = match position_state {
@@ -1714,8 +1715,29 @@ impl Storage {
             pool.get()?
                 .prepare_cached(&q)?
                 .query_and_then([], |row| {
-                    let position_id: Vec<u8> = row.get("position_id")?;
-                    Ok(position::Id(position_id.as_slice().try_into()?))
+                    let position_id_bytes: Vec<u8> = row.get("position_id")?;
+                    let id = position::Id(position_id_bytes.as_slice().try_into()?);
+
+                    let position_state_str: String = row.get("position_state")?;
+                    let trading_pair_str: String = row.get("trading_pair")?;
+
+                    // TODO: DB currently does not save full position. Hence, default backups are used below.
+                    //       We should save the full position in the db to be able to provide the full correct data.
+                    let position = Position {
+                        state: State::from_str(&position_state_str)?,
+                        phi: TradingFunction {
+                            component: BareTradingFunction {
+                                fee: 0,
+                                p: Default::default(),
+                                q: Default::default(),
+                            },
+                            pair: TradingPair::from_str(&trading_pair_str)?,
+                        },
+                        reserves: Default::default(),
+                        nonce: [0u8; 32],
+                        close_on_fill: false,
+                    };
+                    Ok((id, position))
                 })?
                 .collect()
         })

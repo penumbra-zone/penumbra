@@ -689,6 +689,7 @@ message OwnedPositionIdsRequest {
 
 message OwnedPositionIdsResponse {
   core.component.dex.v1.PositionId position_id = 1;
+  core.component.dex.v1.Position position = 2;
 }
 
 // Requests information on an asset by asset id

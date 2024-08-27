@@ -185,7 +185,7 @@ pub trait ViewClient {
         &mut self,
         position_state: Option<position::State>,
         trading_pair: Option<TradingPair>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<position::Id>>> + Send + 'static>>;
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<(position::Id, Position)>>> + Send + 'static>>;
 
     /// Generates a full perspective for a selected transaction using a full viewing key
     fn transaction_info_by_hash(
@@ -697,7 +697,7 @@ where
         &mut self,
         position_state: Option<position::State>,
         trading_pair: Option<TradingPair>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<position::Id>>> + Send + 'static>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<(position::Id, Position)>>> + Send + 'static>> {
         // should the return be streamed here? none of the other viewclient responses are, probably fine for now
         // but might be an issue eventually
         let mut self2 = self.clone();
@@ -717,11 +717,15 @@ where
             let position_ids = pb_position_ids
                 .into_iter()
                 .map(|p| {
-                    position::Id::try_from(p.position_id.ok_or_else(|| {
-                        anyhow::anyhow!("empty OwnedPositionsIdsResponse message")
-                    })?)
+                    let id = position::Id::try_from(p.position_id.ok_or_else(|| {
+                        anyhow::anyhow!("OwnedPositionsIdsResponse missing position_id")
+                    })?)?;
+                    let position = Position::try_from(p.position.ok_or_else(|| {
+                        anyhow::anyhow!("OwnedPositionsIdsResponse missing position")
+                    })?)?;
+                    Ok((id, position))
                 })
-                .collect::<anyhow::Result<Vec<position::Id>>>()?;
+                .collect::<anyhow::Result<Vec<(position::Id, Position)>>>()?;
 
             Ok(position_ids)
         }
@@ -1048,6 +1052,6 @@ where
 
             Ok(resp)
         }
-        .boxed()
+            .boxed()
     }
 }
