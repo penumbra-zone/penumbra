@@ -1,5 +1,6 @@
 pub use debug::DebugCmd;
 pub use init::InitCmd;
+pub use migrate::MigrateCmd;
 pub use query::QueryCmd;
 pub use threshold::ThresholdCmd;
 pub use tx::TxCmd;
@@ -11,6 +12,7 @@ use self::{ceremony::CeremonyCmd, tx::TxCmdWithOptions};
 mod ceremony;
 mod debug;
 mod init;
+mod migrate;
 mod query;
 mod threshold;
 mod tx;
@@ -53,18 +55,21 @@ pub enum Command {
     /// Create and broadcast a transaction.
     #[clap(display_order = 400, visible_alias = "tx")]
     Transaction(TxCmdWithOptions),
-    /// Manage a validator.
-    #[clap(subcommand, display_order = 900)]
-    Validator(ValidatorCmd),
-    /// Display information related to diagnosing problems running Penumbra
-    #[clap(subcommand, display_order = 999)]
-    Debug(DebugCmd),
-    /// Contribute to the summoning ceremony.
-    #[clap(subcommand, display_order = 990)]
-    Ceremony(CeremonyCmd),
     /// Follow the threshold signing protocol.
     #[clap(subcommand, display_order = 500)]
     Threshold(ThresholdCmd),
+    /// Migrate your balance to another wallet.
+    #[clap(subcommand, display_order = 600)]
+    Migrate(MigrateCmd),
+    /// Manage a validator.
+    #[clap(subcommand, display_order = 900)]
+    Validator(ValidatorCmd),
+    /// Contribute to the summoning ceremony.
+    #[clap(subcommand, display_order = 990)]
+    Ceremony(CeremonyCmd),
+    /// Display information related to diagnosing problems running Penumbra
+    #[clap(subcommand, display_order = 999)]
+    Debug(DebugCmd),
 }
 
 impl Command {
@@ -79,6 +84,7 @@ impl Command {
             Command::Debug(cmd) => cmd.offline(),
             Command::Ceremony(_) => false,
             Command::Threshold(cmd) => cmd.offline(),
+            Command::Migrate(_) => false,
         }
     }
 }
