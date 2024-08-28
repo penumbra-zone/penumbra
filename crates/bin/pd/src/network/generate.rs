@@ -660,8 +660,12 @@ impl TryFrom<NetworkAllocation> for shielded_pool_genesis::Allocation {
         Ok(shielded_pool_genesis::Allocation {
             raw_amount: a.amount.into(),
             raw_denom: a.denom.clone(),
-            address: Address::from_str(&a.address)
-                .context("invalid address format in genesis allocations")?,
+            address: Address::from_str(&a.address).with_context(|| {
+                format!(
+                    "invalid address format in genesis allocations: {}",
+                    &a.address
+                )
+            })?,
         })
     }
 }
