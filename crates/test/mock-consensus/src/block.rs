@@ -8,6 +8,7 @@ use {
     sha2::{Digest, Sha256},
     tap::Tap,
     tendermint::{
+        abci::Event,
         account,
         block::{self, header::Version, Block, Commit, Header, Round},
         evidence,
@@ -114,7 +115,7 @@ where
     /// included in the block. Use [`Builder::without_signatures()`] to disable producing
     /// validator signatures.
     #[instrument(level = "info", skip_all, fields(height, time))]
-    pub async fn execute(self) -> Result<(), anyhow::Error> {
+    pub async fn execute(self) -> Result<Vec<Event>, anyhow::Error> {
         // Calling `finish` finishes the previous block
         // and prepares the current block.
         let (test_node, block) = self.finish()?;
@@ -140,7 +141,8 @@ where
             let tx = tx.into();
             test_node.deliver_tx(tx).await?;
         }
-        test_node.end_block().await?;
+        // Extract the events emitted during the block.
+        let events = test_node.end_block().await?.events;
 
         // the commit call will set test_node.last_app_hash, preparing
         // for the next block to begin execution
@@ -160,7 +162,7 @@ where
         // If an `on_block` callback was set, call it now.
         test_node.on_block.as_mut().map(move |f| f(block));
 
-        Ok(())
+        Ok(events)
     }
 
     /// Consumes this builder, returning its [`TestNode`] reference and a [`Block`].
