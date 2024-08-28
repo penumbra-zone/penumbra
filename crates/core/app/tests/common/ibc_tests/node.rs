@@ -139,10 +139,27 @@ impl TestNodeWithIBC {
             .with_context(|| "could not connect to grpc server")
             .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
 
+        // // Spawn the client-side view server...
+        // let fvk = chain_b_client.fvk;
+        // let view_server = {
+        //     penumbra_view::ViewServer::load_or_initialize(
+        //         None::<&camino::Utf8Path>,
+        //         None::<&camino::Utf8Path>,
+        //         &*test_keys::FULL_VIEWING_KEY,
+        //         grpc_url,
+        //     )
+        //     .await
+        //     .map(ViewServiceServer::new)
+        //     .context("initializing view server")?
+        // };
+
         let ibc_connection_query_client = IbcConnectionQueryClient::new(channel.clone());
         let ibc_channel_query_client = IbcChannelQueryClient::new(channel.clone());
         let ibc_client_query_client = IbcClientQueryClient::new(channel.clone());
         let tendermint_proxy_service_client = TendermintProxyServiceClient::new(channel.clone());
+
+        // Create a view client, and get the test wallet's notes.
+        // let mut view_client = ViewServiceClient::new(view_server);
 
         let pk = node
             .keyring()
