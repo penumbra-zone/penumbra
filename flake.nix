@@ -81,7 +81,7 @@
               [clang openssl rocksdb];
 
             inherit system PKG_CONFIG_PATH LIBCLANG_PATH ROCKSDB_LIB_DIR;
-            cargoExtraArgs = "-p pd -p pcli -p pclientd -p pindexer";
+            cargoExtraArgs = "-p pd -p pcli -p pclientd -p pindexer -p pmonitor";
             meta = {
               description = "A fully private proof-of-stake network and decentralized exchange for the Cosmos ecosystem";
               homepage = "https://penumbra.zone";
@@ -137,6 +137,8 @@
             pclientd.program = "${penumbra}/bin/pclientd";
             pindexer.type = "app";
             pindexer.program = "${penumbra}/bin/pindexer";
+            pmonitor.type = "app";
+            pmonitor.program = "${penumbra}/bin/pmonitor";
             cometbft.type = "app";
             cometbft.program = "${cometbft}/bin/cometbft";
           };
