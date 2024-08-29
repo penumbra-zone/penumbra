@@ -3,6 +3,8 @@ use camino::Utf8PathBuf;
 use clap::{self, Parser};
 use directories::ProjectDirs;
 use std::fs;
+use std::process::Command as ProcessCommand;
+use std::str::FromStr;
 use url::Url;
 
 use penumbra_keys::FullViewingKey;
@@ -42,7 +44,7 @@ pub enum Command {
     Init {
         /// Provide JSON file with the list of full viewing keys to monitor.
         #[clap(long, display_order = 200)]
-        fvks_json: String,
+        fvks: String,
         /// Sets the URL of the gRPC endpoint used to sync the wallets.
         #[clap(
             long,
@@ -62,16 +64,24 @@ impl Opt {
         let opt = self;
         match &opt.cmd {
             Command::Reset {} => {
-                todo!("need to impl");
+                // Delete the home directory
+                fs::remove_dir_all(&opt.home)?;
+                println!(
+                    "Successfully cleaned up pmonitor directory: \"{}\"",
+                    opt.home
+                );
                 Ok(())
             }
-            Command::Init {
-                fvks_json,
-                grpc_url,
-            } => {
-                todo!();
+            Command::Init { fvks, grpc_url } => {
                 // Parse the JSON file into a list of full viewing keys
-                let fvk_list: Vec<FullViewingKey> = serde_json::from_str(fvks_json)?;
+                let fvks_str = fs::read_to_string(fvks)?;
+                // Take elements from the array and parse them into FullViewingKeys
+                let fvk_string_list: Vec<String> = serde_json::from_str(&fvks_str)?;
+
+                let fvk_list: Vec<FullViewingKey> = fvk_string_list
+                    .into_iter()
+                    .map(|fvk| FullViewingKey::from_str(&fvk))
+                    .collect::<Result<Vec<_>>>()?;
 
                 // Create the home directory if it doesn't exist
                 if !opt.home.exists() {
@@ -80,6 +90,35 @@ impl Opt {
 
                 // Now we need to make subdirectories for each of the FVKs and setup their
                 // config files with the selected GRPC URL.
+                for (index, fvk) in fvk_list.iter().enumerate() {
+                    let wallet_dir = opt.home.join(format!("wallet_{}", index));
+
+                    if !wallet_dir.exists() {
+                        fs::create_dir_all(&wallet_dir)?;
+                    }
+
+                    // Invoke pcli to initialize the wallet (hacky)
+                    let output = ProcessCommand::new("cargo")
+                        .args(&["run", "--bin", "pcli", "--"])
+                        .arg("--home")
+                        .arg(wallet_dir.as_str())
+                        .arg("init")
+                        .arg("--grpc-url")
+                        .arg(grpc_url.as_str())
+                        .arg("view-only")
+                        .arg(fvk.to_string())
+                        .output()?;
+
+                    if !output.status.success() {
+                        anyhow::bail!(
+                            "Failed to initialize wallet {}: {}",
+                            index,
+                            String::from_utf8_lossy(&output.stderr)
+                        );
+                    }
+                }
+
+                println!("Successfully initialized {} wallets", fvk_list.len());
                 Ok(())
             }
             Command::Audit {} => {
