@@ -5906,6 +5906,7 @@ dependencies = [
  "camino",
  "clap",
  "directories",
+ "futures",
  "penumbra-keys",
  "serde",
  "serde_json",

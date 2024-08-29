@@ -2,9 +2,13 @@ use anyhow::Result;
 use camino::Utf8PathBuf;
 use clap::{self, Parser};
 use directories::ProjectDirs;
+use futures::future::join_all;
 use std::fs;
 use std::process::Command as ProcessCommand;
 use std::str::FromStr;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::Command as TokioCommand;
+use tokio::time::{interval, Duration};
 use url::Url;
 
 use penumbra_keys::FullViewingKey;
@@ -122,7 +126,76 @@ impl Opt {
                 Ok(())
             }
             Command::Audit {} => {
-                todo!();
+                // First, we need to sync each wallet to the latest block height.
+                let mut handles = vec![];
+                for entry in fs::read_dir(&opt.home)? {
+                    let entry = entry?;
+                    let path = entry.path();
+                    if path.is_dir() {
+                        println!("Syncing wallet: {}", path.to_str().unwrap());
+                        let handle = tokio::spawn(async move {
+                            let mut cmd = TokioCommand::new("cargo")
+                                .args(&["run", "--bin", "pcli", "--"])
+                                .arg("--home")
+                                .arg(path.to_str().unwrap())
+                                .arg("view")
+                                .arg("balance")
+                                .stdout(std::process::Stdio::piped())
+                                .stderr(std::process::Stdio::piped())
+                                .spawn()?;
+
+                            let stdout = cmd.stdout.take().expect("Failed to capture stdout");
+                            let stderr = cmd.stderr.take().expect("Failed to capture stderr");
+
+                            let mut stdout_reader = BufReader::new(stdout).lines();
+                            let mut stderr_reader = BufReader::new(stderr).lines();
+
+                            let mut interval = interval(Duration::from_secs(5));
+
+                            // We need to print output to the user so they know Things are Happening
+                            loop {
+                                tokio::select! {
+                                    _ = interval.tick() => {
+                                        println!("Still syncing wallet: {}", path.to_str().unwrap());
+                                    }
+                                    line = stdout_reader.next_line() => {
+                                        if let Ok(Some(line)) = line {
+                                            println!("Wallet {} stdout: {}", path.to_str().unwrap(), line);
+                                        }
+                                    }
+                                    line = stderr_reader.next_line() => {
+                                        if let Ok(Some(line)) = line {
+                                            eprintln!("Wallet {} stderr: {}", path.to_str().unwrap(), line);
+                                        }
+                                    }
+                                    status = cmd.wait() => {
+                                        if !status?.success() {
+                                            anyhow::bail!(
+                                                "Failed to sync wallet {}: Process exited with non-zero status",
+                                                path.to_str().unwrap()
+                                            );
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+
+                            Ok::<_, anyhow::Error>(())
+                        });
+
+                        handles.push(handle);
+                    }
+                }
+
+                // Wait for all tasks to complete
+                let results = join_all(handles).await;
+
+                // Check for any errors
+                for result in results {
+                    result??;
+                }
+
+                println!("All wallets synced successfully");
                 Ok(())
             }
         }
