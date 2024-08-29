@@ -5909,10 +5909,16 @@ name = "pmonitor"
 version = "0.80.6"
 dependencies = [
  "anyhow",
+ "camino",
  "clap",
+ "directories",
+ "penumbra-keys",
+ "serde",
  "serde_json",
  "tokio",
+ "toml 0.7.8",
  "tracing",
+ "url",
 ]
 
 [[package]]
