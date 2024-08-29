@@ -22,3 +22,4 @@ url = {workspace = true, features = ["serde"]}
 toml = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
+futures = {workspace = true}
