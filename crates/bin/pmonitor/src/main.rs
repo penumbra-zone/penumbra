@@ -13,6 +13,8 @@ use url::Url;
 
 use penumbra_keys::FullViewingKey;
 
+mod genesis;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
