@@ -15,7 +15,10 @@ anyhow = {workspace = true}
 clap = {workspace = true, features = ["derive", "env"]}
 tracing = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
+penumbra-compact-block = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = false}
 directories = {workspace = true}
 camino = {workspace = true}
 url = {workspace = true, features = ["serde"]}
