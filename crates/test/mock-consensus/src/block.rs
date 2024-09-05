@@ -6,6 +6,7 @@ use {
     crate::TestNode,
     prost::Message,
     sha2::{Digest, Sha256},
+    std::ops::Deref,
     tap::Tap,
     tendermint::{
         abci::Event,
@@ -115,7 +116,7 @@ where
     /// included in the block. Use [`Builder::without_signatures()`] to disable producing
     /// validator signatures.
     #[instrument(level = "info", skip_all, fields(height, time))]
-    pub async fn execute(self) -> Result<Vec<Event>, anyhow::Error> {
+    pub async fn execute(self) -> Result<(EndBlockEvents, DeliverTxEvents), anyhow::Error> {
         // Calling `finish` finishes the previous block
         // and prepares the current block.
         let (test_node, block) = self.finish()?;
@@ -137,12 +138,21 @@ where
 
         trace!("sending block");
         test_node.begin_block(header, last_commit_info).await?;
+        let mut deliver_tx_responses = Vec::new();
         for tx in data {
             let tx = tx.into();
-            test_node.deliver_tx(tx).await?;
+            // The caller may want to access the DeliverTx responses
+            deliver_tx_responses.push(test_node.deliver_tx(tx).await?);
         }
-        // Extract the events emitted during the block.
+
+        // The CheckTx, BeginBlock, DeliverTx, EndBlock methods include an Events field.
+        // The mock consensus code only handles EndBlock and DeliverTx events.
+        // Extract the events emitted during end_block.
         let events = test_node.end_block().await?.events;
+        let deliver_tx_events = deliver_tx_responses
+            .iter()
+            .flat_map(|response| response.events.clone())
+            .collect::<Vec<_>>();
 
         // the commit call will set test_node.last_app_hash, preparing
         // for the next block to begin execution
@@ -162,7 +172,7 @@ where
         // If an `on_block` callback was set, call it now.
         test_node.on_block.as_mut().map(move |f| f(block));
 
-        Ok(events)
+        Ok((EndBlockEvents(events), DeliverTxEvents(deliver_tx_events)))
     }
 
     /// Consumes this builder, returning its [`TestNode`] reference and a [`Block`].
@@ -337,5 +347,27 @@ impl CommitHashingExt for Commit {
                     .try_into()?,
             )),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EndBlockEvents(pub Vec<Event>);
+
+#[derive(Debug, Clone)]
+pub struct DeliverTxEvents(pub Vec<Event>);
+
+impl Deref for DeliverTxEvents {
+    type Target = Vec<Event>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Deref for EndBlockEvents {
+    type Target = Vec<Event>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

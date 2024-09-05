@@ -11,9 +11,12 @@ use {
             channel::{
                 channel::{Order, State as ChannelState},
                 msgs::{
-                    MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
+                    MsgAcknowledgement, MsgChannelOpenAck, MsgChannelOpenConfirm,
+                    MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket,
                 },
-                IdentifiedChannelEnd, Version as ChannelVersion,
+                packet::Sequence,
+                ChannelId, IdentifiedChannelEnd, Packet, PortId, TimeoutHeight,
+                Version as ChannelVersion,
             },
             client::{
                 msgs::{MsgCreateClient, MsgUpdateClient},
@@ -35,20 +38,31 @@ use {
             header::Header as TendermintHeader,
             TrustThreshold,
         },
+        timestamp::Timestamp,
         DomainType as _,
     },
+    penumbra_asset::{asset::Cache, Value},
     penumbra_ibc::{
         component::{ChannelStateReadExt as _, ConnectionStateReadExt as _},
-        IbcRelay, IBC_COMMITMENT_PREFIX, IBC_PROOF_SPECS,
+        IbcRelay, IbcToken, IBC_COMMITMENT_PREFIX, IBC_PROOF_SPECS,
     },
+    penumbra_keys::keys::AddressIndex,
+    penumbra_num::Amount,
     penumbra_proto::{util::tendermint_proxy::v1::GetBlockByHeightRequest, DomainType},
+    penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan},
     penumbra_stake::state_key::chain,
-    penumbra_transaction::{TransactionParameters, TransactionPlan},
+    penumbra_transaction::{
+        memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
+    },
     prost::Message as _,
+    rand::SeedableRng as _,
     rand_chacha::ChaCha12Core,
     sha2::Digest,
-    std::time::Duration,
-    tendermint::Time,
+    std::{
+        str::FromStr as _,
+        time::{Duration, SystemTime, UNIX_EPOCH},
+    },
+    tendermint::{abci::Event, Time},
 };
 #[allow(unused)]
 pub struct MockRelayer {
@@ -1380,6 +1394,389 @@ impl MockRelayer {
 
         Ok(())
     }
+
+    /// Sends an IBC transfer from chain A to chain B.
+    ///
+    /// Currently hardcoded to send 50% of the first note's value
+    /// on chain A.
+    pub async fn transfer_from_a_to_b(&mut self) -> Result<()> {
+        // Ensure chain A has balance to transfer
+        let chain_a_client = self.chain_a_ibc.client().await?;
+        let chain_b_client = self.chain_b_ibc.client().await?;
+
+        let chain_a_note = chain_a_client
+            .notes
+            .values()
+            .cloned()
+            .next()
+            .ok_or_else(|| anyhow!("mock client had no note"))?;
+
+        // Get the balance of that asset on chain A
+        let pretransfer_balance_a: Amount = chain_a_client
+            .spendable_notes_by_asset(chain_a_note.asset_id())
+            .map(|n| n.value().amount)
+            .sum();
+
+        // Get the balance of that asset on chain B
+        // The asset ID of the IBC transferred asset on chain B
+        // needs to be computed.
+        let asset_cache = Cache::with_known_assets();
+        let denom = asset_cache
+            .get(&chain_a_note.asset_id())
+            .expect("asset ID should exist in asset cache")
+            .clone();
+        let ibc_token = IbcToken::new(
+            &self.chain_b_ibc.channel_id,
+            &self.chain_b_ibc.port_id,
+            &denom.to_string(),
+        );
+        let pretransfer_balance_b: Amount = chain_b_client
+            .spendable_notes_by_asset(ibc_token.id())
+            .map(|n| n.value().amount)
+            .sum();
+
+        // We will transfer 50% of the `chain_a_note`'s value to the same address on chain B
+        let transfer_value = Value {
+            amount: (chain_a_note.amount().value() / 2).into(),
+            asset_id: chain_a_note.asset_id(),
+        };
+
+        // Prepare and perform the transfer from chain A to chain B
+        let destination_chain_address = chain_b_client.fvk.payment_address(AddressIndex::new(0)).0;
+        let denom = asset_cache
+            .get(&transfer_value.asset_id)
+            .expect("asset ID should exist in asset cache")
+            .clone();
+        let amount = transfer_value.amount;
+        // TODO: test timeouts
+        // For this sunny path test, we'll set the timeouts very far in the future
+        let timeout_height = Height {
+            revision_height: 1_000_000,
+            revision_number: 0,
+        };
+        // get the current time on the local machine
+        let current_time_ns = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos() as u64;
+
+        // add 2 days to current time
+        let mut timeout_time = current_time_ns + 1.728e14 as u64;
+
+        // round to the nearest 10 minutes
+        timeout_time += 600_000_000_000 - (timeout_time % 600_000_000_000);
+
+        let return_address = chain_a_client
+            .fvk
+            .ephemeral_address(
+                rand_chacha::ChaChaRng::seed_from_u64(1312),
+                AddressIndex::new(0),
+            )
+            .0;
+        let withdrawal = Ics20Withdrawal {
+            destination_chain_address: destination_chain_address.to_string(),
+            denom,
+            amount,
+            timeout_height,
+            timeout_time,
+            return_address,
+            // TODO: this is fine to hardcode for now but should ultimately move
+            // to the mock relayer and be based on the handshake
+            source_channel: ChannelId::from_str("channel-0")?,
+            // Penumbra <-> Penumbra so false
+            use_compat_address: false,
+        };
+        // There will need to be `Spend` and `Output` actions
+        // within the transaction in order for it to balance
+        let spend_plan = SpendPlan::new(
+            &mut rand_chacha::ChaChaRng::seed_from_u64(1312),
+            chain_a_note.clone(),
+            chain_a_client
+                .position(chain_a_note.commit())
+                .expect("note should be in mock client's tree"),
+        );
+        let output_plan = OutputPlan::new(
+            &mut rand_chacha::ChaChaRng::seed_from_u64(1312),
+            // half the note is being withdrawn, so we can use `transfer_value` both for the withdrawal action
+            // and the change output
+            transfer_value.clone(),
+            chain_a_client.fvk.payment_address(AddressIndex::new(0)).0,
+        );
+
+        let plan = {
+            let ics20_msg = withdrawal.into();
+            TransactionPlan {
+                actions: vec![ics20_msg, spend_plan.into(), output_plan.into()],
+                // Now fill out the remaining parts of the transaction needed for verification:
+                memo: Some(MemoPlan::new(
+                    &mut rand_chacha::ChaChaRng::seed_from_u64(1312),
+                    MemoPlaintext::blank_memo(
+                        chain_a_client.fvk.payment_address(AddressIndex::new(0)).0,
+                    ),
+                )),
+                detection_data: None, // We'll set this automatically below
+                transaction_parameters: TransactionParameters {
+                    chain_id: self.chain_a_ibc.chain_id.clone(),
+                    ..Default::default()
+                },
+            }
+            .with_populated_detection_data(
+                rand_chacha::ChaChaRng::seed_from_u64(1312),
+                Default::default(),
+            )
+        };
+        let tx = self
+            .chain_a_ibc
+            .client()
+            .await?
+            .witness_auth_build(&plan)
+            .await?;
+
+        let (_end_block_events, deliver_tx_events) = self
+            .chain_a_ibc
+            .node
+            .block()
+            .with_data(vec![tx.encode_to_vec()])
+            .execute()
+            .await?;
+        self._sync_chains().await?;
+
+        // Since multiple send_packet events can occur in a single deliver tx response,
+        // we accumulate all the events and process them in a loop.
+        let mut recv_tx_deliver_tx_events: Vec<Event> = Vec::new();
+        // Now that the withdrawal has been processed on Chain A, the relayer
+        // tells chain B to process the transfer. It does this by forwarding a
+        // MsgRecvPacket to chain B.
+        //
+        // The relayer needs to extract the event that chain A emitted:
+        for event in deliver_tx_events.iter() {
+            if event.kind == "send_packet" {
+                let mut packet_data_hex = None;
+                let mut sequence = None;
+                let mut port_on_a = None;
+                let mut chan_on_a = None;
+                let mut port_on_b = None;
+                let mut chan_on_b = None;
+                let mut timeout_height_on_b = None;
+                let mut timeout_timestamp_on_b = None;
+                for attr in &event.attributes {
+                    match attr.key.as_str() {
+                        "packet_data_hex" => packet_data_hex = Some(attr.value.clone()),
+                        "packet_sequence" => sequence = Some(attr.value.clone()),
+                        "packet_src_port" => port_on_a = Some(attr.value.clone()),
+                        "packet_src_channel" => chan_on_a = Some(attr.value.clone()),
+                        "packet_dst_port" => port_on_b = Some(attr.value.clone()),
+                        "packet_dst_channel" => chan_on_b = Some(attr.value.clone()),
+                        "packet_timeout_height" => timeout_height_on_b = Some(attr.value.clone()),
+                        "packet_timeout_timestamp" => {
+                            timeout_timestamp_on_b = Some(attr.value.clone())
+                        }
+                        _ => (),
+                    }
+                }
+
+                let port_on_a = port_on_a.expect("port_on_a attribute should be present");
+                let chan_on_a = chan_on_a.expect("chan_on_a attribute should be present");
+                let port_on_b = port_on_b.expect("port_on_b attribute should be present");
+                let chan_on_b = chan_on_b.expect("chan_on_b attribute should be present");
+                let sequence = sequence.expect("sequence attribute should be present");
+                let timeout_height_on_b =
+                    timeout_height_on_b.expect("timeout_height_on_b attribute should be present");
+                let timeout_timestamp_on_b = timeout_timestamp_on_b
+                    .expect("timeout_timestamp_on_b attribute should be present");
+                let packet_data_hex =
+                    packet_data_hex.expect("packet_data_hex attribute should be present");
+
+                // The relayer must fetch the packet commitment proof from chain A
+                // to include in the MsgRecvPacket
+                // For a real relayer this would be done with an abci request, but
+                // since we don't have a real cometbft node, we will just grab it
+                // from storage
+                let chain_a_snapshot = self.chain_a_ibc.storage.latest_snapshot();
+                let (_commitment, proof_commitment_on_a) = chain_a_snapshot.get_with_proof(format!("ibc-data/commitments/ports/{port_on_a}/channels/{chan_on_a}/sequences/{sequence}").as_bytes().to_vec()).await?;
+
+                // Now update the chains
+                let _chain_b_height = self._build_and_send_update_client_a().await?;
+                let chain_a_height = self._build_and_send_update_client_b().await?;
+
+                let proof_height = chain_a_height;
+
+                let msg_recv_packet = MsgRecvPacket {
+                    packet: Packet {
+                        sequence: Sequence::from_str(&sequence)?,
+                        port_on_a: PortId::from_str(&port_on_a)?,
+                        chan_on_a: ChannelId::from_str(&chan_on_a)?,
+                        port_on_b: PortId::from_str(&port_on_b)?,
+                        chan_on_b: ChannelId::from_str(&chan_on_b)?,
+                        data: hex::decode(packet_data_hex)?,
+                        timeout_height_on_b: TimeoutHeight::from_str(&timeout_height_on_b)?,
+                        timeout_timestamp_on_b: Timestamp::from_str(&timeout_timestamp_on_b)?,
+                    },
+                    proof_commitment_on_a,
+                    proof_height_on_a: Height {
+                        revision_height: proof_height.revision_height,
+                        revision_number: 0,
+                    },
+                    signer: self.chain_a_ibc.signer.clone(),
+                };
+
+                let plan = {
+                    let ics20_msg = penumbra_transaction::ActionPlan::IbcAction(
+                        IbcRelay::RecvPacket(msg_recv_packet),
+                    )
+                    .into();
+                    TransactionPlan {
+                        actions: vec![ics20_msg],
+                        // Now fill out the remaining parts of the transaction needed for verification:
+                        memo: None,
+                        detection_data: None, // We'll set this automatically below
+                        transaction_parameters: TransactionParameters {
+                            chain_id: self.chain_b_ibc.chain_id.clone(),
+                            ..Default::default()
+                        },
+                    }
+                };
+
+                let tx = self
+                    .chain_b_ibc
+                    .client()
+                    .await?
+                    .witness_auth_build(&plan)
+                    .await?;
+
+                let (_end_block_events, dtx_events) = self
+                    .chain_b_ibc
+                    .node
+                    .block()
+                    .with_data(vec![tx.encode_to_vec()])
+                    .execute()
+                    .await?;
+                recv_tx_deliver_tx_events.extend(dtx_events.0.into_iter());
+            }
+        }
+
+        self._sync_chains().await?;
+
+        // Now that the transfer packet has been processed by chain B,
+        // the relayer tells chain A to process the acknowledgement.
+        for event in recv_tx_deliver_tx_events.iter() {
+            if event.kind == "write_acknowledgement" {
+                let mut packet_data_hex = None;
+                let mut sequence = None;
+                let mut port_on_a = None;
+                let mut chan_on_a = None;
+                let mut port_on_b = None;
+                let mut chan_on_b = None;
+                let mut timeout_height_on_b = None;
+                let mut timeout_timestamp_on_b = None;
+                let mut packet_ack_hex = None;
+                for attr in &event.attributes {
+                    match attr.key.as_str() {
+                        "packet_data_hex" => packet_data_hex = Some(attr.value.clone()),
+                        "packet_sequence" => sequence = Some(attr.value.clone()),
+                        "packet_src_port" => port_on_a = Some(attr.value.clone()),
+                        "packet_src_channel" => chan_on_a = Some(attr.value.clone()),
+                        "packet_dst_port" => port_on_b = Some(attr.value.clone()),
+                        "packet_dst_channel" => chan_on_b = Some(attr.value.clone()),
+                        "packet_timeout_height" => timeout_height_on_b = Some(attr.value.clone()),
+                        "packet_timeout_timestamp" => {
+                            timeout_timestamp_on_b = Some(attr.value.clone())
+                        }
+                        "packet_ack_hex" => packet_ack_hex = Some(attr.value.clone()),
+                        _ => (),
+                    }
+                }
+
+                let port_on_a = port_on_a.expect("port_on_a attribute should be present");
+                let chan_on_a = chan_on_a.expect("chan_on_a attribute should be present");
+                let port_on_b = port_on_b.expect("port_on_b attribute should be present");
+                let chan_on_b = chan_on_b.expect("chan_on_b attribute should be present");
+                let sequence = sequence.expect("sequence attribute should be present");
+                let timeout_height_on_b =
+                    timeout_height_on_b.expect("timeout_height_on_b attribute should be present");
+                let timeout_timestamp_on_b = timeout_timestamp_on_b
+                    .expect("timeout_timestamp_on_b attribute should be present");
+                let packet_data_hex =
+                    packet_data_hex.expect("packet_data_hex attribute should be present");
+                let packet_ack_hex =
+                    packet_ack_hex.expect("packet_ack_hex attribute should be present");
+
+                let chain_b_snapshot = self.chain_b_ibc.storage.latest_snapshot();
+                let (_commitment, proof_acked_on_b) = chain_b_snapshot
+                    .get_with_proof(
+                        format!(
+                        "ibc-data/acks/ports/{port_on_b}/channels/{chan_on_b}/sequences/{sequence}"
+                    )
+                        .as_bytes()
+                        .to_vec(),
+                    )
+                    .await?;
+
+                // Now update the chains
+                let _chain_a_height = self._build_and_send_update_client_b().await?;
+                let chain_b_height = self._build_and_send_update_client_a().await?;
+
+                let proof_height = chain_b_height;
+
+                let msg_ack = MsgAcknowledgement {
+                    signer: self.chain_a_ibc.signer.clone(),
+                    packet: Packet {
+                        sequence: Sequence::from_str(&sequence)?,
+                        port_on_a: PortId::from_str(&port_on_a)?,
+                        chan_on_a: ChannelId::from_str(&chan_on_a)?,
+                        port_on_b: PortId::from_str(&port_on_b)?,
+                        chan_on_b: ChannelId::from_str(&chan_on_b)?,
+                        data: hex::decode(packet_data_hex)?,
+                        timeout_height_on_b: TimeoutHeight::from_str(&timeout_height_on_b)?,
+                        timeout_timestamp_on_b: Timestamp::from_str(&timeout_timestamp_on_b)?,
+                    },
+                    acknowledgement: hex::decode(packet_ack_hex)?,
+                    proof_acked_on_b,
+                    proof_height_on_b: Height {
+                        revision_height: proof_height.revision_height,
+                        revision_number: 0,
+                    },
+                };
+
+                let plan = {
+                    let ics20_msg = penumbra_transaction::ActionPlan::IbcAction(
+                        IbcRelay::Acknowledgement(msg_ack),
+                    )
+                    .into();
+                    TransactionPlan {
+                        actions: vec![ics20_msg],
+                        // Now fill out the remaining parts of the transaction needed for verification:
+                        memo: None,
+                        detection_data: None, // We'll set this automatically below
+                        transaction_parameters: TransactionParameters {
+                            chain_id: self.chain_a_ibc.chain_id.clone(),
+                            ..Default::default()
+                        },
+                    }
+                };
+
+                let tx = self
+                    .chain_a_ibc
+                    .client()
+                    .await?
+                    .witness_auth_build(&plan)
+                    .await?;
+
+                self.chain_a_ibc
+                    .node
+                    .block()
+                    .with_data(vec![tx.encode_to_vec()])
+                    .execute()
+                    .await?;
+            }
+        }
+
+        self.chain_a_ibc.node.block().execute().await?;
+        self.chain_b_ibc.node.block().execute().await?;
+        self._sync_chains().await?;
+
+        Ok(())
+    }
 }
 
 // tell chain A about chain B. returns the height of chain b on chain a after update.
@@ -1456,5 +1853,8 @@ async fn _build_and_send_update_client(
         .execute()
         .await?;
 
-    Ok(chain_b_height)
+    Ok(Height {
+        revision_height: chain_b_new_height as u64,
+        revision_number: 0,
+    })
 }

@@ -3,7 +3,10 @@ use cnidarium::StateRead;
 use penumbra_compact_block::{component::StateReadExt as _, CompactBlock, StatePayload};
 use penumbra_dex::{swap::SwapPlaintext, swap_claim::SwapClaimPlan};
 use penumbra_keys::{keys::SpendKey, FullViewingKey};
-use penumbra_sct::component::{clock::EpochRead, tree::SctRead};
+use penumbra_sct::{
+    component::{clock::EpochRead, tree::SctRead},
+    Nullifier,
+};
 use penumbra_shielded_pool::{note, Note, SpendPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
@@ -15,7 +18,11 @@ pub struct MockClient {
     latest_height: u64,
     sk: SpendKey,
     pub fvk: FullViewingKey,
+    /// All notes, whether spent or not.
     pub notes: BTreeMap<note::StateCommitment, Note>,
+    pub nullifiers: BTreeMap<note::StateCommitment, Nullifier>,
+    /// Whether a note was spent or not.
+    pub spent_notes: BTreeMap<note::StateCommitment, ()>,
     swaps: BTreeMap<tct::StateCommitment, SwapPlaintext>,
     pub sct: penumbra_tct::Tree,
 }
@@ -27,6 +34,8 @@ impl MockClient {
             fvk: sk.full_viewing_key().clone(),
             sk,
             notes: Default::default(),
+            spent_notes: Default::default(),
+            nullifiers: Default::default(),
             sct: Default::default(),
             swaps: Default::default(),
         }
@@ -103,8 +112,12 @@ impl MockClient {
                 StatePayload::Note { note: payload, .. } => {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(note) => {
-                            self.notes.insert(payload.note_commitment, note.clone());
                             self.sct.insert(Keep, payload.note_commitment)?;
+                            let nullifier = self
+                                .nullifier(payload.note_commitment)
+                                .expect("newly inserted note should be present in sct");
+                            self.notes.insert(payload.note_commitment, note.clone());
+                            self.nullifiers.insert(payload.note_commitment, nullifier);
                         }
                         None => {
                             self.sct.insert(Forget, payload.note_commitment)?;
@@ -128,8 +141,18 @@ impl MockClient {
                             let (output_1, output_2) = swap.output_notes(batch_data);
                             // Pre-insert the output notes into our notes table, so that
                             // we can notice them when we scan the block where they are claimed.
-                            self.notes.insert(output_1.commit(), output_1);
-                            self.notes.insert(output_2.commit(), output_2);
+                            // TODO: We should handle tracking the nullifiers for these notes,
+                            // however they aren't inserted into the SCT at this point.
+                            // let nullifier_1 = self
+                            //     .nullifier(output_1.commit())
+                            //     .expect("newly inserted swap should be present in sct");
+                            // let nullifier_2 = self
+                            //     .nullifier(output_2.commit())
+                            //     .expect("newly inserted swap should be present in sct");
+                            self.notes.insert(output_1.commit(), output_1.clone());
+                            // self.nullifiers.insert(output_1.commit(), nullifier_1);
+                            self.notes.insert(output_2.commit(), output_2.clone());
+                            // self.nullifiers.insert(output_2.commit(), nullifier_2);
                         }
                         None => {
                             self.sct.insert(Forget, payload.commitment)?;
@@ -147,6 +170,24 @@ impl MockClient {
                 }
             }
         }
+
+        // Mark spent nullifiers
+        for nullifier in block.nullifiers {
+            // skip if we don't know about this nullifier
+            if !self.nullifiers.values().any(move |n| *n == nullifier) {
+                continue;
+            }
+
+            self.spent_notes.insert(
+                *self
+                    .nullifiers
+                    .iter()
+                    .find_map(|(k, v)| if *v == nullifier { Some(k) } else { None })
+                    .unwrap(),
+                (),
+            );
+        }
+
         self.sct.end_block()?;
         if block.epoch_root.is_some() {
             self.sct.end_epoch()?;
@@ -171,6 +212,17 @@ impl MockClient {
 
     pub fn position(&self, commitment: note::StateCommitment) -> Option<penumbra_tct::Position> {
         self.sct.witness(commitment).map(|proof| proof.position())
+    }
+
+    pub fn nullifier(&self, commitment: note::StateCommitment) -> Option<Nullifier> {
+        let position = self.position(commitment);
+
+        if position.is_none() {
+            return None;
+        }
+        let nk = self.fvk.nullifier_key();
+
+        Some(Nullifier::derive(&nk, position.unwrap(), &commitment))
     }
 
     pub fn witness_commitment(
@@ -223,5 +275,18 @@ impl MockClient {
         self.notes
             .values()
             .filter(move |n| n.asset_id() == asset_id)
+    }
+
+    pub fn spent_note(&self, commitment: &note::StateCommitment) -> bool {
+        self.spent_notes.contains_key(commitment)
+    }
+
+    pub fn spendable_notes_by_asset(
+        &self,
+        asset_id: penumbra_asset::asset::Id,
+    ) -> impl Iterator<Item = &Note> + '_ {
+        self.notes
+            .values()
+            .filter(move |n| n.asset_id() == asset_id && !self.spent_note(&n.commit()))
     }
 }
