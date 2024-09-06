@@ -1,12 +1,24 @@
 use crate::App;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
+use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_keys::FullViewingKey;
+use penumbra_num::Amount;
 use penumbra_proto::view::v1::GasPricesRequest;
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::Planner;
 use rand_core::OsRng;
-use std::{io::Write, str::FromStr};
+use std::{collections::HashMap, io::Write};
 use termion::input::TermRead;
+
+fn read_fvk() -> Result<FullViewingKey> {
+    print!("Enter FVK: ");
+    std::io::stdout().flush()?;
+    let fvk_string: String = std::io::stdin().lock().read_line()?.unwrap_or_default();
+
+    fvk_string
+        .parse::<FullViewingKey>()
+        .map_err(|_| anyhow::anyhow!("The provided string is not a valid FullViewingKey."))
+}
 
 #[derive(Debug, clap::Parser)]
 pub enum MigrateCmd {
@@ -34,29 +46,17 @@ impl MigrateCmd {
             .expect("gas prices must be available")
             .try_into()?;
 
-        print!("Enter FVK: ");
-        std::io::stdout().flush()?;
-        let to: String = std::io::stdin().lock().read_line()?.unwrap_or_default();
-
         match self {
             MigrateCmd::Balance => {
                 let source_fvk = app.config.full_viewing_key.clone();
 
-                let dest_fvk = to.parse::<FullViewingKey>().map_err(|_| {
-                    anyhow::anyhow!("The provided string is not a valid FullViewingKey.")
-                })?;
+                let dest_fvk = read_fvk()?;
 
                 let mut planner = Planner::new(OsRng);
 
-                let (dest_address, _) = FullViewingKey::payment_address(
-                    &FullViewingKey::from_str(&to[..])?,
-                    Default::default(),
-                );
-
                 planner
                     .set_gas_prices(gas_prices)
-                    .set_fee_tier(Default::default())
-                    .change_address(dest_address);
+                    .set_fee_tier(Default::default());
 
                 // Return all unspent notes from the view service
                 let notes = app
@@ -66,12 +66,40 @@ impl MigrateCmd {
                     .unspent_notes_by_account_and_asset()
                     .await?;
 
-                for notes in notes.into_values() {
+                let mut account_values: HashMap<(u32, asset::Id), Amount> = HashMap::new();
+
+                for (account, notes) in notes {
                     for notes in notes.into_values() {
                         for note in notes {
-                            planner.spend(note.note, note.position);
+                            let position = note.position;
+                            let note = note.note;
+                            let value = note.value();
+                            planner.spend(note, position);
+                            *account_values.entry((account, value.asset_id)).or_default() +=
+                                value.amount;
                         }
                     }
+                }
+
+                // We'll use the account with the most amount of the fee token to pay fees.
+                //
+                // If this fails, then it won't be possible to migrate.
+                let (&(largest_account, _), _) = account_values
+                    .iter()
+                    .filter(|((_, asset), _)| *asset == *STAKING_TOKEN_ASSET_ID)
+                    .max_by_key(|&(_, &amount)| amount)
+                    .ok_or(anyhow!("no account with the ability to pay fees exists"))?;
+
+                // Set this account to be the change address.
+                planner.change_address(dest_fvk.payment_address(largest_account.into()).0);
+
+                // Create explicit outputs for the other addresses.
+                for (&(account, asset_id), &amount) in &account_values {
+                    if account == largest_account {
+                        continue;
+                    }
+                    let (address, _) = dest_fvk.payment_address(account.into());
+                    planner.output(Value { asset_id, amount }, address);
                 }
 
                 let memo = format!("Migrating balance from {} to {}", source_fvk, dest_fvk);
