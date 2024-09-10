@@ -141,7 +141,7 @@ impl Indexer {
         let watermark = current_watermark.unwrap_or(0);
 
         // Calculate new events count since the last watermark
-        sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM events WHERE rowid > $1")
+        sqlx::query_as::<_, (i64,)>("SELECT MAX(rowid) - $1 FROM events")
             .bind(watermark)
             .fetch_one(src_db)
             .await
