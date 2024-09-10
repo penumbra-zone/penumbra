@@ -217,16 +217,16 @@ fn read_events(
     watermark: i64,
 ) -> Pin<Box<dyn Stream<Item = Result<ContextualizedEvent>> + Send + '_>> {
     let event_stream = sqlx::query_as::<_, (i64, String, i64, Option<String>, serde_json::Value)>(
-    // This query does some shenanigans to ensure good performance.
-    // The main trick is that we know that each event has 1 block and <= 1 transaction associated
-    // with it, so we can "encourage" (force) Postgres to avoid doing a hash join and
-    // then a sort, and instead work from the events in a linear fashion.
-    // Basically, this query ends up doing:
-    //
-    // for event in events >= id:
-    //   attach attributes
-    //   attach block
-    //   attach transaction?
+        // This query does some shenanigans to ensure good performance.
+        // The main trick is that we know that each event has 1 block and <= 1 transaction associated
+        // with it, so we can "encourage" (force) Postgres to avoid doing a hash join and
+        // then a sort, and instead work from the events in a linear fashion.
+        // Basically, this query ends up doing:
+        //
+        // for event in events >= id:
+        //   attach attributes
+        //   attach block
+        //   attach transaction?
         r#"
 SELECT
     events.rowid,
