@@ -65,6 +65,9 @@ CREATE TABLE attributes (
    UNIQUE (event_id, key)
 );
 
+-- To make it efficient to fetch the attributes of a given event.
+CREATE INDEX ON attributes(event_id);
+
 -- A joined view of events and their attributes. Events that do not have any
 -- attributes are represented as a single row with empty key and value fields.
 CREATE VIEW event_attributes AS
