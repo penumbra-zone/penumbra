@@ -217,28 +217,50 @@ fn read_events(
     watermark: i64,
 ) -> Pin<Box<dyn Stream<Item = Result<ContextualizedEvent>> + Send + '_>> {
     let event_stream = sqlx::query_as::<_, (i64, String, i64, Option<String>, serde_json::Value)>(
+    // This query does some shenanigans to ensure good performance.
+    // The main trick is that we know that each event has 1 block and <= 1 transaction associated
+    // with it, so we can "encourage" (force) Postgres to avoid doing a hash join and
+    // then a sort, and instead work from the events in a linear fashion.
+    // Basically, this query ends up doing:
+    //
+    // for event in events >= id:
+    //   attach attributes
+    //   attach block
+    //   attach transaction?
         r#"
-SELECT 
-    events.rowid, 
-    events.type, 
+SELECT
+    events.rowid,
+    events.type,
     blocks.height AS block_height,
     tx_results.tx_hash,
-    jsonb_object_agg(attributes.key, attributes.value) AS attrs
-FROM 
-    events 
-LEFT JOIN 
-    attributes ON events.rowid = attributes.event_id
-JOIN 
-    blocks ON events.block_id = blocks.rowid
-LEFT JOIN 
-    tx_results ON events.tx_id = tx_results.rowid
-WHERE
-    events.rowid > $1
-GROUP BY 
-    events.rowid, 
-    events.type, 
-    blocks.height, 
-    tx_results.tx_hash
+    events.attrs
+FROM (
+    SELECT 
+        rowid, 
+        type, 
+        block_id,
+        tx_id,
+        jsonb_object_agg(attributes.key, attributes.value) AS attrs
+    FROM 
+        events 
+    LEFT JOIN
+        attributes ON rowid = attributes.event_id
+    WHERE
+        rowid > $1
+    GROUP BY 
+        rowid, 
+        type,
+        block_id, 
+        tx_id
+) events
+LEFT JOIN LATERAL (
+    SELECT * FROM blocks WHERE blocks.rowid = events.block_id LIMIT 1
+) blocks
+ON TRUE
+LEFT JOIN LATERAL (
+    SELECT * FROM tx_results WHERE tx_results.rowid = events.tx_id LIMIT 1
+) tx_results
+ON TRUE
 ORDER BY
     events.rowid ASC
         "#,
