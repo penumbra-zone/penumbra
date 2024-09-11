@@ -5,17 +5,15 @@ use std::{
 
 use penumbra_app::genesis::AppState;
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
-use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_keys::FullViewingKey;
 use penumbra_num::Amount;
-use penumbra_shielded_pool::{Note, NotePayload};
+use penumbra_shielded_pool::Note;
 use penumbra_stake::{
     rate::{BaseRateData, RateData},
     DelegationToken,
 };
 use penumbra_tct::StateCommitment;
 
-use tracing::Instrument;
 #[derive(Debug, Clone)]
 pub struct FilteredGenesisBlock {
     // Notes per FVK
@@ -28,25 +26,20 @@ pub struct FilteredGenesisBlock {
 /// initial balances of the relevant addresses.
 ///
 /// Assumption: There are no swaps or nullifiers in the genesis block.
-#[tracing::instrument(skip_all, fields(height = %height))]
-pub async fn scan_genesis_block(
+pub fn scan_genesis_block(
     genesis_app_state: AppState,
     fvks: Vec<FullViewingKey>,
-    CompactBlock {
-        height,
-        state_payloads,
-        ..
-    }: CompactBlock,
 ) -> anyhow::Result<FilteredGenesisBlock> {
-    assert_eq!(height, 0);
-
     let mut notes = BTreeMap::new();
     let mut balances = BTreeMap::new();
 
-    // Calculate the rate data for each validator in the initial validator set.
     let genesis_data = genesis_app_state
         .content()
         .expect("genesis app state should have content");
+    // We'll use the allocations from the genesis state.
+    let shielded_pool_content = &genesis_data.shielded_pool_content;
+
+    // Calculate the rate data for each validator in the initial validator set.
     let base_rate = BaseRateData {
         epoch_index: 0,
         base_reward_rate: 0u128.into(),
@@ -74,50 +67,28 @@ pub async fn scan_genesis_block(
 
     // We proceed one FVK at a time.
     for fvk in fvks {
-        // Trial-decrypt a note with our a specific viewing key
-        let trial_decrypt_note =
-            |note_payload: NotePayload| -> tokio::task::JoinHandle<Option<Note>> {
-                let fvk2 = fvk.clone();
-                tokio::spawn(
-                    async move { note_payload.trial_decrypt(&fvk2) }
-                        .instrument(tracing::Span::current()),
-                )
-            };
-
-        // Trial-decrypt the notes in this block, keeping track of the ones that were meant for the FVK
-        // we're monitoring.
-        let mut note_decryptions = Vec::new();
-
-        // We only care about notes, so we're ignoring swaps and rolled-up commitments.
-        for payload in state_payloads.iter() {
-            if let StatePayload::Note { note, .. } = payload {
-                note_decryptions.push(trial_decrypt_note((**note).clone()));
-            }
-        }
-
         let mut notes_for_this_fvk = BTreeMap::new();
-        for decryption in note_decryptions {
-            if let Some(note) = decryption
-                .await
-                .expect("able to join tokio note decryption handle")
-            {
+        for allocation in &shielded_pool_content.allocations {
+            if fvk.incoming().views_address(&allocation.address) {
+                let note =
+                    Note::from_allocation(allocation.clone()).expect("should be a valid note");
                 notes_for_this_fvk.insert(note.commit(), note.clone());
 
                 // Balance is expected to be in the staking or delegation token
-                let note_value = note.value();
-                if note_value.asset_id == *STAKING_TOKEN_ASSET_ID {
+                let allocation_value = allocation.value();
+                if allocation_value.asset_id == *STAKING_TOKEN_ASSET_ID {
                     balances
                         .entry(fvk.to_string())
-                        .and_modify(|existing_amount| *existing_amount += note.amount())
-                        .or_insert(note.amount());
+                        .and_modify(|existing_amount| *existing_amount += allocation.amount())
+                        .or_insert(allocation.amount());
                 } else if let Ok(delegation_token) =
-                    DelegationToken::from_str(&note_value.asset_id.to_string())
+                    DelegationToken::from_str(&allocation_value.asset_id.to_string())
                 {
                     // We need to convert the amount to the UM-equivalent amount
                     let rate_data = rate_data_map
                         .get(&delegation_token)
                         .expect("should be rate data for each validator");
-                    let um_equivalent_balance = rate_data.unbonded_amount(note.amount());
+                    let um_equivalent_balance = rate_data.unbonded_amount(allocation.amount());
 
                     balances
                         .entry(fvk.to_string())
@@ -126,7 +97,7 @@ pub async fn scan_genesis_block(
                 } else {
                     tracing::warn!(
                         "ignoring note with unrecognized asset id: {}",
-                        note_value.asset_id
+                        allocation_value.asset_id
                     );
                 }
             }
