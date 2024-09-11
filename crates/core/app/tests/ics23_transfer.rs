@@ -1,6 +1,10 @@
 use {
+    anyhow::anyhow,
     common::ibc_tests::{MockRelayer, TestNodeWithIBC, ValidatorKeys},
     once_cell::sync::Lazy,
+    penumbra_asset::{asset::Cache, Value},
+    penumbra_ibc::IbcToken,
+    penumbra_num::Amount,
     std::time::Duration,
     tap::Tap as _,
 };
@@ -11,9 +15,11 @@ pub static MAIN_STORE_PROOF_SPEC: Lazy<Vec<ics23::ProofSpec>> =
 
 mod common;
 
-/// Exercises that the IBC handshake succeeds.
+/// Exercises that the IBC handshake succeeds, and that
+/// funds can be sent between the two chains successfully,
+/// without any testing of error conditions.
 #[tokio::test]
-async fn ibc_handshake() -> anyhow::Result<()> {
+async fn ics20_transfer_no_timeouts() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber();
 
@@ -72,6 +78,68 @@ async fn ibc_handshake() -> anyhow::Result<()> {
     // Perform the IBC connection and channel handshakes between the two chains.
     // TODO: some testing of failure cases of the handshake process would be good
     relayer.handshake().await?;
+
+    // Grab the note that will be spent during the transfer.
+    let chain_a_client = relayer.chain_a_ibc.client().await?;
+    let chain_a_note = chain_a_client
+        .notes
+        .values()
+        .cloned()
+        .next()
+        .ok_or_else(|| anyhow!("mock client had no note"))?;
+
+    // Get the balance of that asset on chain A
+    let pretransfer_balance_a: Amount = chain_a_client
+        .spendable_notes_by_asset(chain_a_note.asset_id())
+        .map(|n| n.value().amount)
+        .sum();
+
+    // Get the balance of that asset on chain B
+    // The asset ID of the IBC transferred asset on chain B
+    // needs to be computed.
+    let asset_cache = Cache::with_known_assets();
+    let denom = asset_cache
+        .get(&chain_a_note.asset_id())
+        .expect("asset ID should exist in asset cache")
+        .clone();
+    let ibc_token = IbcToken::new(
+        &relayer.chain_b_ibc.channel_id,
+        &relayer.chain_b_ibc.port_id,
+        &denom.to_string(),
+    );
+    let chain_b_client = relayer.chain_b_ibc.client().await?;
+    let pretransfer_balance_b: Amount = chain_b_client
+        .spendable_notes_by_asset(ibc_token.id())
+        .map(|n| n.value().amount)
+        .sum();
+
+    // We will transfer 50% of the `chain_a_note`'s value to the same address on chain B
+    let transfer_value = Value {
+        amount: (chain_a_note.amount().value() / 2).into(),
+        asset_id: chain_a_note.asset_id(),
+    };
+
+    // Tell the relayer to process the transfer.
+    // TODO: currently this just transfers 50% of the first note
+    // but it'd be nice to have an API with a little more flexibility
+    relayer.transfer_from_a_to_b().await?;
+
+    // Transfer complete, validate the balances:
+    let chain_a_client = relayer.chain_a_ibc.client().await?;
+    let chain_b_client = relayer.chain_b_ibc.client().await?;
+    let posttransfer_balance_a: Amount = chain_a_client
+        .spendable_notes_by_asset(chain_a_note.asset_id())
+        .map(|n| n.value().amount)
+        .sum();
+
+    let posttransfer_balance_b: Amount = chain_b_client
+        .spendable_notes_by_asset(ibc_token.id())
+        .map(|n| n.value().amount)
+        .sum();
+
+    assert!(posttransfer_balance_a < pretransfer_balance_a);
+    assert!(posttransfer_balance_b > pretransfer_balance_b);
+    assert_eq!(posttransfer_balance_b, transfer_value.amount);
 
     Ok(()).tap(|_| drop(relayer)).tap(|_| drop(guard))
 }
