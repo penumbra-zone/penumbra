@@ -14,6 +14,7 @@ publish = false
 anyhow = {workspace = true}
 clap = {workspace = true, features = ["derive", "env"]}
 tracing = {workspace = true}
+indicatif = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-app = {workspace = true}
