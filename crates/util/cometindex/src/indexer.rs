@@ -152,6 +152,7 @@ impl Indexer {
         let mut relevant_events = 0usize;
 
         let mut es = read_events(&src_db, watermark);
+        let mut dbtx = dst_db.begin().await?;
         while let Some(event) = es.next().await.transpose()? {
             if scanned_events % 1000 == 0 {
                 tracing::info!(scanned_events, relevant_events);
@@ -179,7 +180,6 @@ impl Indexer {
             relevant_events += 1;
 
             // Otherwise we have something to process. Make a dbtx
-            let mut dbtx = dst_db.begin().await?;
             for index in indexes {
                 if index.is_relevant(&event.as_ref().kind) {
                     tracing::debug!(?event, ?index, "relevant to index");
@@ -188,8 +188,15 @@ impl Indexer {
             }
             // Mark that we got to at least this event
             update_watermark(&mut dbtx, event.local_rowid).await?;
-            dbtx.commit().await?;
+            // Only commit in batches of <= 1000 events, for about a 5x performance increase when
+            // catching up.
+            if scanned_events % 1000 == 0 {
+                dbtx.commit().await?;
+                dbtx = dst_db.begin().await?;
+            }
         }
+        // Flush out the remaining changes.
+        dbtx.commit().await?;
 
         Ok(())
     }
