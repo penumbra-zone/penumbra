@@ -5913,6 +5913,7 @@ dependencies = [
  "clap",
  "directories",
  "futures",
+ "indicatif",
  "pcli",
  "penumbra-app",
  "penumbra-asset",
