@@ -2,6 +2,7 @@ use anyhow::Result;
 use camino::Utf8PathBuf;
 use clap::{self, Parser};
 use directories::ProjectDirs;
+use futures::StreamExt;
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 use std::fs;
 use std::process::Command as ProcessCommand;
@@ -97,6 +98,42 @@ impl Opt {
         Ok(view_service)
     }
 
+    pub async fn sync(
+        &self,
+        view_service: &mut ViewServiceClient<box_grpc_svc::BoxGrpcService>,
+    ) -> Result<()> {
+        let mut status_stream = ViewClient::status_stream(view_service).await?;
+
+        let initial_status = status_stream
+            .next()
+            .await
+            .transpose()?
+            .ok_or_else(|| anyhow::anyhow!("view service did not report sync status"))?;
+
+        eprintln!(
+            "Scanning blocks from last sync height {} to latest height {}",
+            initial_status.full_sync_height, initial_status.latest_known_block_height,
+        );
+
+        use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
+        let progress_bar = ProgressBar::with_draw_target(
+            initial_status.latest_known_block_height - initial_status.full_sync_height,
+            ProgressDrawTarget::stdout(),
+        )
+        .with_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec} ETA: {eta}"),
+        );
+        progress_bar.set_position(0);
+
+        while let Some(status) = status_stream.next().await.transpose()? {
+            progress_bar.set_position(status.full_sync_height - initial_status.full_sync_height);
+        }
+        progress_bar.finish();
+
+        Ok(())
+    }
+
     pub async fn exec(&self) -> Result<()> {
         let opt = self;
         match &opt.cmd {
@@ -179,6 +216,8 @@ impl Opt {
                         let mut view_client = self
                             .view(utf8_path, config.full_viewing_key.clone(), config.grpc_url)
                             .await?;
+                        // todo: do this in parallel
+                        self.sync(&mut view_client).await?;
                         println!("Wallet synced successfully");
 
                         let notes = view_client.unspent_notes_by_asset_and_address().await?;
