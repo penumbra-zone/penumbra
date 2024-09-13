@@ -368,7 +368,7 @@ impl Event {
                     insert_swap_execution(dbtx, execution12.as_ref()).await?;
                 let (trace21_start, trace21_end) =
                     insert_swap_execution(dbtx, execution21.as_ref()).await?;
-                sqlx::query(r#"INSERT INTO dex_batch_swap VALUES ($1, $2, $3, $4, $5, $6, $7, CAST($8 AS Amount), CAST($9 AS Amount), CAST($10 AS Amount), CAST($11 AS Amount), CAST($12 AS Amount), CAST($13 AS Amount));"#)
+                sqlx::query(r#"INSERT INTO dex_batch_swap VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, CAST($8 AS Amount), CAST($9 AS Amount), CAST($10 AS Amount), CAST($11 AS Amount), CAST($12 AS Amount), CAST($13 AS Amount));"#)
                     .bind(i64::try_from(*height)?)
                     .bind(trace12_start)
                     .bind(trace12_end)
