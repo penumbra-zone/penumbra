@@ -6,10 +6,7 @@ use penumbra_governance::{
 };
 use penumbra_num::Amount;
 use penumbra_proto::{
-    core::component::{
-        governance::v1::{self as pb},
-        sct::v1 as sct_pb,
-    },
+    core::component::governance::v1::{self as pb},
     event::ProtoEvent,
 };
 use penumbra_stake::IdentityKey;
@@ -27,7 +24,6 @@ const EVENT_PROPOSAL_FAILED: &str = "penumbra.core.component.governance.v1.Event
 const EVENT_PROPOSAL_SLASHED: &str = "penumbra.core.component.governance.v1.EventProposalSlashed";
 const EVENT_PROPOSAL_DEPOSIT_CLAIM: &str =
     "penumbra.core.component.governance.v1.EventProposalDepositClaim";
-const EVENT_BLOCK_ROOT: &str = "penumbra.core.component.sct.v1.EventBlockRoot";
 const ALL_RELEVANT_EVENTS: &[&str] = &[
     EVENT_PROPOSAL_SUBMIT,
     EVENT_DELEGATOR_VOTE,
@@ -37,7 +33,6 @@ const ALL_RELEVANT_EVENTS: &[&str] = &[
     EVENT_PROPOSAL_FAILED,
     EVENT_PROPOSAL_SLASHED,
     EVENT_PROPOSAL_DEPOSIT_CLAIM,
-    EVENT_BLOCK_ROOT,
 ];
 
 #[async_trait]
@@ -328,10 +323,6 @@ impl AppView for GovernanceProposals {
                     .context("error converting deposit claim")?;
                 handle_proposal_deposit_claim(dbtx, deposit_claim).await?;
             }
-            EVENT_BLOCK_ROOT => {
-                let pe = sct_pb::EventBlockRoot::from_event(event.as_ref())?;
-                handle_block_root(dbtx, pe.height).await?;
-            }
             _ => {}
         }
 
@@ -542,9 +533,5 @@ async fn handle_proposal_deposit_claim(
     .execute(dbtx.as_mut())
     .await?;
 
-    Ok(())
-}
-
-async fn handle_block_root(_dbtx: &mut PgTransaction<'_>, _height: u64) -> Result<()> {
     Ok(())
 }
