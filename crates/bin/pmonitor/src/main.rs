@@ -222,11 +222,24 @@ impl Opt {
 
                         println!("FVK: {:?}", config.full_viewing_key);
                         // todo: calculate the expected um equivalent balance from calling the genesis scanning method
-                        //println!("Genesis UM-equivalent balance: {:?}", genesis_um_equivalent_amount);
+                        let genesis_um_equivalent_amount = Amount::from(0u64);
+                        println!(
+                            "Genesis UM-equivalent balance: {:?}",
+                            genesis_um_equivalent_amount
+                        );
                         println!(
                             "Current UM-equivalent balance: {:?}",
                             total_um_equivalent_amount
                         );
+
+                        // Let the user know if the balance is unexpected or not
+                        if total_um_equivalent_amount < genesis_um_equivalent_amount {
+                            println!(
+                                "✘ Unexpected balance! Balance is less than the genesis balance"
+                            );
+                        } else {
+                            println!("✅ Expected balance! Balance is greater than or equal to the genesis balance");
+                        }
                     }
                 }
                 Ok(())
