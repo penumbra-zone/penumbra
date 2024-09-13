@@ -23,6 +23,8 @@ penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-tct = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
+penumbra-view = {workspace = true}
+penumbra-proto = {workspace = true}
 directories = {workspace = true}
 camino = {workspace = true}
 url = {workspace = true, features = ["serde"]}
@@ -30,3 +32,4 @@ toml = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
 futures = {workspace = true}
+pcli = { path = "../pcli" }
