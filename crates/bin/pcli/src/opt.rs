@@ -156,7 +156,7 @@ impl Opt {
                 tracing::info!(%path, "using local view service");
 
                 let registry_path = self.home.join("registry.json");
-                // Check if the path exists or set it to nojne
+                // Check if the path exists or set it to none
                 let registry_path = if registry_path.exists() {
                     Some(registry_path)
                 } else {

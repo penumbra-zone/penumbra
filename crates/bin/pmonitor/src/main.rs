@@ -2,18 +2,26 @@ use anyhow::Result;
 use camino::Utf8PathBuf;
 use clap::{self, Parser};
 use directories::ProjectDirs;
-use futures::future::join_all;
+use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 use std::fs;
 use std::process::Command as ProcessCommand;
 use std::str::FromStr;
-use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Command as TokioCommand;
-use tokio::time::{interval, Duration};
 use url::Url;
 
+use pcli::config::PcliConfig;
 use penumbra_keys::FullViewingKey;
+use penumbra_num::Amount;
+use penumbra_proto::box_grpc_svc;
+use penumbra_proto::view::v1::{
+    view_service_client::ViewServiceClient, view_service_server::ViewServiceServer,
+};
+use penumbra_stake::rate::{BaseRateData, RateData};
+use penumbra_stake::DelegationToken;
+use penumbra_view::{ViewClient, ViewServer};
 
 mod genesis;
+
+const VIEW_FILE_NAME: &str = "pcli-view.sqlite";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -66,7 +74,30 @@ pub enum Command {
 }
 
 impl Opt {
-    pub async fn exec(self) -> Result<()> {
+    pub async fn view(
+        &self,
+        path: Utf8PathBuf,
+        fvk: FullViewingKey,
+        grpc_url: Url,
+    ) -> Result<ViewServiceClient<box_grpc_svc::BoxGrpcService>> {
+        let registry_path = path.join("registry.json");
+        // Check if the path exists or set it to none
+        let registry_path = if registry_path.exists() {
+            Some(registry_path)
+        } else {
+            None
+        };
+        let db_path: Utf8PathBuf = path.join(VIEW_FILE_NAME);
+
+        let svc: ViewServer =
+            ViewServer::load_or_initialize(Some(db_path), registry_path, &fvk, grpc_url).await?;
+
+        let svc: ViewServiceServer<ViewServer> = ViewServiceServer::new(svc);
+        let view_service = ViewServiceClient::new(box_grpc_svc::local(svc));
+        Ok(view_service)
+    }
+
+    pub async fn exec(&self) -> Result<()> {
         let opt = self;
         match &opt.cmd {
             Command::Reset {} => {
@@ -128,76 +159,76 @@ impl Opt {
                 Ok(())
             }
             Command::Audit {} => {
+                // todo: fix this
+                let dummy_base_rate = BaseRateData {
+                    epoch_index: 0,
+                    base_reward_rate: 0u128.into(),
+                    base_exchange_rate: 1_0000_0000u128.into(),
+                };
+
                 // First, we need to sync each wallet to the latest block height.
-                let mut handles = vec![];
                 for entry in fs::read_dir(&opt.home)? {
                     let entry = entry?;
                     let path = entry.path();
                     if path.is_dir() {
                         println!("Syncing wallet: {}", path.to_str().unwrap());
-                        let handle = tokio::spawn(async move {
-                            let mut cmd = TokioCommand::new("cargo")
-                                .args(&["run", "--bin", "pcli", "--"])
-                                .arg("--home")
-                                .arg(path.to_str().unwrap())
-                                .arg("view")
-                                .arg("balance")
-                                .stdout(std::process::Stdio::piped())
-                                .stderr(std::process::Stdio::piped())
-                                .spawn()?;
 
-                            let stdout = cmd.stdout.take().expect("Failed to capture stdout");
-                            let stderr = cmd.stderr.take().expect("Failed to capture stderr");
+                        let utf8_path =
+                            Utf8PathBuf::from_path_buf(path).expect("should be valid utf8");
+                        let config = PcliConfig::load(utf8_path.join("config.toml"))?;
+                        let mut view_client = self
+                            .view(utf8_path, config.full_viewing_key.clone(), config.grpc_url)
+                            .await?;
+                        println!("Wallet synced successfully");
 
-                            let mut stdout_reader = BufReader::new(stdout).lines();
-                            let mut stderr_reader = BufReader::new(stderr).lines();
+                        let notes = view_client.unspent_notes_by_asset_and_address().await?;
+                        let mut total_um_equivalent_amount = Amount::from(0u64);
+                        for (asset_id, map) in notes.iter() {
+                            if *asset_id == *STAKING_TOKEN_ASSET_ID {
+                                let total_amount = map
+                                    .iter()
+                                    .map(|(_, spendable_notes)| {
+                                        spendable_notes
+                                            .iter()
+                                            .map(|spendable_note| spendable_note.note.amount())
+                                            .sum::<Amount>()
+                                    })
+                                    .sum::<Amount>();
+                                total_um_equivalent_amount += total_amount;
+                            } else if let Ok(delegation_token) =
+                                DelegationToken::from_str(&asset_id.to_string())
+                            {
+                                let total_amount = map
+                                    .iter()
+                                    .map(|(_, spendable_notes)| {
+                                        spendable_notes
+                                            .iter()
+                                            .map(|spendable_note| spendable_note.note.amount())
+                                            .sum::<Amount>()
+                                    })
+                                    .sum::<Amount>();
 
-                            let mut interval = interval(Duration::from_secs(5));
+                                // We need to convert the amount to the UM-equivalent amount using the appropriate rate data
+                                let dummy_rate_data = RateData {
+                                    identity_key: delegation_token.validator(),
+                                    validator_reward_rate: 0u128.into(),
+                                    validator_exchange_rate: dummy_base_rate.base_exchange_rate,
+                                };
+                                let um_equivalent_balance =
+                                    dummy_rate_data.unbonded_amount(total_amount);
+                                total_um_equivalent_amount += um_equivalent_balance;
+                            };
+                        }
 
-                            // We need to print output to the user so they know Things are Happening
-                            loop {
-                                tokio::select! {
-                                    _ = interval.tick() => {
-                                        println!("Still syncing wallet: {}", path.to_str().unwrap());
-                                    }
-                                    line = stdout_reader.next_line() => {
-                                        if let Ok(Some(line)) = line {
-                                            println!("Wallet {} stdout: {}", path.to_str().unwrap(), line);
-                                        }
-                                    }
-                                    line = stderr_reader.next_line() => {
-                                        if let Ok(Some(line)) = line {
-                                            eprintln!("Wallet {} stderr: {}", path.to_str().unwrap(), line);
-                                        }
-                                    }
-                                    status = cmd.wait() => {
-                                        if !status?.success() {
-                                            anyhow::bail!(
-                                                "Failed to sync wallet {}: Process exited with non-zero status",
-                                                path.to_str().unwrap()
-                                            );
-                                        }
-                                        break;
-                                    }
-                                }
-                            }
-
-                            Ok::<_, anyhow::Error>(())
-                        });
-
-                        handles.push(handle);
+                        println!("FVK: {:?}", config.full_viewing_key);
+                        // todo: calculate the expected um equivalent balance from calling the genesis scanning method
+                        //println!("Genesis UM-equivalent balance: {:?}", genesis_um_equivalent_amount);
+                        println!(
+                            "Current UM-equivalent balance: {:?}",
+                            total_um_equivalent_amount
+                        );
                     }
                 }
-
-                // Wait for all tasks to complete
-                let results = join_all(handles).await;
-
-                // Check for any errors
-                for result in results {
-                    result??;
-                }
-
-                println!("All wallets synced successfully");
                 Ok(())
             }
         }
