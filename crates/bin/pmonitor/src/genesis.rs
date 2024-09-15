@@ -1,13 +1,10 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    str::FromStr,
-};
+use std::{collections::BTreeMap, str::FromStr};
 
-use penumbra_app::genesis::AppState;
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
+use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_keys::FullViewingKey;
 use penumbra_num::Amount;
-use penumbra_shielded_pool::Note;
+use penumbra_shielded_pool::{Note, NotePayload};
 use penumbra_stake::{
     rate::{BaseRateData, RateData},
     DelegationToken,
@@ -26,18 +23,18 @@ pub struct FilteredGenesisBlock {
 /// initial balances of the relevant addresses.
 ///
 /// Assumption: There are no swaps or nullifiers in the genesis block.
-pub fn scan_genesis_block(
-    genesis_app_state: AppState,
+pub async fn scan_genesis_block(
+    CompactBlock {
+        height,
+        state_payloads,
+        ..
+    }: CompactBlock,
     fvks: Vec<FullViewingKey>,
 ) -> anyhow::Result<FilteredGenesisBlock> {
+    assert_eq!(height, 0);
+
     let mut notes = BTreeMap::new();
     let mut balances = BTreeMap::new();
-
-    let genesis_data = genesis_app_state
-        .content()
-        .expect("genesis app state should have content");
-    // We'll use the allocations from the genesis state.
-    let shielded_pool_content = &genesis_data.shielded_pool_content;
 
     // Calculate the rate data for each validator in the initial validator set.
     let base_rate = BaseRateData {
@@ -45,50 +42,52 @@ pub fn scan_genesis_block(
         base_reward_rate: 0u128.into(),
         base_exchange_rate: 1_0000_0000u128.into(),
     };
-    let rate_data_map: HashMap<DelegationToken, RateData> = genesis_data
-        .stake_content
-        .validators
-        .iter()
-        .map(|validator| {
-            let identity_key = validator
-                .identity_key
-                .clone()
-                .expect("identity key should be present")
-                .try_into()
-                .expect("should be a valid identity key");
-            let rate_data = RateData {
-                identity_key,
-                validator_reward_rate: 0u128.into(),
-                validator_exchange_rate: base_rate.base_exchange_rate,
-            };
-            (DelegationToken::from(identity_key), rate_data)
-        })
-        .collect();
 
     // We proceed one FVK at a time.
     for fvk in fvks {
+        // Trial-decrypt a note with our a specific viewing key
+        let trial_decrypt_note =
+            |note_payload: NotePayload| -> tokio::task::JoinHandle<Option<Note>> {
+                let fvk2 = fvk.clone();
+                tokio::spawn(async move { note_payload.trial_decrypt(&fvk2) })
+            };
+
+        // Trial-decrypt the notes in this block, keeping track of the ones that were meant for the FVK
+        // we're monitoring.
+        let mut note_decryptions = Vec::new();
+
+        // We only care about notes, so we're ignoring swaps and rolled-up commitments.
+        for payload in state_payloads.iter() {
+            if let StatePayload::Note { note, .. } = payload {
+                note_decryptions.push(trial_decrypt_note((**note).clone()));
+            }
+        }
+
         let mut notes_for_this_fvk = BTreeMap::new();
-        for allocation in &shielded_pool_content.allocations {
-            if fvk.incoming().views_address(&allocation.address) {
-                let note =
-                    Note::from_allocation(allocation.clone()).expect("should be a valid note");
+        for decryption in note_decryptions {
+            if let Some(note) = decryption
+                .await
+                .expect("able to join tokio note decryption handle")
+            {
                 notes_for_this_fvk.insert(note.commit(), note.clone());
 
                 // Balance is expected to be in the staking or delegation token
-                let allocation_value = allocation.value();
-                if allocation_value.asset_id == *STAKING_TOKEN_ASSET_ID {
+                let note_value = note.value();
+                if note_value.asset_id == *STAKING_TOKEN_ASSET_ID {
                     balances
                         .entry(fvk.to_string())
-                        .and_modify(|existing_amount| *existing_amount += allocation.amount())
-                        .or_insert(allocation.amount());
+                        .and_modify(|existing_amount| *existing_amount += note.amount())
+                        .or_insert(note.amount());
                 } else if let Ok(delegation_token) =
-                    DelegationToken::from_str(&allocation_value.asset_id.to_string())
+                    DelegationToken::from_str(&note_value.asset_id.to_string())
                 {
                     // We need to convert the amount to the UM-equivalent amount
-                    let rate_data = rate_data_map
-                        .get(&delegation_token)
-                        .expect("should be rate data for each validator");
-                    let um_equivalent_balance = rate_data.unbonded_amount(allocation.amount());
+                    let rate_data = RateData {
+                        identity_key: delegation_token.validator(),
+                        validator_reward_rate: 0u128.into(),
+                        validator_exchange_rate: base_rate.base_exchange_rate,
+                    };
+                    let um_equivalent_balance = rate_data.unbonded_amount(note.amount());
 
                     balances
                         .entry(fvk.to_string())
@@ -96,8 +95,8 @@ pub fn scan_genesis_block(
                         .or_insert(um_equivalent_balance);
                 } else {
                     tracing::warn!(
-                        "ignoring note with unrecognized asset id: {}",
-                        allocation_value.asset_id
+                        "ignoring note with unknown asset id: {}",
+                        note_value.asset_id
                     );
                 }
             }
