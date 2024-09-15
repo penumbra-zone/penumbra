@@ -10,11 +10,16 @@ use std::str::FromStr;
 use url::Url;
 
 use pcli::config::PcliConfig;
+use penumbra_compact_block::CompactBlock;
 use penumbra_keys::FullViewingKey;
 use penumbra_num::Amount;
 use penumbra_proto::box_grpc_svc;
 use penumbra_proto::view::v1::{
     view_service_client::ViewServiceClient, view_service_server::ViewServiceServer,
+};
+use penumbra_proto::{
+    core::component::compact_block::v1::CompactBlockRequest,
+    penumbra::core::component::compact_block::v1::query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
 };
 use penumbra_stake::rate::{BaseRateData, RateData};
 use penumbra_stake::DelegationToken;
@@ -22,6 +27,10 @@ use penumbra_view::{ViewClient, ViewServer};
 
 mod genesis;
 
+// The maximum size of a compact block, in bytes (12MB).
+const MAX_CB_SIZE_BYTES: usize = 12 * 1024 * 1024;
+
+// The name of the view database file
 const VIEW_FILE_NAME: &str = "pcli-view.sqlite";
 
 #[tokio::main]
@@ -75,6 +84,7 @@ pub enum Command {
 }
 
 impl Opt {
+    /// Set up the view service for a given wallet.
     pub async fn view(
         &self,
         path: Utf8PathBuf,
@@ -98,6 +108,7 @@ impl Opt {
         Ok(view_service)
     }
 
+    /// Sync that wallet to the latest block height.
     pub async fn sync(
         &self,
         view_service: &mut ViewServiceClient<box_grpc_svc::BoxGrpcService>,
@@ -134,6 +145,23 @@ impl Opt {
         Ok(())
     }
 
+    /// Fetch the genesis compact block
+    pub async fn fetch_genesis_compact_block(&self, grpc_url: Url) -> Result<CompactBlock> {
+        let height = 0;
+        let mut client = CompactBlockQueryServiceClient::connect(grpc_url.to_string())
+            .await
+            .unwrap()
+            .max_decoding_message_size(MAX_CB_SIZE_BYTES);
+        let compact_block = client
+            .compact_block(CompactBlockRequest { height })
+            .await?
+            .into_inner()
+            .compact_block
+            .expect("response has compact block");
+        compact_block.try_into()
+    }
+
+    /// Execute the specified command.
     pub async fn exec(&self) -> Result<()> {
         let opt = self;
         match &opt.cmd {
@@ -203,82 +231,103 @@ impl Opt {
                     base_exchange_rate: 1_0000_0000u128.into(),
                 };
 
-                // First, we need to sync each wallet to the latest block height.
+                // Parse all the wallets to get the FVKs
+                let mut fvks = Vec::new();
+                let mut configs = Vec::new();
+                let mut paths = Vec::new();
                 for entry in fs::read_dir(&opt.home)? {
                     let entry = entry?;
                     let path = entry.path();
                     if path.is_dir() {
-                        println!("Syncing wallet: {}", path.to_str().unwrap());
-
                         let utf8_path =
                             Utf8PathBuf::from_path_buf(path).expect("should be valid utf8");
                         let config = PcliConfig::load(utf8_path.join("config.toml"))?;
-                        let mut view_client = self
-                            .view(utf8_path, config.full_viewing_key.clone(), config.grpc_url)
-                            .await?;
-                        // todo: do this in parallel
-                        self.sync(&mut view_client).await?;
-                        println!("Wallet synced successfully");
+                        configs.push(config.clone());
+                        fvks.push(config.full_viewing_key);
+                        paths.push(utf8_path);
+                    }
+                }
 
-                        let notes = view_client.unspent_notes_by_asset_and_address().await?;
-                        let mut total_um_equivalent_amount = Amount::from(0u64);
-                        for (asset_id, map) in notes.iter() {
-                            if *asset_id == *STAKING_TOKEN_ASSET_ID {
-                                let total_amount = map
-                                    .iter()
-                                    .map(|(_, spendable_notes)| {
-                                        spendable_notes
-                                            .iter()
-                                            .map(|spendable_note| spendable_note.note.amount())
-                                            .sum::<Amount>()
-                                    })
-                                    .sum::<Amount>();
-                                total_um_equivalent_amount += total_amount;
-                            } else if let Ok(delegation_token) =
-                                DelegationToken::from_str(&asset_id.to_string())
-                            {
-                                let total_amount = map
-                                    .iter()
-                                    .map(|(_, spendable_notes)| {
-                                        spendable_notes
-                                            .iter()
-                                            .map(|spendable_note| spendable_note.note.amount())
-                                            .sum::<Amount>()
-                                    })
-                                    .sum::<Amount>();
+                let genesis_compact_block = self
+                    .fetch_genesis_compact_block(configs[0].grpc_url.clone())
+                    .await?;
+                let genesis_filtered_block =
+                    genesis::scan_genesis_block(genesis_compact_block, fvks).await?;
 
-                                // We need to convert the amount to the UM-equivalent amount using the appropriate rate data
-                                let dummy_rate_data = RateData {
-                                    identity_key: delegation_token.validator(),
-                                    validator_reward_rate: 0u128.into(),
-                                    validator_exchange_rate: dummy_base_rate.base_exchange_rate,
-                                };
-                                let um_equivalent_balance =
-                                    dummy_rate_data.unbonded_amount(total_amount);
-                                total_um_equivalent_amount += um_equivalent_balance;
+                // Sync each wallet to the latest block height and check the balances.
+                for (config, path) in configs.iter().zip(paths.iter()) {
+                    println!("Syncing wallet: {}", path.to_string());
+
+                    let mut view_client = self
+                        .view(
+                            path.clone(),
+                            config.full_viewing_key.clone(),
+                            config.grpc_url.clone(),
+                        )
+                        .await?;
+
+                    // todo: do this in parallel
+                    self.sync(&mut view_client).await?;
+                    println!("Wallet synced successfully");
+
+                    let notes = view_client.unspent_notes_by_asset_and_address().await?;
+                    let mut total_um_equivalent_amount = Amount::from(0u64);
+                    for (asset_id, map) in notes.iter() {
+                        if *asset_id == *STAKING_TOKEN_ASSET_ID {
+                            let total_amount = map
+                                .iter()
+                                .map(|(_, spendable_notes)| {
+                                    spendable_notes
+                                        .iter()
+                                        .map(|spendable_note| spendable_note.note.amount())
+                                        .sum::<Amount>()
+                                })
+                                .sum::<Amount>();
+                            total_um_equivalent_amount += total_amount;
+                        } else if let Ok(delegation_token) =
+                            DelegationToken::from_str(&asset_id.to_string())
+                        {
+                            let total_amount = map
+                                .iter()
+                                .map(|(_, spendable_notes)| {
+                                    spendable_notes
+                                        .iter()
+                                        .map(|spendable_note| spendable_note.note.amount())
+                                        .sum::<Amount>()
+                                })
+                                .sum::<Amount>();
+
+                            // We need to convert the amount to the UM-equivalent amount using the appropriate rate data
+                            let dummy_rate_data = RateData {
+                                identity_key: delegation_token.validator(),
+                                validator_reward_rate: 0u128.into(),
+                                validator_exchange_rate: dummy_base_rate.base_exchange_rate,
                             };
-                        }
+                            let um_equivalent_balance =
+                                dummy_rate_data.unbonded_amount(total_amount);
+                            total_um_equivalent_amount += um_equivalent_balance;
+                        };
+                    }
 
-                        println!("FVK: {:?}", config.full_viewing_key);
-                        // todo: calculate the expected um equivalent balance from calling the genesis scanning method
-                        let genesis_um_equivalent_amount = Amount::from(0u64);
-                        println!(
-                            "Genesis UM-equivalent balance: {:?}",
-                            genesis_um_equivalent_amount
-                        );
-                        println!(
-                            "Current UM-equivalent balance: {:?}",
-                            total_um_equivalent_amount
-                        );
+                    println!("FVK: {:?}", config.full_viewing_key);
+                    let genesis_um_equivalent_amount = genesis_filtered_block
+                        .balances
+                        .get(&config.full_viewing_key.to_string())
+                        .expect("wallet must have genesis allocation");
+                    println!(
+                        "Genesis UM-equivalent balance: {:?}",
+                        genesis_um_equivalent_amount
+                    );
+                    println!(
+                        "Current UM-equivalent balance: {:?}",
+                        total_um_equivalent_amount
+                    );
 
-                        // Let the user know if the balance is unexpected or not
-                        if total_um_equivalent_amount < genesis_um_equivalent_amount {
-                            println!(
-                                "✘ Unexpected balance! Balance is less than the genesis balance"
-                            );
-                        } else {
-                            println!("✅ Expected balance! Balance is greater than or equal to the genesis balance");
-                        }
+                    // Let the user know if the balance is unexpected or not
+                    if total_um_equivalent_amount < *genesis_um_equivalent_amount {
+                        println!("✘ Unexpected balance! Balance is less than the genesis balance");
+                    } else {
+                        println!("✅ Expected balance! Balance is greater than or equal to the genesis balance");
                     }
                 }
                 Ok(())
