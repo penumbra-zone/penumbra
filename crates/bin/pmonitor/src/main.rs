@@ -25,7 +25,7 @@ use penumbra_proto::{
 };
 use penumbra_stake::rate::RateData;
 use penumbra_stake::DelegationToken;
-use penumbra_view::{ViewClient, ViewServer};
+use penumbra_view::{Storage, ViewClient, ViewServer};
 
 mod genesis;
 
@@ -283,6 +283,25 @@ impl Opt {
                     self.sync(&mut view_client).await?;
                     println!("Wallet synced successfully");
 
+                    // Check if the account has been migrated
+                    let storage = Storage::load_or_initialize(
+                        Some(path.join("view.sqlite")),
+                        &config.full_viewing_key,
+                        config.grpc_url.clone(),
+                    )
+                    .await?;
+                    let migration_tx = storage
+                        .transactions_matching_memo("Migrating balance from".to_string())
+                        .await?;
+                    if migration_tx.is_empty() {
+                        // continue with the normal flow
+                        dbg!("account has not been migrated");
+                    } else {
+                        println!("❗ Account has been migrated to new FVK");
+                        // todo: get the balance from the new FVK
+                    }
+
+                    // Check if the account has been migrated
                     let notes = view_client.unspent_notes_by_asset_and_address().await?;
                     let mut total_um_equivalent_amount = Amount::from(0u64);
                     for (asset_id, map) in notes.iter() {
