@@ -5926,6 +5926,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "toml 0.7.8",
+ "tonic",
  "tracing",
  "url",
 ]

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use clap::{self, Parser};
 use directories::ProjectDirs;
@@ -7,6 +7,7 @@ use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 use std::fs;
 use std::process::Command as ProcessCommand;
 use std::str::FromStr;
+use tonic::transport::{Channel, ClientTlsConfig};
 use url::Url;
 
 use pcli::config::PcliConfig;
@@ -19,9 +20,10 @@ use penumbra_proto::view::v1::{
 };
 use penumbra_proto::{
     core::component::compact_block::v1::CompactBlockRequest,
+    core::component::stake::v1::query_service_client::QueryServiceClient as StakeQueryServiceClient,
     penumbra::core::component::compact_block::v1::query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
 };
-use penumbra_stake::rate::{BaseRateData, RateData};
+use penumbra_stake::rate::RateData;
 use penumbra_stake::DelegationToken;
 use penumbra_view::{ViewClient, ViewServer};
 
@@ -161,6 +163,21 @@ impl Opt {
         compact_block.try_into()
     }
 
+    /// Stolen from pcli
+    pub async fn pd_channel(&self, grpc_url: Url) -> anyhow::Result<Channel> {
+        match grpc_url.scheme() {
+            "http" => Ok(Channel::from_shared(grpc_url.to_string())?
+                .connect()
+                .await?),
+            "https" => Ok(Channel::from_shared(grpc_url.to_string())?
+                .tls_config(ClientTlsConfig::new())?
+                .connect()
+                .await?),
+            other => Err(anyhow::anyhow!("unknown url scheme {other}"))
+                .with_context(|| format!("could not connect to {}", grpc_url)),
+        }
+    }
+
     /// Execute the specified command.
     pub async fn exec(&self) -> Result<()> {
         let opt = self;
@@ -224,13 +241,6 @@ impl Opt {
                 Ok(())
             }
             Command::Audit {} => {
-                // todo: fix this
-                let dummy_base_rate = BaseRateData {
-                    epoch_index: 0,
-                    base_reward_rate: 0u128.into(),
-                    base_exchange_rate: 1_0000_0000u128.into(),
-                };
-
                 // Parse all the wallets to get the FVKs
                 let mut fvks = Vec::new();
                 let mut configs = Vec::new();
@@ -253,6 +263,9 @@ impl Opt {
                     .await?;
                 let genesis_filtered_block =
                     genesis::scan_genesis_block(genesis_compact_block, fvks).await?;
+                let mut stake_client = StakeQueryServiceClient::new(
+                    self.pd_channel(configs[0].grpc_url.clone()).await?,
+                );
 
                 // Sync each wallet to the latest block height and check the balances.
                 for (config, path) in configs.iter().zip(paths.iter()) {
@@ -298,13 +311,14 @@ impl Opt {
                                 .sum::<Amount>();
 
                             // We need to convert the amount to the UM-equivalent amount using the appropriate rate data
-                            let dummy_rate_data = RateData {
-                                identity_key: delegation_token.validator(),
-                                validator_reward_rate: 0u128.into(),
-                                validator_exchange_rate: dummy_base_rate.base_exchange_rate,
-                            };
-                            let um_equivalent_balance =
-                                dummy_rate_data.unbonded_amount(total_amount);
+                            let rate_data: RateData = stake_client
+                                .current_validator_rate(tonic::Request::new(
+                                    (delegation_token.validator()).into(),
+                                ))
+                                .await?
+                                .into_inner()
+                                .try_into()?;
+                            let um_equivalent_balance = rate_data.unbonded_amount(total_amount);
                             total_um_equivalent_amount += um_equivalent_balance;
                         };
                     }

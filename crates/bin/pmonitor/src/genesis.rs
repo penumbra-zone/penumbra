@@ -14,6 +14,7 @@ use penumbra_tct::StateCommitment;
 #[derive(Debug, Clone)]
 pub struct FilteredGenesisBlock {
     // Notes per FVK
+    #[allow(dead_code)]
     pub notes: BTreeMap<String, BTreeMap<StateCommitment, Note>>,
     // UM-equivalent balances per FVK
     pub balances: BTreeMap<String, Amount>,
