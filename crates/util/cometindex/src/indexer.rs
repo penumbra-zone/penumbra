@@ -179,7 +179,6 @@ impl Indexer {
 
             relevant_events += 1;
 
-            // Otherwise we have something to process. Make a dbtx
             for index in indexes {
                 if index.is_relevant(&event.as_ref().kind) {
                     tracing::debug!(?event, ?index, "relevant to index");
@@ -190,7 +189,7 @@ impl Indexer {
             update_watermark(&mut dbtx, event.local_rowid).await?;
             // Only commit in batches of <= 1000 events, for about a 5x performance increase when
             // catching up.
-            if scanned_events % 1000 == 0 {
+            if relevant_events % 1000 == 0 {
                 dbtx.commit().await?;
                 dbtx = dst_db.begin().await?;
             }
