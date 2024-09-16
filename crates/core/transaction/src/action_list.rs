@@ -1,5 +1,4 @@
 use anyhow::Result;
-use penumbra_proto::core::transaction::v1::Action;
 use std::collections::BTreeMap;
 
 use crate::plan::MemoPlan;
