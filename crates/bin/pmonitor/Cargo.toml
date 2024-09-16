@@ -34,3 +34,4 @@ serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
 futures = {workspace = true}
 pcli = { path = "../pcli" }
+tonic = {workspace = true, features = ["tls-webpki-roots", "tls"]}
