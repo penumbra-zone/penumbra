@@ -60,7 +60,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
                 client_state,
                 proof: proof.encode_to_vec(),
                 proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                    revision_height: snapshot.get_block_height().await.map_err(|e| {
+                    revision_height: HI::get_block_height(&snapshot).await.map_err(|e| {
                         tonic::Status::aborted(format!("couldn't decode height: {e}"))
                     })? + 1,
                     revision_number: HI::get_revision_number(&snapshot).await.map_err(|e| {
@@ -144,7 +144,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
                 consensus_state,
                 proof: proof.encode_to_vec(),
                 proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                    revision_height: snapshot.get_block_height().await.map_err(|e| {
+                    revision_height: HI::get_block_height(&snapshot).await.map_err(|e| {
                         tonic::Status::aborted(format!("couldn't decode height: {e}"))
                     })? + 1,
                     revision_number: HI::get_revision_number(&snapshot).await.map_err(|e| {

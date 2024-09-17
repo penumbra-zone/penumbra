@@ -64,7 +64,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
                 connection: conn,
                 proof: proof.encode_to_vec(),
                 proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                    revision_height: snapshot.get_block_height().await.map_err(|e| {
+                    revision_height: HI::get_block_height(&snapshot).await.map_err(|e| {
                         tonic::Status::aborted(format!("couldn't decode height: {e}"))
                     })? + 1,
                     revision_number: HI::get_revision_number(&snapshot).await.map_err(|e| {
@@ -168,8 +168,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
             connection_paths,
             proof: proof.encode_to_vec(),
             proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                revision_height: snapshot
-                    .get_block_height()
+                revision_height: HI::get_block_height(&snapshot)
                     .await
                     .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
                     + 1,
@@ -222,8 +221,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
             identified_client_state: Some(identified_client_state),
             proof: proof.encode_to_vec(),
             proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                revision_height: snapshot
-                    .get_block_height()
+                revision_height: HI::get_block_height(&snapshot)
                     .await
                     .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
                     + 1,
@@ -280,7 +278,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
                 client_id: client_id.to_string(),
                 proof: proof.encode_to_vec(),
                 proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                    revision_height: snapshot.get_block_height().await.map_err(|e| {
+                    revision_height: HI::get_block_height(&snapshot).await.map_err(|e| {
                         tonic::Status::aborted(format!("couldn't decode height: {e}"))
                     })? + 1,
                     revision_number: HI::get_revision_number(&snapshot).await.map_err(|e| {
