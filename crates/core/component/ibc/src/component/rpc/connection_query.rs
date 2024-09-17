@@ -16,7 +16,6 @@ use ibc_types::path::{
     ClientConnectionPath, ClientConsensusStatePath, ClientStatePath, ConnectionPath,
 };
 use ibc_types::DomainType;
-use penumbra_sct::component::clock::EpochRead as _;
 use prost::Message;
 use std::str::FromStr;
 
@@ -59,19 +58,19 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
         let conn =
             conn.map_err(|e| tonic::Status::aborted(format!("couldn't decode connection: {e}")))?;
 
-        let res =
-            QueryConnectionResponse {
-                connection: conn,
-                proof: proof.encode_to_vec(),
-                proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                    revision_height: HI::get_block_height(&snapshot).await.map_err(|e| {
-                        tonic::Status::aborted(format!("couldn't decode height: {e}"))
-                    })? + 1,
-                    revision_number: HI::get_revision_number(&snapshot).await.map_err(|e| {
-                        tonic::Status::aborted(format!("couldn't decode height: {e}"))
-                    })?,
-                }),
-            };
+        let res = QueryConnectionResponse {
+            connection: conn,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
+            }),
+        };
 
         Ok(tonic::Response::new(res))
     }
