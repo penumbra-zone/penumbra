@@ -85,6 +85,12 @@ x86_64-unknown-linux-gnu = "buildjet-32vcpu-ubuntu-2204"
 [profile.dist]
 inherits = "release"
 
+[profile.dev.package.penumbra-governance]
+overflow-checks = true
+
+[profile.release.package.penumbra-governance]
+overflow-checks = true
+
 # config for 'cargo release'
 [workspace.metadata.release]
 # Instruct cargo-release to increment versions for all packages in the workspace in lockstep.
