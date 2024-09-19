@@ -27,7 +27,10 @@ use penumbra_stake::rate::RateData;
 use penumbra_stake::DelegationToken;
 use penumbra_view::{Storage, ViewClient, ViewServer};
 
+mod config;
 mod genesis;
+
+use config::{AccountConfig, FvkEntry, PmonitorConfig};
 
 // The maximum size of a compact block, in bytes (12MB).
 const MAX_CB_SIZE_BYTES: usize = 12 * 1024 * 1024;
@@ -194,24 +197,31 @@ impl Opt {
             Command::Init { fvks, grpc_url } => {
                 // Parse the JSON file into a list of full viewing keys
                 let fvks_str = fs::read_to_string(fvks)?;
+
                 // Take elements from the array and parse them into FullViewingKeys
                 let fvk_string_list: Vec<String> = serde_json::from_str(&fvks_str)?;
-
                 let fvk_list: Vec<FullViewingKey> = fvk_string_list
-                    .into_iter()
+                    .iter()
                     .map(|fvk| FullViewingKey::from_str(&fvk))
                     .collect::<Result<Vec<_>>>()?;
 
                 // Create the home directory if it doesn't exist
                 if !opt.home.exists() {
                     fs::create_dir_all(&opt.home)?;
+                } else {
+                    anyhow::bail!("pmonitor home directory already exists: {}", opt.home);
                 }
 
+                let mut accounts = Vec::new();
+
                 // Now we need to make subdirectories for each of the FVKs and setup their
-                // config files with the selected GRPC URL.
+                // config files, with the selected FVK and GRPC URL.
                 for (index, fvk) in fvk_list.iter().enumerate() {
+                    // todo: wallet setup should be a function because we'll reuse this logic later
+                    // when we discover a migrated account.
                     let wallet_dir = opt.home.join(format!("wallet_{}", index));
 
+                    // Create the wallet directory if it doesn't exist
                     if !wallet_dir.exists() {
                         fs::create_dir_all(&wallet_dir)?;
                     }
@@ -235,13 +245,36 @@ impl Opt {
                             String::from_utf8_lossy(&output.stderr)
                         );
                     }
+
+                    accounts.push(AccountConfig {
+                        original: FvkEntry {
+                            fvk: fvk.clone(),
+                            path: wallet_dir.to_string(),
+                        },
+                        // We'll populate this later upon sync, if we discover the
+                        // account has been migrated.
+                        migrations: Vec::new(),
+                    });
                 }
 
-                println!("Successfully initialized {} wallets", fvk_list.len());
+                let config = PmonitorConfig {
+                    grpc_url: grpc_url.clone(),
+                    accounts: accounts.clone(),
+                };
+
+                // Save the config
+                let config_path = opt.home.join("pmonitor_config.toml");
+                fs::write(config_path, toml::to_string(&config)?)?;
+
+                println!("Successfully initialized {} wallets", accounts.len());
                 Ok(())
             }
             Command::Audit {} => {
-                // Parse all the wallets to get the FVKs
+                // Parse the config file to get the accounts to monitor.
+                //
+                // Note that each logical user might have one or more FVKs, depending on if the user
+                // migrated their account to a new FVK, i.e. if they migrated once, they'll have two
+                // FVKs.
                 let mut fvks = Vec::new();
                 let mut configs = Vec::new();
                 let mut paths = Vec::new();
