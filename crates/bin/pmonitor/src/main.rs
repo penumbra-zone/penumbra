@@ -180,6 +180,41 @@ impl Opt {
         }
     }
 
+    /// Create wallet given a path and fvk
+    pub async fn create_wallet(
+        &self,
+        wallet_dir: &Utf8PathBuf,
+        fvk: &FullViewingKey,
+        grpc_url: &Url,
+    ) -> Result<()> {
+        // Create the wallet directory if it doesn't exist
+        if !wallet_dir.exists() {
+            fs::create_dir_all(&wallet_dir)?;
+        }
+
+        // Invoke pcli to initialize the wallet (hacky)
+        let output = ProcessCommand::new("cargo")
+            .args(&["run", "--bin", "pcli", "--"])
+            .arg("--home")
+            .arg(wallet_dir.as_str())
+            .arg("init")
+            .arg("--grpc-url")
+            .arg(grpc_url.as_str())
+            .arg("view-only")
+            .arg(fvk.to_string())
+            .output()?;
+
+        if !output.status.success() {
+            anyhow::bail!(
+                "Failed to initialize wallet in {}: {}",
+                wallet_dir.to_string(),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        Ok(())
+    }
+
     /// Execute the specified command.
     pub async fn exec(&self) -> Result<()> {
         let opt = self;
@@ -216,34 +251,8 @@ impl Opt {
                 // Now we need to make subdirectories for each of the FVKs and setup their
                 // config files, with the selected FVK and GRPC URL.
                 for (index, fvk) in fvk_list.iter().enumerate() {
-                    // todo: wallet setup should be a function because we'll reuse this logic later
-                    // when we discover a migrated account.
                     let wallet_dir = opt.home.join(format!("wallet_{}", index));
-
-                    // Create the wallet directory if it doesn't exist
-                    if !wallet_dir.exists() {
-                        fs::create_dir_all(&wallet_dir)?;
-                    }
-
-                    // Invoke pcli to initialize the wallet (hacky)
-                    let output = ProcessCommand::new("cargo")
-                        .args(&["run", "--bin", "pcli", "--"])
-                        .arg("--home")
-                        .arg(wallet_dir.as_str())
-                        .arg("init")
-                        .arg("--grpc-url")
-                        .arg(grpc_url.as_str())
-                        .arg("view-only")
-                        .arg(fvk.to_string())
-                        .output()?;
-
-                    if !output.status.success() {
-                        anyhow::bail!(
-                            "Failed to initialize wallet {}: {}",
-                            index,
-                            String::from_utf8_lossy(&output.stderr)
-                        );
-                    }
+                    self.create_wallet(&wallet_dir, &fvk, &grpc_url).await?;
 
                     accounts.push(AccountConfig {
                         original: FvkEntry {
