@@ -1,11 +1,12 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 use anyhow::{anyhow, Context, Result};
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_app::genesis::AppState;
+use penumbra_asset::asset;
 use penumbra_num::Amount;
 use penumbra_proto::{core::component::sct::v1 as pb, event::ProtoEvent};
-use penumbra_stake::IdentityKey;
+use penumbra_stake::{validator::Validator, IdentityKey};
 use sqlx::{types::chrono::DateTime, PgPool, Postgres, Transaction};
 
 /// Supply-relevant events.
@@ -50,6 +51,7 @@ impl Event {
     }
 }
 
+/// Add the initial native token supply.
 async fn add_genesis_native_token_allocation_supply<'a>(
     dbtx: &mut PgTransaction<'a>,
     app_state: &AppState,
@@ -64,6 +66,27 @@ async fn add_genesis_native_token_allocation_supply<'a>(
             let value = allo.value();
             native_token_sum = native_token_sum.checked_add(&value.amount).unwrap();
         }
+    }
+
+    // Given a genesis validator, we need to figure out its delegations at
+    // genesis by getting its delegation token then summing up all the allocations.
+    // Build up a table of the total allocations first.
+    let mut allos = BTreeMap::<asset::Id, Amount>::new();
+    for allo in &content.shielded_pool_content.allocations {
+        let value = allo.value();
+        let sum = allos.entry(value.asset_id).or_default();
+        *sum = sum
+            .checked_add(&value.amount)
+            .ok_or_else(|| anyhow::anyhow!("overflow adding genesis allos (should not happen)"))?;
+    }
+
+    // at genesis, assume a 1:1 ratio between delegation amount and native token amount.
+    for val in &content.stake_content.validators {
+        // FIXME: this shouldn't be a proto type but now that has been propagated
+        // all through the rest of the code for no reason
+        let val = Validator::try_from(val.clone())?;
+        let delegation_amount = allos.get(&val.token().id()).cloned().unwrap_or_default();
+        native_token_sum = native_token_sum + delegation_amount;
     }
 
     sqlx::query("INSERT INTO supply_initial_genesis (value) VALUES ($1)")
