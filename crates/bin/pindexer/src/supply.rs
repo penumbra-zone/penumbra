@@ -119,7 +119,7 @@ impl AppView for Supply {
         sqlx::query(
             // table name is module path + struct name
             "
-CREATE TABLE IF NOT EXISTS supply_initial_genesiis (
+CREATE TABLE IF NOT EXISTS supply_initial_genesis (
     value BIGINT PRIMARY KEY,
 );
 ",
