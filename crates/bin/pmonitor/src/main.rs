@@ -10,7 +10,6 @@ use std::str::FromStr;
 use tonic::transport::{Channel, ClientTlsConfig};
 use url::Url;
 
-use pcli::config::PcliConfig;
 use penumbra_compact_block::CompactBlock;
 use penumbra_keys::FullViewingKey;
 use penumbra_num::Amount;
@@ -275,40 +274,37 @@ impl Opt {
                 // Note that each logical user might have one or more FVKs, depending on if the user
                 // migrated their account to a new FVK, i.e. if they migrated once, they'll have two
                 // FVKs.
-                let mut fvks = Vec::new();
-                let mut configs = Vec::new();
-                let mut paths = Vec::new();
-                for entry in fs::read_dir(&opt.home)? {
-                    let entry = entry?;
-                    let path = entry.path();
-                    if path.is_dir() {
-                        let utf8_path =
-                            Utf8PathBuf::from_path_buf(path).expect("should be valid utf8");
-                        let config = PcliConfig::load(utf8_path.join("config.toml"))?;
-                        configs.push(config.clone());
-                        fvks.push(config.full_viewing_key);
-                        paths.push(utf8_path);
-                    }
+                let config_path = opt.home.join("pmonitor_config.toml");
+                let pmonitor_config: PmonitorConfig =
+                    toml::from_str(&fs::read_to_string(config_path)?)?;
+
+                let mut genesis_fvks = Vec::new();
+                for account in pmonitor_config.accounts.iter() {
+                    genesis_fvks.push(account.original.fvk.clone());
                 }
 
                 let genesis_compact_block = self
-                    .fetch_genesis_compact_block(configs[0].grpc_url.clone())
+                    .fetch_genesis_compact_block(pmonitor_config.grpc_url.clone())
                     .await?;
+                // We don't need to care about the migrated FVKs in the genesis block, since
+                // no migrations can have occurred yet.
                 let genesis_filtered_block =
-                    genesis::scan_genesis_block(genesis_compact_block, fvks).await?;
+                    genesis::scan_genesis_block(genesis_compact_block, genesis_fvks).await?;
                 let mut stake_client = StakeQueryServiceClient::new(
-                    self.pd_channel(configs[0].grpc_url.clone()).await?,
+                    self.pd_channel(pmonitor_config.grpc_url.clone()).await?,
                 );
 
                 // Sync each wallet to the latest block height and check the balances.
-                for (config, path) in configs.iter().zip(paths.iter()) {
-                    println!("Syncing wallet: {}", path.to_string());
+                for config in pmonitor_config.accounts.iter() {
+                    let original_fvk = config.original.fvk.clone();
+                    let original_path: Utf8PathBuf = config.original.path.clone().into();
+                    println!("Syncing wallet: {}", original_path.to_string());
 
                     let mut view_client = self
                         .view(
-                            path.clone(),
-                            config.full_viewing_key.clone(),
-                            config.grpc_url.clone(),
+                            original_path.clone(),
+                            original_fvk.clone(),
+                            pmonitor_config.grpc_url.clone(),
                         )
                         .await?;
 
@@ -318,11 +314,13 @@ impl Opt {
 
                     // Check if the account has been migrated
                     let storage = Storage::load_or_initialize(
-                        Some(path.join("view.sqlite")),
-                        &config.full_viewing_key,
-                        config.grpc_url.clone(),
+                        Some(original_path.join("view.sqlite")),
+                        &original_fvk,
+                        pmonitor_config.grpc_url.clone(),
                     )
                     .await?;
+
+                    // todo: match on the original FVK and check for further migrations
                     let migration_tx = storage
                         .transactions_matching_memo("Migrating balance from".to_string())
                         .await?;
@@ -334,7 +332,6 @@ impl Opt {
                         // todo: get the balance from the new FVK
                     }
 
-                    // Check if the account has been migrated
                     let notes = view_client.unspent_notes_by_asset_and_address().await?;
                     let mut total_um_equivalent_amount = Amount::from(0u64);
                     for (asset_id, map) in notes.iter() {
@@ -375,10 +372,10 @@ impl Opt {
                         };
                     }
 
-                    println!("FVK: {:?}", config.full_viewing_key);
+                    println!("FVK: {:?}", config.original.fvk);
                     let genesis_um_equivalent_amount = genesis_filtered_block
                         .balances
-                        .get(&config.full_viewing_key.to_string())
+                        .get(&config.original.fvk.to_string())
                         .expect("wallet must have genesis allocation");
                     println!(
                         "Genesis UM-equivalent balance: {:?}",
