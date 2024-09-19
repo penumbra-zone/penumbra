@@ -278,6 +278,40 @@ pub mod tendermint {
     }
 }
 
+pub mod noble {
+    pub mod forwarding {
+        pub mod v1 {
+            include!("gen/noble.forwarding.v1.rs");
+        }
+    }
+}
+
+pub mod cosmos {
+    pub mod base {
+        pub mod v1beta1 {
+            include!("gen/cosmos.base.v1beta1.rs");
+        }
+
+        pub mod query {
+            pub mod v1beta1 {
+                include!("gen/cosmos.base.query.v1beta1.rs");
+            }
+        }
+    }
+
+    pub mod auth {
+        pub mod v1beta1 {
+            include!("gen/cosmos.auth.v1beta1.rs");
+        }
+    }
+
+    pub mod bank {
+        pub mod v1beta1 {
+            include!("gen/cosmos.bank.v1beta1.rs");
+        }
+    }
+}
+
 #[cfg(feature = "rpc")]
 // https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
 pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("gen/proto_descriptor.bin.no_lfs");

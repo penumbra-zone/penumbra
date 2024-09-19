@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package noble.forwarding.v1;
+
+option go_package = "github.com/noble-assets/forwarding/x/forwarding/types";
+
+message GenesisState {
+  map<string, uint64> num_of_accounts = 1;
+  map<string, uint64> num_of_forwards = 2;
+  map<string, string> total_forwarded = 3;
+}

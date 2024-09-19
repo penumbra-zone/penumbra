@@ -123,6 +123,11 @@ fn main() -> anyhow::Result<()> {
                 "../../proto/rust-vendored/ibc/core/channel/v1/query.proto",
                 "../../proto/rust-vendored/ibc/core/client/v1/query.proto",
                 "../../proto/rust-vendored/ibc/core/connection/v1/query.proto",
+                "../../proto/rust-vendored/noble/forwarding/v1/account.proto",
+                "../../proto/rust-vendored/noble/forwarding/v1/genesis.proto",
+                "../../proto/rust-vendored/noble/forwarding/v1/packet.proto",
+                "../../proto/rust-vendored/noble/forwarding/v1/query.proto",
+                "../../proto/rust-vendored/noble/forwarding/v1/tx.proto",
             ],
             &["../../proto/penumbra/", "../../proto/rust-vendored/"],
         )?;
