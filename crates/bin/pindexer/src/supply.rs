@@ -1,39 +1,44 @@
-use std::{
-    collections::{BTreeMap, HashSet},
-    fmt::write,
-};
+use std::collections::{BTreeMap, HashSet};
 
 use anyhow::{anyhow, Context, Result};
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_app::genesis::AppState;
 use penumbra_asset::asset;
-use penumbra_keys::Address;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{
     event::ProtoEvent, penumbra::core::component::funding::v1 as pb_funding,
     penumbra::core::component::stake::v1 as pb_stake,
 };
 use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
-use sqlx::{types::chrono::DateTime, PgPool, Postgres, Transaction};
-use std::str::FromStr;
+use sqlx::{PgPool, Postgres, Transaction};
+
+const BPS_SQUARED: u64 = 1_0000_0000u64;
 
 #[derive(Clone, Copy)]
 struct DelegatedSupply {
-    // Neither of these should be negative, despite what the database might say
     um: u64,
     del_um: u64,
+    rate_bps2: u64,
+}
+
+impl Default for DelegatedSupply {
+    fn default() -> Self {
+        Self {
+            um: 0,
+            del_um: 0,
+            rate_bps2: BPS_SQUARED,
+        }
+    }
 }
 
 impl DelegatedSupply {
     fn modify<const NEGATE: bool>(self, delta: u64) -> anyhow::Result<Self> {
-        let bps_squared: U128x128 = 1_0000_0000u128.into();
+        let rate = U128x128::ratio(self.rate_bps2, BPS_SQUARED)?;
         let um_delta = delta;
-        let exchange_rate = U128x128::ratio(self.um, self.del_um);
-        let rounded_exchange_rate = ((bps_squared * exchange_rate)?.round_down() / bps_squared)?;
-        let del_um_delta = if rounded_exchange_rate == U128x128::from(0u128) {
+        let del_um_delta = if rate == U128x128::from(0u128) {
             0u64
         } else {
-            let del_um_delta = (U128x128::from(delta) / rounded_exchange_rate)?;
+            let del_um_delta = (U128x128::from(delta) / rate)?;
             let rounded = if NEGATE {
                 // So that we don't remove too few del_um
                 del_um_delta.round_up()?
@@ -53,6 +58,7 @@ impl DelegatedSupply {
                     .del_um
                     .checked_add(del_um_delta)
                     .ok_or(anyhow!("supply modification failed"))?,
+                rate_bps2: self.rate_bps2,
             }
         } else {
             Self {
@@ -64,10 +70,72 @@ impl DelegatedSupply {
                     .del_um
                     .checked_add(del_um_delta)
                     .ok_or(anyhow!("supply modification failed"))?,
+                rate_bps2: self.rate_bps2,
             }
         };
         Ok(out)
     }
+
+    fn rate_change(self, rate_data: &RateData) -> Result<Self> {
+        let um = rate_data
+            .unbonded_amount(self.del_um.into())
+            .value()
+            .try_into()?;
+
+        Ok(Self {
+            um,
+            del_um: self.del_um,
+            rate_bps2: rate_data.validator_exchange_rate.value().try_into()?,
+        })
+    }
+}
+
+async fn add_validator<'d>(
+    dbtx: &mut Transaction<'d, Postgres>,
+    identity_key: &IdentityKey,
+) -> anyhow::Result<i32> {
+    let ik_string = identity_key.to_string();
+    let id: Option<i32> =
+        sqlx::query_scalar(r#"SELECT id FROM supply_validators WHERE identity_key = $1"#)
+            .bind(&ik_string)
+            .fetch_optional(dbtx.as_mut())
+            .await?;
+    if let Some(id) = id {
+        return Ok(id);
+    }
+    let id =
+        sqlx::query_scalar(r#"INSERT INTO supply_validators VALUES (DEFAULT, $1) RETURNING id"#)
+            .bind(&ik_string)
+            .fetch_one(dbtx.as_mut())
+            .await?;
+    Ok(id)
+}
+
+async fn delegated_supply_current<'d>(
+    dbtx: &mut Transaction<'d, Postgres>,
+    val_id: i32,
+) -> Result<Option<DelegatedSupply>> {
+    let row: Option<(i64, i64, i64)> = sqlx::query_as("SELECT um, del_um, rate_bps2 FROM supply_total_staked WHERE validator_id = $1 ORDER BY height DESC LIMIT 1")
+        .bind(val_id).fetch_optional(dbtx.as_mut()).await?;
+    row.map(|(um, del_um, rate_bps2)| {
+        let um = um.try_into()?;
+        let del_um = del_um.try_into()?;
+        let rate_bps2 = rate_bps2.try_into()?;
+        Ok(DelegatedSupply {
+            um,
+            del_um,
+            rate_bps2,
+        })
+    })
+    .transpose()
+}
+
+async fn supply_current<'d>(dbtx: &mut Transaction<'d, Postgres>) -> Result<u64> {
+    let row: Option<i64> =
+        sqlx::query_scalar("SELECT um FROM supply_total_unstaked ORDER BY height DESC LIMIT 1")
+            .fetch_optional(dbtx.as_mut())
+            .await?;
+    Ok(row.unwrap_or_default().try_into()?)
 }
 
 /// Supply-relevant events.
@@ -93,12 +161,7 @@ enum Event {
         amount: Amount,
     },
     /// A parsed version of [pb::EventFundingStreamReward]
-    FundingStreamReward {
-        height: u64,
-        recipient: Address,
-        epoch_index: u64,
-        reward_amount: Amount,
-    },
+    FundingStreamReward { height: u64, reward_amount: Amount },
     /// A parsed version of EventRateDataChange
     RateDataChange {
         height: u64,
@@ -111,8 +174,8 @@ impl Event {
     const NAMES: [&'static str; 4] = [
         "penumbra.core.component.stake.v1.EventUndelegate",
         "penumbra.core.component.stake.v1.EventDelegate",
-        "penumbra.core.component.stake.v1.EventRateDataChange",
         "penumbra.core.component.funding.v1.EventFundingStreamReward",
+        "penumbra.core.component.stake.v1.EventRateDataChange",
     ];
 
     async fn index<'d>(&self, dbtx: &mut Transaction<'d, Postgres>) -> anyhow::Result<()> {
@@ -122,56 +185,46 @@ impl Event {
                 identity_key,
                 amount,
             } => {
-                let previous_total_um: i64 = sqlx::query_scalar(
-                    r#"SELECT total_um FROM supply_total_unstaked ORDER BY height DESC LIMIT 1"#,
-                )
-                .fetch_optional(dbtx.as_mut())
-                .await?
-                .unwrap_or(0);
+                let amount = u64::try_from(amount.value())?;
 
-                let new_total_um = previous_total_um - amount.value() as i64;
-
+                let val_id = add_validator(dbtx, identity_key).await?;
+                let current_supply = delegated_supply_current(dbtx, val_id).await?;
+                let new_supply = current_supply.unwrap_or_default().modify::<false>(amount)?;
                 sqlx::query(
-                    r#"INSERT INTO supply_total_unstaked (height, total_um) VALUES ($1, $2)"#,
+                    r#"
+                    INSERT INTO
+                        supply_total_staked
+                    VALUES ($1, $2, $3, $4, $5) 
+                    ON CONFLICT (validator_id, height)
+                    DO UPDATE SET
+                        um = excluded.um,
+                        del_um = excluded.del_um,
+                        rate_bps2 = excluded.rate_bps2
+                "#,
                 )
-                .bind(*height as i64)
-                .bind(new_total_um)
+                .bind(val_id)
+                .bind(i64::try_from(*height)?)
+                .bind(i64::try_from(new_supply.um)?)
+                .bind(i64::try_from(new_supply.del_um)?)
+                .bind(i64::try_from(new_supply.rate_bps2)?)
                 .execute(dbtx.as_mut())
                 .await?;
-
-                // Update supply_total_staked
-                let prev_um_eq_delegations: i64 = sqlx::query_scalar(
-                    r"SELECT um_equivalent_delegations FROM supply_total_staked WHERE validator_id = $1 ORDER BY height DESC LIMIT 1"
-                )
-                .bind(identity_key.to_string())
-                .fetch_optional(dbtx.as_mut())
-                .await?
-                .unwrap_or(0);
-                let prev_delegations: i64 = sqlx::query_scalar(
-                    "SELECT delegations FROM supply_total_staked WHERE validator_id = $1 ORDER BY height DESC LIMIT 1"
-                )
-                .bind(identity_key.to_string())
-                .fetch_optional(dbtx.as_mut())
-                .await?
-                .unwrap_or(0);
-
-                let new_um_eq_delegations = prev_um_eq_delegations + amount.value() as i64;
-
-                let new_delegations = if prev_um_eq_delegations == 0 {
-                    amount.value() as i64
-                } else {
-                    let delta_delegations = (amount.value() as f64 / prev_um_eq_delegations as f64)
-                        * prev_delegations as f64;
-                    prev_delegations + delta_delegations as i64
-                };
-
+                let current_um = supply_current(dbtx).await?;
+                let new_um = current_um
+                    .checked_sub(amount)
+                    .ok_or(anyhow!("um supply underflowed"))?;
                 sqlx::query(
-                    r#"INSERT INTO supply_total_staked (height, validator_id, um_equivalent_delegations, delegations) VALUES ($1, $2, $3, $4)"#,
+                    r#"
+                    INSERT INTO
+                        supply_total_unstaked
+                    VALUES ($1, $2) 
+                    ON CONFLICT (height)
+                    DO UPDATE SET
+                        um = excluded.um
+                "#,
                 )
-                .bind(*height as i64)
-                .bind(identity_key.to_string())
-                .bind(new_um_eq_delegations)
-                .bind(new_delegations)
+                .bind(i64::try_from(*height)?)
+                .bind(i64::try_from(new_um)?)
                 .execute(dbtx.as_mut())
                 .await?;
 
@@ -182,59 +235,46 @@ impl Event {
                 identity_key,
                 unbonded_amount,
             } => {
-                let previous_total_um: i64 = sqlx::query_scalar(
-                    r#"SELECT total_um FROM supply_total_unstaked ORDER BY height DESC LIMIT 1"#,
-                )
-                .fetch_optional(dbtx.as_mut())
-                .await?
-                .unwrap_or(0);
+                let amount = u64::try_from(unbonded_amount.value())?;
 
-                let new_total_um = previous_total_um + unbonded_amount.value() as i64;
-
+                let val_id = add_validator(dbtx, identity_key).await?;
+                let current_supply = delegated_supply_current(dbtx, val_id).await?;
+                let new_supply = current_supply.unwrap_or_default().modify::<true>(amount)?;
                 sqlx::query(
-                    r#"INSERT INTO supply_total_unstaked (height, total_um) VALUES ($1, $2)"#,
+                    r#"
+                    INSERT INTO
+                        supply_total_staked
+                    VALUES ($1, $2, $3, $4, $5) 
+                    ON CONFLICT (validator_id, height)
+                    DO UPDATE SET
+                        um = excluded.um,
+                        del_um = excluded.del_um,
+                        rate_bps2 = excluded.rate_bps2
+                "#,
                 )
-                .bind(*height as i64)
-                .bind(new_total_um)
+                .bind(val_id)
+                .bind(i64::try_from(*height)?)
+                .bind(i64::try_from(new_supply.um)?)
+                .bind(i64::try_from(new_supply.del_um)?)
+                .bind(i64::try_from(new_supply.rate_bps2)?)
                 .execute(dbtx.as_mut())
                 .await?;
-
-                let prev_um_eq_delegations: i64 = sqlx::query_scalar(
-                    r"SELECT um_equivalent_delegations FROM supply_total_staked WHERE validator_id = $1 ORDER BY height DESC LIMIT 1"
-                )
-                .bind(identity_key.to_string())
-                .fetch_optional(dbtx.as_mut())
-                .await?
-                .unwrap_or(0);
-
-                let prev_delegations: i64 = sqlx::query_scalar(
-                    "SELECT delegations FROM supply_total_staked WHERE validator_id = $1 ORDER BY height DESC LIMIT 1"
-                )
-                .bind(identity_key.to_string())
-                .fetch_optional(dbtx.as_mut())
-                .await?
-                .unwrap_or(0);
-
-                let new_um_eq_delegations = prev_um_eq_delegations - unbonded_amount.value() as i64;
-
-                if prev_um_eq_delegations == 0 {
-                    return Err(anyhow::anyhow!(
-                        "Previous um_equivalent_delegations is zero"
-                    ));
-                }
-
-                let delta_delegations = (unbonded_amount.value() as f64
-                    / prev_um_eq_delegations as f64)
-                    * prev_delegations as f64;
-                let new_delegations = prev_delegations - delta_delegations as i64;
-
+                let current_um = supply_current(dbtx).await?;
+                let new_um = current_um
+                    .checked_add(amount)
+                    .ok_or(anyhow!("um supply overflowed"))?;
                 sqlx::query(
-                    r#"INSERT INTO supply_total_staked (height, validator_id, um_equivalent_delegations, delegations) VALUES ($1, $2, $3, $4)"#,
+                    r#"
+                    INSERT INTO
+                        supply_total_unstaked
+                    VALUES ($1, $2) 
+                    ON CONFLICT (height)
+                    DO UPDATE SET
+                        um = excluded.um
+                "#,
                 )
-                .bind(*height as i64)
-                .bind(identity_key.to_string())
-                .bind(new_um_eq_delegations)
-                .bind(new_delegations)
+                .bind(i64::try_from(*height)?)
+                .bind(i64::try_from(new_um)?)
                 .execute(dbtx.as_mut())
                 .await?;
 
@@ -242,24 +282,27 @@ impl Event {
             }
             Event::FundingStreamReward {
                 height,
-                recipient: _,
-                epoch_index: _,
                 reward_amount,
             } => {
-                let prev_unstaked: i64 = sqlx::query_scalar(
-                    "SELECT total_um FROM supply_total_unstaked ORDER BY height DESC LIMIT 1",
+                let amount = u64::try_from(reward_amount.value())?;
+                let current_um = supply_current(dbtx).await?;
+                let new_um = current_um
+                    .checked_add(amount)
+                    .ok_or(anyhow!("um supply overflowed"))?;
+                sqlx::query(
+                    r#"
+                    INSERT INTO
+                        supply_total_unstaked
+                    VALUES ($1, $2) 
+                    ON CONFLICT (height)
+                    DO UPDATE SET
+                        um = excluded.um
+                "#,
                 )
-                .fetch_optional(dbtx.as_mut())
-                .await?
-                .ok_or(anyhow!("couldnt look up the previous supply"))?;
-
-                let new_unstaked = prev_unstaked + reward_amount.value() as i64;
-
-                sqlx::query("INSERT INTO supply_total_unstaked (height, total_um) VALUES ($1, $2)")
-                    .bind(*height as i64)
-                    .bind(new_unstaked)
-                    .execute(dbtx.as_mut())
-                    .await?;
+                .bind(i64::try_from(*height)?)
+                .bind(i64::try_from(new_um)?)
+                .execute(dbtx.as_mut())
+                .await?;
 
                 Ok(())
             }
@@ -267,7 +310,32 @@ impl Event {
                 height,
                 identity_key,
                 rate_data,
-            } => Ok(()),
+            } => {
+                let val_id = add_validator(dbtx, identity_key).await?;
+                let current_supply = delegated_supply_current(dbtx, val_id).await?;
+                let new_supply = current_supply.unwrap_or_default().rate_change(rate_data)?;
+                sqlx::query(
+                    r#"
+                    INSERT INTO
+                        supply_total_staked
+                    VALUES ($1, $2, $3, $4, $5) 
+                    ON CONFLICT (validator_id, height)
+                    DO UPDATE SET
+                        um = excluded.um,
+                        del_um = excluded.del_um,
+                        rate_bps2 = excluded.rate_bps2
+                "#,
+                )
+                .bind(val_id)
+                .bind(i64::try_from(*height)?)
+                .bind(i64::try_from(new_supply.um)?)
+                .bind(i64::try_from(new_supply.del_um)?)
+                .bind(i64::try_from(new_supply.rate_bps2)?)
+                .execute(dbtx.as_mut())
+                .await?;
+
+                Ok(())
+            }
         }
     }
 }
@@ -314,16 +382,12 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
             // funding stream reward
             x if x == Event::NAMES[2] => {
                 let pe = pb_funding::EventFundingStreamReward::from_event(event.as_ref())?;
-                let recipient = Address::from_str(&pe.recipient)?;
-                let epoch_index = pe.epoch_index;
                 let reward_amount = Amount::try_from(
                     pe.reward_amount
                         .ok_or(anyhow!("event missing in funding stream reward"))?,
                 )?;
                 Ok(Self::FundingStreamReward {
                     height: event.block_height,
-                    recipient,
-                    epoch_index,
                     reward_amount,
                 })
             }
@@ -368,7 +432,7 @@ async fn add_genesis_native_token_allocation_supply<'a>(
         }
     }
 
-    sqlx::query("INSERT INTO supply_total_unstaked (height, total_um) VALUES ($1, $2)")
+    sqlx::query("INSERT INTO supply_total_unstaked (height, um) VALUES ($1, $2)")
         .bind(0i64)
         .bind(unstaked_native_token_sum.value() as i64)
         .execute(dbtx.as_mut())
@@ -388,11 +452,14 @@ async fn add_genesis_native_token_allocation_supply<'a>(
         let val = Validator::try_from(val.clone())?;
         let delegation_amount = allos.get(&val.token().id()).cloned().unwrap_or_default();
 
-        sqlx::query("INSERT INTO supply_total_staked (height, validator_id, um_equivalent_delegations, delegations) VALUES ($1, $2, $3, $4)")
+        let val_id = add_validator(dbtx, &val.identity_key).await?;
+
+        sqlx::query("INSERT INTO supply_total_staked (height, validator_id, um, del_um, rate_bps2) VALUES ($1, $2, $3, $4, $5)")
             .bind(0i64)
-            .bind(val.identity_key.to_string())
+            .bind(val_id)
             .bind(delegation_amount.value() as i64)
             .bind(delegation_amount.value() as i64)
+            .bind(BPS_SQUARED as i64)
             .execute(dbtx.as_mut())
             .await?;
     }
@@ -434,7 +501,7 @@ CREATE TABLE IF NOT EXISTS supply_total_unstaked (
             // table name is module path + struct name
             "
 CREATE TABLE IF NOT EXISTS supply_validators (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     identity_key TEXT NOT NULL
 );
 ",
@@ -448,6 +515,7 @@ CREATE TABLE IF NOT EXISTS supply_total_staked (
     height BIGINT NOT NULL,
     um BIGINT NOT NULL,
     del_um BIGINT NOT NULL,
+    rate_bps2 BIGINT NOT NULL,
     PRIMARY KEY (validator_id, height)
 );
 ",
