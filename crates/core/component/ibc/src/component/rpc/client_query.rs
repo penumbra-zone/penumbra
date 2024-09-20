@@ -11,7 +11,6 @@ use ibc_proto::ibc::core::client::v1::{
     QueryUpgradedClientStateResponse, QueryUpgradedConsensusStateRequest,
     QueryUpgradedConsensusStateResponse,
 };
-use penumbra_sct::component::clock::EpochRead;
 use prost::Message;
 
 use ibc_types::core::client::ClientId;
@@ -55,19 +54,19 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
             .transpose()
             .map_err(|e| tonic::Status::aborted(format!("couldn't decode client state: {e}")))?;
 
-        let res =
-            QueryClientStateResponse {
-                client_state,
-                proof: proof.encode_to_vec(),
-                proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                    revision_height: snapshot.get_block_height().await.map_err(|e| {
-                        tonic::Status::aborted(format!("couldn't decode height: {e}"))
-                    })? + 1,
-                    revision_number: HI::get_revision_number(&snapshot).await.map_err(|e| {
-                        tonic::Status::aborted(format!("couldn't decode height: {e}"))
-                    })?,
-                }),
-            };
+        let res = QueryClientStateResponse {
+            client_state,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
+            }),
+        };
 
         Ok(tonic::Response::new(res))
     }
@@ -139,19 +138,19 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
             .transpose()
             .map_err(|e| tonic::Status::aborted(format!("couldn't decode consensus state: {e}")))?;
 
-        let res =
-            QueryConsensusStateResponse {
-                consensus_state,
-                proof: proof.encode_to_vec(),
-                proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                    revision_height: snapshot.get_block_height().await.map_err(|e| {
-                        tonic::Status::aborted(format!("couldn't decode height: {e}"))
-                    })? + 1,
-                    revision_number: HI::get_revision_number(&snapshot).await.map_err(|e| {
-                        tonic::Status::aborted(format!("couldn't decode height: {e}"))
-                    })?,
-                }),
-            };
+        let res = QueryConsensusStateResponse {
+            consensus_state,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
+            }),
+        };
 
         Ok(tonic::Response::new(res))
     }
