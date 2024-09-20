@@ -35,3 +35,5 @@ serde_json = {workspace = true}
 futures = {workspace = true}
 pcli = { path = "../pcli" }
 tonic = {workspace = true, features = ["tls-webpki-roots", "tls"]}
+uuid = { version = "1.3", features = ["v4", "serde"] }
+regex = {workspace = true}

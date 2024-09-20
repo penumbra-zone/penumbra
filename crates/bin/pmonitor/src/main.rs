@@ -9,6 +9,7 @@ use std::process::Command as ProcessCommand;
 use std::str::FromStr;
 use tonic::transport::{Channel, ClientTlsConfig};
 use url::Url;
+use uuid::Uuid;
 
 use penumbra_compact_block::CompactBlock;
 use penumbra_keys::FullViewingKey;
@@ -29,7 +30,7 @@ use penumbra_view::{Storage, ViewClient, ViewServer};
 mod config;
 mod genesis;
 
-use config::{AccountConfig, FvkEntry, PmonitorConfig};
+use config::{parse_dest_fvk_from_memo, AccountConfig, FvkEntry, PmonitorConfig};
 
 // The maximum size of a compact block, in bytes (12MB).
 const MAX_CB_SIZE_BYTES: usize = 12 * 1024 * 1024;
@@ -110,6 +111,11 @@ impl Opt {
         let svc: ViewServiceServer<ViewServer> = ViewServiceServer::new(svc);
         let view_service = ViewServiceClient::new(box_grpc_svc::local(svc));
         Ok(view_service)
+    }
+
+    /// Get the path to the wallet directory for a given wallet ID.
+    pub fn wallet_path(&self, wallet_id: &Uuid) -> Utf8PathBuf {
+        self.home.join(format!("wallet_{}", wallet_id))
     }
 
     /// Sync a given wallet to the latest block height.
@@ -215,6 +221,52 @@ impl Opt {
         Ok(())
     }
 
+    /// Compute the UM-equivalent balance for a given (synced) wallet.
+    pub async fn compute_um_equivalent_balance(
+        &self,
+        view_client: &mut ViewServiceClient<box_grpc_svc::BoxGrpcService>,
+        stake_client: &mut StakeQueryServiceClient<Channel>,
+    ) -> Result<Amount> {
+        let notes = view_client.unspent_notes_by_asset_and_address().await?;
+        let mut total_um_equivalent_amount = Amount::from(0u64);
+        for (asset_id, map) in notes.iter() {
+            if *asset_id == *STAKING_TOKEN_ASSET_ID {
+                let total_amount = map
+                    .iter()
+                    .map(|(_, spendable_notes)| {
+                        spendable_notes
+                            .iter()
+                            .map(|spendable_note| spendable_note.note.amount())
+                            .sum::<Amount>()
+                    })
+                    .sum::<Amount>();
+                total_um_equivalent_amount += total_amount;
+            } else if let Ok(delegation_token) = DelegationToken::from_str(&asset_id.to_string()) {
+                let total_amount = map
+                    .iter()
+                    .map(|(_, spendable_notes)| {
+                        spendable_notes
+                            .iter()
+                            .map(|spendable_note| spendable_note.note.amount())
+                            .sum::<Amount>()
+                    })
+                    .sum::<Amount>();
+
+                // We need to convert the amount to the UM-equivalent amount using the appropriate rate data
+                let rate_data: RateData = stake_client
+                    .current_validator_rate(tonic::Request::new(
+                        (delegation_token.validator()).into(),
+                    ))
+                    .await?
+                    .into_inner()
+                    .try_into()?;
+                let um_equivalent_balance = rate_data.unbonded_amount(total_amount);
+                total_um_equivalent_amount += um_equivalent_balance;
+            };
+        }
+        Ok(total_um_equivalent_amount)
+    }
+
     /// Execute the specified command.
     pub async fn exec(&self) -> Result<()> {
         let opt = self;
@@ -257,136 +309,130 @@ impl Opt {
 
                 // Now we need to make subdirectories for each of the FVKs and setup their
                 // config files, with the selected FVK and GRPC URL.
-                for (index, fvk) in fvk_list.iter().enumerate() {
-                    let wallet_dir = opt.home.join(format!("wallet_{}", index));
+                for fvk in fvk_list.iter() {
+                    let wallet_id = Uuid::new_v4();
+                    let wallet_dir = self.wallet_path(&wallet_id);
                     self.create_wallet(&wallet_dir, &fvk, &grpc_url).await?;
 
-                    accounts.push(AccountConfig {
-                        original: FvkEntry {
+                    accounts.push(AccountConfig::new(
+                        FvkEntry {
                             fvk: fvk.clone(),
-                            path: wallet_dir.to_string(),
+                            wallet_id,
                         },
-                        genesis_balance: *(genesis_filtered_block
+                        *(genesis_filtered_block
                             .balances
                             .get(&fvk.to_string())
                             .expect("wallet must have genesis allocation")),
-                        // We'll populate this later upon sync, if we discover the
-                        // account has been migrated.
-                        migrations: Vec::new(),
-                    });
+                    ));
                 }
 
-                let config = PmonitorConfig {
-                    grpc_url: grpc_url.clone(),
-                    accounts: accounts.clone(),
-                };
+                println!("Successfully initialized {} wallets", accounts.len());
+                let pmonitor_config = PmonitorConfig::new(grpc_url.clone(), accounts);
 
                 // Save the config
                 let config_path = opt.home.join("pmonitor_config.toml");
-                fs::write(config_path, toml::to_string(&config)?)?;
+                fs::write(config_path, toml::to_string(&pmonitor_config)?)?;
 
-                println!("Successfully initialized {} wallets", accounts.len());
                 Ok(())
             }
             Command::Audit {} => {
                 // Parse the config file to get the accounts to monitor.
                 //
-                // Note that each logical user might have one or more FVKs, depending on if the user
-                // migrated their account to a new FVK, i.e. if they migrated once, they'll have two
-                // FVKs.
+                // Note that each logical genesis entry might now have one or more FVKs, depending on if the
+                // user migrated their account to a new FVK, i.e. if they migrated once, they'll have two
+                // FVKs. This can happen an unlimited number of times.
                 let config_path = opt.home.join("pmonitor_config.toml");
                 let pmonitor_config: PmonitorConfig =
-                    toml::from_str(&fs::read_to_string(config_path)?)?;
-
-                let mut genesis_fvks = Vec::new();
-                for account in pmonitor_config.accounts.iter() {
-                    genesis_fvks.push(account.original.fvk.clone());
-                }
+                    toml::from_str(&fs::read_to_string(config_path.clone())?)?;
 
                 let mut stake_client = StakeQueryServiceClient::new(
-                    self.pd_channel(pmonitor_config.grpc_url.clone()).await?,
+                    self.pd_channel(pmonitor_config.grpc_url()).await?,
                 );
 
-                // Sync each wallet to the latest block height and check the balances.
-                for config in pmonitor_config.accounts.iter() {
-                    let original_fvk = config.original.fvk.clone();
-                    let original_path: Utf8PathBuf = config.original.path.clone().into();
-                    println!("Syncing wallet: {}", original_path.to_string());
+                // Sync each wallet to the latest block height, check for new migrations, and check the balance.
+                let mut updated_config = pmonitor_config.clone();
+                let mut config_updated = false;
+
+                for (index, config) in pmonitor_config.accounts().iter().enumerate() {
+                    let active_fvk = config.active_fvk();
+                    let active_path = self.wallet_path(&config.active_uuid());
+                    println!("Syncing wallet: {}", active_path.to_string());
 
                     let mut view_client = self
                         .view(
-                            original_path.clone(),
-                            original_fvk.clone(),
-                            pmonitor_config.grpc_url.clone(),
+                            active_path.clone(),
+                            active_fvk.clone(),
+                            pmonitor_config.grpc_url(),
                         )
                         .await?;
 
-                    // todo: do this in parallel
+                    // todo: do this in parallel?
                     self.sync(&mut view_client).await?;
                     println!("Wallet synced successfully");
 
                     // Check if the account has been migrated
                     let storage = Storage::load_or_initialize(
-                        Some(original_path.join("view.sqlite")),
-                        &original_fvk,
-                        pmonitor_config.grpc_url.clone(),
+                        Some(active_path.join("view.sqlite")),
+                        &active_fvk,
+                        pmonitor_config.grpc_url(),
                     )
                     .await?;
 
-                    // todo: match on the original FVK and check for further migrations
                     let migration_tx = storage
-                        .transactions_matching_memo("Migrating balance from".to_string())
+                        .transactions_matching_memo(format!(
+                            "Migrating balance from {}",
+                            active_fvk.to_string()
+                        ))
                         .await?;
                     if migration_tx.is_empty() {
-                        // continue with the normal flow
-                        dbg!("account has not been migrated");
-                    } else {
-                        println!("❗ Account has been migrated to new FVK");
-                        // todo: get the balance from the new FVK
-                    }
+                        println!("Account has not been migrated, continuing using existing FVK...");
+                    } else if migration_tx.len() == 1 {
+                        println!(
+                            "❗ Account has been migrated to new FVK, continuing using new FVK..."
+                        );
+                        let (_, _, _tx, memo_text) = &migration_tx[0];
+                        let new_fvk = parse_dest_fvk_from_memo(&memo_text)?;
+                        let wallet_id = Uuid::new_v4();
+                        let wallet_dir = self.wallet_path(&wallet_id);
+                        self.create_wallet(&wallet_dir, &new_fvk, &pmonitor_config.grpc_url())
+                            .await?;
 
-                    let notes = view_client.unspent_notes_by_asset_and_address().await?;
-                    let mut total_um_equivalent_amount = Amount::from(0u64);
-                    for (asset_id, map) in notes.iter() {
-                        if *asset_id == *STAKING_TOKEN_ASSET_ID {
-                            let total_amount = map
-                                .iter()
-                                .map(|(_, spendable_notes)| {
-                                    spendable_notes
-                                        .iter()
-                                        .map(|spendable_note| spendable_note.note.amount())
-                                        .sum::<Amount>()
-                                })
-                                .sum::<Amount>();
-                            total_um_equivalent_amount += total_amount;
-                        } else if let Ok(delegation_token) =
-                            DelegationToken::from_str(&asset_id.to_string())
-                        {
-                            let total_amount = map
-                                .iter()
-                                .map(|(_, spendable_notes)| {
-                                    spendable_notes
-                                        .iter()
-                                        .map(|spendable_note| spendable_note.note.amount())
-                                        .sum::<Amount>()
-                                })
-                                .sum::<Amount>();
-
-                            // We need to convert the amount to the UM-equivalent amount using the appropriate rate data
-                            let rate_data: RateData = stake_client
-                                .current_validator_rate(tonic::Request::new(
-                                    (delegation_token.validator()).into(),
-                                ))
-                                .await?
-                                .into_inner()
-                                .try_into()?;
-                            let um_equivalent_balance = rate_data.unbonded_amount(total_amount);
-                            total_um_equivalent_amount += um_equivalent_balance;
+                        let new_fvk_entry = FvkEntry {
+                            fvk: new_fvk.clone(),
+                            wallet_id,
                         };
+                        // Mark that the config needs to get saved again for the next time we run the audit command.
+                        config_updated = true;
+
+                        // We need to update the config with the new FVK and path on disk
+                        // to the wallet for the next time we run the audit command.
+                        let mut new_config_entry = config.clone();
+                        new_config_entry.add_migration(new_fvk_entry);
+                        updated_config.set_account(index, new_config_entry.clone());
+
+                        let mut view_client = self
+                            .view(wallet_dir, new_fvk.clone(), pmonitor_config.grpc_url())
+                            .await?;
+
+                        println!("Syncing new wallet...");
+                        self.sync(&mut view_client).await?;
+                        println!("Wallet synced successfully");
+                        // Now we can exit the else if statement and continue by computing the balance,
+                        // which will use the new migrated wallet.
+                    } else {
+                        // we expect a single migration tx per FVK, if this assumption is violated we should bail.
+                        anyhow::bail!(
+                            "Expected a single migration tx, found {}",
+                            migration_tx.len()
+                        );
                     }
 
-                    println!("FVK: {:?}", config.original.fvk);
-                    let genesis_um_equivalent_amount = config.genesis_balance;
+                    let total_um_equivalent_amount = self
+                        .compute_um_equivalent_balance(&mut view_client, &mut stake_client)
+                        .await?;
+
+                    println!("Original FVK: {:?}", config.original_fvk());
+                    let genesis_um_equivalent_amount = config.genesis_balance();
                     println!(
                         "Genesis UM-equivalent balance: {:?}",
                         genesis_um_equivalent_amount
@@ -403,6 +449,12 @@ impl Opt {
                         println!("✅ Expected balance! Balance is greater than or equal to the genesis balance");
                     }
                 }
+
+                // If at any point we marked the config for updating, we need to save it.
+                if config_updated {
+                    fs::write(config_path.clone(), toml::to_string(&updated_config)?)?;
+                }
+
                 Ok(())
             }
         }
