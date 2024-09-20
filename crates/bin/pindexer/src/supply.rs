@@ -7,7 +7,7 @@ use penumbra_asset::asset;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{event::ProtoEvent, penumbra::core::component::funding::v1 as pb};
-use penumbra_stake::{validator::Validator, IdentityKey};
+use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
 use sqlx::{types::chrono::DateTime, PgPool, Postgres, Transaction};
 use std::str::FromStr;
 
@@ -39,6 +39,12 @@ enum Event {
         recipient: Address,
         epoch_index: u64,
         reward_amount: Amount,
+    },
+    /// A parsed version of EventRateDataChange
+    RateDataChange {
+        height: u64,
+        identity_key: IdentityKey,
+        rate_data: RateData,
     },
 }
 
@@ -198,6 +204,15 @@ impl Event {
 
                 Ok(())
             }
+            Event::RateDataChange {
+                height,
+                identity_key,
+                rate_data,
+            } => {
+                
+
+                Ok(())
+            }
         }
     }
 }
@@ -227,6 +242,8 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     reward_amount,
                 })
             }
+            // validator rate change
+            x: if x == Event::NAMES[3] => {},
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }
     }
