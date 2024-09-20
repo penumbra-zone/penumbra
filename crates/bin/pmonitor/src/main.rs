@@ -112,7 +112,7 @@ impl Opt {
         Ok(view_service)
     }
 
-    /// Sync that wallet to the latest block height.
+    /// Sync a given wallet to the latest block height.
     pub async fn sync(
         &self,
         view_service: &mut ViewServiceClient<box_grpc_svc::BoxGrpcService>,
@@ -246,6 +246,13 @@ impl Opt {
                     anyhow::bail!("pmonitor home directory already exists: {}", opt.home);
                 }
 
+                // During init, we also compute and save the genesis balance for each
+                // FVK, since that won't change in the future.
+                let genesis_compact_block =
+                    self.fetch_genesis_compact_block(grpc_url.clone()).await?;
+                let genesis_filtered_block =
+                    genesis::scan_genesis_block(genesis_compact_block, fvk_list.clone()).await?;
+
                 let mut accounts = Vec::new();
 
                 // Now we need to make subdirectories for each of the FVKs and setup their
@@ -259,6 +266,10 @@ impl Opt {
                             fvk: fvk.clone(),
                             path: wallet_dir.to_string(),
                         },
+                        genesis_balance: *(genesis_filtered_block
+                            .balances
+                            .get(&fvk.to_string())
+                            .expect("wallet must have genesis allocation")),
                         // We'll populate this later upon sync, if we discover the
                         // account has been migrated.
                         migrations: Vec::new(),
@@ -292,13 +303,6 @@ impl Opt {
                     genesis_fvks.push(account.original.fvk.clone());
                 }
 
-                let genesis_compact_block = self
-                    .fetch_genesis_compact_block(pmonitor_config.grpc_url.clone())
-                    .await?;
-                // We don't need to care about the migrated FVKs in the genesis block, since
-                // no migrations can have occurred yet.
-                let genesis_filtered_block =
-                    genesis::scan_genesis_block(genesis_compact_block, genesis_fvks).await?;
                 let mut stake_client = StakeQueryServiceClient::new(
                     self.pd_channel(pmonitor_config.grpc_url.clone()).await?,
                 );
@@ -382,10 +386,7 @@ impl Opt {
                     }
 
                     println!("FVK: {:?}", config.original.fvk);
-                    let genesis_um_equivalent_amount = genesis_filtered_block
-                        .balances
-                        .get(&config.original.fvk.to_string())
-                        .expect("wallet must have genesis allocation");
+                    let genesis_um_equivalent_amount = config.genesis_balance;
                     println!(
                         "Genesis UM-equivalent balance: {:?}",
                         genesis_um_equivalent_amount
@@ -396,7 +397,7 @@ impl Opt {
                     );
 
                     // Let the user know if the balance is unexpected or not
-                    if total_um_equivalent_amount < *genesis_um_equivalent_amount {
+                    if total_um_equivalent_amount < genesis_um_equivalent_amount {
                         println!("✘ Unexpected balance! Balance is less than the genesis balance");
                     } else {
                         println!("✅ Expected balance! Balance is greater than or equal to the genesis balance");
