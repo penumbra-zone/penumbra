@@ -5822,6 +5822,7 @@ dependencies = [
  "penumbra-asset",
  "penumbra-dex",
  "penumbra-governance",
+ "penumbra-keys",
  "penumbra-num",
  "penumbra-proto",
  "penumbra-shielded-pool",
