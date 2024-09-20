@@ -431,6 +431,8 @@ async fn add_genesis_native_token_allocation_supply<'a>(
                 .unwrap();
         }
     }
+    // Add community pool allocation
+    unstaked_native_token_sum += content.community_pool_content.initial_balance.amount;
 
     sqlx::query("INSERT INTO supply_total_unstaked (height, um) VALUES ($1, $2)")
         .bind(0i64)
