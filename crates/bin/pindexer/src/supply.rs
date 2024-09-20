@@ -6,7 +6,10 @@ use penumbra_app::genesis::AppState;
 use penumbra_asset::asset;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
-use penumbra_proto::{event::ProtoEvent, penumbra::core::component::funding::v1 as pb};
+use penumbra_proto::{
+    event::ProtoEvent, penumbra::core::component::funding::v1 as pb_funding,
+    penumbra::core::component::stake::v1 as pb_stake,
+};
 use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
 use sqlx::{types::chrono::DateTime, PgPool, Postgres, Transaction};
 use std::str::FromStr;
@@ -220,15 +223,41 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
         match event.event.kind.as_str() {
             // undelegation
             x if x == Event::NAMES[0] => {
-                todo!()
+                let pe = pb_stake::EventUndelegate::from_event(event.as_ref())?;
+                let identity_key = pe
+                    .identity_key
+                    .ok_or(anyhow!("EventUndelegate should contain identity key"))?
+                    .try_into()?;
+                let unbonded_amount = pe
+                    .amount
+                    .ok_or(anyhow!("EventUndelegate should contain amount"))?
+                    .try_into()?;
+                Ok(Self::Undelegate {
+                    height: event.block_height,
+                    identity_key,
+                    unbonded_amount,
+                })
             }
             // delegation
             x if x == Event::NAMES[1] => {
-                todo!()
+                let pe = pb_stake::EventDelegate::from_event(event.as_ref())?;
+                let identity_key = pe
+                    .identity_key
+                    .ok_or(anyhow!("EventDelegate should contain identity key"))?
+                    .try_into()?;
+                let amount = pe
+                    .amount
+                    .ok_or(anyhow!("EventDelegate should contain amount"))?
+                    .try_into()?;
+                Ok(Self::Delegate {
+                    height: event.block_height,
+                    identity_key,
+                    amount,
+                })
             }
             // funding stream reward
             x if x == Event::NAMES[2] => {
-                let pe = pb::EventFundingStreamReward::from_event(event.as_ref())?;
+                let pe = pb_funding::EventFundingStreamReward::from_event(event.as_ref())?;
                 let recipient = Address::from_str(&pe.recipient)?;
                 let epoch_index = pe.epoch_index;
                 let reward_amount = Amount::try_from(
@@ -244,7 +273,20 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
             }
             // validator rate change
             x if x == Event::NAMES[3] => {
-                todo!()
+                let pe = pb_stake::EventRateDataChange::from_event(event.as_ref())?;
+                let identity_key = pe
+                    .identity_key
+                    .ok_or(anyhow!("EventRateDataChange should contain identity key"))?
+                    .try_into()?;
+                let rate_data = pe
+                    .rate_data
+                    .ok_or(anyhow!("EventRateDataChange should contain rate data"))?
+                    .try_into()?;
+                Ok(Self::RateDataChange {
+                    height: event.block_height,
+                    identity_key,
+                    rate_data,
+                })
             }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }
