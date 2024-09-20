@@ -5925,6 +5925,7 @@ dependencies = [
  "penumbra-stake",
  "penumbra-tct",
  "penumbra-view",
+ "regex",
  "serde",
  "serde_json",
  "tokio",
@@ -5932,6 +5933,7 @@ dependencies = [
  "tonic",
  "tracing",
  "url",
+ "uuid",
 ]
 
 [[package]]
@@ -8618,6 +8620,7 @@ checksum = "5de17fd2f7da591098415cff336e12965a28061ddace43b59cb3c430179c9439"
 dependencies = [
  "getrandom",
  "rand",
+ "serde",
 ]
 
 [[package]]
