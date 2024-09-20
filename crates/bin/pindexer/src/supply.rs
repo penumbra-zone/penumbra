@@ -1,11 +1,14 @@
-use std::collections::{BTreeMap, HashSet};
+use std::{
+    collections::{BTreeMap, HashSet},
+    fmt::write,
+};
 
 use anyhow::{anyhow, Context, Result};
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_app::genesis::AppState;
 use penumbra_asset::asset;
 use penumbra_keys::Address;
-use penumbra_num::Amount;
+use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{
     event::ProtoEvent, penumbra::core::component::funding::v1 as pb_funding,
     penumbra::core::component::stake::v1 as pb_stake,
@@ -13,6 +16,59 @@ use penumbra_proto::{
 use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
 use sqlx::{types::chrono::DateTime, PgPool, Postgres, Transaction};
 use std::str::FromStr;
+
+#[derive(Clone, Copy)]
+struct DelegatedSupply {
+    // Neither of these should be negative, despite what the database might say
+    um: u64,
+    del_um: u64,
+}
+
+impl DelegatedSupply {
+    fn modify<const NEGATE: bool>(self, delta: u64) -> anyhow::Result<Self> {
+        let bps_squared: U128x128 = 1_0000_0000u128.into();
+        let um_delta = delta;
+        let exchange_rate = U128x128::ratio(self.um, self.del_um);
+        let rounded_exchange_rate = ((bps_squared * exchange_rate)?.round_down() / bps_squared)?;
+        let del_um_delta = if rounded_exchange_rate == U128x128::from(0u128) {
+            0u64
+        } else {
+            let del_um_delta = (U128x128::from(delta) / rounded_exchange_rate)?;
+            let rounded = if NEGATE {
+                // So that we don't remove too few del_um
+                del_um_delta.round_up()?
+            } else {
+                // So that we don't add too many del_um
+                del_um_delta.round_down()
+            };
+            rounded.try_into()?
+        };
+        let out = if NEGATE {
+            Self {
+                um: self
+                    .um
+                    .checked_add(um_delta)
+                    .ok_or(anyhow!("supply modification failed"))?,
+                del_um: self
+                    .del_um
+                    .checked_add(del_um_delta)
+                    .ok_or(anyhow!("supply modification failed"))?,
+            }
+        } else {
+            Self {
+                um: self
+                    .um
+                    .checked_add(um_delta)
+                    .ok_or(anyhow!("supply modification failed"))?,
+                del_um: self
+                    .del_um
+                    .checked_add(del_um_delta)
+                    .ok_or(anyhow!("supply modification failed"))?,
+            }
+        };
+        Ok(out)
+    }
+}
 
 /// Supply-relevant events.
 /// The supply of the native staking token can change:
