@@ -52,11 +52,11 @@ impl DelegatedSupply {
             Self {
                 um: self
                     .um
-                    .checked_add(um_delta)
+                    .checked_sub(um_delta)
                     .ok_or(anyhow!("supply modification failed"))?,
                 del_um: self
                     .del_um
-                    .checked_add(del_um_delta)
+                    .checked_sub(del_um_delta)
                     .ok_or(anyhow!("supply modification failed"))?,
                 rate_bps2: self.rate_bps2,
             }
