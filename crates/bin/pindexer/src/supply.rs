@@ -208,11 +208,7 @@ impl Event {
                 height,
                 identity_key,
                 rate_data,
-            } => {
-                
-
-                Ok(())
-            }
+            } => Ok(()),
         }
     }
 }
@@ -223,9 +219,13 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
     fn try_from(event: &'a ContextualizedEvent) -> Result<Self, Self::Error> {
         match event.event.kind.as_str() {
             // undelegation
-            x if x == Event::NAMES[0] => {}
+            x if x == Event::NAMES[0] => {
+                todo!()
+            }
             // delegation
-            x if x == Event::NAMES[1] => {}
+            x if x == Event::NAMES[1] => {
+                todo!()
+            }
             // funding stream reward
             x if x == Event::NAMES[2] => {
                 let pe = pb::EventFundingStreamReward::from_event(event.as_ref())?;
@@ -243,7 +243,9 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                 })
             }
             // validator rate change
-            x: if x == Event::NAMES[3] => {},
+            x if x == Event::NAMES[3] => {
+                todo!()
+            }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }
     }
@@ -324,15 +326,32 @@ impl AppView for Supply {
             "
 CREATE TABLE IF NOT EXISTS supply_total_unstaked (
     height BIGINT PRIMARY KEY,
-    total_um BIGINT NOT NULL,
+    um BIGINT NOT NULL
 );
-
+",
+        )
+        .execute(dbtx.as_mut())
+        .await?;
+        sqlx::query(
+            // table name is module path + struct name
+            "
+CREATE TABLE IF NOT EXISTS supply_validators (
+    id INT PRIMARY KEY,
+    identity_key TEXT NOT NULL
+);
+",
+        )
+        .execute(dbtx.as_mut())
+        .await?;
+        sqlx::query(
+            "
 CREATE TABLE IF NOT EXISTS supply_total_staked (
-    height BIGINT PRIMARY KEY,
-    validator_id TEXT NOT NULL,
-    um_equivalent_delegations BIGINT NOT NULL,
-    delegations BIGINT NOT NULL,
-)
+    validator_id INT REFERENCES supply_validators(id),
+    height BIGINT NOT NULL,
+    um BIGINT NOT NULL,
+    del_um BIGINT NOT NULL,
+    PRIMARY KEY (validator_id, height)
+);
 ",
         )
         .execute(dbtx.as_mut())
