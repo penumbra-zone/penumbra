@@ -5820,6 +5820,7 @@ dependencies = [
  "num-bigint",
  "penumbra-app",
  "penumbra-asset",
+ "penumbra-auction",
  "penumbra-dex",
  "penumbra-governance",
  "penumbra-keys",

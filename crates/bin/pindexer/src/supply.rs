@@ -6,7 +6,8 @@ use penumbra_app::genesis::{AppState, Content};
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
 use penumbra_proto::{
-    event::ProtoEvent, penumbra::core::component::funding::v1 as pb_funding,
+    event::ProtoEvent, penumbra::core::component::auction::v1 as pb_auction,
+    penumbra::core::component::funding::v1 as pb_funding,
     penumbra::core::component::stake::v1 as pb_stake,
 };
 use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
@@ -24,7 +25,8 @@ mod unstaked_supply {
             r#"
         CREATE TABLE IF NOT EXISTS supply_total_unstaked (
             height BIGINT PRIMARY KEY,
-            um BIGINT NOT NULL
+            um BIGINT NOT NULL,
+            auction BIGINT NOT NULL
         );
         "#,
         )
@@ -33,33 +35,48 @@ mod unstaked_supply {
         Ok(())
     }
 
+    /// The supply of unstaked tokens, in various components.
+    #[derive(Clone, Copy, Debug, Default, PartialEq)]
+    pub struct Supply {
+        /// The supply that's not locked in any component.
+        pub um: u64,
+        /// The supply locked in the auction component.
+        pub auction: u64,
+    }
+
     /// Get the supply for at a given height.
-    async fn get_supply(dbtx: &mut PgTransaction<'_>, height: u64) -> Result<Option<u64>> {
-        let row: Option<i64> = sqlx::query_scalar(
-            "SELECT um FROM supply_total_unstaked WHERE height <= $1 ORDER BY height DESC LIMIT 1",
+    async fn get_supply(dbtx: &mut PgTransaction<'_>, height: u64) -> Result<Option<Supply>> {
+        let row: Option<(i64, i64)> = sqlx::query_as(
+            "SELECT um, auction FROM supply_total_unstaked WHERE height <= $1 ORDER BY height DESC LIMIT 1",
         )
         .bind(i64::try_from(height)?)
         .fetch_optional(dbtx.as_mut())
         .await?;
-        row.map(|x| u64::try_from(x))
-            .transpose()
-            .map_err(Into::into)
+        match row {
+            None => Ok(None),
+            Some((um, auction)) => Ok(Some(Supply {
+                um: um.try_into()?,
+                auction: auction.try_into()?,
+            })),
+        }
     }
 
     /// Set the supply at a given height.
-    async fn set_supply(dbtx: &mut PgTransaction<'_>, height: u64, supply: u64) -> Result<()> {
+    async fn set_supply(dbtx: &mut PgTransaction<'_>, height: u64, supply: Supply) -> Result<()> {
         sqlx::query(
             r#"
         INSERT INTO
             supply_total_unstaked
-        VALUES ($1, $2) 
+        VALUES ($1, $2, $3) 
         ON CONFLICT (height)
         DO UPDATE SET
-            um = excluded.um
+            um = excluded.um,
+            auction = excluded.auction
         "#,
         )
         .bind(i64::try_from(height)?)
-        .bind(i64::try_from(supply)?)
+        .bind(i64::try_from(supply.um)?)
+        .bind(i64::try_from(supply.auction)?)
         .execute(dbtx.as_mut())
         .await?;
         Ok(())
@@ -72,7 +89,7 @@ mod unstaked_supply {
     pub async fn modify(
         dbtx: &mut PgTransaction<'_>,
         height: u64,
-        f: impl FnOnce(Option<u64>) -> Result<u64>,
+        f: impl FnOnce(Option<Supply>) -> Result<Supply>,
     ) -> Result<()> {
         let supply = get_supply(dbtx, height).await?;
         let new_supply = f(supply)?;
@@ -340,14 +357,30 @@ enum Event {
         identity_key: IdentityKey,
         rate_data: RateData,
     },
+    /// A parsed version of [auction::EventValueCircuitBreakerCredit]
+    AuctionVCBCredit {
+        height: u64,
+        asset_id: asset::Id,
+        previous_balance: Amount,
+        new_balance: Amount,
+    },
+    /// A parsed version of [auction::EventValueCircuitBreakerDebit]
+    AuctionVCBDebit {
+        height: u64,
+        asset_id: asset::Id,
+        previous_balance: Amount,
+        new_balance: Amount,
+    },
 }
 
 impl Event {
-    const NAMES: [&'static str; 4] = [
+    const NAMES: [&'static str; 6] = [
         "penumbra.core.component.stake.v1.EventUndelegate",
         "penumbra.core.component.stake.v1.EventDelegate",
         "penumbra.core.component.funding.v1.EventFundingStreamReward",
         "penumbra.core.component.stake.v1.EventRateDataChange",
+        "penumbra.core.component.auction.v1.EventValueCircuitBreakerCredit",
+        "penumbra.core.component.auction.v1.EventValueCircuitBreakerDebit",
     ];
 
     async fn index<'d>(&self, dbtx: &mut Transaction<'d, Postgres>) -> anyhow::Result<()> {
@@ -360,7 +393,11 @@ impl Event {
                 let amount = i64::try_from(amount.value())?;
 
                 unstaked_supply::modify(dbtx, *height, |current| {
-                    Ok(current.unwrap_or_default() - amount as u64)
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um - amount as u64,
+                        ..current
+                    })
                 })
                 .await?;
 
@@ -378,7 +415,11 @@ impl Event {
                 let amount = i64::try_from(unbonded_amount.value())?;
 
                 unstaked_supply::modify(dbtx, *height, |current| {
-                    Ok(current.unwrap_or_default() + amount as u64)
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um + amount as u64,
+                        ..current
+                    })
                 })
                 .await?;
 
@@ -395,7 +436,11 @@ impl Event {
                 let amount = u64::try_from(reward_amount.value())?;
 
                 unstaked_supply::modify(dbtx, *height, |current| {
-                    Ok(current.unwrap_or_default() + amount)
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um + amount as u64,
+                        ..current
+                    })
                 })
                 .await
             }
@@ -407,6 +452,48 @@ impl Event {
                 let validator = delegated_supply::define_validator(dbtx, identity_key).await?;
                 delegated_supply::modify(dbtx, validator, *height, |current| {
                     current.unwrap_or_default().change_rate(rate_data)
+                })
+                .await
+            }
+            Event::AuctionVCBCredit {
+                height,
+                asset_id,
+                previous_balance,
+                new_balance,
+            } => {
+                if *asset_id != *STAKING_TOKEN_ASSET_ID {
+                    return Ok(());
+                }
+
+                let added = u64::try_from(new_balance.value() - previous_balance.value())?;
+                unstaked_supply::modify(dbtx, *height, |current| {
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um - added,
+                        auction: current.auction + added,
+                        ..current
+                    })
+                })
+                .await
+            }
+            Event::AuctionVCBDebit {
+                height,
+                asset_id,
+                previous_balance,
+                new_balance,
+            } => {
+                if *asset_id != *STAKING_TOKEN_ASSET_ID {
+                    return Ok(());
+                }
+
+                let removed = u64::try_from(previous_balance.value() - new_balance.value())?;
+                unstaked_supply::modify(dbtx, *height, |current| {
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um + removed,
+                        auction: current.auction - removed,
+                        ..current
+                    })
                 })
                 .await
             }
@@ -482,6 +569,50 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     rate_data,
                 })
             }
+            // AuctionVCBCredit
+            x if x == Event::NAMES[4] => {
+                let pe = pb_auction::EventValueCircuitBreakerCredit::from_event(event.as_ref())?;
+                let asset_id = pe
+                    .asset_id
+                    .ok_or(anyhow!("AuctionVCBCredit missing asset_id"))?
+                    .try_into()?;
+                let previous_balance = pe
+                    .previous_balance
+                    .ok_or(anyhow!("AuctionVCBCredit missing previous_balance"))?
+                    .try_into()?;
+                let new_balance = pe
+                    .new_balance
+                    .ok_or(anyhow!("AuctionVCBCredit missing previous_balance"))?
+                    .try_into()?;
+                Ok(Self::AuctionVCBCredit {
+                    height: event.block_height,
+                    asset_id,
+                    previous_balance,
+                    new_balance,
+                })
+            }
+            // AuctionVCBDebit
+            x if x == Event::NAMES[5] => {
+                let pe = pb_auction::EventValueCircuitBreakerDebit::from_event(event.as_ref())?;
+                let asset_id = pe
+                    .asset_id
+                    .ok_or(anyhow!("AuctionVCBDebit missing asset_id"))?
+                    .try_into()?;
+                let previous_balance = pe
+                    .previous_balance
+                    .ok_or(anyhow!("AuctionVCBDebit missing previous_balance"))?
+                    .try_into()?;
+                let new_balance = pe
+                    .new_balance
+                    .ok_or(anyhow!("AuctionVCBDebit missing previous_balance"))?
+                    .try_into()?;
+                Ok(Self::AuctionVCBDebit {
+                    height: event.block_height,
+                    asset_id,
+                    previous_balance,
+                    new_balance,
+                })
+            }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }
     }
@@ -525,7 +656,13 @@ async fn add_genesis_native_token_allocation_supply<'a>(
             .unwrap_or_default()
             .value(),
     )?;
-    unstaked_supply::modify(dbtx, 0, |_| Ok(unstaked_mint)).await?;
+    unstaked_supply::modify(dbtx, 0, |_| {
+        Ok(unstaked_supply::Supply {
+            um: unstaked_mint,
+            auction: 0,
+        })
+    })
+    .await?;
 
     // at genesis, assume a 1:1 ratio between delegation amount and native token amount.
     for val in &content.stake_content.validators {
