@@ -6,10 +6,11 @@ use penumbra_app::genesis::{AppState, Content};
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
 use penumbra_proto::{
-    event::ProtoEvent, penumbra::core::component::auction::v1 as pb_auction,
-    penumbra::core::component::dex::v1 as pb_dex,
-    penumbra::core::component::funding::v1 as pb_funding,
-    penumbra::core::component::stake::v1 as pb_stake,
+    event::ProtoEvent,
+    penumbra::core::component::{
+        auction::v1 as pb_auction, dex::v1 as pb_dex, funding::v1 as pb_funding,
+        stake::v1 as pb_stake,
+    },
 };
 use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
 use sqlx::{PgPool, Postgres, Transaction};
@@ -28,7 +29,8 @@ mod unstaked_supply {
             height BIGINT PRIMARY KEY,
             um BIGINT NOT NULL,
             auction BIGINT NOT NULL,
-            dex BIGINT NOT NULL
+            dex BIGINT NOT NULL,
+            arb BIGINT NOT NULL
         );
         "#,
         )
@@ -46,22 +48,25 @@ mod unstaked_supply {
         pub auction: u64,
         /// The supply locked in the dex component.
         pub dex: u64,
+        /// The supply which has been (forever) locked away after arb.
+        pub arb: u64,
     }
 
     /// Get the supply for at a given height.
     async fn get_supply(dbtx: &mut PgTransaction<'_>, height: u64) -> Result<Option<Supply>> {
-        let row: Option<(i64, i64, i64)> = sqlx::query_as(
-            "SELECT um, auction, dex FROM supply_total_unstaked WHERE height <= $1 ORDER BY height DESC LIMIT 1",
+        let row: Option<(i64, i64, i64, i64)> = sqlx::query_as(
+            "SELECT um, auction, dex, arb FROM supply_total_unstaked WHERE height <= $1 ORDER BY height DESC LIMIT 1",
         )
         .bind(i64::try_from(height)?)
         .fetch_optional(dbtx.as_mut())
         .await?;
         match row {
             None => Ok(None),
-            Some((um, auction, dex)) => Ok(Some(Supply {
+            Some((um, auction, dex, arb)) => Ok(Some(Supply {
                 um: um.try_into()?,
                 auction: auction.try_into()?,
                 dex: dex.try_into()?,
+                arb: arb.try_into()?,
             })),
         }
     }
@@ -77,13 +82,15 @@ mod unstaked_supply {
         DO UPDATE SET
             um = excluded.um,
             auction = excluded.auction,
-            dex = excluded.dex
+            dex = excluded.dex,
+            arb = excluded.arb
         "#,
         )
         .bind(i64::try_from(height)?)
         .bind(i64::try_from(supply.um)?)
         .bind(i64::try_from(supply.auction)?)
         .bind(i64::try_from(supply.dex)?)
+        .bind(i64::try_from(supply.arb)?)
         .execute(dbtx.as_mut())
         .await?;
         Ok(())
@@ -392,6 +399,10 @@ enum Event {
         previous_balance: Amount,
         new_balance: Amount,
     },
+    DexArb {
+        height: u64,
+        swap_execution: penumbra_dex::SwapExecution,
+    },
 }
 
 impl Event {
@@ -562,6 +573,28 @@ impl Event {
                 })
                 .await
             }
+            Event::DexArb {
+                height,
+                swap_execution,
+            } => {
+                let input = swap_execution.input;
+                let output = swap_execution.output;
+                // Ignore any arb event not from the staking token to itself.
+                if input.asset_id != output.asset_id || input.asset_id != *STAKING_TOKEN_ASSET_ID {
+                    return Ok(());
+                }
+
+                let profit = u64::try_from((output.amount - input.amount).value())?;
+                unstaked_supply::modify(dbtx, *height, |current| {
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um - profit,
+                        arb: current.arb + profit,
+                        ..current
+                    })
+                })
+                .await
+            }
         }
     }
 }
@@ -722,6 +755,18 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     new_balance,
                 })
             }
+            // DexArb
+            x if x == Event::NAMES[8] => {
+                let pe = pb_dex::EventArbExecution::from_event(event.as_ref())?;
+                let swap_execution = pe
+                    .swap_execution
+                    .ok_or(anyhow!("EventArbExecution missing swap_execution"))?
+                    .try_into()?;
+                Ok(Self::DexArb {
+                    height: event.block_height,
+                    swap_execution,
+                })
+            }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }
     }
@@ -770,6 +815,7 @@ async fn add_genesis_native_token_allocation_supply<'a>(
             um: unstaked_mint,
             auction: 0,
             dex: 0,
+            arb: 0,
         })
     })
     .await?;
