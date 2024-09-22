@@ -8,7 +8,7 @@ use penumbra_num::Amount;
 use penumbra_proto::{
     event::ProtoEvent,
     penumbra::core::component::{
-        auction::v1 as pb_auction, dex::v1 as pb_dex, funding::v1 as pb_funding,
+        auction::v1 as pb_auction, dex::v1 as pb_dex, fee::v1 as pb_fee, funding::v1 as pb_funding,
         stake::v1 as pb_stake,
     },
 };
@@ -30,7 +30,8 @@ mod unstaked_supply {
             um BIGINT NOT NULL,
             auction BIGINT NOT NULL,
             dex BIGINT NOT NULL,
-            arb BIGINT NOT NULL
+            arb BIGINT NOT NULL,
+            fees BIGINT NOT NULL
         );
         "#,
         )
@@ -50,23 +51,26 @@ mod unstaked_supply {
         pub dex: u64,
         /// The supply which has been (forever) locked away after arb.
         pub arb: u64,
+        /// The supply which has been (forever) locked away as paid fees.
+        pub fees: u64,
     }
 
     /// Get the supply for at a given height.
     async fn get_supply(dbtx: &mut PgTransaction<'_>, height: u64) -> Result<Option<Supply>> {
-        let row: Option<(i64, i64, i64, i64)> = sqlx::query_as(
-            "SELECT um, auction, dex, arb FROM supply_total_unstaked WHERE height <= $1 ORDER BY height DESC LIMIT 1",
+        let row: Option<(i64, i64, i64, i64, i64)> = sqlx::query_as(
+            "SELECT um, auction, dex, arb, fees FROM supply_total_unstaked WHERE height <= $1 ORDER BY height DESC LIMIT 1",
         )
         .bind(i64::try_from(height)?)
         .fetch_optional(dbtx.as_mut())
         .await?;
         match row {
             None => Ok(None),
-            Some((um, auction, dex, arb)) => Ok(Some(Supply {
+            Some((um, auction, dex, arb, fees)) => Ok(Some(Supply {
                 um: um.try_into()?,
                 auction: auction.try_into()?,
                 dex: dex.try_into()?,
                 arb: arb.try_into()?,
+                fees: fees.try_into()?,
             })),
         }
     }
@@ -77,13 +81,14 @@ mod unstaked_supply {
             r#"
         INSERT INTO
             supply_total_unstaked
-        VALUES ($1, $2, $3, $4) 
+        VALUES ($1, $2, $3, $4, $5, $6) 
         ON CONFLICT (height)
         DO UPDATE SET
             um = excluded.um,
             auction = excluded.auction,
             dex = excluded.dex,
-            arb = excluded.arb
+            arb = excluded.arb,
+            fees = excluded.fees
         "#,
         )
         .bind(i64::try_from(height)?)
@@ -91,6 +96,7 @@ mod unstaked_supply {
         .bind(i64::try_from(supply.auction)?)
         .bind(i64::try_from(supply.dex)?)
         .bind(i64::try_from(supply.arb)?)
+        .bind(i64::try_from(supply.fees)?)
         .execute(dbtx.as_mut())
         .await?;
         Ok(())
@@ -403,10 +409,14 @@ enum Event {
         height: u64,
         swap_execution: penumbra_dex::SwapExecution,
     },
+    BlockFees {
+        height: u64,
+        total: penumbra_fee::Fee,
+    },
 }
 
 impl Event {
-    const NAMES: [&'static str; 8] = [
+    const NAMES: [&'static str; 10] = [
         "penumbra.core.component.stake.v1.EventUndelegate",
         "penumbra.core.component.stake.v1.EventDelegate",
         "penumbra.core.component.funding.v1.EventFundingStreamReward",
@@ -415,6 +425,8 @@ impl Event {
         "penumbra.core.component.auction.v1.EventValueCircuitBreakerDebit",
         "penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit",
         "penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit",
+        "penumbra.core.component.dex.v1.EventArbExecution",
+        "penumbra.core.component.fee.v1.EventBlockFees",
     ];
 
     async fn index<'d>(&self, dbtx: &mut Transaction<'d, Postgres>) -> anyhow::Result<()> {
@@ -595,6 +607,27 @@ impl Event {
                 })
                 .await
             }
+            Event::BlockFees { height, total } => {
+                if total.asset_id() != *STAKING_TOKEN_ASSET_ID {
+                    return Ok(());
+                }
+                let amount = u64::try_from(total.amount().value())?;
+                // This might happen without fees frequently, potentially.
+                if amount == 0 {
+                    return Ok(());
+                }
+                // We consider the tip to be destroyed too, matching the current logic
+                // DRAGON: if this changes, this code should use the base fee only.
+                unstaked_supply::modify(dbtx, *height, |current| {
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um - amount,
+                        fees: current.fees + amount,
+                        ..current
+                    })
+                })
+                .await
+            }
         }
     }
 }
@@ -767,6 +800,18 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     swap_execution,
                 })
             }
+            // BlockFees
+            x if x == Event::NAMES[9] => {
+                let pe = pb_fee::EventBlockFees::from_event(event.as_ref())?;
+                let total = pe
+                    .swapped_fee_total
+                    .ok_or(anyhow!("EventBlockFees missing swapped_fee_total"))?
+                    .try_into()?;
+                Ok(Self::BlockFees {
+                    height: event.block_height,
+                    total,
+                })
+            }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }
     }
@@ -816,6 +861,7 @@ async fn add_genesis_native_token_allocation_supply<'a>(
             auction: 0,
             dex: 0,
             arb: 0,
+            fees: 0,
         })
     })
     .await?;
