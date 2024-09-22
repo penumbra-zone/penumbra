@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, HashSet};
 
 use anyhow::{anyhow, Context, Result};
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
-use penumbra_app::genesis::AppState;
-use penumbra_asset::asset;
+use penumbra_app::genesis::{AppState, Content};
+use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
 use penumbra_proto::{
     event::ProtoEvent, penumbra::core::component::funding::v1 as pb_funding,
@@ -11,6 +11,7 @@ use penumbra_proto::{
 };
 use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
 use sqlx::{PgPool, Postgres, Transaction};
+use std::iter;
 
 mod unstaked_supply {
     //! This module handles updates around the unstaked supply.
@@ -491,38 +492,45 @@ async fn add_genesis_native_token_allocation_supply<'a>(
     dbtx: &mut PgTransaction<'a>,
     app_state: &AppState,
 ) -> Result<()> {
+    fn content_mints(content: &Content) -> BTreeMap<asset::Id, Amount> {
+        let community_pool_mint = iter::once((
+            *STAKING_TOKEN_ASSET_ID,
+            content.community_pool_content.initial_balance.amount,
+        ));
+        let allocation_mints = content
+            .shielded_pool_content
+            .allocations
+            .iter()
+            .map(|allocation| {
+                let value = allocation.value();
+                (value.asset_id, value.amount)
+            });
+
+        let mut out = BTreeMap::new();
+        for (id, amount) in community_pool_mint.chain(allocation_mints) {
+            out.entry(id).and_modify(|x| *x += amount).or_insert(amount);
+        }
+        out
+    }
+
     let content = app_state
         .content()
         .ok_or_else(|| anyhow::anyhow!("cannot initialized indexer from checkpoint genesis"))?;
+    let mints = content_mints(content);
 
-    let mut unstaked_native_token_sum: Amount = Amount::zero();
-    for allo in &content.shielded_pool_content.allocations {
-        if allo.denom().base_denom().denom == "upenumbra" {
-            let value = allo.value();
-            unstaked_native_token_sum = unstaked_native_token_sum
-                .checked_add(&value.amount)
-                .unwrap();
-        }
-    }
-    // Add community pool allocation
-    unstaked_native_token_sum += content.community_pool_content.initial_balance.amount;
-    let unstaked_native_token_sum = u64::try_from(unstaked_native_token_sum.value())?;
-
-    unstaked_supply::modify(dbtx, 0, |_| Ok(unstaked_native_token_sum)).await?;
-
-    let mut allos = BTreeMap::<asset::Id, Amount>::new();
-    for allo in &content.shielded_pool_content.allocations {
-        let value = allo.value();
-        let sum = allos.entry(value.asset_id).or_default();
-        *sum = sum
-            .checked_add(&value.amount)
-            .ok_or_else(|| anyhow::anyhow!("overflow adding genesis allos (should not happen)"))?;
-    }
+    let unstaked_mint = u64::try_from(
+        mints
+            .get(&*STAKING_TOKEN_ASSET_ID)
+            .copied()
+            .unwrap_or_default()
+            .value(),
+    )?;
+    unstaked_supply::modify(dbtx, 0, |_| Ok(unstaked_mint)).await?;
 
     // at genesis, assume a 1:1 ratio between delegation amount and native token amount.
     for val in &content.stake_content.validators {
         let val = Validator::try_from(val.clone())?;
-        let delegation_amount: i64 = allos
+        let delegation_amount: i64 = mints
             .get(&val.token().id())
             .cloned()
             .unwrap_or_default()
