@@ -5900,7 +5900,7 @@ dependencies = [
 
 [[package]]
 name = "pmonitor"
-version = "0.80.4"
+version = "0.80.5"
 dependencies = [
  "anyhow",
  "camino",
