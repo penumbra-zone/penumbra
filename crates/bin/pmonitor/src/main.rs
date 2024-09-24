@@ -322,7 +322,7 @@ impl Opt {
                         *(genesis_filtered_block
                             .balances
                             .get(&fvk.to_string())
-                            .expect("wallet must have genesis allocation")),
+                            .unwrap_or(&Amount::from(0u64))),
                     ));
                 }
 
