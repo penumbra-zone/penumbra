@@ -290,6 +290,7 @@ impl Opt {
                     .iter()
                     .map(|fvk| FullViewingKey::from_str(&fvk))
                     .collect::<Result<Vec<_>>>()?;
+                println!("Successfully read FVKs from provided file");
 
                 // Create the home directory if it doesn't exist
                 if !opt.home.exists() {
@@ -302,6 +303,7 @@ impl Opt {
                 // FVK, since that won't change in the future.
                 let genesis_compact_block =
                     self.fetch_genesis_compact_block(grpc_url.clone()).await?;
+                println!("About to scan the genesis block... this may take a moment");
                 let genesis_filtered_block =
                     genesis::scan_genesis_block(genesis_compact_block, fvk_list.clone()).await?;
 
@@ -312,6 +314,7 @@ impl Opt {
                 for fvk in fvk_list.iter() {
                     let wallet_id = Uuid::new_v4();
                     let wallet_dir = self.wallet_path(&wallet_id);
+                    println!("Creating wallet at {}", wallet_dir.to_string());
                     self.create_wallet(&wallet_dir, &fvk, &grpc_url).await?;
 
                     accounts.push(AccountConfig::new(
