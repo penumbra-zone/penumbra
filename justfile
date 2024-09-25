@@ -2,6 +2,10 @@
 default:
     @just --list
 
+# Run integration tests for pmonitor tool
+test-pmonitor:
+  ./deployments/scripts/pmonitor-integration-test.sh
+
 # Creates and runs a local devnet with solo validator. Includes ancillary services
 # like metrics, postgres for storing ABCI events, and pindexer for munging those events.
 dev:
