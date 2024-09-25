@@ -5909,12 +5909,14 @@ name = "pmonitor"
 version = "0.80.6"
 dependencies = [
  "anyhow",
+ "assert_cmd",
  "camino",
  "clap",
  "colored",
  "directories",
  "futures",
  "indicatif",
+ "once_cell",
  "pcli",
  "penumbra-app",
  "penumbra-asset",
@@ -5929,6 +5931,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "toml 0.7.8",
  "tonic",
