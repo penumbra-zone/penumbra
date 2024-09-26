@@ -19,6 +19,7 @@ penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
 penumbra-app = {workspace = true}
 penumbra-dex = {workspace = true, default-features = false}
+penumbra-keys = {workspace = true, default-features = false}
 penumbra-governance = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
 penumbra-asset = {workspace = true, default-features = false}

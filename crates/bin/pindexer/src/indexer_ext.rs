@@ -11,5 +11,6 @@ impl IndexerExt for cometindex::Indexer {
             .with_index(crate::stake::UndelegationTxs {})
             .with_index(crate::governance::GovernanceProposals {})
             .with_index(crate::dex::Component::new())
+            .with_index(crate::supply::Component::new())
     }
 }
