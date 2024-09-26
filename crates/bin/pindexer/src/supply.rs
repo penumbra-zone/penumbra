@@ -6,8 +6,11 @@ use penumbra_app::genesis::{AppState, Content};
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
 use penumbra_proto::{
-    event::ProtoEvent, penumbra::core::component::funding::v1 as pb_funding,
-    penumbra::core::component::stake::v1 as pb_stake,
+    event::ProtoEvent,
+    penumbra::core::component::{
+        auction::v1 as pb_auction, dex::v1 as pb_dex, fee::v1 as pb_fee, funding::v1 as pb_funding,
+        stake::v1 as pb_stake,
+    },
 };
 use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
 use sqlx::{PgPool, Postgres, Transaction};
@@ -24,7 +27,11 @@ mod unstaked_supply {
             r#"
         CREATE TABLE IF NOT EXISTS supply_total_unstaked (
             height BIGINT PRIMARY KEY,
-            um BIGINT NOT NULL
+            um BIGINT NOT NULL,
+            auction BIGINT NOT NULL,
+            dex BIGINT NOT NULL,
+            arb BIGINT NOT NULL,
+            fees BIGINT NOT NULL
         );
         "#,
         )
@@ -33,33 +40,63 @@ mod unstaked_supply {
         Ok(())
     }
 
+    /// The supply of unstaked tokens, in various components.
+    #[derive(Clone, Copy, Debug, Default, PartialEq)]
+    pub struct Supply {
+        /// The supply that's not locked in any component.
+        pub um: u64,
+        /// The supply locked in the auction component.
+        pub auction: u64,
+        /// The supply locked in the dex component.
+        pub dex: u64,
+        /// The supply which has been (forever) locked away after arb.
+        pub arb: u64,
+        /// The supply which has been (forever) locked away as paid fees.
+        pub fees: u64,
+    }
+
     /// Get the supply for at a given height.
-    async fn get_supply(dbtx: &mut PgTransaction<'_>, height: u64) -> Result<Option<u64>> {
-        let row: Option<i64> = sqlx::query_scalar(
-            "SELECT um FROM supply_total_unstaked WHERE height <= $1 ORDER BY height DESC LIMIT 1",
+    async fn get_supply(dbtx: &mut PgTransaction<'_>, height: u64) -> Result<Option<Supply>> {
+        let row: Option<(i64, i64, i64, i64, i64)> = sqlx::query_as(
+            "SELECT um, auction, dex, arb, fees FROM supply_total_unstaked WHERE height <= $1 ORDER BY height DESC LIMIT 1",
         )
         .bind(i64::try_from(height)?)
         .fetch_optional(dbtx.as_mut())
         .await?;
-        row.map(|x| u64::try_from(x))
-            .transpose()
-            .map_err(Into::into)
+        match row {
+            None => Ok(None),
+            Some((um, auction, dex, arb, fees)) => Ok(Some(Supply {
+                um: um.try_into()?,
+                auction: auction.try_into()?,
+                dex: dex.try_into()?,
+                arb: arb.try_into()?,
+                fees: fees.try_into()?,
+            })),
+        }
     }
 
     /// Set the supply at a given height.
-    async fn set_supply(dbtx: &mut PgTransaction<'_>, height: u64, supply: u64) -> Result<()> {
+    async fn set_supply(dbtx: &mut PgTransaction<'_>, height: u64, supply: Supply) -> Result<()> {
         sqlx::query(
             r#"
         INSERT INTO
             supply_total_unstaked
-        VALUES ($1, $2) 
+        VALUES ($1, $2, $3, $4, $5, $6) 
         ON CONFLICT (height)
         DO UPDATE SET
-            um = excluded.um
+            um = excluded.um,
+            auction = excluded.auction,
+            dex = excluded.dex,
+            arb = excluded.arb,
+            fees = excluded.fees
         "#,
         )
         .bind(i64::try_from(height)?)
-        .bind(i64::try_from(supply)?)
+        .bind(i64::try_from(supply.um)?)
+        .bind(i64::try_from(supply.auction)?)
+        .bind(i64::try_from(supply.dex)?)
+        .bind(i64::try_from(supply.arb)?)
+        .bind(i64::try_from(supply.fees)?)
         .execute(dbtx.as_mut())
         .await?;
         Ok(())
@@ -72,7 +109,7 @@ mod unstaked_supply {
     pub async fn modify(
         dbtx: &mut PgTransaction<'_>,
         height: u64,
-        f: impl FnOnce(Option<u64>) -> Result<u64>,
+        f: impl FnOnce(Option<Supply>) -> Result<Supply>,
     ) -> Result<()> {
         let supply = get_supply(dbtx, height).await?;
         let new_supply = f(supply)?;
@@ -340,14 +377,56 @@ enum Event {
         identity_key: IdentityKey,
         rate_data: RateData,
     },
+    /// A parsed version of [auction::EventValueCircuitBreakerCredit]
+    AuctionVCBCredit {
+        height: u64,
+        asset_id: asset::Id,
+        previous_balance: Amount,
+        new_balance: Amount,
+    },
+    /// A parsed version of [auction::EventValueCircuitBreakerDebit]
+    AuctionVCBDebit {
+        height: u64,
+        asset_id: asset::Id,
+        previous_balance: Amount,
+        new_balance: Amount,
+    },
+    /// A parsed version of [dex::EventValueCircuitBreakerCredit]
+    DexVCBCredit {
+        height: u64,
+        asset_id: asset::Id,
+        previous_balance: Amount,
+        new_balance: Amount,
+    },
+    /// A parsed version of [dex::EventValueCircuitBreakerDebit]
+    DexVCBDebit {
+        height: u64,
+        asset_id: asset::Id,
+        previous_balance: Amount,
+        new_balance: Amount,
+    },
+    DexArb {
+        height: u64,
+        swap_execution: penumbra_dex::SwapExecution,
+    },
+    BlockFees {
+        height: u64,
+        total: penumbra_fee::Fee,
+    },
 }
 
 impl Event {
-    const NAMES: [&'static str; 4] = [
+    const NAMES: [&'static str; 10] = [
         "penumbra.core.component.stake.v1.EventUndelegate",
         "penumbra.core.component.stake.v1.EventDelegate",
         "penumbra.core.component.funding.v1.EventFundingStreamReward",
         "penumbra.core.component.stake.v1.EventRateDataChange",
+        "penumbra.core.component.auction.v1.EventValueCircuitBreakerCredit",
+        "penumbra.core.component.auction.v1.EventValueCircuitBreakerDebit",
+        "penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit",
+        "penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit",
+        "penumbra.core.component.dex.v1.EventArbExecution",
+        "penumbra.core.component.fee.v1.EventBlockFees",
     ];
 
     async fn index<'d>(&self, dbtx: &mut Transaction<'d, Postgres>) -> anyhow::Result<()> {
@@ -360,7 +439,11 @@ impl Event {
                 let amount = i64::try_from(amount.value())?;
 
                 unstaked_supply::modify(dbtx, *height, |current| {
-                    Ok(current.unwrap_or_default() - amount as u64)
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um - amount as u64,
+                        ..current
+                    })
                 })
                 .await?;
 
@@ -378,7 +461,11 @@ impl Event {
                 let amount = i64::try_from(unbonded_amount.value())?;
 
                 unstaked_supply::modify(dbtx, *height, |current| {
-                    Ok(current.unwrap_or_default() + amount as u64)
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um + amount as u64,
+                        ..current
+                    })
                 })
                 .await?;
 
@@ -395,7 +482,11 @@ impl Event {
                 let amount = u64::try_from(reward_amount.value())?;
 
                 unstaked_supply::modify(dbtx, *height, |current| {
-                    Ok(current.unwrap_or_default() + amount)
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um + amount as u64,
+                        ..current
+                    })
                 })
                 .await
             }
@@ -407,6 +498,133 @@ impl Event {
                 let validator = delegated_supply::define_validator(dbtx, identity_key).await?;
                 delegated_supply::modify(dbtx, validator, *height, |current| {
                     current.unwrap_or_default().change_rate(rate_data)
+                })
+                .await
+            }
+            Event::AuctionVCBCredit {
+                height,
+                asset_id,
+                previous_balance,
+                new_balance,
+            } => {
+                if *asset_id != *STAKING_TOKEN_ASSET_ID {
+                    return Ok(());
+                }
+
+                let added = u64::try_from(new_balance.value() - previous_balance.value())?;
+                unstaked_supply::modify(dbtx, *height, |current| {
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um - added,
+                        auction: current.auction + added,
+                        ..current
+                    })
+                })
+                .await
+            }
+            Event::AuctionVCBDebit {
+                height,
+                asset_id,
+                previous_balance,
+                new_balance,
+            } => {
+                if *asset_id != *STAKING_TOKEN_ASSET_ID {
+                    return Ok(());
+                }
+
+                let removed = u64::try_from(previous_balance.value() - new_balance.value())?;
+                unstaked_supply::modify(dbtx, *height, |current| {
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um + removed,
+                        auction: current.auction - removed,
+                        ..current
+                    })
+                })
+                .await
+            }
+            Event::DexVCBCredit {
+                height,
+                asset_id,
+                previous_balance,
+                new_balance,
+            } => {
+                if *asset_id != *STAKING_TOKEN_ASSET_ID {
+                    return Ok(());
+                }
+
+                let added = u64::try_from(new_balance.value() - previous_balance.value())?;
+                unstaked_supply::modify(dbtx, *height, |current| {
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um - added,
+                        dex: current.dex + added,
+                        ..current
+                    })
+                })
+                .await
+            }
+            Event::DexVCBDebit {
+                height,
+                asset_id,
+                previous_balance,
+                new_balance,
+            } => {
+                if *asset_id != *STAKING_TOKEN_ASSET_ID {
+                    return Ok(());
+                }
+
+                let removed = u64::try_from(previous_balance.value() - new_balance.value())?;
+                unstaked_supply::modify(dbtx, *height, |current| {
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um + removed,
+                        dex: current.dex - removed,
+                        ..current
+                    })
+                })
+                .await
+            }
+            Event::DexArb {
+                height,
+                swap_execution,
+            } => {
+                let input = swap_execution.input;
+                let output = swap_execution.output;
+                // Ignore any arb event not from the staking token to itself.
+                if input.asset_id != output.asset_id || input.asset_id != *STAKING_TOKEN_ASSET_ID {
+                    return Ok(());
+                }
+
+                let profit = u64::try_from((output.amount - input.amount).value())?;
+                unstaked_supply::modify(dbtx, *height, |current| {
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um - profit,
+                        arb: current.arb + profit,
+                        ..current
+                    })
+                })
+                .await
+            }
+            Event::BlockFees { height, total } => {
+                if total.asset_id() != *STAKING_TOKEN_ASSET_ID {
+                    return Ok(());
+                }
+                let amount = u64::try_from(total.amount().value())?;
+                // This might happen without fees frequently, potentially.
+                if amount == 0 {
+                    return Ok(());
+                }
+                // We consider the tip to be destroyed too, matching the current logic
+                // DRAGON: if this changes, this code should use the base fee only.
+                unstaked_supply::modify(dbtx, *height, |current| {
+                    let current = current.unwrap_or_default();
+                    Ok(unstaked_supply::Supply {
+                        um: current.um - amount,
+                        fees: current.fees + amount,
+                        ..current
+                    })
                 })
                 .await
             }
@@ -482,6 +700,118 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
                     rate_data,
                 })
             }
+            // AuctionVCBCredit
+            x if x == Event::NAMES[4] => {
+                let pe = pb_auction::EventValueCircuitBreakerCredit::from_event(event.as_ref())?;
+                let asset_id = pe
+                    .asset_id
+                    .ok_or(anyhow!("AuctionVCBCredit missing asset_id"))?
+                    .try_into()?;
+                let previous_balance = pe
+                    .previous_balance
+                    .ok_or(anyhow!("AuctionVCBCredit missing previous_balance"))?
+                    .try_into()?;
+                let new_balance = pe
+                    .new_balance
+                    .ok_or(anyhow!("AuctionVCBCredit missing previous_balance"))?
+                    .try_into()?;
+                Ok(Self::AuctionVCBCredit {
+                    height: event.block_height,
+                    asset_id,
+                    previous_balance,
+                    new_balance,
+                })
+            }
+            // AuctionVCBDebit
+            x if x == Event::NAMES[5] => {
+                let pe = pb_auction::EventValueCircuitBreakerDebit::from_event(event.as_ref())?;
+                let asset_id = pe
+                    .asset_id
+                    .ok_or(anyhow!("AuctionVCBDebit missing asset_id"))?
+                    .try_into()?;
+                let previous_balance = pe
+                    .previous_balance
+                    .ok_or(anyhow!("AuctionVCBDebit missing previous_balance"))?
+                    .try_into()?;
+                let new_balance = pe
+                    .new_balance
+                    .ok_or(anyhow!("AuctionVCBDebit missing previous_balance"))?
+                    .try_into()?;
+                Ok(Self::AuctionVCBDebit {
+                    height: event.block_height,
+                    asset_id,
+                    previous_balance,
+                    new_balance,
+                })
+            }
+            // DexVCBCredit
+            x if x == Event::NAMES[6] => {
+                let pe = pb_dex::EventValueCircuitBreakerCredit::from_event(event.as_ref())?;
+                let asset_id = pe
+                    .asset_id
+                    .ok_or(anyhow!("DexVCBCredit missing asset_id"))?
+                    .try_into()?;
+                let previous_balance = pe
+                    .previous_balance
+                    .ok_or(anyhow!("DexVCBCredit missing previous_balance"))?
+                    .try_into()?;
+                let new_balance = pe
+                    .new_balance
+                    .ok_or(anyhow!("DexVCBCredit missing previous_balance"))?
+                    .try_into()?;
+                Ok(Self::DexVCBCredit {
+                    height: event.block_height,
+                    asset_id,
+                    previous_balance,
+                    new_balance,
+                })
+            }
+            // DexVCBDebit
+            x if x == Event::NAMES[7] => {
+                let pe = pb_dex::EventValueCircuitBreakerDebit::from_event(event.as_ref())?;
+                let asset_id = pe
+                    .asset_id
+                    .ok_or(anyhow!("DexVCBDebit missing asset_id"))?
+                    .try_into()?;
+                let previous_balance = pe
+                    .previous_balance
+                    .ok_or(anyhow!("DexVCBDebit missing previous_balance"))?
+                    .try_into()?;
+                let new_balance = pe
+                    .new_balance
+                    .ok_or(anyhow!("DexVCBDebit missing previous_balance"))?
+                    .try_into()?;
+                Ok(Self::DexVCBDebit {
+                    height: event.block_height,
+                    asset_id,
+                    previous_balance,
+                    new_balance,
+                })
+            }
+            // DexArb
+            x if x == Event::NAMES[8] => {
+                let pe = pb_dex::EventArbExecution::from_event(event.as_ref())?;
+                let swap_execution = pe
+                    .swap_execution
+                    .ok_or(anyhow!("EventArbExecution missing swap_execution"))?
+                    .try_into()?;
+                Ok(Self::DexArb {
+                    height: event.block_height,
+                    swap_execution,
+                })
+            }
+            // BlockFees
+            x if x == Event::NAMES[9] => {
+                let pe = pb_fee::EventBlockFees::from_event(event.as_ref())?;
+                let total = pe
+                    .swapped_fee_total
+                    .ok_or(anyhow!("EventBlockFees missing swapped_fee_total"))?
+                    .try_into()?;
+                Ok(Self::BlockFees {
+                    height: event.block_height,
+                    total,
+                })
+            }
             x => Err(anyhow!(format!("unrecognized event kind: {x}"))),
         }
     }
@@ -525,7 +855,16 @@ async fn add_genesis_native_token_allocation_supply<'a>(
             .unwrap_or_default()
             .value(),
     )?;
-    unstaked_supply::modify(dbtx, 0, |_| Ok(unstaked_mint)).await?;
+    unstaked_supply::modify(dbtx, 0, |_| {
+        Ok(unstaked_supply::Supply {
+            um: unstaked_mint,
+            auction: 0,
+            dex: 0,
+            arb: 0,
+            fees: 0,
+        })
+    })
+    .await?;
 
     // at genesis, assume a 1:1 ratio between delegation amount and native token amount.
     for val in &content.stake_content.validators {
