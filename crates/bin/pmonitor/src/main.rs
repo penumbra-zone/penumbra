@@ -420,7 +420,9 @@ impl Opt {
 
                     let migration_tx = storage
                         .transactions_matching_memo(format!(
-                            "Migrating balance from {}",
+                            // N.B. the `%` symbol is an SQLite wildcard, required to match the
+                            // remainder of the memo field.
+                            "Migrating balance from {}%",
                             active_fvk.to_string()
                         ))
                         .await?;

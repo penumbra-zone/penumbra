@@ -1759,13 +1759,15 @@ impl Storage {
         Ok(records)
     }
 
-    // Get all transactions with a matching memo text
+    /// Get all transactions with a matching memo text. The `pattern` argument
+    /// should include SQL wildcards, such as `%` and `_`, to match substrings,
+    /// e.g. `%foo%`.
     pub async fn transactions_matching_memo(
         &self,
         pattern: String,
     ) -> anyhow::Result<Vec<(u64, Vec<u8>, Transaction, String)>> {
         let pattern = pattern.to_owned();
-
+        tracing::trace!(?pattern, "searching for memos matching");
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
