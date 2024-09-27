@@ -412,7 +412,7 @@ impl Opt {
 
                     // Check if the account has been migrated
                     let storage = Storage::load_or_initialize(
-                        Some(active_path.join("view.sqlite")),
+                        Some(active_path.join(VIEW_FILE_NAME)),
                         &active_fvk,
                         pmonitor_config.grpc_url(),
                     )
