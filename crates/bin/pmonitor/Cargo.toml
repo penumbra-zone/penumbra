@@ -12,28 +12,29 @@ publish = false
 
 [dependencies]
 anyhow = {workspace = true}
+camino = {workspace = true}
 clap = {workspace = true, features = ["derive", "env"]}
-tracing = {workspace = true}
+directories = {workspace = true}
+futures = {workspace = true}
 indicatif = {workspace = true}
-tokio = {workspace = true, features = ["full"]}
-penumbra-asset = {workspace = true, default-features = false}
+pcli = { path = "../pcli" }
 penumbra-app = {workspace = true}
+penumbra-asset = {workspace = true, default-features = false}
 penumbra-compact-block = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-view = {workspace = true}
 penumbra-proto = {workspace = true}
-directories = {workspace = true}
-camino = {workspace = true}
-url = {workspace = true, features = ["serde"]}
-toml = {workspace = true}
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-stake = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = false}
+penumbra-view = {workspace = true}
+regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
-futures = {workspace = true}
-pcli = { path = "../pcli" }
+tokio = {workspace = true, features = ["full"]}
+toml = {workspace = true}
 tonic = {workspace = true, features = ["tls-webpki-roots", "tls"]}
+tracing = {workspace = true}
+tracing-subscriber = { workspace = true, features = ["env-filter", "ansi"] }
+url = {workspace = true, features = ["serde"]}
 uuid = { version = "1.3", features = ["v4", "serde"] }
-regex = {workspace = true}
