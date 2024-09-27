@@ -94,7 +94,7 @@ impl PmonitorConfig {
 
 /// Get the destination FVK from a migration memo.
 pub fn parse_dest_fvk_from_memo(memo: &str) -> Result<FullViewingKey> {
-    let re = Regex::new(r"Migrating balance from .+ to (.+)").unwrap();
+    let re = Regex::new(r"Migrating balance from .+ to (.+)")?;
     if let Some(captures) = re.captures(memo) {
         if let Some(dest_fvk_str) = captures.get(1) {
             return dest_fvk_str

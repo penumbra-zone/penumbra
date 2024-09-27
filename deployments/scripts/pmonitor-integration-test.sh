@@ -102,7 +102,7 @@ printf '#################################\n'
 printf 'PMONITOR INTEGRATION TEST SUMMARY\n'
 printf '#################################\n'
 
-if grep -q "Unexpected balance! Balance is less than the genesis balance" "${wallets_dir}/pmonitor-log-1.txt" ; then
+if grep -qi "unexpected balance! balance is less than the genesis balance" "${wallets_dir}/pmonitor-log-1.txt" ; then
   >&2 echo "OK: 'pmonitor audit' reported unexpected balance, due to misbehavior"
 else
   >&2 echo "ERROR: 'pmonitor audit' failed to identify misbehavior, which we know occurred"

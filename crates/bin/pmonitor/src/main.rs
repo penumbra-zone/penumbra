@@ -5,9 +5,11 @@ use directories::ProjectDirs;
 use futures::StreamExt;
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 use std::fs;
+use std::io::IsTerminal as _;
 use std::process::Command as ProcessCommand;
 use std::str::FromStr;
 use tonic::transport::{Channel, ClientTlsConfig};
+use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 use uuid::Uuid;
 
@@ -38,9 +40,30 @@ const MAX_CB_SIZE_BYTES: usize = 12 * 1024 * 1024;
 // The name of the view database file
 const VIEW_FILE_NAME: &str = "pcli-view.sqlite";
 
+/// Configure tracing_subscriber for logging messages
+fn init_tracing() -> anyhow::Result<()> {
+    // Instantiate tracing layers.
+    // The `FmtLayer` is used to print to the console.
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_ansi(std::io::stdout().is_terminal())
+        .with_target(true);
+    // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info,penumbra_view=off"))?;
+
+    // Register the tracing subscribers.
+    let registry = tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer);
+    registry.init();
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
+    init_tracing()?;
+    tracing::info!(?opt, version = env!("CARGO_PKG_VERSION"), "running command");
     opt.exec().await
 }
 
@@ -131,26 +154,33 @@ impl Opt {
             .transpose()?
             .ok_or_else(|| anyhow::anyhow!("view service did not report sync status"))?;
 
-        eprintln!(
-            "Scanning blocks from last sync height {} to latest height {}",
-            initial_status.full_sync_height, initial_status.latest_known_block_height,
+        tracing::debug!(
+            "scanning blocks from last sync height {} to latest height {}",
+            initial_status.full_sync_height,
+            initial_status.latest_known_block_height,
         );
 
-        use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
-        let progress_bar = ProgressBar::with_draw_target(
-            initial_status.latest_known_block_height - initial_status.full_sync_height,
-            ProgressDrawTarget::stdout(),
-        )
-        .with_style(
-            ProgressStyle::default_bar()
-                .template("[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec} ETA: {eta}"),
-        );
-        progress_bar.set_position(0);
+        // use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
+        // let progress_bar = ProgressBar::with_draw_target(
+        //     initial_status.latest_known_block_height - initial_status.full_sync_height,
+        //     ProgressDrawTarget::stdout(),
+        // )
+        // .with_style(
+        //     ProgressStyle::default_bar()
+        //         .template("[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec} ETA: {eta}"),
+        // );
+        // progress_bar.set_position(0);
 
+        // On large networks, logging an update every 100k blocks or so seems reasonable.
+        // let log_every_n_blocks = 100000;
+        let log_every_n_blocks = 100;
         while let Some(status) = status_stream.next().await.transpose()? {
-            progress_bar.set_position(status.full_sync_height - initial_status.full_sync_height);
+            if status.full_sync_height % log_every_n_blocks == 0 {
+                tracing::debug!("synced {} blocks", status.full_sync_height);
+            }
+            // progress_bar.set_position(status.full_sync_height - initial_status.full_sync_height);
         }
-        progress_bar.finish();
+        // progress_bar.finish();
 
         Ok(())
     }
@@ -159,8 +189,7 @@ impl Opt {
     pub async fn fetch_genesis_compact_block(&self, grpc_url: Url) -> Result<CompactBlock> {
         let height = 0;
         let mut client = CompactBlockQueryServiceClient::connect(grpc_url.to_string())
-            .await
-            .unwrap()
+            .await?
             .max_decoding_message_size(MAX_CB_SIZE_BYTES);
         let compact_block = client
             .compact_block(CompactBlockRequest { height })
@@ -314,7 +343,7 @@ impl Opt {
                 for fvk in fvk_list.iter() {
                     let wallet_id = Uuid::new_v4();
                     let wallet_dir = self.wallet_path(&wallet_id);
-                    println!("Creating wallet at {}", wallet_dir.to_string());
+                    tracing::debug!("creating wallet at {}", wallet_dir.to_string());
                     self.create_wallet(&wallet_dir, &fvk, &grpc_url).await?;
 
                     accounts.push(AccountConfig::new(
@@ -329,7 +358,7 @@ impl Opt {
                     ));
                 }
 
-                println!("Successfully initialized {} wallets", accounts.len());
+                tracing::info!("successfully initialized {} wallets", accounts.len());
                 let pmonitor_config = PmonitorConfig::new(grpc_url.clone(), accounts);
 
                 // Save the config
@@ -356,10 +385,18 @@ impl Opt {
                 let mut updated_config = pmonitor_config.clone();
                 let mut config_updated = false;
 
+                let num_accounts = pmonitor_config.accounts().len();
+
                 for (index, config) in pmonitor_config.accounts().iter().enumerate() {
                     let active_fvk = config.active_fvk();
                     let active_path = self.wallet_path(&config.active_uuid());
-                    println!("Syncing wallet: {}", active_path.to_string());
+                    tracing::info!(
+                        "syncing wallet {}/{}: {}",
+                        index + 1,
+                        num_accounts,
+                        active_path.to_string()
+                    );
+                    // println!("Syncing wallet: {}", active_path.to_string());
 
                     let mut view_client = self
                         .view(
@@ -371,7 +408,7 @@ impl Opt {
 
                     // todo: do this in parallel?
                     self.sync(&mut view_client).await?;
-                    println!("Wallet synced successfully");
+                    tracing::debug!("finished syncing wallet {}/{}", index + 1, num_accounts);
 
                     // Check if the account has been migrated
                     let storage = Storage::load_or_initialize(
@@ -388,10 +425,12 @@ impl Opt {
                         ))
                         .await?;
                     if migration_tx.is_empty() {
-                        println!("Account has not been migrated, continuing using existing FVK...");
+                        tracing::debug!(
+                            "account has not been migrated, continuing using existing FVK..."
+                        );
                     } else if migration_tx.len() == 1 {
-                        println!(
-                            "❗ Account has been migrated to new FVK, continuing using new FVK..."
+                        tracing::warn!(
+                            "❗ account has been migrated to new FVK, continuing using new FVK..."
                         );
                         let (_, _, _tx, memo_text) = &migration_tx[0];
                         let new_fvk = parse_dest_fvk_from_memo(&memo_text)?;
@@ -430,26 +469,21 @@ impl Opt {
                         );
                     }
 
-                    let total_um_equivalent_amount = self
+                    let current_um_equivalent_amount = self
                         .compute_um_equivalent_balance(&mut view_client, &mut stake_client)
                         .await?;
 
-                    println!("Original FVK: {:?}", config.original_fvk());
+                    tracing::debug!("original FVK: {:?}", config.original_fvk());
                     let genesis_um_equivalent_amount = config.genesis_balance();
-                    println!(
-                        "Genesis UM-equivalent balance: {:?}",
-                        genesis_um_equivalent_amount
-                    );
-                    println!(
-                        "Current UM-equivalent balance: {:?}",
-                        total_um_equivalent_amount
-                    );
-
                     // Let the user know if the balance is unexpected or not
-                    if total_um_equivalent_amount < genesis_um_equivalent_amount {
-                        println!("✘ Unexpected balance! Balance is less than the genesis balance");
+                    if current_um_equivalent_amount < genesis_um_equivalent_amount {
+                        tracing::error!(
+                            ?genesis_um_equivalent_amount,
+                            ?current_um_equivalent_amount,
+                            "❌ unexpected balance! balance is less than the genesis balance"
+                        );
                     } else {
-                        println!("✅ Expected balance! Balance is greater than or equal to the genesis balance");
+                        tracing::info!(?genesis_um_equivalent_amount, ?current_um_equivalent_amount, "✅ expected balance! balance is greater than or equal to the genesis balance");
                     }
                 }
 
