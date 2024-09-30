@@ -8,6 +8,7 @@ use penumbra_proto::{core::component::auction::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::auction::AuctionId;
+use crate::trigger_data::TriggerData;
 
 pub mod actions;
 pub use actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw};
@@ -91,6 +92,23 @@ impl DutchAuctionDescription {
         let mut bytes = [0; 32];
         bytes[0..32].copy_from_slice(&hash.as_bytes()[0..32]);
         AuctionId(bytes)
+    }
+
+    /// Compute the initial state of this auction, given its description.
+    pub fn initial_state(&self, current_height: u64) -> Option<DutchAuctionState> {
+        let trigger_data = TriggerData {
+            start_height: self.start_height,
+            end_height: self.end_height,
+            step_count: self.step_count,
+        };
+        let next_trigger = trigger_data.try_next_trigger_height(current_height);
+        Some(DutchAuctionState {
+            sequence: 0,
+            current_position: None,
+            next_trigger: next_trigger.and_then(NonZeroU64::new),
+            input_reserves: self.input.amount,
+            output_reserves: 0u64.into(),
+        })
     }
 }
 

@@ -86,7 +86,7 @@ impl TriggerData {
 
 #[cfg(test)]
 mod tests {
-    use crate::component::trigger_data::TriggerData;
+    use super::TriggerData;
 
     #[test]
     fn test_current_height_equals_start_height() {

@@ -3,9 +3,9 @@ use std::pin::Pin;
 
 use crate::auction::dutch::{DutchAuction, DutchAuctionDescription, DutchAuctionState};
 use crate::auction::AuctionId;
-use crate::component::trigger_data::TriggerData;
 use crate::component::AuctionCircuitBreaker;
 use crate::component::AuctionStoreRead;
+use crate::trigger_data::TriggerData;
 use crate::{event, state_key};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -58,6 +58,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             .try_next_trigger_height(current_height)
             .expect("action validation guarantees the auction is not expired");
 
+        // TODO: make a PR to replace this with the initial_state() method.
         let state = DutchAuctionState {
             sequence: 0,
             current_position: None,

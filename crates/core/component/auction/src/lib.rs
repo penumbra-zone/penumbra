@@ -7,6 +7,7 @@ pub mod event;
 pub mod genesis;
 pub mod params;
 pub mod state_key;
+mod trigger_data;
 
 #[cfg(feature = "component")]
 pub mod component;
