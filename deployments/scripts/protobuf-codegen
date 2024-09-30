@@ -20,6 +20,7 @@ buf dep update penumbra
 
 # Pull our vendored cosmos/IBC proto defs so we can get reflection for service definitions.
 # The penumbra dependencies will override some of these.
+buf export buf.build/noble-assets/forwarding:5a8609a6772d417584a9c60cd8b80881 --output rust-vendored/
 buf export buf.build/cosmos/cosmos-sdk:e7a85cef453e4b999ad9aff8714ae05f --output rust-vendored/
 buf export buf.build/cosmos/ibc:7ab44ae956a0488ea04e04511efa5f70 --output rust-vendored/
 

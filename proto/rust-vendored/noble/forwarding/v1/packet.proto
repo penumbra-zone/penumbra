@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package noble.forwarding.v1;
+
+option go_package = "github.com/noble-assets/forwarding/x/forwarding/types";
+
+message RegisterAccountData {
+  string recipient = 1;
+  string channel = 2;
+}
+
+message RegisterAccountMemo {
+  message RegisterAccountDataWrapper {
+    RegisterAccountData forwarding = 1;
+  }
+
+  RegisterAccountDataWrapper noble = 1;
+}
