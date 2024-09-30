@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS auction_dutch_update (
   -- Serves only as a primary key.
   id SERIAL PRIMARY KEY,
   -- Points to the description of the auction.
-  auction_id BYTE NOT NULL REFERENCES auction_dutch_description (id),
+  auction_id BYTEA NOT NULL REFERENCES auction_dutch_description (id),
   -- The height of this update.
   height BIGINT NOT NULL,
   -- 0 -> opened, 1 -> closed, >= 2 -> withdrawn.
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS auction_dutch_update (
   -- If present, the current position being managed by the auction.
   position_id BYTEA,
   -- The next height at which a change to the positions will happen.
-  next_trigger INT,
+  next_trigger BIGINT,
   -- The current reserves of the input asset.
   in_reserves NUMERIC(39, 0) NOT NULL,
   -- The current reserves of the output asset.
