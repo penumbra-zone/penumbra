@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS auction_dutch_update (
   height BIGINT NOT NULL,
   -- 0 -> opened, 1 -> closed, >= 2 -> withdrawn.
   state INT NOT NULL,
+  -- 0 -> no reason, 1 -> expired, 2 -> filled, 3 -> closed
+  ended_reason INT,
   -- If present, the current position being managed by the auction.
   position_id BYTEA,
   -- The next height at which a change to the positions will happen.
