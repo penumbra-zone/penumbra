@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS ibc_transfer (
   id SERIAL PRIMARY KEY,
   -- The AssetID of whatever is being transferred.
-  asset BYTE NOT NULL,
+  asset BYTEA NOT NULL,
   -- The amount being transf
   amount NUMERIC(39, 0) NOT NULL,
   -- The address on the penumbra side.
@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS ibc_transfer (
   -- The address on the other side.
   foreign_addr TEXT NOT NULL,
   -- What kind of transfer this is.
-  kind TEXT NOT NULL CHECK (kind IN ('inbound', 'outbound', 'refund_timeout', 'refund_error'))
+  kind TEXT NOT NULL CHECK (kind IN ('inbound', 'outbound', 'refund_timeout', 'refund_error', 'refund_other'))
 );

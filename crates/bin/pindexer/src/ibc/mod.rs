@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use cometindex::ContextualizedEvent;
+use cometindex::{async_trait, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_asset::Value;
 use penumbra_keys::Address;
 use penumbra_proto::{
@@ -8,6 +8,7 @@ use penumbra_proto::{
     },
     event::ProtoEvent as _,
 };
+use sqlx::PgPool;
 
 /// The kind of event we might care about.
 #[derive(Clone, Copy, Debug)]
@@ -103,5 +104,118 @@ impl TryFrom<&ContextualizedEvent> for Event {
                 })
             }
         }
+    }
+}
+
+/// The database's view of a transfer.
+#[derive(Debug)]
+struct DatabaseTransfer {
+    penumbra_addr: Address,
+    foreign_addr: String,
+    negate: bool,
+    value: Value,
+    kind: &'static str,
+}
+
+impl Event {
+    fn db_transfer(self) -> DatabaseTransfer {
+        match self {
+            Event::InboundTransfer {
+                receiver,
+                sender,
+                value,
+            } => DatabaseTransfer {
+                penumbra_addr: receiver,
+                foreign_addr: sender,
+                negate: false,
+                value,
+                kind: "inbound",
+            },
+            Event::OutboundTransfer {
+                sender,
+                receiver,
+                value,
+            } => DatabaseTransfer {
+                penumbra_addr: sender,
+                foreign_addr: receiver,
+                negate: true,
+                value,
+                kind: "outbound",
+            },
+            Event::OutboundRefund {
+                sender,
+                receiver,
+                value,
+                reason,
+            } => DatabaseTransfer {
+                penumbra_addr: sender,
+                foreign_addr: receiver,
+                negate: false,
+                value,
+                kind: match reason {
+                    RefundReason::Unspecified => "refund_other",
+                    RefundReason::Timeout => "refund_timeout",
+                    RefundReason::Error => "refund_error",
+                },
+            },
+        }
+    }
+}
+
+async fn init_db(dbtx: &mut PgTransaction<'_>) -> anyhow::Result<()> {
+    for statement in include_str!("ibc.sql").split(";") {
+        sqlx::query(statement).execute(dbtx.as_mut()).await?;
+    }
+    Ok(())
+}
+
+async fn create_transfer(
+    dbtx: &mut PgTransaction<'_>,
+    transfer: DatabaseTransfer,
+) -> anyhow::Result<()> {
+    sqlx::query("INSERT INTO ibc_transfer VALUES (DEFAULT, $1, $6::NUMERIC(39, 0) * $2::NUMERIC(39, 0), $3, $4, $5)")
+        .bind(transfer.value.asset_id.to_bytes())
+        .bind(transfer.value.amount.to_string())
+        .bind(transfer.penumbra_addr.to_vec())
+        .bind(transfer.foreign_addr)
+        .bind(transfer.kind)
+        .bind(if transfer.negate { -1i32 } else { 1i32 })
+        .execute(dbtx.as_mut())
+        .await?;
+    Ok(())
+}
+
+#[derive(Debug)]
+pub struct Component {}
+
+impl Component {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[async_trait]
+impl AppView for Component {
+    async fn init_chain(
+        &self,
+        dbtx: &mut PgTransaction,
+        _app_state: &serde_json::Value,
+    ) -> anyhow::Result<()> {
+        init_db(dbtx).await
+    }
+
+    fn is_relevant(&self, type_str: &str) -> bool {
+        EventKind::try_from(type_str).is_ok()
+    }
+
+    #[tracing::instrument(skip_all, fields(height = event.block_height, name = event.event.kind.as_str()))]
+    async fn index_event(
+        &self,
+        dbtx: &mut PgTransaction,
+        event: &ContextualizedEvent,
+        _src_db: &PgPool,
+    ) -> anyhow::Result<()> {
+        let transfer = Event::try_from(event)?.db_transfer();
+        create_transfer(dbtx, transfer).await
     }
 }
