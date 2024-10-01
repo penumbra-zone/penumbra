@@ -275,3 +275,58 @@ message AssetMetadataByIdsResponse {
   // A single asset metadata streamed from the node.
   core.asset.v1.Metadata denom_metadata = 1;
 }
+
+// Metadata about the packet associated with the transfer.
+//
+// This allows identifying which specific packet is associated with the transfer.
+// Implicitly, both ports are going to be "transfer".
+message FungibleTokenTransferPacketMetadata {
+  // The identifier for the channel on *this* chain.
+  string channel = 1;
+  // Sequence number for the packet.
+  uint64 sequence = 2;
+}
+
+message EventOutboundFungibleTokenTransfer {
+  // The value being transferred out of the chain.
+  core.asset.v1.Value value = 1;
+  // The sending address on chain.
+  core.keys.v1.Address sender = 2;
+  // The receiving address, which we don't assume anything about.
+  string receiver = 3;
+  FungibleTokenTransferPacketMetadata meta = 4;
+}
+
+message EventOutboundFungibleTokenRefund {
+  enum Reason {
+    // No particular reason.
+    REASON_UNSPECIFIED = 0;
+    // The transfer timed out.
+    REASON_TIMEOUT = 1;
+    // The transfer was acknowledged with an error.
+    REASON_ERROR = 2;
+  }
+
+  // The value being refunded.
+  core.asset.v1.Value value = 1;
+  // The sender being refunded.
+  core.keys.v1.Address sender = 2;
+  // The address that attempted to receive the funds.
+  string receiver = 3;
+  // Why the refund is happening.
+  Reason reason = 4;
+  // This will be the metadata for the packet for the transfer being refunded.
+  //
+  // This allows linking a refund to the transfer.
+  FungibleTokenTransferPacketMetadata meta = 5;
+}
+
+message EventInboundFungibleTokenTransfer {
+  // The value being transferred in.
+  core.asset.v1.Value value = 1;
+  // The sender on the counterparty chain.
+  string sender = 2;
+  // The receiver on this chain.
+  core.keys.v1.Address receiver = 3;
+  FungibleTokenTransferPacketMetadata meta = 4;
+}

@@ -732,6 +732,152 @@ impl ::prost::Name for AssetMetadataByIdsResponse {
         )
     }
 }
+/// Metadata about the packet associated with the transfer.
+///
+/// This allows identifying which specific packet is associated with the transfer.
+/// Implicitly, both ports are going to be "transfer".
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FungibleTokenTransferPacketMetadata {
+    /// The identifier for the channel on *this* chain.
+    #[prost(string, tag = "1")]
+    pub channel: ::prost::alloc::string::String,
+    /// Sequence number for the packet.
+    #[prost(uint64, tag = "2")]
+    pub sequence: u64,
+}
+impl ::prost::Name for FungibleTokenTransferPacketMetadata {
+    const NAME: &'static str = "FungibleTokenTransferPacketMetadata";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventOutboundFungibleTokenTransfer {
+    /// The value being transferred out of the chain.
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<super::super::super::asset::v1::Value>,
+    /// The sending address on chain.
+    #[prost(message, optional, tag = "2")]
+    pub sender: ::core::option::Option<super::super::super::keys::v1::Address>,
+    /// The receiving address, which we don't assume anything about.
+    #[prost(string, tag = "3")]
+    pub receiver: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "4")]
+    pub meta: ::core::option::Option<FungibleTokenTransferPacketMetadata>,
+}
+impl ::prost::Name for EventOutboundFungibleTokenTransfer {
+    const NAME: &'static str = "EventOutboundFungibleTokenTransfer";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventOutboundFungibleTokenRefund {
+    /// The value being refunded.
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<super::super::super::asset::v1::Value>,
+    /// The sender being refunded.
+    #[prost(message, optional, tag = "2")]
+    pub sender: ::core::option::Option<super::super::super::keys::v1::Address>,
+    /// The address that attempted to receive the funds.
+    #[prost(string, tag = "3")]
+    pub receiver: ::prost::alloc::string::String,
+    /// Why the refund is happening.
+    #[prost(enumeration = "event_outbound_fungible_token_refund::Reason", tag = "4")]
+    pub reason: i32,
+    /// This will be the metadata for the packet for the transfer being refunded.
+    ///
+    /// This allows linking a refund to the transfer.
+    #[prost(message, optional, tag = "5")]
+    pub meta: ::core::option::Option<FungibleTokenTransferPacketMetadata>,
+}
+/// Nested message and enum types in `EventOutboundFungibleTokenRefund`.
+pub mod event_outbound_fungible_token_refund {
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
+    #[repr(i32)]
+    pub enum Reason {
+        /// No particular reason.
+        Unspecified = 0,
+        /// The transfer timed out.
+        Timeout = 1,
+        /// The transfer was acknowledged with an error.
+        Error = 2,
+    }
+    impl Reason {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Reason::Unspecified => "REASON_UNSPECIFIED",
+                Reason::Timeout => "REASON_TIMEOUT",
+                Reason::Error => "REASON_ERROR",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "REASON_UNSPECIFIED" => Some(Self::Unspecified),
+                "REASON_TIMEOUT" => Some(Self::Timeout),
+                "REASON_ERROR" => Some(Self::Error),
+                _ => None,
+            }
+        }
+    }
+}
+impl ::prost::Name for EventOutboundFungibleTokenRefund {
+    const NAME: &'static str = "EventOutboundFungibleTokenRefund";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventInboundFungibleTokenTransfer {
+    /// The value being transferred in.
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<super::super::super::asset::v1::Value>,
+    /// The sender on the counterparty chain.
+    #[prost(string, tag = "2")]
+    pub sender: ::prost::alloc::string::String,
+    /// The receiver on this chain.
+    #[prost(message, optional, tag = "3")]
+    pub receiver: ::core::option::Option<super::super::super::keys::v1::Address>,
+    #[prost(message, optional, tag = "4")]
+    pub meta: ::core::option::Option<FungibleTokenTransferPacketMetadata>,
+}
+impl ::prost::Name for EventInboundFungibleTokenTransfer {
+    const NAME: &'static str = "EventInboundFungibleTokenTransfer";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

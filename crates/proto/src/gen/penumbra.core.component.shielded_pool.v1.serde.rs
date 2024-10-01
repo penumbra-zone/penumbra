@@ -494,6 +494,537 @@ impl<'de> serde::Deserialize<'de> for EventBroadcastClue {
         deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.EventBroadcastClue", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventInboundFungibleTokenTransfer {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.value.is_some() {
+            len += 1;
+        }
+        if !self.sender.is_empty() {
+            len += 1;
+        }
+        if self.receiver.is_some() {
+            len += 1;
+        }
+        if self.meta.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.EventInboundFungibleTokenTransfer", len)?;
+        if let Some(v) = self.value.as_ref() {
+            struct_ser.serialize_field("value", v)?;
+        }
+        if !self.sender.is_empty() {
+            struct_ser.serialize_field("sender", &self.sender)?;
+        }
+        if let Some(v) = self.receiver.as_ref() {
+            struct_ser.serialize_field("receiver", v)?;
+        }
+        if let Some(v) = self.meta.as_ref() {
+            struct_ser.serialize_field("meta", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventInboundFungibleTokenTransfer {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "value",
+            "sender",
+            "receiver",
+            "meta",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Value,
+            Sender,
+            Receiver,
+            Meta,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "value" => Ok(GeneratedField::Value),
+                            "sender" => Ok(GeneratedField::Sender),
+                            "receiver" => Ok(GeneratedField::Receiver),
+                            "meta" => Ok(GeneratedField::Meta),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventInboundFungibleTokenTransfer;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.EventInboundFungibleTokenTransfer")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventInboundFungibleTokenTransfer, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut value__ = None;
+                let mut sender__ = None;
+                let mut receiver__ = None;
+                let mut meta__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Value => {
+                            if value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("value"));
+                            }
+                            value__ = map_.next_value()?;
+                        }
+                        GeneratedField::Sender => {
+                            if sender__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sender"));
+                            }
+                            sender__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Receiver => {
+                            if receiver__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("receiver"));
+                            }
+                            receiver__ = map_.next_value()?;
+                        }
+                        GeneratedField::Meta => {
+                            if meta__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("meta"));
+                            }
+                            meta__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventInboundFungibleTokenTransfer {
+                    value: value__,
+                    sender: sender__.unwrap_or_default(),
+                    receiver: receiver__,
+                    meta: meta__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.EventInboundFungibleTokenTransfer", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventOutboundFungibleTokenRefund {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.value.is_some() {
+            len += 1;
+        }
+        if self.sender.is_some() {
+            len += 1;
+        }
+        if !self.receiver.is_empty() {
+            len += 1;
+        }
+        if self.reason != 0 {
+            len += 1;
+        }
+        if self.meta.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.EventOutboundFungibleTokenRefund", len)?;
+        if let Some(v) = self.value.as_ref() {
+            struct_ser.serialize_field("value", v)?;
+        }
+        if let Some(v) = self.sender.as_ref() {
+            struct_ser.serialize_field("sender", v)?;
+        }
+        if !self.receiver.is_empty() {
+            struct_ser.serialize_field("receiver", &self.receiver)?;
+        }
+        if self.reason != 0 {
+            let v = event_outbound_fungible_token_refund::Reason::try_from(self.reason)
+                .map_err(|_| serde::ser::Error::custom(format!("Invalid variant {}", self.reason)))?;
+            struct_ser.serialize_field("reason", &v)?;
+        }
+        if let Some(v) = self.meta.as_ref() {
+            struct_ser.serialize_field("meta", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventOutboundFungibleTokenRefund {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "value",
+            "sender",
+            "receiver",
+            "reason",
+            "meta",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Value,
+            Sender,
+            Receiver,
+            Reason,
+            Meta,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "value" => Ok(GeneratedField::Value),
+                            "sender" => Ok(GeneratedField::Sender),
+                            "receiver" => Ok(GeneratedField::Receiver),
+                            "reason" => Ok(GeneratedField::Reason),
+                            "meta" => Ok(GeneratedField::Meta),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventOutboundFungibleTokenRefund;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.EventOutboundFungibleTokenRefund")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventOutboundFungibleTokenRefund, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut value__ = None;
+                let mut sender__ = None;
+                let mut receiver__ = None;
+                let mut reason__ = None;
+                let mut meta__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Value => {
+                            if value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("value"));
+                            }
+                            value__ = map_.next_value()?;
+                        }
+                        GeneratedField::Sender => {
+                            if sender__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sender"));
+                            }
+                            sender__ = map_.next_value()?;
+                        }
+                        GeneratedField::Receiver => {
+                            if receiver__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("receiver"));
+                            }
+                            receiver__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Reason => {
+                            if reason__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("reason"));
+                            }
+                            reason__ = Some(map_.next_value::<event_outbound_fungible_token_refund::Reason>()? as i32);
+                        }
+                        GeneratedField::Meta => {
+                            if meta__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("meta"));
+                            }
+                            meta__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventOutboundFungibleTokenRefund {
+                    value: value__,
+                    sender: sender__,
+                    receiver: receiver__.unwrap_or_default(),
+                    reason: reason__.unwrap_or_default(),
+                    meta: meta__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.EventOutboundFungibleTokenRefund", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for event_outbound_fungible_token_refund::Reason {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let variant = match self {
+            Self::Unspecified => "REASON_UNSPECIFIED",
+            Self::Timeout => "REASON_TIMEOUT",
+            Self::Error => "REASON_ERROR",
+        };
+        serializer.serialize_str(variant)
+    }
+}
+impl<'de> serde::Deserialize<'de> for event_outbound_fungible_token_refund::Reason {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "REASON_UNSPECIFIED",
+            "REASON_TIMEOUT",
+            "REASON_ERROR",
+        ];
+
+        struct GeneratedVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = event_outbound_fungible_token_refund::Reason;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(formatter, "expected one of: {:?}", &FIELDS)
+            }
+
+            fn visit_i64<E>(self, v: i64) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                i32::try_from(v)
+                    .ok()
+                    .and_then(|x| x.try_into().ok())
+                    .ok_or_else(|| {
+                        serde::de::Error::invalid_value(serde::de::Unexpected::Signed(v), &self)
+                    })
+            }
+
+            fn visit_u64<E>(self, v: u64) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                i32::try_from(v)
+                    .ok()
+                    .and_then(|x| x.try_into().ok())
+                    .ok_or_else(|| {
+                        serde::de::Error::invalid_value(serde::de::Unexpected::Unsigned(v), &self)
+                    })
+            }
+
+            fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    "REASON_UNSPECIFIED" => Ok(event_outbound_fungible_token_refund::Reason::Unspecified),
+                    "REASON_TIMEOUT" => Ok(event_outbound_fungible_token_refund::Reason::Timeout),
+                    "REASON_ERROR" => Ok(event_outbound_fungible_token_refund::Reason::Error),
+                    _ => Err(serde::de::Error::unknown_variant(value, FIELDS)),
+                }
+            }
+        }
+        deserializer.deserialize_any(GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventOutboundFungibleTokenTransfer {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.value.is_some() {
+            len += 1;
+        }
+        if self.sender.is_some() {
+            len += 1;
+        }
+        if !self.receiver.is_empty() {
+            len += 1;
+        }
+        if self.meta.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.EventOutboundFungibleTokenTransfer", len)?;
+        if let Some(v) = self.value.as_ref() {
+            struct_ser.serialize_field("value", v)?;
+        }
+        if let Some(v) = self.sender.as_ref() {
+            struct_ser.serialize_field("sender", v)?;
+        }
+        if !self.receiver.is_empty() {
+            struct_ser.serialize_field("receiver", &self.receiver)?;
+        }
+        if let Some(v) = self.meta.as_ref() {
+            struct_ser.serialize_field("meta", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventOutboundFungibleTokenTransfer {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "value",
+            "sender",
+            "receiver",
+            "meta",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Value,
+            Sender,
+            Receiver,
+            Meta,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "value" => Ok(GeneratedField::Value),
+                            "sender" => Ok(GeneratedField::Sender),
+                            "receiver" => Ok(GeneratedField::Receiver),
+                            "meta" => Ok(GeneratedField::Meta),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventOutboundFungibleTokenTransfer;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.EventOutboundFungibleTokenTransfer")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventOutboundFungibleTokenTransfer, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut value__ = None;
+                let mut sender__ = None;
+                let mut receiver__ = None;
+                let mut meta__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Value => {
+                            if value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("value"));
+                            }
+                            value__ = map_.next_value()?;
+                        }
+                        GeneratedField::Sender => {
+                            if sender__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sender"));
+                            }
+                            sender__ = map_.next_value()?;
+                        }
+                        GeneratedField::Receiver => {
+                            if receiver__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("receiver"));
+                            }
+                            receiver__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Meta => {
+                            if meta__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("meta"));
+                            }
+                            meta__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventOutboundFungibleTokenTransfer {
+                    value: value__,
+                    sender: sender__,
+                    receiver: receiver__.unwrap_or_default(),
+                    meta: meta__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.EventOutboundFungibleTokenTransfer", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventOutput {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -1339,6 +1870,121 @@ impl<'de> serde::Deserialize<'de> for FmdParameters {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.FmdParameters", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for FungibleTokenTransferPacketMetadata {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.channel.is_empty() {
+            len += 1;
+        }
+        if self.sequence != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.FungibleTokenTransferPacketMetadata", len)?;
+        if !self.channel.is_empty() {
+            struct_ser.serialize_field("channel", &self.channel)?;
+        }
+        if self.sequence != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("sequence", ToString::to_string(&self.sequence).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for FungibleTokenTransferPacketMetadata {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "channel",
+            "sequence",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Channel,
+            Sequence,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "channel" => Ok(GeneratedField::Channel),
+                            "sequence" => Ok(GeneratedField::Sequence),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = FungibleTokenTransferPacketMetadata;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.FungibleTokenTransferPacketMetadata")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<FungibleTokenTransferPacketMetadata, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut channel__ = None;
+                let mut sequence__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Channel => {
+                            if channel__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("channel"));
+                            }
+                            channel__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Sequence => {
+                            if sequence__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sequence"));
+                            }
+                            sequence__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(FungibleTokenTransferPacketMetadata {
+                    channel: channel__.unwrap_or_default(),
+                    sequence: sequence__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.FungibleTokenTransferPacketMetadata", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GenesisContent {
