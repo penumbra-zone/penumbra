@@ -31,8 +31,7 @@ use penumbra_sct::CommitmentSource;
 use penumbra_ibc::component::{
     app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
     packet::{
-        self, IBCPacket, SendPacketRead as _, SendPacketWrite as _, Unchecked,
-        WriteAcknowledgement as _,
+        IBCPacket, SendPacketRead as _, SendPacketWrite as _, Unchecked, WriteAcknowledgement as _,
     },
     state_key, ChannelStateReadExt as _,
 };
@@ -523,11 +522,10 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_a, &denom.id()),
             new_value_balance,
         );
-        // note, order flipped relative to the event.
         state.record_proto(event::outbound_fungible_token_refund(
             value,
-            &receiver,
-            packet_data.sender.clone(),
+            &receiver, // note: this comes from packet_data.sender
+            packet_data.receiver.clone(),
             event::FungibleTokenRefundReason::Timeout,
             FungibleTokenTransferPacketMetadata {
                 channel: msg.packet.chan_on_a.0.clone(),
@@ -562,11 +560,10 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_a, &denom.id()),
             new_value_balance,
         );
-        // note, order flipped relative to the event.
         state.record_proto(event::outbound_fungible_token_refund(
             value,
-            &receiver,
-            packet_data.sender.clone(),
+            &receiver, // note: this comes from packet_data.sender
+            packet_data.receiver.clone(),
             event::FungibleTokenRefundReason::Timeout,
             FungibleTokenTransferPacketMetadata {
                 channel: msg.packet.chan_on_a.0.clone(),
