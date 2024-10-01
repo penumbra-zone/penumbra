@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     component::{AssetRegistry, NoteManager},
-    Ics20Withdrawal,
+    event, Ics20Withdrawal,
 };
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -21,9 +21,11 @@ use ibc_types::{
     transfer::acknowledgement::TokenTransferAcknowledgement,
 };
 use penumbra_asset::{asset, asset::Metadata, Value};
+use penumbra_ibc::component::ChannelStateReadExt;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
+    core::component::shielded_pool::v1::FungibleTokenTransferPacketMetadata,
     penumbra::core::component::ibc::v1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
 };
 use penumbra_sct::CommitmentSource;
@@ -116,6 +118,23 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 ),
                 new_value_balance,
             );
+            self.record_proto(event::outbound_fungible_token_transfer(
+                Value {
+                    amount: withdrawal.amount,
+                    asset_id: withdrawal.denom.id(),
+                },
+                &withdrawal.return_address,
+                withdrawal.destination_chain_address.clone(),
+                FungibleTokenTransferPacketMetadata {
+                    channel: withdrawal.source_channel.0.clone(),
+                    sequence: self
+                        .get_send_sequence(
+                            &withdrawal.source_channel,
+                            &checked_packet.source_port(),
+                        )
+                        .await?,
+                },
+            ));
         } else {
             // receiver is the source, burn utxos
 
@@ -149,6 +168,23 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 ),
                 new_value_balance,
             );
+            self.record_proto(event::outbound_fungible_token_transfer(
+                Value {
+                    amount: withdrawal.amount,
+                    asset_id: withdrawal.denom.id(),
+                },
+                &withdrawal.return_address,
+                withdrawal.destination_chain_address.clone(),
+                FungibleTokenTransferPacketMetadata {
+                    channel: withdrawal.source_channel.0.clone(),
+                    sequence: self
+                        .get_send_sequence(
+                            &withdrawal.source_channel,
+                            &checked_packet.source_port(),
+                        )
+                        .await?,
+                },
+            ));
         }
 
         self.send_packet_execute(checked_packet).await;
@@ -352,6 +388,15 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_b, &denom.id()),
             new_value_balance,
         );
+        state.record_proto(event::inbound_fungible_token_transfer(
+            value,
+            packet_data.sender.clone(),
+            &receiver_address,
+            FungibleTokenTransferPacketMetadata {
+                channel: msg.packet.chan_on_a.0.clone(),
+                sequence: msg.packet.sequence.0,
+            },
+        ));
     } else {
         // create new denom:
         //
@@ -403,13 +448,26 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_b, &denom.id()),
             new_value_balance,
         );
+        state.record_proto(event::inbound_fungible_token_transfer(
+            value,
+            packet_data.sender.clone(),
+            &receiver_address,
+            FungibleTokenTransferPacketMetadata {
+                channel: msg.packet.chan_on_a.0.clone(),
+                sequence: msg.packet.sequence.0,
+            },
+        ));
     }
 
     Ok(())
 }
 
 // see: https://github.com/cosmos/ibc/blob/8326e26e7e1188b95c32481ff00348a705b23700/spec/app/ics-020-fungible-token-transfer/README.md?plain=1#L297
-async fn refund_tokens<S: StateWrite>(mut state: S, packet: &Packet) -> Result<()> {
+async fn refund_tokens<S: StateWrite>(
+    mut state: S,
+    packet: &Packet,
+    reason: event::FungibleTokenRefundReason,
+) -> Result<()> {
     let packet_data: FungibleTokenPacketData = serde_json::from_slice(packet.data.as_slice())?;
     let denom: asset::Metadata = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
         .denom
@@ -469,6 +527,17 @@ async fn refund_tokens<S: StateWrite>(mut state: S, packet: &Packet) -> Result<(
             state_key::ics20_value_balance::by_asset_id(&packet.chan_on_a, &denom.id()),
             new_value_balance,
         );
+        state.record_proto(event::outbound_fungible_token_refund(
+            value,
+            &receiver, // note, this comes from packet_data.sender
+            packet_data.receiver.clone(),
+            reason,
+            // Use the destination channel, i.e. our name for it, to be consistent across events.
+            FungibleTokenTransferPacketMetadata {
+                channel: packet.chan_on_b.0.clone(),
+                sequence: packet.sequence.0,
+            },
+        ));
     } else {
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance::by_asset_id(
@@ -497,6 +566,17 @@ async fn refund_tokens<S: StateWrite>(mut state: S, packet: &Packet) -> Result<(
             state_key::ics20_value_balance::by_asset_id(&packet.chan_on_a, &denom.id()),
             new_value_balance,
         );
+        // note, order flipped relative to the event.
+        state.record_proto(event::outbound_fungible_token_refund(
+            value,
+            &receiver, // note, this comes from packet_data.sender
+            packet_data.receiver.clone(),
+            reason,
+            FungibleTokenTransferPacketMetadata {
+                channel: packet.chan_on_b.0.clone(),
+                sequence: packet.sequence.0,
+            },
+        ));
     }
 
     Ok(())
@@ -535,9 +615,13 @@ impl AppHandlerExecute for Ics20Transfer {
 
     async fn timeout_packet_execute<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
         // timeouts may fail due to counterparty chains sending transfers of u128-1
-        refund_tokens(&mut state, &msg.packet)
-            .await
-            .context("able to timeout packet")?;
+        refund_tokens(
+            &mut state,
+            &msg.packet,
+            event::FungibleTokenRefundReason::Timeout,
+        )
+        .await
+        .context("able to timeout packet")?;
 
         Ok(())
     }
@@ -552,9 +636,13 @@ impl AppHandlerExecute for Ics20Transfer {
             // in the case where a counterparty chain acknowledges a packet with an error,
             // for example due to a middleware processing issue or other behavior,
             // the funds should be unescrowed back to the packet sender.
-            refund_tokens(&mut state, &msg.packet)
-                .await
-                .context("unable to refund packet acknowledgement")?;
+            refund_tokens(
+                &mut state,
+                &msg.packet,
+                event::FungibleTokenRefundReason::Error,
+            )
+            .await
+            .context("unable to refund packet acknowledgement")?;
         }
 
         Ok(())
