@@ -56,16 +56,7 @@ use penumbra_sdk_proto::{
             ValidatorPenaltyRequest, ValidatorStatusRequest,
         },
     },
-    cosmos::tx::v1beta1::{
-        mode_info::{Single, Sum},
-        service_client::ServiceClient as CosmosServiceClient,
-        AuthInfo as CosmosAuthInfo, BroadcastTxRequest as CosmosBroadcastTxRequest,
-        Fee as CosmosFee, ModeInfo, SignerInfo as CosmosSignerInfo, Tx as CosmosTx,
-        TxBody as CosmosTxBody,
-    },
-    noble::forwarding::v1::{ForwardingPubKey, MsgRegisterAccount},
     view::v1::GasPricesRequest,
-    Message, Name as _,
 };
 use penumbra_sdk_shielded_pool::Ics20Withdrawal;
 use penumbra_sdk_stake::{
@@ -79,8 +70,6 @@ use penumbra_sdk_transaction::{gas::swap_claim_gas_cost, Transaction};
 use penumbra_sdk_view::{SpendableNoteRecord, ViewClient};
 use penumbra_sdk_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
-use tonic::transport::{Channel, ClientTlsConfig};
-use url::Url;
 
 use crate::command::tx::auction::AuctionCmd;
 use crate::App;
@@ -298,22 +287,6 @@ pub enum TxCmd {
         #[clap(long)]
         use_transparent_address: bool,
     },
-    #[clap(display_order = 970)]
-    /// Register a Noble forwarding account.
-    RegisterForwardingAccount {
-        /// The Noble node to submit the registration transaction to.
-        #[clap(long)]
-        noble_node: Url,
-        /// The Noble IBC channel to use for forwarding.
-        #[clap(long)]
-        channel: String,
-        /// The Penumbra address or address index to receive forwarded funds.
-        #[clap(long)]
-        address_or_index: String,
-        /// Whether or not to use an ephemeral address.
-        #[clap(long)]
-        ephemeral: bool,
-    },
     /// Broadcast a saved transaction to the network
     #[clap(display_order = 1000)]
     Broadcast {
@@ -376,7 +349,6 @@ impl TxCmd {
             TxCmd::Withdraw { .. } => false,
             TxCmd::Auction(_) => false,
             TxCmd::Broadcast { .. } => false,
-            TxCmd::RegisterForwardingAccount { .. } => false,
         }
     }
 
