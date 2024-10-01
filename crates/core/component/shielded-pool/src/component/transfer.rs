@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     component::{AssetRegistry, NoteManager},
-    Ics20Withdrawal,
+    event, Ics20Withdrawal,
 };
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -23,6 +23,7 @@ use penumbra_asset::{asset, asset::Metadata, Value};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
+    core::component::shielded_pool::v1::FungibleTokenTransferPacketMetadata,
     penumbra::core::component::ibc::v1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
 };
 use penumbra_sct::CommitmentSource;
@@ -30,9 +31,10 @@ use penumbra_sct::CommitmentSource;
 use penumbra_ibc::component::{
     app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
     packet::{
-        IBCPacket, SendPacketRead as _, SendPacketWrite as _, Unchecked, WriteAcknowledgement as _,
+        self, IBCPacket, SendPacketRead as _, SendPacketWrite as _, Unchecked,
+        WriteAcknowledgement as _,
     },
-    state_key,
+    state_key, ChannelStateReadExt as _,
 };
 
 // returns a bool indicating if the provided denom was issued locally or if it was bridged in.
@@ -110,6 +112,20 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 ),
                 new_value_balance,
             );
+            self.record_proto(event::outbound_fungible_token_transfer(
+                Value {
+                    amount: withdrawal.amount,
+                    asset_id: withdrawal.denom.id(),
+                },
+                &withdrawal.return_address,
+                withdrawal.destination_chain_address.clone(),
+                FungibleTokenTransferPacketMetadata {
+                    channel: withdrawal.source_channel.0.clone(),
+                    sequence: self
+                        .get_send_sequence(&withdrawal.source_channel, checked_packet.source_port())
+                        .await?,
+                },
+            ));
         } else {
             // receiver is the source, burn utxos
 
@@ -143,6 +159,20 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 ),
                 new_value_balance,
             );
+            self.record_proto(event::outbound_fungible_token_transfer(
+                Value {
+                    amount: withdrawal.amount,
+                    asset_id: withdrawal.denom.id(),
+                },
+                &withdrawal.return_address,
+                withdrawal.destination_chain_address.clone(),
+                FungibleTokenTransferPacketMetadata {
+                    channel: withdrawal.source_channel.0.clone(),
+                    sequence: self
+                        .get_send_sequence(&withdrawal.source_channel, checked_packet.source_port())
+                        .await?,
+                },
+            ));
         }
 
         self.send_packet_execute(checked_packet).await;
@@ -349,6 +379,16 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_b, &denom.id()),
             new_value_balance,
         );
+        state.record_proto(event::inbound_fungible_token_transfer(
+            value,
+            packet_data.sender.clone(),
+            &receiver_address,
+            // We want to use our name for the channel, hence b
+            FungibleTokenTransferPacketMetadata {
+                channel: msg.packet.chan_on_b.0.clone(),
+                sequence: msg.packet.sequence.0,
+            },
+        ));
     } else {
         // create new denom:
         //
@@ -400,6 +440,15 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_b, &denom.id()),
             new_value_balance,
         );
+        state.record_proto(event::inbound_fungible_token_transfer(
+            value,
+            packet_data.sender.clone(),
+            &receiver_address,
+            FungibleTokenTransferPacketMetadata {
+                channel: msg.packet.chan_on_b.0.clone(),
+                sequence: msg.packet.sequence.0,
+            },
+        ));
     }
 
     Ok(())
@@ -474,6 +523,17 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_a, &denom.id()),
             new_value_balance,
         );
+        // note, order flipped relative to the event.
+        state.record_proto(event::outbound_fungible_token_refund(
+            value,
+            &receiver,
+            packet_data.sender.clone(),
+            event::FungibleTokenRefundReason::Timeout,
+            FungibleTokenTransferPacketMetadata {
+                channel: msg.packet.chan_on_a.0.clone(),
+                sequence: msg.packet.sequence.0,
+            },
+        ));
     } else {
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance::by_asset_id(
@@ -502,6 +562,17 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_a, &denom.id()),
             new_value_balance,
         );
+        // note, order flipped relative to the event.
+        state.record_proto(event::outbound_fungible_token_refund(
+            value,
+            &receiver,
+            packet_data.sender.clone(),
+            event::FungibleTokenRefundReason::Timeout,
+            FungibleTokenTransferPacketMetadata {
+                channel: msg.packet.chan_on_a.0.clone(),
+                sequence: msg.packet.sequence.0,
+            },
+        ));
     }
 
     Ok(())
