@@ -171,15 +171,17 @@ async fn init_db(dbtx: &mut PgTransaction<'_>) -> anyhow::Result<()> {
 
 async fn create_transfer(
     dbtx: &mut PgTransaction<'_>,
+    height: u64,
     transfer: DatabaseTransfer,
 ) -> anyhow::Result<()> {
-    sqlx::query("INSERT INTO ibc_transfer VALUES (DEFAULT, $1, $6::NUMERIC(39, 0) * $2::NUMERIC(39, 0), $3, $4, $5)")
+    sqlx::query("INSERT INTO ibc_transfer VALUES (DEFAULT, $7, $1, $6::NUMERIC(39, 0) * $2::NUMERIC(39, 0), $3, $4, $5)")
         .bind(transfer.value.asset_id.to_bytes())
         .bind(transfer.value.amount.to_string())
         .bind(transfer.penumbra_addr.to_vec())
         .bind(transfer.foreign_addr)
         .bind(transfer.kind)
         .bind(if transfer.negate { -1i32 } else { 1i32 })
+        .bind(i64::try_from(height)?)
         .execute(dbtx.as_mut())
         .await?;
     Ok(())
@@ -216,6 +218,6 @@ impl AppView for Component {
         _src_db: &PgPool,
     ) -> anyhow::Result<()> {
         let transfer = Event::try_from(event)?.db_transfer();
-        create_transfer(dbtx, transfer).await
+        create_transfer(dbtx, event.block_height, transfer).await
     }
 }

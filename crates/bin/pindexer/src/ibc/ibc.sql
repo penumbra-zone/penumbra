@@ -1,5 +1,7 @@
 CREATE TABLE IF NOT EXISTS ibc_transfer (
   id SERIAL PRIMARY KEY,
+  -- The height that this transfer happened at.
+  height BIGINT NOT NULL,
   -- The AssetID of whatever is being transferred.
   asset BYTEA NOT NULL,
   -- The amount being transf
