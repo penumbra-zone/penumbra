@@ -1,0 +1,41 @@
+{
+  "actions": [
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "iLzf831Y3rJymPahfycUsMurMJe6XQyQEFsnLdh977k="
+        },
+        "epochIndex": "803",
+        "unbondedAmount": {
+          "lo": "601496906518938915"
+        },
+        "delegationAmount": {
+          "lo": "375041392457809201"
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "i2J9L2vP2uF5r0oU67EJg4kyaapWzQP7F+ECVJfA7U4="
+        },
+        "epochIndex": "4513",
+        "unbondedAmount": {
+          "lo": "216652563162553867"
+        },
+        "delegationAmount": {
+          "lo": "95384100822704596"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "8159099551",
+    "chainId": "gdrgfxonlpxlblaupowahg-90324152768200249394210704331",
+    "fee": {
+      "amount": {
+        "lo": "992811922133336171"
+      }
+    }
+  }
+}
