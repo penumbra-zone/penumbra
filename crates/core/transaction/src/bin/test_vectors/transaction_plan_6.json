@@ -1,0 +1,81 @@
+{
+  "actions": [
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "wsZevTZm+ydjw3tcV/PFO8GiX6hTKtlgh4fF81qQykw="
+        },
+        "unbondedAmount": {
+          "lo": "492571611933727454"
+        },
+        "delegationAmount": {
+          "lo": "953337010581774278"
+        },
+        "fromEpoch": {
+          "index": "876",
+          "startHeight": "876"
+        }
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "63603267365154972"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "8JJE4RQzk6JUepdmDRT+TjM+3WzTawFiVV/wLQakIWY=",
+          "address": {
+            "inner": "jFpiGUcjuyNPb9yYDzNtpVszSyd5z+y++/mLAoCxGPoybyzv9kvYGgXX50Iu84d8z3gJnb+ZshcrisMfIC8fe8Ca24BmrJ8hpuUpk4915fs="
+          }
+        },
+        "position": "131049058969592",
+        "randomizer": "KiYz++fTFBXzdxC8bzZUw/cdP06manrzCdEsD6fEywM=",
+        "valueBlinding": "/wWY+A6yzBTa8BR54vza73e4h/gxk2txP3eduJIjxAI=",
+        "proofBlindingR": "vP24YHjVHaEY+5amFdEXe/LjzI8bQypnQdGQywouHxA=",
+        "proofBlindingS": "OnQp/2pRlSiu0WRg0yJtogNUTGug36HD7BMu33P2ew4="
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "Gi6HM/HnuZIApdt0jSX586fDZRDZCKuGOZq4IQh8xFE="
+        },
+        "epochIndex": "504",
+        "unbondedAmount": {
+          "lo": "710594232312141104"
+        },
+        "delegationAmount": {
+          "lo": "656275882087328819"
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "nh0pKjTPuA+FW0a4xqhMycMxjRW6rqFAws+zBA4ZEG8="
+        },
+        "epochIndex": "6543",
+        "unbondedAmount": {
+          "lo": "761198617543304652"
+        },
+        "delegationAmount": {
+          "lo": "198666990101351904"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "1198628745",
+    "chainId": "tmvggpjbgjwyirwmkpilptyakpts-341557640742142066188513724",
+    "fee": {
+      "amount": {
+        "lo": "214352869788381336"
+      }
+    }
+  }
+}

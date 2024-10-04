@@ -1,0 +1,46 @@
+{
+  "actions": [
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "/ufY1YmbfuCYmxYHGGld+4ipfZ5qGm5z+O+hoZn1F4I="
+        },
+        "epochIndex": "2126",
+        "unbondedAmount": {
+          "lo": "387425602653670548"
+        },
+        "delegationAmount": {
+          "lo": "51566259876265428"
+        }
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "624487374678481154"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "7DmvxUYQWlAnppafijWrsAMl+be/AumL0iNR7UJd6Cx44Majn6GyIlmn5AjkabaIRyp9mLA3cOr4v3ACcxyNMIP4oPibMmZtHTBBBCENHEo="
+        },
+        "rseed": "sM06Gu6OE0YdJPZqMp/YlMGOqrEEWJDXXI3qZ/5Dga0=",
+        "valueBlinding": "SDHLovipw3dENEC99saH8bSc0F09tQkuXendhlwcmgE=",
+        "proofBlindingR": "toJ14UZe7ZeCWIKUEBiuDr20Skv7nakK4TMTqqW3Pgw=",
+        "proofBlindingS": "rdw83UtiqfJlWH59PS/Bss4UXbYaj8pHyYG3GtmQngI="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "6822309950",
+    "chainId": "cqsolpaq-1654045",
+    "fee": {
+      "amount": {
+        "lo": "564433087112599064"
+      }
+    }
+  }
+}

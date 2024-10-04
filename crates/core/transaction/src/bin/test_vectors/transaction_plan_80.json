@@ -1,0 +1,87 @@
+{
+  "actions": [
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "x+1KNRuHC/M51NSxEVXJbF9MQ8sin2oKFJjnZzyGldw="
+        },
+        "unbondedAmount": {
+          "lo": "631777885416374129"
+        },
+        "delegationAmount": {
+          "lo": "319921638498397328"
+        },
+        "fromEpoch": {
+          "index": "4253",
+          "startHeight": "4253"
+        }
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "719724706712840931"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "Oms7pgkDhS6BVZ0+H0amWJ56hG9mGp2isAdESZ8SWDA=",
+          "address": {
+            "inner": "gu2HaFSmmHj3baIhJF2Un8/pod/viX7tWkY53L71IkeCA0mTM41pUbB5Wp68BXZxyEiqkoD9intI2uo3ERFtd6HGKB6hnRA4Y0JCjpNwGyo="
+          }
+        },
+        "position": "59029269619884",
+        "randomizer": "1wLAoZtAUcNG4D3KiBQ96JBtieBHNTcX+DiLyFIg/gM=",
+        "valueBlinding": "xMJwC9/fbJk829hQrSCwpnTCLzAlwWjHEQ7mD7K6UQI=",
+        "proofBlindingR": "3kmDLvTL7mg9K7n1GZqr/WTK5WG25SbIfIIpU4TcLAE=",
+        "proofBlindingS": "7RCO9HwCVpnpuZRfUZwOLcyAXosofvDNBD10B9N1Agc="
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "La6GXANjTT3xmpFtl/glI8xCnUwC/ES57o8DtkT/NwE="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP++dsi0OVgQYk3S8an7520="
+        },
+        "unbondingAmount": {
+          "lo": "493619121359759142"
+        },
+        "balanceBlinding": "Uusw4jfTa0CjwFuUz+omWfZw6BM880+m4oLrI78g2gM=",
+        "proofBlindingR": "OutkGdf31pvT+/bbPzmJ3lbBOjm/LpQzUb8Yd7ZtKAw=",
+        "proofBlindingS": "k461mf2T2mwv4MlB52DSSszU7Sw1au/YgCGdWSMe0Q8=",
+        "unbondingStartHeight": "59316"
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "RNhtklo1M+kuhChomNoqNJjv0MrvLSgoSPDgnZFmFyM="
+        },
+        "unbondedAmount": {
+          "lo": "244158418677675561"
+        },
+        "delegationAmount": {
+          "lo": "62104332005306246"
+        },
+        "fromEpoch": {
+          "index": "8749",
+          "startHeight": "8749"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "3277771414",
+    "chainId": "togjhieby-857880436784318885414",
+    "fee": {
+      "amount": {
+        "lo": "25778342690628634"
+      }
+    }
+  }
+}

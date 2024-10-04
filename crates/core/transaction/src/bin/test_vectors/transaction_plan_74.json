@@ -1,0 +1,81 @@
+{
+  "actions": [
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "387909235840098232"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "k2+VpoNHizFKjZTD2bfvG8uCPnd70liUrVvrwQFTgys=",
+          "address": {
+            "inner": "+ruX2jiKx0kQsKTROOYWpL0exHjI+yi3MGkaT42hz4tAZliTHDtnoBDF1CvnvLBNXxugM+o7kBxGQAhw1FDiqKFiRsi4q7qNk4D9BKCsgwM="
+          }
+        },
+        "position": "804666448342",
+        "randomizer": "D/wwYVH2KLI4ALx11qx7FdNTw6VN7ajAbjS8Y+pDagE=",
+        "valueBlinding": "qtZcyURLYkbO4fkGkvdgTm7ZAKG0c1fEQs5DnTtOAQA=",
+        "proofBlindingR": "WnrLrwS0tbDUqBF/Xq2SealTDYi32reuk1ZOuxzAXwA=",
+        "proofBlindingS": "MYX58MZaowz9PkKXz+1uxlZrPtOTxVvlaojIPpL5dQU="
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "1culGL69QAftd+6XFqRmjDlEGD7oHsq4KiMCyMjKMww="
+        },
+        "epochIndex": "7420",
+        "unbondedAmount": {
+          "lo": "424793726835914717"
+        },
+        "delegationAmount": {
+          "lo": "274783143074123622"
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "P4Q6v52NtNMRSgvwtWqmEbXA/6/48aEGpRpvPmjx45U="
+        },
+        "unbondedAmount": {
+          "lo": "240056116509590933"
+        },
+        "delegationAmount": {
+          "lo": "322910361924227111"
+        },
+        "fromEpoch": {
+          "index": "6953",
+          "startHeight": "6953"
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "QIagaMRAIl3zJm0ByJTC2ktJJqxtbH6FAshgJGBj8Ws="
+        },
+        "epochIndex": "2685",
+        "unbondedAmount": {
+          "lo": "869620328142144177"
+        },
+        "delegationAmount": {
+          "lo": "265257045028053241"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "5378979997",
+    "chainId": "cn-705381824",
+    "fee": {
+      "amount": {
+        "lo": "683076985771671938"
+      }
+    }
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "actions": [
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "BQLIIEEisb1MKN6+K7a9czf7xWynREwMmUq95xPBzGM="
+        },
+        "unbondedAmount": {
+          "lo": "165537383550065188"
+        },
+        "delegationAmount": {
+          "lo": "880058286033069779"
+        },
+        "fromEpoch": {
+          "index": "1847",
+          "startHeight": "1847"
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "guU5hWbEMoe1oPHz/Jb5hmd8+8ZfP/3jcIzWUgqHBoU="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP5prULDye7L+xW1c+qzZ6E="
+        },
+        "unbondingAmount": {
+          "lo": "469345368561213647"
+        },
+        "balanceBlinding": "LfbejZZNN81rBAse6lW5HixtTm/tNBje/zp5xAUA7QA=",
+        "proofBlindingR": "+jr6xRdOqXp4Lb2HTmstEFb4NWhdZhPmbQ8ZWK2R6gY=",
+        "proofBlindingS": "pq/qg66K7AkAKvre6qiJGtkIO9kJu83WAQbd49ZxqhA=",
+        "unbondingStartHeight": "43608"
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "257597402379400782"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "3Z2i0HBf4GsaJgcZZoBlOg/lhTgoQpq4tCmh7jwJI7n3VrhbCxIYIDF8f1YS7m1bIijlRzIaSw1+S42RQaWBQT6dH/C+hfRVZpYvezatOi8="
+        },
+        "rseed": "8v+068v5wnlA3tHL3+yoF0F2S2SYV24S5uJkLfyifSw=",
+        "valueBlinding": "AkGdSrXIfsM2TyLoedd+qr2IdkPoRdX1nfF5MIsAiAM=",
+        "proofBlindingR": "H7i9MgjF2vlkrRyz5LPOaetHL/HZ40Jhvts4ee5BExE=",
+        "proofBlindingS": "7ZTBB4J7i4n5Og1o9dvOFaT4LTGekgbR6POg2kO0ZAo="
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "Gya4uqmeItpGgMSqqG+2KDdW9ioM0puUCJZc5SDGB98="
+        },
+        "epochIndex": "9757",
+        "unbondedAmount": {
+          "lo": "178833251786817135"
+        },
+        "delegationAmount": {
+          "lo": "411090699435539538"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "3894807003",
+    "chainId": "mmcmkvbhzecoijyujpsg-007651387370050678861869",
+    "fee": {
+      "amount": {
+        "lo": "692876317676297382"
+      }
+    }
+  }
+}

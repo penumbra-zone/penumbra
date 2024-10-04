@@ -1,0 +1,73 @@
+{
+  "actions": [
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "488543646158761946"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "Wx0NAQYdlWYRDwcMwWTmmjQqLMEwJShaarHKFKWb9aw=",
+          "address": {
+            "inner": "sItsWVhfgW8d34Id08nep9LA+z2xynK7/G5aRsnbSKIT3UVI9+WNdzxlzdTJD+/+4CsZhAT2OzRkmtCjo+VnEB2HCvHxLDkDWwus56VmGjU="
+          }
+        },
+        "position": "236200482263876",
+        "randomizer": "H4SNjyuA2Vn0C10pRIQ0RiE5/9otMW4vt00rQT26bAI=",
+        "valueBlinding": "YXhPzv8TkEI0eeeRJdZWqi5glBtXiiy2sshHvQnLxAE=",
+        "proofBlindingR": "uZlaFayPsqxrgQvX/RkSUxVRIgj+oYTV/32muS79WAg=",
+        "proofBlindingS": "SuXx4TRyQj8ttWhG+S8jOBxg7CJlt4GkfL5y7YAPMgE="
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "331651575434314252"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "df1SOCAQ7XOnNTJlVF+j5THHifyC5GGSq0fw8Af5Xbo=",
+          "address": {
+            "inner": "sItsWVhfgW8d34Id08nep9LA+z2xynK7/G5aRsnbSKIT3UVI9+WNdzxlzdTJD+/+4CsZhAT2OzRkmtCjo+VnEB2HCvHxLDkDWwus56VmGjU="
+          }
+        },
+        "position": "51826022383540",
+        "randomizer": "B6LHgMoM3s6lNkxo+K6pWmceEZIyht14eq4b4pgqkwI=",
+        "valueBlinding": "G2l3abzaQeWkWmchKLlyAi6KKM+kxjfk+lDN1zP5NgE=",
+        "proofBlindingR": "E2yZCeMXhjbf8FCGCCislsNGKwh2q3xJ/J9Kz5KGYgk=",
+        "proofBlindingS": "6uHqfiMK3wwKnqTjnqiplm+g55XaDXYHHQoM9Ujm7g0="
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "pk/AuHLZaS/2n7CM08zwmgeJ5cl0D2XOXgiE3JoknAM="
+        },
+        "epochIndex": "191",
+        "unbondedAmount": {
+          "lo": "153571865555833471"
+        },
+        "delegationAmount": {
+          "lo": "302791470548765750"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "3562300531",
+    "chainId": "zdsbt-7735684499684401030072587957652",
+    "fee": {
+      "amount": {
+        "lo": "655092849229098914"
+      }
+    }
+  }
+}
