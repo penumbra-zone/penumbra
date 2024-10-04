@@ -6,13 +6,13 @@ use futures::StreamExt;
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 use std::fs;
 use std::io::IsTerminal as _;
-use std::process::Command as ProcessCommand;
 use std::str::FromStr;
 use tonic::transport::{Channel, ClientTlsConfig};
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 use uuid::Uuid;
 
+use pcli::config::PcliConfig;
 use penumbra_compact_block::CompactBlock;
 use penumbra_keys::FullViewingKey;
 use penumbra_num::Amount;
@@ -227,25 +227,21 @@ impl Opt {
             fs::create_dir_all(&wallet_dir)?;
         }
 
-        // Invoke pcli to initialize the wallet (hacky)
-        let output = ProcessCommand::new("cargo")
-            .args(&["run", "--bin", "pcli", "--"])
-            .arg("--home")
-            .arg(wallet_dir.as_str())
-            .arg("init")
-            .arg("--grpc-url")
-            .arg(grpc_url.as_str())
-            .arg("view-only")
-            .arg(fvk.to_string())
-            .output()?;
+        // Use FVK to build a pcli config file,
+        // which we'll reference when syncing wallets.
+        let pcli_config = PcliConfig {
+            grpc_url: grpc_url.clone(),
+            view_url: None,
+            governance_custody: None,
+            full_viewing_key: fvk.clone(),
+            disable_warning: true,
+            custody: pcli::config::CustodyConfig::ViewOnly,
+        };
 
-        if !output.status.success() {
-            anyhow::bail!(
-                "Failed to initialize wallet in {}: {}",
-                wallet_dir.to_string(),
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
+        let pcli_config_path = wallet_dir.join("config.toml");
+        pcli_config.save(pcli_config_path).with_context(|| {
+            format!("failed to initialize wallet in {}", wallet_dir.to_string())
+        })?;
 
         Ok(())
     }
