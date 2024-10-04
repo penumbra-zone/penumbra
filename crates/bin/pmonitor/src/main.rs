@@ -40,6 +40,10 @@ const MAX_CB_SIZE_BYTES: usize = 12 * 1024 * 1024;
 // The name of the view database file
 const VIEW_FILE_NAME: &str = "pcli-view.sqlite";
 
+// The permitted difference between genesis balance and current balance,
+// specified in number of staking tokens.
+const ALLOWED_DISCREPANCY: f64 = 0.1;
+
 /// Configure tracing_subscriber for logging messages
 fn init_tracing() -> anyhow::Result<()> {
     // Instantiate tracing layers.
@@ -392,7 +396,6 @@ impl Opt {
                         num_accounts,
                         active_path.to_string()
                     );
-                    // println!("Syncing wallet: {}", active_path.to_string());
 
                     let mut view_client = self
                         .view(
@@ -472,16 +475,24 @@ impl Opt {
                         .await?;
 
                     tracing::debug!("original FVK: {:?}", config.original_fvk());
+
                     let genesis_um_equivalent_amount = config.genesis_balance();
                     // Let the user know if the balance is unexpected or not
-                    if current_um_equivalent_amount < genesis_um_equivalent_amount {
+                    if check_wallet_compliance(
+                        genesis_um_equivalent_amount,
+                        current_um_equivalent_amount,
+                    ) {
+                        tracing::info!(
+                            ?genesis_um_equivalent_amount,
+                            ?current_um_equivalent_amount,
+                            "✅ expected balance! current balance is within compliant range of the genesis balance",
+                        );
+                    } else {
                         tracing::error!(
                             ?genesis_um_equivalent_amount,
                             ?current_um_equivalent_amount,
-                            "❌ unexpected balance! balance is less than the genesis balance"
+                            "❌ unexpected balance! current balance is less than the genesis balance, by more than {ALLOWED_DISCREPANCY}UM",
                         );
-                    } else {
-                        tracing::info!(?genesis_um_equivalent_amount, ?current_um_equivalent_amount, "✅ expected balance! balance is greater than or equal to the genesis balance");
                     }
                 }
 
@@ -494,4 +505,28 @@ impl Opt {
             }
         }
     }
+}
+
+/// Check whether the wallet is compliant.
+///
+/// Rather than a naive comparison that the current balance is greater than or
+/// equal to the genesis balance, we permit less than within a tolerance of
+/// 0.1UM. Doing so allows for discrepancies due to gas fees, for instance
+/// if `pcli migrate balance` was used.
+fn check_wallet_compliance(genesis_balance: Amount, current_balance: Amount) -> bool {
+    // Since the `Amount` of the staking token will be in millionths,
+    // we multiply 0.1 * 1_000_000.
+    let allowed_discrepancy = ALLOWED_DISCREPANCY * 1_000_000 as f64;
+    let mut result = false;
+    if current_balance >= genesis_balance {
+        result = true;
+    } else {
+        let actual_discrepancy = genesis_balance - current_balance;
+        let discrepancy_formatted = f64::from(actual_discrepancy) / 1_000_000 as f64;
+        tracing::trace!("detected low balance, missing {}UM", discrepancy_formatted);
+        if f64::from(actual_discrepancy) <= allowed_discrepancy {
+            result = true
+        }
+    }
+    result
 }
