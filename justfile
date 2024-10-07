@@ -4,7 +4,11 @@ default:
 
 # Run integration tests for pmonitor tool
 test-pmonitor:
-  ./deployments/scripts/pmonitor-integration-test.sh
+  # warm cache
+  cargo build --release --bin pd
+  cargo run --release --bin pd -- network unsafe-reset-all || true
+  rm -rf /tmp/pmonitor-integration-test
+  cargo nextest run -p pmonitor --run-ignored=ignored-only --test-threads 1
 
 # Creates and runs a local devnet with solo validator. Includes ancillary services
 # like metrics, postgres for storing ABCI events, and pindexer for munging those events.
