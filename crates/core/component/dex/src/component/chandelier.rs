@@ -8,6 +8,7 @@ use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead as _;
 use tonic::async_trait;
 
+use crate::event::EventCandlestickData;
 use crate::{lp::position::Position, state_key::candlesticks, DirectedTradingPair, SwapExecution};
 
 use crate::CandlestickData;
@@ -210,6 +211,13 @@ pub trait Chandelier: StateWrite {
                 candlesticks::data::by_pair_and_height(&trading_pair, height).into(),
                 candlestick,
             );
+            self.record_proto(
+                EventCandlestickData {
+                    pair: *trading_pair,
+                    stick: candlestick,
+                }
+                .to_proto(),
+            )
         }
 
         Ok(())
