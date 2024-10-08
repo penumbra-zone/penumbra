@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, HashSet};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
-use penumbra_app::genesis::{AppState, Content};
+use penumbra_app::genesis::Content;
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
 use penumbra_proto::{
@@ -15,6 +15,8 @@ use penumbra_proto::{
 use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
 use sqlx::{PgPool, Postgres, Transaction};
 use std::iter;
+
+use crate::parsing::parse_content;
 
 mod unstaked_supply {
     //! This module handles updates around the unstaked supply.
@@ -820,7 +822,7 @@ impl<'a> TryFrom<&'a ContextualizedEvent> for Event {
 /// Add the initial native token supply.
 async fn add_genesis_native_token_allocation_supply<'a>(
     dbtx: &mut PgTransaction<'a>,
-    app_state: &AppState,
+    content: &Content,
 ) -> Result<()> {
     fn content_mints(content: &Content) -> BTreeMap<asset::Id, Amount> {
         let community_pool_mint = iter::once((
@@ -843,9 +845,6 @@ async fn add_genesis_native_token_allocation_supply<'a>(
         out
     }
 
-    let content = app_state
-        .content()
-        .ok_or_else(|| anyhow::anyhow!("cannot initialized indexer from checkpoint genesis"))?;
     let mints = content_mints(content);
 
     let unstaked_mint = u64::try_from(
@@ -911,9 +910,8 @@ impl AppView for Component {
         // decode the initial supply from the genesis
         // initial app state is not recomputed from events, because events are not emitted in init_chain.
         // instead, the indexer directly parses the genesis.
-        let app_state: penumbra_app::genesis::AppState =
-            serde_json::from_value(app_state.clone()).context("error decoding app_state json")?;
-        add_genesis_native_token_allocation_supply(dbtx, &app_state).await?;
+        add_genesis_native_token_allocation_supply(dbtx, &parse_content(app_state.clone())?)
+            .await?;
 
         Ok(())
     }
