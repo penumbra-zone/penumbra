@@ -12,6 +12,8 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 use uuid::Uuid;
 
+use colored::Colorize;
+
 use pcli::config::PcliConfig;
 use penumbra_compact_block::CompactBlock;
 use penumbra_keys::FullViewingKey;
@@ -50,6 +52,7 @@ fn init_tracing() -> anyhow::Result<()> {
     // The `FmtLayer` is used to print to the console.
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_ansi(std::io::stdout().is_terminal())
+        .with_writer(std::io::stderr)
         .with_target(true);
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
     let filter_layer = EnvFilter::try_from_default_env()
@@ -387,6 +390,9 @@ impl Opt {
 
                 let num_accounts = pmonitor_config.accounts().len();
 
+                // Create bucket for documenting non-compliant FVKs, for reporting in summary.
+                let mut failures: Vec<&AccountConfig> = vec![];
+
                 for (index, config) in pmonitor_config.accounts().iter().enumerate() {
                     let active_fvk = config.active_fvk();
                     let active_path = self.wallet_path(&config.active_uuid());
@@ -493,6 +499,7 @@ impl Opt {
                             ?current_um_equivalent_amount,
                             "❌ unexpected balance! current balance is less than the genesis balance, by more than {ALLOWED_DISCREPANCY}UM",
                         );
+                        failures.push(config);
                     }
                 }
 
@@ -501,10 +508,47 @@ impl Opt {
                     fs::write(config_path.clone(), toml::to_string(&updated_config)?)?;
                 }
 
+                // Print summary message
+                emit_summary_message(pmonitor_config.accounts(), failures)?;
+
                 Ok(())
             }
         }
     }
+}
+
+/// Prepare a human-readable text summary at the end of the audit run.
+/// This is important, as errors logged during scanning are likely to be off-screen
+/// due to backscroll.
+fn emit_summary_message(
+    all_accounts: &Vec<AccountConfig>,
+    failures: Vec<&AccountConfig>,
+) -> Result<()> {
+    println!("#######################");
+    println!("Summary of FVK scanning");
+    println!("#######################");
+    println!("Total number of FVKs scanned: {}", all_accounts.len(),);
+    let compliant_count = format!(
+        "Number deemed compliant: {}",
+        all_accounts.len() - failures.len(),
+    );
+    let failure_count = format!("Number deemed in violation: {}", failures.len(),);
+    if failures.is_empty() {
+        println!("{}", compliant_count.green());
+        println!("{}", failure_count);
+    } else {
+        println!("{}", compliant_count.yellow());
+        println!("{}", failure_count.red());
+        println!("The non-compliant FVKs are:");
+        println!("");
+        for f in &failures {
+            println!("\t* {}", f.active_fvk().to_string());
+        }
+        println!("");
+        // println!("{}", "Error: non-compliant balances were detected".red());
+        anyhow::bail!("non-compliant balances were detected".red());
+    }
+    Ok(())
 }
 
 /// Check whether the wallet is compliant.
