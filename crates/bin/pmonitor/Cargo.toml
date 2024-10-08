@@ -14,6 +14,7 @@ publish = false
 anyhow = {workspace = true}
 camino = {workspace = true}
 clap = {workspace = true, features = ["derive", "env"]}
+colored = "2.1.0"
 directories = {workspace = true}
 futures = {workspace = true}
 indicatif = {workspace = true}

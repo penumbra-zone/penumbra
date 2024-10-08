@@ -5908,6 +5908,7 @@ dependencies = [
  "anyhow",
  "camino",
  "clap",
+ "colored",
  "directories",
  "futures",
  "indicatif",
