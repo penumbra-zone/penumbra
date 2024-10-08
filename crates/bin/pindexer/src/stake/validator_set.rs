@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
 
-use penumbra_app::genesis::AppState;
+use penumbra_app::genesis::Content;
 use penumbra_asset::asset;
 use penumbra_num::Amount;
 use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
@@ -11,6 +11,8 @@ use penumbra_stake::{
     validator::{self, Validator},
     IdentityKey,
 };
+
+use crate::parsing::parse_content;
 
 #[derive(Debug)]
 pub struct ValidatorSet {}
@@ -45,10 +47,7 @@ impl AppView for ValidatorSet {
             .execute(dbtx.as_mut())
             .await?;
 
-        let app_state: penumbra_app::genesis::AppState =
-            serde_json::from_value(app_state.clone()).context("error decoding app_state json")?;
-
-        add_genesis_validators(dbtx, &app_state).await?;
+        add_genesis_validators(dbtx, &parse_content(app_state.clone())?).await?;
         Ok(())
     }
 
@@ -147,14 +146,7 @@ impl AppView for ValidatorSet {
     }
 }
 
-async fn add_genesis_validators<'a>(
-    dbtx: &mut PgTransaction<'a>,
-    app_state: &AppState,
-) -> Result<()> {
-    let content = app_state
-        .content()
-        .ok_or_else(|| anyhow::anyhow!("cannot initialize indexer from checkpoint genesis"))?;
-
+async fn add_genesis_validators<'a>(dbtx: &mut PgTransaction<'a>, content: &Content) -> Result<()> {
     // Given a genesis validator, we need to figure out its delegations at
     // genesis by getting its delegation token then summing up all the allocations.
     // Build up a table of the total allocations first.
