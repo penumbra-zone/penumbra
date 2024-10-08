@@ -5,12 +5,14 @@ use crate::{
     },
     swap::Swap,
     swap_claim::SwapClaim,
-    BatchSwapOutputData, DirectedTradingPair, SwapExecution,
+    BatchSwapOutputData, CandlestickData, DirectedTradingPair, SwapExecution,
 };
+use anyhow::{anyhow, Context};
+use prost::Name;
 
 use penumbra_asset::asset;
 use penumbra_num::Amount;
-use penumbra_proto::penumbra::core::component::dex::v1 as pb;
+use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 
 pub fn swap(swap: &Swap) -> pb::EventSwap {
     pb::EventSwap {
@@ -134,4 +136,37 @@ pub fn vcb_debit(
         previous_balance: Some(previous_balance.into()),
         new_balance: Some(new_balance.into()),
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct EventCandlestickData {
+    pub pair: DirectedTradingPair,
+    pub stick: CandlestickData,
+}
+
+impl TryFrom<pb::EventCandlestickData> for EventCandlestickData {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventCandlestickData) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventCandlestickData) -> anyhow::Result<EventCandlestickData> {
+            Ok(EventCandlestickData {
+                pair: value.pair.ok_or(anyhow!("missing `pair`"))?.try_into()?,
+                stick: value.stick.ok_or(anyhow!("missing `stick`"))?.try_into()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventCandlestickData::NAME))
+    }
+}
+
+impl From<EventCandlestickData> for pb::EventCandlestickData {
+    fn from(value: EventCandlestickData) -> Self {
+        Self {
+            pair: Some(value.pair.into()),
+            stick: Some(value.stick.into()),
+        }
+    }
+}
+
+impl DomainType for EventCandlestickData {
+    type Proto = pb::EventCandlestickData;
 }

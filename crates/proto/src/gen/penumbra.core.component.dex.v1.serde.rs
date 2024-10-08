@@ -2225,6 +2225,118 @@ impl<'de> serde::Deserialize<'de> for EventBatchSwap {
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventBatchSwap", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventCandlestickData {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.pair.is_some() {
+            len += 1;
+        }
+        if self.stick.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventCandlestickData", len)?;
+        if let Some(v) = self.pair.as_ref() {
+            struct_ser.serialize_field("pair", v)?;
+        }
+        if let Some(v) = self.stick.as_ref() {
+            struct_ser.serialize_field("stick", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventCandlestickData {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "pair",
+            "stick",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Pair,
+            Stick,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "pair" => Ok(GeneratedField::Pair),
+                            "stick" => Ok(GeneratedField::Stick),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventCandlestickData;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventCandlestickData")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventCandlestickData, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut pair__ = None;
+                let mut stick__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Pair => {
+                            if pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("pair"));
+                            }
+                            pair__ = map_.next_value()?;
+                        }
+                        GeneratedField::Stick => {
+                            if stick__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stick"));
+                            }
+                            stick__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventCandlestickData {
+                    pair: pair__,
+                    stick: stick__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventCandlestickData", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventPositionClose {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

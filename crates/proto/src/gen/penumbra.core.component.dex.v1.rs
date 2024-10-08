@@ -1555,6 +1555,27 @@ impl ::prost::Name for EventValueCircuitBreakerDebit {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
+/// Emitted whenever there's non-empty candlestick data for a particular pair.
+///
+/// Beware: if there's no activity on a given pair, there's no guarantee
+/// that a candlestick will be emitted.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventCandlestickData {
+    /// The pair the candlestick is for.
+    #[prost(message, optional, tag = "1")]
+    pub pair: ::core::option::Option<DirectedTradingPair>,
+    /// The candlestick for this particular pair.
+    #[prost(message, optional, tag = "2")]
+    pub stick: ::core::option::Option<CandlestickData>,
+}
+impl ::prost::Name for EventCandlestickData {
+    const NAME: &'static str = "EventCandlestickData";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DexParameters {
