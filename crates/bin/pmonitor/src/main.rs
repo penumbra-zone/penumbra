@@ -453,7 +453,7 @@ impl Opt {
                         new_config_entry.add_migration(new_fvk_entry);
                         updated_config.set_account(index, new_config_entry.clone());
 
-                        let mut view_client = self
+                        view_client = self
                             .view(wallet_dir, new_fvk.clone(), pmonitor_config.grpc_url())
                             .await?;
 
