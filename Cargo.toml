@@ -104,7 +104,7 @@ push = false
 [workspace.package]
 authors    = ["Penumbra Labs <team@penumbralabs.xyz"]
 edition    = "2021"
-version    = "0.80.5"
+version    = "0.80.6"
 repository = "https://github.com/penumbra-zone/penumbra"
 homepage   = "https://penumbra.zone"
 license    = "MIT OR Apache-2.0"
