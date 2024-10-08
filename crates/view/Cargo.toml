@@ -33,7 +33,7 @@ ibc-types = {workspace = true, default-features = false}
 metrics = {workspace = true}
 once_cell = {workspace = true}
 parking_lot = {workspace = true}
-penumbra-app = {workspace = true}
+penumbra-app = {workspace = true, default-features = false}
 penumbra-asset = {workspace = true, default-features = true}
 penumbra-community-pool = {workspace = true, default-features = false}
 penumbra-compact-block = {workspace = true, default-features = false}
@@ -51,7 +51,7 @@ penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
 penumbra-tct = {workspace = true, default-features = true}
 penumbra-transaction = {workspace = true, default-features = true}
-penumbra-auction = {workspace = true, default-features = true}
+penumbra-auction = {workspace = true, default-features = false}
 prost = {workspace = true}
 r2d2 = {workspace = true}
 r2d2_sqlite = {workspace = true, features = ["bundled"]}

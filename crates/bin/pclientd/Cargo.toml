@@ -26,7 +26,7 @@ http = {workspace = true}
 http-body = {workspace = true}
 metrics = {workspace = true}
 parking_lot = {workspace = true}
-penumbra-app = {workspace = true}
+penumbra-app = {workspace = true, default-features = false}
 penumbra-asset = {workspace = true, default-features = true}
 penumbra-custody = {workspace = true}
 penumbra-keys = {workspace = true, default-features = true}

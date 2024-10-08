@@ -186,21 +186,8 @@ impl ViewServer {
         transaction: Transaction,
         await_detection: bool,
     ) -> BroadcastTransactionStream {
-        use penumbra_app::AppActionHandler;
-
         let self2 = self.clone();
         try_stream! {
-                // 1. Pre-check the transaction for (stateless) validity.
-                transaction
-                    .check_stateless(())
-                    .await
-                    .map_err(|e| {
-                        tonic::Status::unavailable(format!(
-                            "transaction pre-submission checks failed: {:#?}",
-                            e
-                        ))
-                    })?;
-
                 // 2. Broadcast the transaction to the network.
                 // Note that "synchronous" here means "wait for the tx to be accepted by
                 // the fullnode", not "wait for the tx to be included on chain.
