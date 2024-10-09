@@ -1,8 +1,5 @@
 use crate::{
-    lp::{
-        action::PositionClose,
-        position::{self, Position},
-    },
+    lp::position::{self, Position},
     swap::Swap,
     swap_claim::SwapClaim,
     BatchSwapOutputData, CandlestickData, DirectedTradingPair, SwapExecution, TradingPair,
@@ -43,16 +40,37 @@ pub fn position_open(position: &Position) -> pb::EventPositionOpen {
     }
 }
 
-pub fn position_close_by_id(id: position::Id) -> pb::EventPositionClose {
-    pb::EventPositionClose {
-        position_id: Some(id.into()),
+#[derive(Clone, Debug)]
+pub struct EventPositionClose {
+    pub position_id: position::Id,
+}
+
+impl TryFrom<pb::EventPositionClose> for EventPositionClose {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventPositionClose) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventPositionClose) -> anyhow::Result<EventPositionClose> {
+            Ok(EventPositionClose {
+                position_id: value
+                    .position_id
+                    .ok_or(anyhow!("missing `position_id`"))?
+                    .try_into()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventPositionClose::NAME))
     }
 }
 
-pub fn position_close(action: &PositionClose) -> pb::EventPositionClose {
-    pb::EventPositionClose {
-        position_id: Some(action.position_id.into()),
+impl From<EventPositionClose> for pb::EventPositionClose {
+    fn from(value: EventPositionClose) -> Self {
+        Self {
+            position_id: Some(value.position_id.into()),
+        }
     }
+}
+
+impl DomainType for EventPositionClose {
+    type Proto = pb::EventPositionClose;
 }
 
 #[derive(Clone, Debug)]
