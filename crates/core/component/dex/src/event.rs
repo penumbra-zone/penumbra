@@ -95,23 +95,85 @@ pub fn position_execution(
     }
 }
 
-pub fn batch_swap(
-    bsod: BatchSwapOutputData,
-    swap_execution_1_for_2: Option<SwapExecution>,
-    swap_execution_2_for_1: Option<SwapExecution>,
-) -> pb::EventBatchSwap {
-    pb::EventBatchSwap {
-        batch_swap_output_data: Some(bsod.into()),
-        swap_execution_1_for_2: swap_execution_1_for_2.map(Into::into),
-        swap_execution_2_for_1: swap_execution_2_for_1.map(Into::into),
+#[derive(Clone, Debug)]
+pub struct EventBatchSwap {
+    pub batch_swap_output_data: BatchSwapOutputData,
+    pub swap_execution_1_for_2: Option<SwapExecution>,
+    pub swap_execution_2_for_1: Option<SwapExecution>,
+}
+
+impl TryFrom<pb::EventBatchSwap> for EventBatchSwap {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventBatchSwap) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventBatchSwap) -> anyhow::Result<EventBatchSwap> {
+            Ok(EventBatchSwap {
+                batch_swap_output_data: value
+                    .batch_swap_output_data
+                    .ok_or(anyhow!("missing `batch_swap_output_data`"))?
+                    .try_into()?,
+                swap_execution_1_for_2: value
+                    .swap_execution_1_for_2
+                    .map(|x| x.try_into())
+                    .transpose()?,
+                swap_execution_2_for_1: value
+                    .swap_execution_2_for_1
+                    .map(|x| x.try_into())
+                    .transpose()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventBatchSwap::NAME))
     }
 }
 
-pub fn arb_execution(height: u64, swap_execution: SwapExecution) -> pb::EventArbExecution {
-    pb::EventArbExecution {
-        height,
-        swap_execution: Some(swap_execution.into()),
+impl From<EventBatchSwap> for pb::EventBatchSwap {
+    fn from(value: EventBatchSwap) -> Self {
+        Self {
+            batch_swap_output_data: Some(value.batch_swap_output_data.into()),
+            swap_execution_1_for_2: value.swap_execution_1_for_2.map(|x| x.into()),
+            swap_execution_2_for_1: value.swap_execution_2_for_1.map(|x| x.into()),
+        }
     }
+}
+
+impl DomainType for EventBatchSwap {
+    type Proto = pb::EventBatchSwap;
+}
+
+#[derive(Clone, Debug)]
+pub struct EventArbExecution {
+    pub height: u64,
+    pub swap_execution: SwapExecution,
+}
+
+impl TryFrom<pb::EventArbExecution> for EventArbExecution {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventArbExecution) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventArbExecution) -> anyhow::Result<EventArbExecution> {
+            Ok(EventArbExecution {
+                height: value.height,
+                swap_execution: value
+                    .swap_execution
+                    .ok_or(anyhow!("missing `swap_execution`"))?
+                    .try_into()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventArbExecution::NAME))
+    }
+}
+
+impl From<EventArbExecution> for pb::EventArbExecution {
+    fn from(value: EventArbExecution) -> Self {
+        Self {
+            height: value.height,
+            swap_execution: Some(value.swap_execution.into()),
+        }
+    }
+}
+
+impl DomainType for EventArbExecution {
+    type Proto = pb::EventArbExecution;
 }
 
 #[derive(Clone, Debug)]
