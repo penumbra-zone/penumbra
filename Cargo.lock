@@ -5829,6 +5829,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-shielded-pool",
  "penumbra-stake",
+ "prost",
  "serde_json",
  "sqlx",
  "tokio",
