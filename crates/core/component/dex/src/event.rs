@@ -55,10 +55,37 @@ pub fn position_close(action: &PositionClose) -> pb::EventPositionClose {
     }
 }
 
-pub fn queue_position_close(action: &PositionClose) -> pb::EventQueuePositionClose {
-    pb::EventQueuePositionClose {
-        position_id: Some(action.position_id.into()),
+#[derive(Clone, Debug)]
+pub struct EventQueuePositionClose {
+    pub position_id: position::Id,
+}
+
+impl TryFrom<pb::EventQueuePositionClose> for EventQueuePositionClose {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventQueuePositionClose) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventQueuePositionClose) -> anyhow::Result<EventQueuePositionClose> {
+            Ok(EventQueuePositionClose {
+                position_id: value
+                    .position_id
+                    .ok_or(anyhow!("missing `position_id`"))?
+                    .try_into()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventQueuePositionClose::NAME))
     }
+}
+
+impl From<EventQueuePositionClose> for pb::EventQueuePositionClose {
+    fn from(value: EventQueuePositionClose) -> Self {
+        Self {
+            position_id: Some(value.position_id.into()),
+        }
+    }
+}
+
+impl DomainType for EventQueuePositionClose {
+    type Proto = pb::EventQueuePositionClose;
 }
 
 #[derive(Clone, Debug)]
