@@ -5,6 +5,8 @@ use crate::{
     BatchSwapOutputData, CandlestickData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 use anyhow::{anyhow, Context};
+use penumbra_sct::Nullifier;
+use penumbra_tct::StateCommitment;
 use prost::Name;
 
 use penumbra_asset::asset;
@@ -20,13 +22,72 @@ pub fn swap(swap: &Swap) -> pb::EventSwap {
     }
 }
 
-pub fn swap_claim(swap_claim: &SwapClaim) -> pb::EventSwapClaim {
-    pb::EventSwapClaim {
-        trading_pair: Some(swap_claim.body.output_data.trading_pair.into()),
-        output_1_commitment: Some(swap_claim.body.output_1_commitment.into()),
-        output_2_commitment: Some(swap_claim.body.output_2_commitment.into()),
-        nullifier: Some(swap_claim.body.nullifier.into()),
+#[derive(Clone, Debug)]
+pub struct EventSwapClaim {
+    pub trading_pair: TradingPair,
+    pub output_1_commitment: StateCommitment,
+    pub output_2_commitment: StateCommitment,
+    pub nullifier: Nullifier,
+}
+
+impl From<SwapClaim> for EventSwapClaim {
+    fn from(value: SwapClaim) -> Self {
+        Self::from(&value)
     }
+}
+
+impl From<&SwapClaim> for EventSwapClaim {
+    fn from(value: &SwapClaim) -> Self {
+        Self {
+            trading_pair: value.body.output_data.trading_pair,
+            output_1_commitment: value.body.output_1_commitment,
+            output_2_commitment: value.body.output_2_commitment,
+            nullifier: value.body.nullifier,
+        }
+    }
+}
+
+impl TryFrom<pb::EventSwapClaim> for EventSwapClaim {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventSwapClaim) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventSwapClaim) -> anyhow::Result<EventSwapClaim> {
+            Ok(EventSwapClaim {
+                trading_pair: value
+                    .trading_pair
+                    .ok_or(anyhow!("missing `trading_pair`"))?
+                    .try_into()?,
+                output_1_commitment: value
+                    .output_1_commitment
+                    .ok_or(anyhow!("missing `output_1_commitment`"))?
+                    .try_into()?,
+                output_2_commitment: value
+                    .output_2_commitment
+                    .ok_or(anyhow!("missing `output_2_commitment`"))?
+                    .try_into()?,
+                nullifier: value
+                    .nullifier
+                    .ok_or(anyhow!("missing `nullifier`"))?
+                    .try_into()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventSwapClaim::NAME))
+    }
+}
+
+impl From<EventSwapClaim> for pb::EventSwapClaim {
+    fn from(value: EventSwapClaim) -> Self {
+        Self {
+            trading_pair: Some(value.trading_pair.into()),
+            output_1_commitment: Some(value.output_1_commitment.into()),
+            output_2_commitment: Some(value.output_2_commitment.into()),
+            nullifier: Some(value.nullifier.into()),
+        }
+    }
+}
+
+impl DomainType for EventSwapClaim {
+    type Proto = pb::EventSwapClaim;
 }
 
 #[derive(Clone, Debug)]
