@@ -39,7 +39,14 @@ pub(crate) trait ValueCircuitBreaker: StateWrite {
         tracing::debug!(?prev_balance, ?new_balance, "crediting the dex VCB");
         self.put(state_key::value_balance(&value.asset_id), new_balance);
 
-        self.record_proto(event::vcb_credit(value.asset_id, prev_balance, new_balance));
+        self.record_proto(
+            event::EventValueCircuitBreakerCredit {
+                asset_id: value.asset_id,
+                previous_balance: prev_balance,
+                new_balance,
+            }
+            .to_proto(),
+        );
         Ok(())
     }
 

@@ -114,16 +114,54 @@ pub fn arb_execution(height: u64, swap_execution: SwapExecution) -> pb::EventArb
     }
 }
 
-pub fn vcb_credit(
-    asset_id: asset::Id,
-    previous_balance: Amount,
-    new_balance: Amount,
-) -> pb::EventValueCircuitBreakerCredit {
-    pb::EventValueCircuitBreakerCredit {
-        asset_id: Some(asset_id.into()),
-        previous_balance: Some(previous_balance.into()),
-        new_balance: Some(new_balance.into()),
+#[derive(Clone, Debug)]
+pub struct EventValueCircuitBreakerCredit {
+    pub asset_id: asset::Id,
+    pub previous_balance: Amount,
+    pub new_balance: Amount,
+}
+
+impl TryFrom<pb::EventValueCircuitBreakerCredit> for EventValueCircuitBreakerCredit {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventValueCircuitBreakerCredit) -> Result<Self, Self::Error> {
+        fn inner(
+            value: pb::EventValueCircuitBreakerCredit,
+        ) -> anyhow::Result<EventValueCircuitBreakerCredit> {
+            Ok(EventValueCircuitBreakerCredit {
+                asset_id: value
+                    .asset_id
+                    .ok_or(anyhow!("missing `asset_id`"))?
+                    .try_into()?,
+                previous_balance: value
+                    .previous_balance
+                    .ok_or(anyhow!("missing `previous_balance`"))?
+                    .try_into()?,
+                new_balance: value
+                    .new_balance
+                    .ok_or(anyhow!("missing `new_balance`"))?
+                    .try_into()?,
+            })
+        }
+        inner(value).context(format!(
+            "parsing {}",
+            pb::EventValueCircuitBreakerCredit::NAME
+        ))
     }
+}
+
+impl From<EventValueCircuitBreakerCredit> for pb::EventValueCircuitBreakerCredit {
+    fn from(value: EventValueCircuitBreakerCredit) -> Self {
+        Self {
+            asset_id: Some(value.asset_id.into()),
+            previous_balance: Some(value.previous_balance.into()),
+            new_balance: Some(value.new_balance.into()),
+        }
+    }
+}
+
+impl DomainType for EventValueCircuitBreakerCredit {
+    type Proto = pb::EventValueCircuitBreakerCredit;
 }
 
 #[derive(Clone, Debug)]
