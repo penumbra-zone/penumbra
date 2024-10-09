@@ -1,0 +1,89 @@
+{
+  "actions": [
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "O+zEEy11CutZ588rkIk5G5lu240/GC0d+gvihruVuYM="
+        },
+        "unbondedAmount": {
+          "lo": "410749331943002330"
+        },
+        "delegationAmount": {
+          "lo": "312960866650043649"
+        },
+        "fromEpoch": {
+          "index": "6643",
+          "startHeight": "6643"
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "0Ot92gMhlu1BODuxlj63q9gg18BvEiRJVrGemPCLrq8="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP5wOvt+kP+XJHRTjvNNahc="
+        },
+        "unbondingAmount": {
+          "lo": "2017406978163373"
+        },
+        "balanceBlinding": "vLCcEtKSuhgXSKK52ZczF+dsyi0GGNS2YF/fdOLARgM=",
+        "proofBlindingR": "Q66alz4ey7fPhABoaOsYVPTmHxVNkKfEhgcI0zFhXQ4=",
+        "proofBlindingS": "2aO9oYZ86g6FiLne0OxyzhNMGTrdKrfSDx1OsjutehI=",
+        "unbondingStartHeight": "50890"
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "257406053948001234"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "y5nKsPX+Clv5dKKw0xLZWEw3hm4grA2kPxRVgl6lSdm3ZrRuZ+vPDtnjn1nyBqseaNkD4gDaJYFOIb7A+R2YiRcJ8+1aPciTXB9it5S9t9U="
+        },
+        "rseed": "cipsNMd2YB/4taVE6/rVUQtlyu/tvLCkTYi12cPMW3A=",
+        "valueBlinding": "KkYrgaCOwl1YOtN6ewJkPG87pArvQqSdjnE1PAyXRwQ=",
+        "proofBlindingR": "8KzS+oBXPehNjOT9ggjoubKOBG7hRPBXSVlPczGTIAA=",
+        "proofBlindingS": "7aTSbQS3leYzeal2LT2CORP2Zce6ebk39ZjX4+T4nQU="
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "275779117971881971"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "jxTPSoQahK2kGM79BZRfyzLrKBhrZiMkUnipOz8Uj+A=",
+          "address": {
+            "inner": "hovz7gNe8Mgabh2Jvw6k3ena11dzMkMe5E8lImBQ9u0/nxpzbFfDWfmvwjmhs7AsWgN+eySTelEj3s76rdrgOohV0//ngDTwU4GqWOrozZM="
+          }
+        },
+        "position": "85200893098273",
+        "randomizer": "a2wbS/G270oLPUzNwpgQR8GkMpsiL+AKzJ3xN9a/VwE=",
+        "valueBlinding": "EErlGoMvcIOadxqDCgeWnvA75BP/lB9mj4lz8A+xJwI=",
+        "proofBlindingR": "qHZnhtdMJjPu/o7ZeIsBDnPO2ae6c2Fj0I2N2HZ0UQk=",
+        "proofBlindingS": "JGS0UGIOhS+34nA/dvWXyC6yzRaewtvamzOLFG4Ixw4="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "6732527483",
+    "chainId": "cej-20",
+    "fee": {
+      "amount": {
+        "lo": "697539896994331533"
+      }
+    }
+  }
+}

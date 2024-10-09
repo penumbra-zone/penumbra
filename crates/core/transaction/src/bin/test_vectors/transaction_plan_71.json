@@ -1,0 +1,74 @@
+{
+  "actions": [
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "606632637006898019"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "NPXs26QzLjeDNJkdKXrfjTL8fmJlGKcQ/WwCJlflc1Mfdqn0bx1gnOfqvi4ld4vo+pnPczjp9PaXAAxmgzqiy/aFAeyDfbzRWcpsUkQ7vvE="
+        },
+        "rseed": "U9jrPbakgXKM+y8dYBKzWH2uSOSoF/mNa88sKHxfJHQ=",
+        "valueBlinding": "z9/zosGKoAk5vM2Pr3f6qEdW1gByRGir5NDtZIaMbgE=",
+        "proofBlindingR": "CWlzs4/cRQt+/w2bGUW739BEd/4KFurMUB2+Nfv7dAw=",
+        "proofBlindingS": "d8t/N3WLmUa8ovk+QjepRAlzuVs/Fkp/UVb36oq2wwM="
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "699138051920129519"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "khrTGivbSJJ97FUvMb2wcBS2I1o0SYJJRZHWOtoiGXo=",
+          "address": {
+            "inner": "LJvD0t4hwNmO749bhyQ6sNM8snmlykHgxWLDmzKjxJtk2Ryndnnxs87vqJ14RDFyAvmfWnI0y4sbGXeIG1t0p83xzXpGfDvSGMNeZp/7dA8="
+          }
+        },
+        "position": "197515909671627",
+        "randomizer": "cAPBJmvfMKk4rC/hzabVea9tZ1tLHsVtDgEXnudKowI=",
+        "valueBlinding": "fZlMP9XIKcMHpBuNMe5uz2oX2xTRIPKnBK1j7doqqQE=",
+        "proofBlindingR": "LHcp9wEFm9eLqdTZ6QOPVaFj5u+S3L8KqJ7O6OL6qw4=",
+        "proofBlindingS": "367IXvZH7Rk6O9rexZKOLSB6Fu1whw3m32bp8TYh9As="
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "494411922625998312"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "XZaxnYoxPl7jUAYw2dNALgIhNgR1okHcN2/jMVLQogSR5+K9K8WeRI5PAtP0i4lJtj4va7730Y1XyEdUJFjPSLSgWveOcB9u79cJ7JRh/70="
+        },
+        "rseed": "Nd6n6xRRnrYw3fd7+8ukKC0M2sYbAHL78HCEIbX39D0=",
+        "valueBlinding": "GZpBj1liulntopGiCBUQr+316XAkcQ1aNsGHCkqIpgE=",
+        "proofBlindingR": "WVzAu5xEnf0+mXXkZEICAKANoqYh0kUBXea7350RpwU=",
+        "proofBlindingS": "cko6zZNzj5+Pmjy8iVHtsvMeZtrF7zSSVlUIiJIDxQs="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "7066861796",
+    "chainId": "wbxodgo-916792",
+    "fee": {
+      "amount": {
+        "lo": "974222004588039812"
+      }
+    }
+  }
+}
