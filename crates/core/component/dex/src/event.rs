@@ -126,16 +126,54 @@ pub fn vcb_credit(
     }
 }
 
-pub fn vcb_debit(
-    asset_id: asset::Id,
-    previous_balance: Amount,
-    new_balance: Amount,
-) -> pb::EventValueCircuitBreakerDebit {
-    pb::EventValueCircuitBreakerDebit {
-        asset_id: Some(asset_id.into()),
-        previous_balance: Some(previous_balance.into()),
-        new_balance: Some(new_balance.into()),
+#[derive(Clone, Debug)]
+pub struct EventValueCircuitBreakerDebit {
+    pub asset_id: asset::Id,
+    pub previous_balance: Amount,
+    pub new_balance: Amount,
+}
+
+impl TryFrom<pb::EventValueCircuitBreakerDebit> for EventValueCircuitBreakerDebit {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventValueCircuitBreakerDebit) -> Result<Self, Self::Error> {
+        fn inner(
+            value: pb::EventValueCircuitBreakerDebit,
+        ) -> anyhow::Result<EventValueCircuitBreakerDebit> {
+            Ok(EventValueCircuitBreakerDebit {
+                asset_id: value
+                    .asset_id
+                    .ok_or(anyhow!("missing `asset_id`"))?
+                    .try_into()?,
+                previous_balance: value
+                    .previous_balance
+                    .ok_or(anyhow!("missing `previous_balance`"))?
+                    .try_into()?,
+                new_balance: value
+                    .new_balance
+                    .ok_or(anyhow!("missing `new_balance`"))?
+                    .try_into()?,
+            })
+        }
+        inner(value).context(format!(
+            "parsing {}",
+            pb::EventValueCircuitBreakerDebit::NAME
+        ))
     }
+}
+
+impl From<EventValueCircuitBreakerDebit> for pb::EventValueCircuitBreakerDebit {
+    fn from(value: EventValueCircuitBreakerDebit) -> Self {
+        Self {
+            asset_id: Some(value.asset_id.into()),
+            previous_balance: Some(value.previous_balance.into()),
+            new_balance: Some(value.new_balance.into()),
+        }
+    }
+}
+
+impl DomainType for EventValueCircuitBreakerDebit {
+    type Proto = pb::EventValueCircuitBreakerDebit;
 }
 
 #[derive(Clone, Debug)]
