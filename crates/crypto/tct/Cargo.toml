@@ -20,6 +20,7 @@ blake2b_simd = {workspace = true}
 decaf377 = {workspace = true, default-features = true}
 derivative = {workspace = true}
 futures = {workspace = true}
+getrandom = {workspace = true, features = ["js"]}
 hash_hasher = "2"
 hex = {workspace = true}
 im = {workspace = true, features = ["serde"]}

@@ -30,6 +30,7 @@ decaf377-fmd = {workspace = true}
 decaf377-rdsa = {workspace = true}
 derivative = {workspace = true}
 ethnum = {workspace = true}
+getrandom = {workspace = true, features = ["js"]}
 hex = {workspace = true}
 ibig = {workspace = true}
 num-bigint = {workspace = true}
