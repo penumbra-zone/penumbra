@@ -59,6 +59,58 @@ fn audit_passes_on_wallets_that_migrated_once() -> anyhow::Result<()> {
 
 #[ignore]
 #[test]
+/// Tests another happy path for pmonitor: all wallets have genesis balances,
+/// one of the wallets ran `pcli migrate balance` once, then that receiving
+/// wallet ran `pcli migrate balance` itself, so the genesis funds are now
+/// two (2) FVKs away from the original account. In this case,
+/// pmonitor` should exit 0, because it understood all balance migrations
+/// and updated the FVK in its config file accordingly.
+fn audit_passes_on_wallets_that_migrated_twice() -> anyhow::Result<()> {
+    let p = PmonitorTestRunner::new();
+    p.create_pcli_wallets()?;
+    let _network = p.start_devnet()?;
+    // Run audit once, to confirm compliance on clean slate.
+    p.initialize_pmonitor()?;
+    p.pmonitor_audit()?;
+
+    // Create an empty wallet, with no genesis funds, to which we'll migrate a balance.
+    let alice_pcli_home = p.wallets_dir()?.join("wallet-alice");
+    pcli_init_softkms(&alice_pcli_home)?;
+    let alice_pcli_config = PcliConfig::load(
+        alice_pcli_home
+            .join("config.toml")
+            .to_str()
+            .expect("failed to convert alice wallet to str"),
+    )?;
+
+    // Take the second wallet, and migrate its balance to Alice.
+    let migrated_wallet = p.wallets_dir()?.join("wallet-1");
+    pcli_migrate_balance(&migrated_wallet, &alice_pcli_config.full_viewing_key)?;
+
+    // Now re-run the audit tool: it should report OK again, because all we did was migrate.
+    p.pmonitor_audit()?;
+
+    // Create another empty wallet, with no genesis funds, to which we'll migrate a balance.
+    let bob_pcli_home = p.wallets_dir()?.join("wallet-bob");
+    pcli_init_softkms(&bob_pcli_home)?;
+    let bob_pcli_config = PcliConfig::load(
+        bob_pcli_home
+            .join("config.toml")
+            .to_str()
+            .expect("failed to convert bob wallet to str"),
+    )?;
+
+    // Re-migrate the balance from Alice to Bob.
+    pcli_migrate_balance(&alice_pcli_home, &bob_pcli_config.full_viewing_key)?;
+
+    // Now re-run the audit tool: it should report OK again, confirming that it
+    // successfully tracks multiple migratrions.
+    p.pmonitor_audit()?;
+
+    Ok(())
+}
+#[ignore]
+#[test]
 /// Tests an unhappy path for `pmonitor`: a single wallet has sent all its funds
 /// to non-genesis account, via `pcli tx send` rather than `pcli migrate balance`.
 /// In this case, `pmonitor` should exit non-zero.
