@@ -279,7 +279,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.mark_trading_pair_as_active(position.phi.pair);
 
         // Finally, record the new position state.
-        self.record_proto(event::position_open(&position));
+        self.record_proto(event::EventPositionOpen::from(position.clone()).to_proto());
         self.update_position(&id, None, position).await?;
 
         Ok(())

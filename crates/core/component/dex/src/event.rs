@@ -29,15 +29,77 @@ pub fn swap_claim(swap_claim: &SwapClaim) -> pb::EventSwapClaim {
     }
 }
 
-pub fn position_open(position: &Position) -> pb::EventPositionOpen {
-    pb::EventPositionOpen {
-        position_id: Some(position.id().into()),
-        trading_pair: Some(position.phi.pair.into()),
-        reserves_1: Some(position.reserves.r1.into()),
-        reserves_2: Some(position.reserves.r2.into()),
-        trading_fee: position.phi.component.fee,
-        position: Some(position.clone().into()),
+#[derive(Clone, Debug)]
+pub struct EventPositionOpen {
+    pub position_id: position::Id,
+    pub trading_pair: TradingPair,
+    pub reserves_1: Amount,
+    pub reserves_2: Amount,
+    pub trading_fee: u32,
+    pub position: Position,
+}
+
+impl From<Position> for EventPositionOpen {
+    fn from(value: Position) -> Self {
+        Self {
+            position_id: value.id(),
+            trading_pair: value.phi.pair,
+            reserves_1: value.reserves_1().amount,
+            reserves_2: value.reserves_2().amount,
+            trading_fee: value.phi.component.fee,
+            position: value,
+        }
     }
+}
+
+impl TryFrom<pb::EventPositionOpen> for EventPositionOpen {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventPositionOpen) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventPositionOpen) -> anyhow::Result<EventPositionOpen> {
+            Ok(EventPositionOpen {
+                position_id: value
+                    .position_id
+                    .ok_or(anyhow!("missing `position_id`"))?
+                    .try_into()?,
+                trading_pair: value
+                    .trading_pair
+                    .ok_or(anyhow!("missing `trading_pair`"))?
+                    .try_into()?,
+                reserves_1: value
+                    .reserves_1
+                    .ok_or(anyhow!("missing `reserves_1`"))?
+                    .try_into()?,
+                reserves_2: value
+                    .reserves_2
+                    .ok_or(anyhow!("missing `reserves_2`"))?
+                    .try_into()?,
+                trading_fee: value.trading_fee,
+                position: value
+                    .position
+                    .ok_or(anyhow!("missing `position`"))?
+                    .try_into()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventPositionOpen::NAME))
+    }
+}
+
+impl From<EventPositionOpen> for pb::EventPositionOpen {
+    fn from(value: EventPositionOpen) -> Self {
+        Self {
+            position_id: Some(value.position_id.into()),
+            trading_pair: Some(value.trading_pair.into()),
+            reserves_1: Some(value.reserves_1.into()),
+            reserves_2: Some(value.reserves_2.into()),
+            trading_fee: value.trading_fee,
+            position: Some(value.position.into()),
+        }
+    }
+}
+
+impl DomainType for EventPositionOpen {
+    type Proto = pb::EventPositionOpen;
 }
 
 #[derive(Clone, Debug)]
