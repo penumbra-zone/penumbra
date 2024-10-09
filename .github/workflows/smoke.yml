@@ -5,12 +5,13 @@ on:
     paths-ignore:
       - 'docs/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke_test:
     runs-on: buildjet-16vcpu-ubuntu-2204
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
     environment: smoke-test
     steps:
       - uses: actions/checkout@v4
@@ -42,9 +43,6 @@ jobs:
 
   pmonitor-integration:
     runs-on: buildjet-16vcpu-ubuntu-2204
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
         with:
