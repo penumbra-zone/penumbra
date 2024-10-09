@@ -205,7 +205,7 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         self.update_position(id, Some(prev_state), new_state)
             .await?;
-        self.record_proto(event::position_close_by_id(*id));
+        self.record_proto(event::EventPositionClose { position_id: *id }.to_proto());
 
         Ok(())
     }
@@ -279,7 +279,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.mark_trading_pair_as_active(position.phi.pair);
 
         // Finally, record the new position state.
-        self.record_proto(event::position_open(&position));
+        self.record_proto(event::EventPositionOpen::from(position.clone()).to_proto());
         self.update_position(&id, None, position).await?;
 
         Ok(())
@@ -349,7 +349,9 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         // We have already short-circuited no-op execution updates, so we can emit an execution
         // event and not worry about duplicates.
-        self.record_proto(event::position_execution(&prev_state, &new_state, context));
+        self.record_proto(
+            event::EventPositionExecution::in_context(&prev_state, &new_state, context).to_proto(),
+        );
 
         // Handle "close-on-fill": automatically flip the position state to "closed" if
         // either of the reserves are zero.
@@ -363,7 +365,7 @@ pub trait PositionManager: StateWrite + PositionRead {
                 );
 
                 new_state.state = position::State::Closed;
-                self.record_proto(event::position_close_by_id(position_id));
+                self.record_proto(event::EventPositionClose { position_id }.to_proto());
             }
         }
 
@@ -431,7 +433,9 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         // Record an event prior to updating the position state, so we have access to
         // the current reserves.
-        self.record_proto(event::position_withdraw(position_id, &prev_state));
+        self.record_proto(
+            event::EventPositionWithdraw::in_context(position_id, &prev_state).to_proto(),
+        );
 
         // Grab a copy of the final reserves of the position to return to the caller.
         let reserves = prev_state.reserves.balance(&prev_state.phi.pair);

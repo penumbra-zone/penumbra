@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use cnidarium::{StateRead, StateWrite};
 use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
 use tonic::async_trait;
 use tracing::instrument;
 
@@ -39,7 +39,14 @@ pub(crate) trait ValueCircuitBreaker: StateWrite {
         tracing::debug!(?prev_balance, ?new_balance, "crediting the dex VCB");
         self.put(state_key::value_balance(&value.asset_id), new_balance);
 
-        self.record_proto(event::vcb_credit(value.asset_id, prev_balance, new_balance));
+        self.record_proto(
+            event::EventValueCircuitBreakerCredit {
+                asset_id: value.asset_id,
+                previous_balance: prev_balance,
+                new_balance,
+            }
+            .to_proto(),
+        );
         Ok(())
     }
 
@@ -61,7 +68,14 @@ pub(crate) trait ValueCircuitBreaker: StateWrite {
         tracing::debug!(?prev_balance, ?new_balance, "crediting the dex VCB");
         self.put(state_key::value_balance(&value.asset_id), new_balance);
 
-        self.record_proto(event::vcb_debit(value.asset_id, prev_balance, new_balance));
+        self.record_proto(
+            event::EventValueCircuitBreakerDebit {
+                asset_id: value.asset_id,
+                previous_balance: prev_balance,
+                new_balance,
+            }
+            .to_proto(),
+        );
         Ok(())
     }
 }

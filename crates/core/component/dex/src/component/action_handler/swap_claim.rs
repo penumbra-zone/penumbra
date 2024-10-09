@@ -7,7 +7,7 @@ use penumbra_txhash::TransactionContext;
 
 use cnidarium::{StateRead, StateWrite};
 use penumbra_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
-use penumbra_proto::StateWriteProto;
+use penumbra_proto::{DomainType as _, StateWriteProto};
 use penumbra_sct::component::{
     source::SourceContext,
     tree::{SctManager, VerificationExt},
@@ -95,7 +95,7 @@ impl ActionHandler for SwapClaim {
 
         state.nullify(self.body.nullifier, source).await;
 
-        state.record_proto(event::swap_claim(self));
+        state.record_proto(event::EventSwapClaim::from(self).to_proto());
 
         Ok(())
     }

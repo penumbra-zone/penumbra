@@ -5,7 +5,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateDelta, StateWrite};
 use penumbra_asset::{asset, Value};
-use penumbra_proto::StateWriteProto as _;
+use penumbra_proto::{DomainType as _, StateWriteProto as _};
 use penumbra_sct::component::clock::EpochRead;
 use tracing::instrument;
 
@@ -134,7 +134,13 @@ pub trait Arbitrage: StateWrite + Sized {
             .await?;
 
         // Emit an ABCI event detailing the arb execution.
-        self_mut.record_proto(event::arb_execution(height, se));
+        self_mut.record_proto(
+            event::EventArbExecution {
+                height,
+                swap_execution: se,
+            }
+            .to_proto(),
+        );
         return Ok(Some(Value {
             amount: arb_profit,
             asset_id: arb_token,

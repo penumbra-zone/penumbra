@@ -10,7 +10,7 @@ use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_fee::component::StateWriteExt as _;
 use penumbra_fee::Fee;
 use penumbra_num::Amount;
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_proto::{DomainType as _, StateReadProto, StateWriteProto};
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
@@ -399,11 +399,14 @@ pub(crate) trait InternalDexWrite: StateWrite {
         self.object_put(state_key::pending_outputs(), outputs);
 
         // Also generate an ABCI event for indexing:
-        self.record_proto(event::batch_swap(
-            output_data,
-            swap_execution_1_for_2,
-            swap_execution_2_for_1,
-        ));
+        self.record_proto(
+            event::EventBatchSwap {
+                batch_swap_output_data: output_data,
+                swap_execution_1_for_2,
+                swap_execution_2_for_1,
+            }
+            .to_proto(),
+        );
 
         Ok(())
     }

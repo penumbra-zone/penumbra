@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
-use penumbra_proto::StateWriteProto as _;
+use penumbra_proto::{DomainType as _, StateWriteProto as _};
 
 use crate::{component::PositionManager, event, lp::action::PositionClose};
 
@@ -25,7 +25,12 @@ impl ActionHandler for PositionClose {
         state.queue_close_position(self.position_id);
 
         // queue position close you will...
-        state.record_proto(event::queue_position_close(self));
+        state.record_proto(
+            event::EventQueuePositionClose {
+                position_id: self.position_id,
+            }
+            .to_proto(),
+        );
 
         Ok(())
     }
