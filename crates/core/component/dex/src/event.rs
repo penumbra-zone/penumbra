@@ -5,7 +5,7 @@ use crate::{
     },
     swap::Swap,
     swap_claim::SwapClaim,
-    BatchSwapOutputData, CandlestickData, DirectedTradingPair, SwapExecution,
+    BatchSwapOutputData, CandlestickData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 use anyhow::{anyhow, Context};
 use prost::Name;
@@ -61,38 +61,165 @@ pub fn queue_position_close(action: &PositionClose) -> pb::EventQueuePositionClo
     }
 }
 
-pub fn position_withdraw(
-    position_id: position::Id,
-    final_position_state: &Position,
-) -> pb::EventPositionWithdraw {
-    let sequence = if let position::State::Withdrawn { sequence, .. } = final_position_state.state {
-        sequence + 1
-    } else {
-        0
-    };
-    pb::EventPositionWithdraw {
-        position_id: Some(position_id.into()),
-        trading_pair: Some(final_position_state.phi.pair.into()),
-        reserves_1: Some(final_position_state.reserves.r1.into()),
-        reserves_2: Some(final_position_state.reserves.r2.into()),
-        sequence,
+#[derive(Clone, Debug)]
+pub struct EventPositionWithdraw {
+    pub position_id: position::Id,
+    pub trading_pair: TradingPair,
+    pub reserves_1: Amount,
+    pub reserves_2: Amount,
+    pub sequence: u64,
+}
+
+impl EventPositionWithdraw {
+    /// Create this event using the usual context available to us.
+    pub fn in_context(position_id: position::Id, final_position_state: &Position) -> Self {
+        let sequence =
+            if let position::State::Withdrawn { sequence, .. } = final_position_state.state {
+                sequence + 1
+            } else {
+                0
+            };
+        Self {
+            position_id,
+            trading_pair: final_position_state.phi.pair,
+            reserves_1: final_position_state.reserves.r1,
+            reserves_2: final_position_state.reserves.r2,
+            sequence,
+        }
     }
 }
 
-pub fn position_execution(
-    prev_state: &Position,
-    new_state: &Position,
-    context: DirectedTradingPair,
-) -> pb::EventPositionExecution {
-    pb::EventPositionExecution {
-        position_id: Some(new_state.id().into()),
-        trading_pair: Some(new_state.phi.pair.into()),
-        reserves_1: Some(new_state.reserves.r1.into()),
-        reserves_2: Some(new_state.reserves.r2.into()),
-        prev_reserves_1: Some(prev_state.reserves.r1.into()),
-        prev_reserves_2: Some(prev_state.reserves.r2.into()),
-        context: Some(context.into()),
+impl TryFrom<pb::EventPositionWithdraw> for EventPositionWithdraw {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventPositionWithdraw) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventPositionWithdraw) -> anyhow::Result<EventPositionWithdraw> {
+            Ok(EventPositionWithdraw {
+                position_id: value
+                    .position_id
+                    .ok_or(anyhow!("missing `position_id`"))?
+                    .try_into()?,
+                trading_pair: value
+                    .trading_pair
+                    .ok_or(anyhow!("missing `trading_pair`"))?
+                    .try_into()?,
+                reserves_1: value
+                    .reserves_1
+                    .ok_or(anyhow!("missing `reserves_1`"))?
+                    .try_into()?,
+                reserves_2: value
+                    .reserves_2
+                    .ok_or(anyhow!("missing `reserves_2`"))?
+                    .try_into()?,
+                sequence: value.sequence,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventPositionWithdraw::NAME))
     }
+}
+
+impl From<EventPositionWithdraw> for pb::EventPositionWithdraw {
+    fn from(value: EventPositionWithdraw) -> Self {
+        Self {
+            position_id: Some(value.position_id.into()),
+            trading_pair: Some(value.trading_pair.into()),
+            reserves_1: Some(value.reserves_1.into()),
+            reserves_2: Some(value.reserves_2.into()),
+            sequence: value.sequence,
+        }
+    }
+}
+
+impl DomainType for EventPositionWithdraw {
+    type Proto = pb::EventPositionWithdraw;
+}
+
+#[derive(Clone, Debug)]
+pub struct EventPositionExecution {
+    pub position_id: position::Id,
+    pub trading_pair: TradingPair,
+    pub reserves_1: Amount,
+    pub reserves_2: Amount,
+    pub prev_reserves_1: Amount,
+    pub prev_reserves_2: Amount,
+    pub context: DirectedTradingPair,
+}
+
+impl EventPositionExecution {
+    /// Create this event using the usual context available to us.
+    pub fn in_context(
+        prev_state: &Position,
+        new_state: &Position,
+        context: DirectedTradingPair,
+    ) -> Self {
+        Self {
+            position_id: new_state.id(),
+            trading_pair: new_state.phi.pair,
+            reserves_1: new_state.reserves_1().amount,
+            reserves_2: new_state.reserves_2().amount,
+            prev_reserves_1: prev_state.reserves_1().amount,
+            prev_reserves_2: prev_state.reserves_2().amount,
+            context,
+        }
+    }
+}
+
+impl TryFrom<pb::EventPositionExecution> for EventPositionExecution {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventPositionExecution) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventPositionExecution) -> anyhow::Result<EventPositionExecution> {
+            Ok(EventPositionExecution {
+                position_id: value
+                    .position_id
+                    .ok_or(anyhow!("missing `position_id`"))?
+                    .try_into()?,
+                trading_pair: value
+                    .trading_pair
+                    .ok_or(anyhow!("missing `trading_pair`"))?
+                    .try_into()?,
+                reserves_1: value
+                    .reserves_1
+                    .ok_or(anyhow!("missing `reserves_1`"))?
+                    .try_into()?,
+                reserves_2: value
+                    .reserves_2
+                    .ok_or(anyhow!("missing `reserves_2`"))?
+                    .try_into()?,
+                prev_reserves_1: value
+                    .prev_reserves_1
+                    .ok_or(anyhow!("missing `prev_reserves_1`"))?
+                    .try_into()?,
+                prev_reserves_2: value
+                    .prev_reserves_2
+                    .ok_or(anyhow!("missing `prev_reserves_2`"))?
+                    .try_into()?,
+                context: value
+                    .context
+                    .ok_or(anyhow!("missing `context`"))?
+                    .try_into()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventPositionExecution::NAME))
+    }
+}
+
+impl From<EventPositionExecution> for pb::EventPositionExecution {
+    fn from(value: EventPositionExecution) -> Self {
+        Self {
+            position_id: Some(value.position_id.into()),
+            trading_pair: Some(value.trading_pair.into()),
+            reserves_1: Some(value.reserves_1.into()),
+            reserves_2: Some(value.reserves_2.into()),
+            prev_reserves_1: Some(value.prev_reserves_1.into()),
+            prev_reserves_2: Some(value.prev_reserves_2.into()),
+            context: Some(value.context.into()),
+        }
+    }
+}
+
+impl DomainType for EventPositionExecution {
+    type Proto = pb::EventPositionExecution;
 }
 
 #[derive(Clone, Debug)]
