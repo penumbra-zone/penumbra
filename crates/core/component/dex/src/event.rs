@@ -5,21 +5,79 @@ use crate::{
     BatchSwapOutputData, CandlestickData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 use anyhow::{anyhow, Context};
-use penumbra_sct::Nullifier;
-use penumbra_tct::StateCommitment;
-use prost::Name;
-
 use penumbra_asset::asset;
 use penumbra_num::Amount;
 use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_sct::Nullifier;
+use penumbra_tct::StateCommitment;
+use prost::Name as _;
 
-pub fn swap(swap: &Swap) -> pb::EventSwap {
-    pb::EventSwap {
-        trading_pair: Some(swap.body.trading_pair.into()),
-        delta_1_i: Some(swap.body.delta_1_i.into()),
-        delta_2_i: Some(swap.body.delta_2_i.into()),
-        swap_commitment: Some(swap.body.payload.commitment.into()),
+#[derive(Clone, Debug)]
+pub struct EventSwap {
+    pub trading_pair: TradingPair,
+    pub delta_1_i: Amount,
+    pub delta_2_i: Amount,
+    pub swap_commitment: StateCommitment,
+}
+
+impl From<Swap> for EventSwap {
+    fn from(value: Swap) -> Self {
+        Self::from(&value)
     }
+}
+
+impl From<&Swap> for EventSwap {
+    fn from(value: &Swap) -> Self {
+        Self {
+            trading_pair: value.body.trading_pair,
+            delta_1_i: value.body.delta_1_i,
+            delta_2_i: value.body.delta_2_i,
+            swap_commitment: value.body.payload.commitment,
+        }
+    }
+}
+
+impl TryFrom<pb::EventSwap> for EventSwap {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventSwap) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventSwap) -> anyhow::Result<EventSwap> {
+            Ok(EventSwap {
+                trading_pair: value
+                    .trading_pair
+                    .ok_or(anyhow!("missing `trading_pair`"))?
+                    .try_into()?,
+                delta_1_i: value
+                    .delta_1_i
+                    .ok_or(anyhow!("missing `delta_1_i`"))?
+                    .try_into()?,
+                delta_2_i: value
+                    .delta_2_i
+                    .ok_or(anyhow!("missing `delta_2_i`"))?
+                    .try_into()?,
+                swap_commitment: value
+                    .swap_commitment
+                    .ok_or(anyhow!("missing `swap_commitment`"))?
+                    .try_into()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventSwap::NAME))
+    }
+}
+
+impl From<EventSwap> for pb::EventSwap {
+    fn from(value: EventSwap) -> Self {
+        Self {
+            trading_pair: Some(value.trading_pair.into()),
+            delta_1_i: Some(value.delta_1_i.into()),
+            delta_2_i: Some(value.delta_2_i.into()),
+            swap_commitment: Some(value.swap_commitment.into()),
+        }
+    }
+}
+
+impl DomainType for EventSwap {
+    type Proto = pb::EventSwap;
 }
 
 #[derive(Clone, Debug)]
