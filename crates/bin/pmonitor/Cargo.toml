@@ -18,7 +18,7 @@ colored = "2.1.0"
 directories = {workspace = true}
 futures = {workspace = true}
 indicatif = {workspace = true}
-pcli = { path = "../pcli" }
+pcli = {path = "../pcli", default-features = true}
 penumbra-app = {workspace = true}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-compact-block = {workspace = true, default-features = false}

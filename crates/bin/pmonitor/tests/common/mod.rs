@@ -315,6 +315,7 @@ impl PmonitorTestRunner {
             .spawn()
             .expect("failed to execute devnet start cmd");
         // Sleep a bit, to let network start
+        // TODO: use process-compose API to check for "Running" status on pd.
         std::thread::sleep(Duration::from_secs(8));
         Ok(child)
     }

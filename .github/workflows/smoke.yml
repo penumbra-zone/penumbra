@@ -58,6 +58,9 @@ jobs:
           restore-prefixes-first-match: nix-${{ runner.os }}-
           backend: buildjet
 
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+
       # Confirm that the nix devshell is buildable and runs at all.
       - name: validate nix env
         run: nix develop --command echo hello
