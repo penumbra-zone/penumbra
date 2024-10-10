@@ -294,25 +294,93 @@ mod summary {
             }
         }
 
-        pub async fn update(&mut self, time: DateTime, candle: Candle) -> anyhow::Result<()> {
-            let time_24h_ago = time
-                .checked_sub_days(Days::new(1))
-                .ok_or(anyhow!("should be able to get time 24h ago from {}", time))?;
-            sqlx::query("DELETE FROM _dex_ex_summary_backing WHERE time < $1")
-                .bind(time_24h_ago)
-                .execute(self.dbtx.as_mut())
-                .await?;
-            sqlx::query("INSERT INTO _dex_ex_summary_backing VALUES ($1, $2, $3, $4, $5, $6)")
-                .bind(self.asset_start.to_bytes().as_slice())
-                .bind(self.asset_end.to_bytes().as_slice())
-                .bind(time)
-                .bind(candle.close)
-                .bind(candle.direct_volume)
-                .bind(candle.swap_volume)
-                .execute(self.dbtx.as_mut())
-                .await?;
+        pub async fn add_candle(&mut self, time: DateTime, candle: Candle) -> anyhow::Result<()> {
+            let asset_start = self.asset_start.to_bytes();
+            let asset_end = self.asset_end.to_bytes();
+            sqlx::query(
+                r#"
+                INSERT INTO _dex_ex_summary_backing VALUES ($1, $2, $3, $4, $5, $6)
+            "#,
+            )
+            .bind(asset_start.as_slice())
+            .bind(asset_end.as_slice())
+            .bind(time)
+            .bind(candle.close)
+            .bind(candle.direct_volume)
+            .bind(candle.swap_volume)
+            .execute(self.dbtx.as_mut())
+            .await?;
             Ok(())
         }
+    }
+
+    pub async fn update_all(dbtx: &mut PgTransaction<'_>, time: DateTime) -> anyhow::Result<()> {
+        let time_24h_ago = time
+            .checked_sub_days(Days::new(1))
+            .ok_or(anyhow!("should be able to get time 24h ago from {}", time))?;
+        sqlx::query(
+            r#"
+            DELETE FROM _dex_ex_summary_backing WHERE time < $1
+        "#,
+        )
+        .bind(time_24h_ago)
+        .execute(dbtx.as_mut())
+        .await?;
+        // Update all of the summaries with relevant backing data.
+        //
+        // We choose this one as being responsible for creating the first summary.
+        sqlx::query(
+            r#"
+            INSERT INTO dex_ex_summary
+            SELECT DISTINCT ON (asset_start, asset_end) 
+              asset_start, 
+              asset_end, 
+              FIRST_VALUE(price) OVER w AS price_24h_ago, 
+              price AS current_price, 
+              MAX(price) OVER w AS high_24h, 
+              MIN(price) OVER w AS low_24h, 
+              SUM(direct_volume) OVER w AS direct_volume_24h, 
+              SUM(swap_volume) OVER w AS swap_volume_24h 
+            FROM _dex_ex_summary_backing 
+            WINDOW w AS (
+              PARTITION BY 
+                asset_start, asset_end 
+              ORDER BY asset_start, asset_end, time DESC
+            ) ORDER by asset_start, asset_end, time ASC
+            ON CONFLICT (asset_start, asset_end) DO UPDATE SET
+                price_24h_ago = EXCLUDED.price_24h_ago,
+                current_price = EXCLUDED.current_price, 
+                high_24h = EXCLUDED.high_24h, 
+                low_24h = EXCLUDED.low_24h, 
+                direct_volume_24h = EXCLUDED.direct_volume_24h, 
+                swap_volume_24h = EXCLUDED.swap_volume_24h
+        "#,
+        )
+        .execute(dbtx.as_mut())
+        .await?;
+        // When we don't have backing data, we should nonetheless update to reflect this
+        sqlx::query(
+            r#"
+            UPDATE dex_ex_summary
+            SET
+                price_24h_ago = current_price,
+                high_24h = current_price,
+                low_24h = current_price,
+                direct_volume_24h = 0,
+                swap_volume_24h = 0
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM _dex_ex_summary_backing
+                WHERE
+                    _dex_ex_summary_backing.asset_start = dex_ex_summary.asset_start
+                AND
+                    _dex_ex_summary_backing.asset_end = dex_ex_summary.asset_end
+            )
+        "#,
+        )
+        .execute(dbtx.as_mut())
+        .await?;
+        Ok(())
     }
 }
 
@@ -359,7 +427,7 @@ async fn on_event_candlestick_data(
         ctx.update(event_time, candle).await?;
     }
     let mut ctx = SummaryContext::new(dbtx, asset_start, asset_end);
-    ctx.update(event_time, candle).await?;
+    ctx.add_candle(event_time, candle).await?;
     Ok(())
 }
 
@@ -434,6 +502,7 @@ impl AppView for Component {
             for event in unqueue_event_candlestick_data(dbtx, height).await? {
                 on_event_candlestick_data(dbtx, time, event).await?;
             }
+            summary::update_all(dbtx, time).await?;
         }
         tracing::debug!(?event, "unrecognized event");
         Ok(())
