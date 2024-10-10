@@ -5,12 +5,13 @@ on:
     paths-ignore:
       - 'docs/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke_test:
     runs-on: buildjet-16vcpu-ubuntu-2204
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
     environment: smoke-test
     steps:
       - uses: actions/checkout@v4
@@ -39,3 +40,30 @@ jobs:
       - name: Display smoke-test logs
         if: always()
         run: cat deployments/logs/smoke-*.log
+
+  pmonitor-integration:
+    runs-on: buildjet-16vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: install nix
+        uses: nixbuild/nix-quick-install-action@v28
+
+      - name: setup nix cache
+        uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          backend: buildjet
+
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+
+      # Confirm that the nix devshell is buildable and runs at all.
+      - name: validate nix env
+        run: nix develop --command echo hello
+
+      - name: run the pmonitor integration tests
+        run: nix develop --command just test-pmonitor

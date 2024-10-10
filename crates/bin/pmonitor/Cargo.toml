@@ -1,0 +1,46 @@
+[package]
+name = "pmonitor"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = {workspace = true}
+camino = {workspace = true}
+clap = {workspace = true, features = ["derive", "env"]}
+colored = "2.1.0"
+directories = {workspace = true}
+futures = {workspace = true}
+indicatif = {workspace = true}
+pcli = {path = "../pcli", default-features = true}
+penumbra-app = {workspace = true}
+penumbra-asset = {workspace = true, default-features = false}
+penumbra-compact-block = {workspace = true, default-features = false}
+penumbra-keys = {workspace = true, default-features = false}
+penumbra-num = {workspace = true, default-features = false}
+penumbra-proto = {workspace = true}
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-stake = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = false}
+penumbra-view = {workspace = true}
+regex = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+serde_json = {workspace = true}
+tokio = {workspace = true, features = ["full"]}
+toml = {workspace = true}
+tonic = {workspace = true, features = ["tls-webpki-roots", "tls"]}
+tracing = {workspace = true}
+tracing-subscriber = { workspace = true, features = ["env-filter", "ansi"] }
+url = {workspace = true, features = ["serde"]}
+uuid = { version = "1.3", features = ["v4", "serde"] }
+
+[dev-dependencies]
+assert_cmd = {workspace = true}
+once_cell = {workspace = true}
+tempfile = {workspace = true}
