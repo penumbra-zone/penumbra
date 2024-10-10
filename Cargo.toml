@@ -130,6 +130,7 @@ bitvec                           = { version = "1" }
 blake2b_simd                     = { version = "1" }
 bytes                            = { version = "1.2" }
 camino                           = { version = "1" }
+cfg-if                           = { version = "1" }
 chacha20poly1305                 = { version = "0.9.0" }
 chrono                           = { default-features = false, version = "0.4" }
 clap                             = { version = "3.2" }

@@ -6,10 +6,12 @@ pub mod component;
 pub mod ics20_withdrawal;
 pub use ics20_withdrawal::Ics20Withdrawal;
 
+#[cfg(feature = "component")]
 pub mod event;
 pub mod fmd;
 pub mod genesis;
 pub mod params;
+#[cfg(feature = "component")]
 pub mod state_key;
 
 pub mod note;

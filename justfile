@@ -15,9 +15,9 @@ dev:
 fmt:
     cargo fmt --all
 
-# Runs 'cargo check' on all rust files in the project.
+# Runs 'cargo check' on all rust files in the project, failing on warnings
 check:
-  RUSTFLAGS="-D warnings" cargo check --release --all-targets
+  ./deployments/scripts/rust-check
 
 # Render livereload environment for editing the Protocol documentation.
 protocol-docs:
