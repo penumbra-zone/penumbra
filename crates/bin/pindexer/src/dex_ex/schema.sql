@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS dex_ex_candlestick (
+CREATE TABLE IF NOT EXISTS dex_ex_candlesticks (
   id SERIAL PRIMARY KEY,
   -- The price at the start of a window.
   open FLOAT8 NOT NULL,
@@ -14,40 +14,31 @@ CREATE TABLE IF NOT EXISTS dex_ex_candlestick (
   swap_volume FLOAT8 NOT NULL
 );
 
-DROP TYPE IF EXISTS dex_ex_Window CASCADE;
-CREATE TYPE dex_ex_Window as ENUM (
-  '1m',
-  '15m',
-  '1h',
-  '4h',
-  '1d',
-  '1w',
-  '1mo'
-);
-
 -- Contains, for each directed asset pair and window type, candle sticks for each window.
 CREATE TABLE IF NOT EXISTS dex_ex_price_charts (
   -- We just want a simple primary key to have here.
   id SERIAL PRIMARY KEY,
   -- The bytes for the first asset in the directed pair.
-  asset_id_1 BYTEA NOT NULL,
+  asset_start BYTEA NOT NULL,
   -- The bytes for the second asset in the directed pair.
-  asset_id_2 BYTEA NOT NULL,
+  asset_end BYTEA NOT NULL,
   -- The window type for this stick.
-  the_window dex_ex_Window NOT NULL,
+  --
+  -- Enum types are annoying.
+  the_window TEXT NOT NULL,
   -- The start time of this window.
   start_time TIMESTAMPTZ NOT NULL,
   -- The start time for the window this stick is about.
-  candlestick_id INTEGER REFERENCES dex_ex_candlestick (id)
+  candlestick_id INTEGER UNIQUE REFERENCES dex_ex_candlesticks (id)
 );
 
-CREATE UNIQUE INDEX ON dex_ex_price_charts (asset_id_1, asset_id_2, the_window, start_time);
+CREATE UNIQUE INDEX ON dex_ex_price_charts (asset_start, asset_end, the_window, start_time);
 
 CREATE TABLE IF NOT EXISTS dex_ex_summary (
   -- The first asset of the directed pair.
-  asset_id_1 BYTEA NOT NULL,
+  asset_start BYTEA NOT NULL,
   -- The second asset of the directed pair.
-  asset_id_2 BYTEA NOT NULL,
+  asset_end BYTEA NOT NULL,
   -- The current price (in terms of asset2)
   current_price FLOAT8 NOT NULL,
   -- The price 24h ago.
@@ -59,5 +50,11 @@ CREATE TABLE IF NOT EXISTS dex_ex_summary (
   -- c.f. candlesticks for the difference between these two
   direct_volume_24h FLOAT8 NOT NULL,
   swap_volume_24h FLOAT8 NOT NULL,
-  PRIMARY KEY (asset_id_1, asset_id_2)
+  PRIMARY KEY (asset_start, asset_end)
+);
+
+CREATE TABLE IF NOT EXISTS _dex_ex_queue (
+  id SERIAL PRIMARY KEY,
+  height BIGINT NOT NULL,
+  data BYTEA NOT NULL
 );

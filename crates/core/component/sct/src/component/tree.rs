@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_proto::{DomainType as _, StateReadProto, StateWriteProto};
 use penumbra_tct as tct;
 use tct::builder::{block, epoch};
 use tracing::instrument;
@@ -85,7 +85,14 @@ pub trait SctManager: StateWrite {
         self.put(state_key::tree::anchor_by_height(height), sct_anchor);
 
         self.record_proto(event::anchor(height, sct_anchor, block_timestamp));
-        self.record_proto(event::block_root(height, block_root, block_timestamp));
+        self.record_proto(
+            event::EventBlockRoot {
+                height,
+                root: block_root,
+                timestamp_seconds: block_timestamp,
+            }
+            .to_proto(),
+        );
         // Only record an epoch root event if we are ending the epoch.
         if let Some(epoch_root) = epoch_root {
             let index = self
