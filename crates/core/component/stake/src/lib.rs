@@ -6,6 +6,7 @@
 mod changes;
 mod current_consensus_keys;
 mod delegation_token;
+#[cfg(feature = "component")]
 mod event;
 mod governance_key;
 mod identity_key;
@@ -18,6 +19,7 @@ pub mod funding_stream;
 pub mod genesis;
 pub mod params;
 pub mod rate;
+#[cfg(feature = "component")]
 pub mod state_key;
 pub mod undelegate;
 pub mod undelegate_claim;

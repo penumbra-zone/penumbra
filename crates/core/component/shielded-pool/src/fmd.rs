@@ -6,6 +6,7 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "component")]
 pub mod state_key;
 
 /// How long users have to switch to updated parameters.

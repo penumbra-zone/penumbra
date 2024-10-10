@@ -4856,6 +4856,7 @@ dependencies = [
  "base64 0.21.7",
  "bincode",
  "blake2b_simd 1.0.2",
+ "cfg-if",
  "cnidarium",
  "cnidarium-component",
  "decaf377",
