@@ -378,7 +378,10 @@ impl Opt {
                 // FVKs. This can happen an unlimited number of times.
                 let config_path = opt.home.join("pmonitor_config.toml");
                 let pmonitor_config: PmonitorConfig =
-                    toml::from_str(&fs::read_to_string(config_path.clone())?)?;
+                    toml::from_str(&fs::read_to_string(config_path.clone()).context(format!(
+                        "failed to load pmonitor config file: {}",
+                        config_path
+                    ))?)?;
 
                 let mut stake_client = StakeQueryServiceClient::new(
                     self.pd_channel(pmonitor_config.grpc_url()).await?,
