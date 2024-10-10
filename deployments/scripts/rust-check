@@ -1,0 +1,53 @@
+#!/bin/bash
+# CI script to run `cargo check` in various forms, to ensure
+# the Rust source code in the project has no warnings.
+#
+# We use a custom `--target-dir` flag for the cargo commands,
+# to cache the check results: because the fail-on-warnings behavior
+# is specified via RUSTFLAGS, cargo will not reuse the build cache
+# for invocations with different (or missing) RUSTFLAGS.
+set -euo pipefail
+
+# Ensure all warnings are treated as errors.
+export RUSTFLAGS="-D warnings"
+
+# Emit all crate package names that contain `bin` targets.
+# for building via `cargo build --package <foo>`.
+function get_crates_with_binaries() {
+  cargo metadata --format-version=1 | jq -r '
+    .workspace_members[] as $member |
+    .packages[] |
+    select(.id == $member) |
+    select(.targets[] | .kind[] | contains("bin")) |
+    .name
+    ' | sort -u
+}
+
+# Emit all binary names for crates defined within the workspace,
+# for building via `cargo build --bin <foo>`.
+function get_workspace_binary_names() {
+  cargo metadata --format-version=1 | jq '
+    .workspace_members[] as $member |
+    .packages[] |
+    select(.id == $member) |
+    .targets[] |
+    select(.kind[] | contains("bin")) |
+    .name' | sort -u
+}
+
+
+# Primary script entrypoint
+function main() {
+  >&2 echo "Checking all rust source code in workspace for warnings..."
+  cargo check --target-dir ./target/check --release --all-targets
+  >&2 echo "Checking warnings for binary crates via '--package'..."
+  get_crates_with_binaries \
+    | xargs -I{} \
+    cargo check -q --release --target-dir ./target/check --package {}
+  >&2 echo "Checking warnings for binary crates via '--bin'..."
+  get_workspace_binary_names \
+    | xargs -I{} \
+    cargo check -q --release --target-dir ./target/check --bin {}
+}
+
+main
