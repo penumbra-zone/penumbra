@@ -34,24 +34,36 @@ CREATE TABLE IF NOT EXISTS dex_ex_price_charts (
 
 CREATE UNIQUE INDEX ON dex_ex_price_charts (asset_start, asset_end, the_window, start_time);
 
-CREATE TABLE IF NOT EXISTS dex_ex_summary (
-  -- The first asset of the directed pair.
+CREATE TABLE IF NOT EXISTS _dex_ex_summary_backing (
   asset_start BYTEA NOT NULL,
-  -- The second asset of the directed pair.
   asset_end BYTEA NOT NULL,
-  -- The current price (in terms of asset2)
-  current_price FLOAT8 NOT NULL,
-  -- The price 24h ago.
-  price_24h_ago FLOAT8 NOT NULL,
-  -- The highest price over the past 24h.
-  high_24h FLOAT8 NOT NULL,
-  -- The lowest price over the past 24h.
-  low_24h FLOAT8 NOT NULL,
-  -- c.f. candlesticks for the difference between these two
-  direct_volume_24h FLOAT8 NOT NULL,
-  swap_volume_24h FLOAT8 NOT NULL,
-  PRIMARY KEY (asset_start, asset_end)
+  -- The time for this bit of information.
+  time TIMESTAMPTZ NOT NULL,
+  -- The price at this point.
+  price FLOAT8 NOT NULL,
+  -- The volume for this particular candle.
+  direct_volume FLOAT8 NOT NULL,
+  swap_volume FLOAT8 NOT NULL,
+  PRIMARY KEY (asset_start, asset_end, time)
 );
+
+CREATE OR REPLACE VIEW dex_ex_summary AS
+SELECT DISTINCT ON (asset_start, asset_end) 
+  asset_start, 
+  asset_end, 
+  FIRST_VALUE(price) OVER w AS current_price, 
+  price AS price_24h_ago, 
+  MAX(price) OVER w AS high_24h, 
+  MIN(price) OVER w AS low_24h, 
+  SUM(direct_volume) OVER w AS direct_volume_24h, 
+  SUM(swap_volume) OVER w AS swap_volume_24h 
+FROM _dex_ex_summary_backing 
+WINDOW w AS (
+  PARTITION BY 
+    asset_start, asset_end 
+  ORDER BY asset_start, asset_end, time DESC
+) 
+ORDER BY asset_start, asset_end, time ASC;
 
 CREATE TABLE IF NOT EXISTS _dex_ex_queue (
   id SERIAL PRIMARY KEY,

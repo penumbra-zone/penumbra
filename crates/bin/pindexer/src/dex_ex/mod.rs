@@ -271,6 +271,53 @@ mod price_chart {
 
 use price_chart::Context as PriceChartContext;
 
+mod summary {
+    use super::*;
+
+    #[derive(Debug)]
+    pub struct Context<'tx, 'db> {
+        dbtx: &'tx mut PgTransaction<'db>,
+        asset_start: asset::Id,
+        asset_end: asset::Id,
+    }
+
+    impl<'tx, 'db> Context<'tx, 'db> {
+        pub fn new(
+            dbtx: &'tx mut PgTransaction<'db>,
+            asset_start: asset::Id,
+            asset_end: asset::Id,
+        ) -> Self {
+            Self {
+                dbtx,
+                asset_start,
+                asset_end,
+            }
+        }
+
+        pub async fn update(&mut self, time: DateTime, candle: Candle) -> anyhow::Result<()> {
+            let time_24h_ago = time
+                .checked_sub_days(Days::new(1))
+                .ok_or(anyhow!("should be able to get time 24h ago from {}", time))?;
+            sqlx::query("DELETE FROM _dex_ex_summary_backing WHERE time < $1")
+                .bind(time_24h_ago)
+                .execute(self.dbtx.as_mut())
+                .await?;
+            sqlx::query("INSERT INTO _dex_ex_summary_backing VALUES ($1, $2, $3, $4, $5, $6)")
+                .bind(self.asset_start.to_bytes().as_slice())
+                .bind(self.asset_end.to_bytes().as_slice())
+                .bind(time)
+                .bind(candle.close)
+                .bind(candle.direct_volume)
+                .bind(candle.swap_volume)
+                .execute(self.dbtx.as_mut())
+                .await?;
+            Ok(())
+        }
+    }
+}
+
+use summary::Context as SummaryContext;
+
 async fn queue_event_candlestick_data(
     dbtx: &mut PgTransaction<'_>,
     height: u64,
@@ -304,10 +351,15 @@ async fn on_event_candlestick_data(
     event_time: DateTime,
     event: EventCandlestickData,
 ) -> anyhow::Result<()> {
+    let asset_start = event.pair.start;
+    let asset_end = event.pair.end;
+    let candle = event.stick.into();
     for window in Window::all() {
-        let mut ctx = PriceChartContext::new(dbtx, event.pair.start, event.pair.end, window);
-        ctx.update(event_time, event.stick.into()).await?;
+        let mut ctx = PriceChartContext::new(dbtx, asset_start, asset_end, window);
+        ctx.update(event_time, candle).await?;
     }
+    let mut ctx = SummaryContext::new(dbtx, asset_start, asset_end);
+    ctx.update(event_time, candle).await?;
     Ok(())
 }
 
