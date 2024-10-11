@@ -13,6 +13,7 @@ publish = false
 [dependencies]
 anyhow = {workspace = true}
 clap = {workspace = true}
+chrono = {workspace = true}
 cometindex = {workspace = true}
 num-bigint = { version = "0.4" }
 penumbra-shielded-pool = {workspace = true, default-features = false}
@@ -26,6 +27,8 @@ penumbra-governance = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, default-features = false}
+penumbra-sct = {workspace = true, default-features = false}
+prost = {workspace = true}
 tracing = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 serde_json = {workspace = true}

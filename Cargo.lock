@@ -5815,6 +5815,7 @@ name = "pindexer"
 version = "0.80.6"
 dependencies = [
  "anyhow",
+ "chrono",
  "clap",
  "cometindex",
  "num-bigint",
@@ -5827,8 +5828,10 @@ dependencies = [
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proto",
+ "penumbra-sct",
  "penumbra-shielded-pool",
  "penumbra-stake",
+ "prost",
  "serde_json",
  "sqlx",
  "tokio",
