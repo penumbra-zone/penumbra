@@ -1,3 +1,19 @@
+//! The `pmonitor` tool tracks the balances of Penumbra wallets, as identified
+//! by a [FullViewingKey] (FVK), in order to perform auditing. It accepts a JSON file
+//! of FVKs and a `pd` gRPC URL to initialize:
+//!
+//!     pmonitor init --grpc-url http://127.0.0.1:8080 --fvks fvks.json
+//!
+//! The audit functionality runs as a single operation, evaluating compliance up to the
+//! current block height:
+//!
+//!     pmonitor audit
+//!
+//! If regular auditing is desired, consider automating the `pmonitor audit` action via
+//! cron or similar. `pmonitor` will cache view databases for each tracked FVK, so that future
+//! `audit` actions need only inspect the blocks generated between the previous audit and the
+//! current height.
+
 use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use clap::{self, Parser};
@@ -36,14 +52,14 @@ mod genesis;
 
 use config::{parse_dest_fvk_from_memo, AccountConfig, FvkEntry, PmonitorConfig};
 
-// The maximum size of a compact block, in bytes (12MB).
+/// The maximum size of a compact block, in bytes (12MB).
 const MAX_CB_SIZE_BYTES: usize = 12 * 1024 * 1024;
 
-// The name of the view database file
+/// The name of the view database file
 const VIEW_FILE_NAME: &str = "pcli-view.sqlite";
 
-// The permitted difference between genesis balance and current balance,
-// specified in number of staking tokens.
+/// The permitted difference between genesis balance and current balance,
+/// specified in number of staking tokens.
 const ALLOWED_DISCREPANCY: f64 = 0.1;
 
 /// Configure tracing_subscriber for logging messages
@@ -74,6 +90,9 @@ async fn main() -> Result<()> {
     opt.exec().await
 }
 
+/// The path to the default `pmonitor` home directory.
+///
+/// Can be overridden on the command-line via `--home`.
 pub fn default_home() -> Utf8PathBuf {
     let path = ProjectDirs::from("zone", "penumbra", "pmonitor")
         .expect("Failed to get platform data dir")

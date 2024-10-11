@@ -1,3 +1,6 @@
+//! Logic for inspecting the [CompactBlock] at genesis of the target chain.
+//! Used to compute balances for tracked FVKs at genesis time. The initial genesis balance is
+//! stored in the `pmonitor` config file, so that audit actions can reference it.
 use std::{collections::BTreeMap, str::FromStr};
 
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;

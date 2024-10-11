@@ -1,3 +1,4 @@
+//! Logic for reading and writing config files for `pmonitor`, in the TOML format.
 use anyhow::Result;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -8,18 +9,21 @@ use penumbra_keys::FullViewingKey;
 use penumbra_num::Amount;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-
 pub struct FvkEntry {
     pub fvk: FullViewingKey,
     pub wallet_id: Uuid,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-
+/// Representation of a single Penumbra wallet to track.
 pub struct AccountConfig {
+    /// The initial [FullViewingKey] has specified during `pmonitor init`.
+    ///
+    /// Distinct because the tool understands account migrations.
     original: FvkEntry,
+    /// The amount held by the account at the time of genesis.
     genesis_balance: Amount,
-    // If the account was migrated, we update the entry here.
+    /// List of account migrations, performed via `pcli migrate balance`, if any.
     migrations: Vec<FvkEntry>,
 }
 
@@ -69,8 +73,15 @@ impl AccountConfig {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// The primary TOML file for configuring `pmonitor`, containing all its account info.
+///
+/// During `pmonitor audit` runs, the config will be automatically updated
+/// if tracked FVKs were detected to migrate, via `pcli migrate balance`, to save time
+/// on future syncs.
 pub struct PmonitorConfig {
+    /// The gRPC URL for a Penumbra node's `pd` endpoint, used for retrieving account activity.
     grpc_url: Url,
+    /// The list of Penumbra wallets to track.
     accounts: Vec<AccountConfig>,
 }
 
