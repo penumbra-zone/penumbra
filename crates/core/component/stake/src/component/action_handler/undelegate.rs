@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_proto::StateWriteProto;
+use penumbra_proto::{DomainType as _, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead;
 use penumbra_shielded_pool::component::AssetRegistry;
 
@@ -85,7 +85,7 @@ impl ActionHandler for Undelegate {
         tracing::debug!(?self, "queuing undelegation for next epoch");
         state.push_undelegation(self.clone());
 
-        state.record_proto(event::undelegate(self));
+        state.record_proto(event::EventUndelegate::from(self).to_proto());
 
         Ok(())
     }

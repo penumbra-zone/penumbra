@@ -24,7 +24,7 @@ use {
     cnidarium::StateWrite,
     penumbra_asset::asset,
     penumbra_num::Amount,
-    penumbra_proto::StateWriteProto,
+    penumbra_proto::{DomainType as _, StateWriteProto},
     penumbra_sct::component::{
         clock::{EpochManager, EpochRead},
         StateReadExt as _,
@@ -302,7 +302,13 @@ pub trait ValidatorManager: StateWrite {
         tracing::info!("successful state transition");
         self.put(validator_state_path, new_state);
 
-        self.record_proto(event::validator_state_change(*identity_key, new_state));
+        self.record_proto(
+            event::EventValidatorStateChange {
+                identity_key: *identity_key,
+                state: new_state,
+            }
+            .to_proto(),
+        );
 
         Ok((old_state, new_state))
     }
@@ -481,7 +487,12 @@ pub trait ValidatorManager: StateWrite {
 
         // Track the validator's definition in an event (the rest of the attributes will be tracked
         // in events emitted by the calls to set_* methods below).
-        self.record_proto(event::validator_definition_upload(validator.clone()));
+        self.record_proto(
+            event::EventValidatorDefinitionUpload {
+                validator: validator.clone(),
+            }
+            .to_proto(),
+        );
 
         // We initialize the validator's state, power, and bonding state.
         self.set_initial_validator_state(&validator_identity, initial_state)?;
@@ -599,7 +610,7 @@ pub trait ValidatorManager: StateWrite {
         );
 
         // Track the validator's definition in an event.
-        self.record_proto(event::validator_definition_upload(validator));
+        self.record_proto(event::EventValidatorDefinitionUpload { validator }.to_proto());
 
         Ok(())
     }
@@ -664,11 +675,14 @@ pub trait ValidatorManager: StateWrite {
 
         if let (Inactive | Jailed | Active, Tombstoned) = (old_state, new_state) {
             let current_height = self.get_block_height().await?;
-            self.record_proto(event::tombstone_validator(
-                current_height,
-                validator.identity_key.clone(),
-                evidence,
-            ));
+            self.record_proto(
+                event::EventTombstoneValidator::from_evidence(
+                    current_height,
+                    validator.identity_key.clone(),
+                    evidence,
+                )
+                .to_proto(),
+            );
         }
 
         Ok(())
