@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
-use penumbra_proto::StateWriteProto as _;
+use penumbra_proto::{DomainType as _, StateWriteProto as _};
 use penumbra_sct::component::source::SourceContext;
 
 use crate::{component::NoteManager, event, output::OutputProofPublic, Output};
@@ -34,7 +34,12 @@ impl ActionHandler for Output {
             .add_note_payload(self.body.note_payload.clone(), source)
             .await;
 
-        state.record_proto(event::output(&self.body.note_payload));
+        state.record_proto(
+            event::EventOutput {
+                note_commitment: self.body.note_payload.note_commitment,
+            }
+            .to_proto(),
+        );
 
         Ok(())
     }
