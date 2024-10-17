@@ -485,9 +485,9 @@ impl Opt {
                             .view(wallet_dir, new_fvk.clone(), pmonitor_config.grpc_url())
                             .await?;
 
-                        println!("Syncing new wallet...");
+                        tracing::info!("syncing migrated wallet");
                         self.sync(&mut view_client).await?;
-                        println!("Wallet synced successfully");
+                        tracing::info!("finished syncing migrated wallet");
                         // Now we can exit the else if statement and continue by computing the balance,
                         // which will use the new migrated wallet.
                     } else {
