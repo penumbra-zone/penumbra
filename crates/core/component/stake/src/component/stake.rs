@@ -1,6 +1,6 @@
 pub mod address;
 
-use crate::event::slashing_penalty_applied;
+use crate::event::EventSlashingPenaltyApplied;
 use crate::params::StakeParameters;
 use crate::rate::BaseRateData;
 use crate::validator::{self, Validator};
@@ -15,7 +15,7 @@ use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
 use futures::{StreamExt, TryStreamExt};
 use penumbra_num::Amount;
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead;
 use std::pin::Pin;
 use std::str::FromStr;
@@ -475,11 +475,14 @@ pub(crate) trait RateDataWrite: StateWrite {
         let new_penalty = current_penalty.compound(slashing_penalty);
 
         // Emit an event indicating the validator had a slashing penalty applied.
-        self.record_proto(slashing_penalty_applied(
-            *identity_key,
-            current_epoch_index,
-            new_penalty,
-        ));
+        self.record_proto(
+            EventSlashingPenaltyApplied {
+                identity_key: *identity_key,
+                epoch_index: current_epoch_index,
+                new_penalty,
+            }
+            .to_proto(),
+        );
         self.put(
             state_key::penalty::for_id_in_epoch(identity_key, current_epoch_index),
             new_penalty,

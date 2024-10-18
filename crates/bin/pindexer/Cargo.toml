@@ -22,6 +22,7 @@ penumbra-app = {workspace = true, default-features = false}
 penumbra-auction = {workspace = true, default-features = false}
 penumbra-dex = {workspace = true, default-features = false}
 penumbra-fee = {workspace = true, default-features = false}
+penumbra-funding = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
 penumbra-governance = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}

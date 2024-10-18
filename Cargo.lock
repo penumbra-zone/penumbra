@@ -5824,6 +5824,7 @@ dependencies = [
  "penumbra-auction",
  "penumbra-dex",
  "penumbra-fee",
+ "penumbra-funding",
  "penumbra-governance",
  "penumbra-keys",
  "penumbra-num",

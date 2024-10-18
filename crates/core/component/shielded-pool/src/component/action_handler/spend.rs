@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
-use penumbra_proto::StateWriteProto as _;
+use penumbra_proto::{DomainType, StateWriteProto as _};
 use penumbra_sct::component::{
     source::SourceContext,
     tree::{SctManager, VerificationExt},
@@ -49,7 +49,12 @@ impl ActionHandler for Spend {
         state.nullify(self.body.nullifier, source).await;
 
         // Also record an ABCI event for transaction indexing.
-        state.record_proto(event::spend(&self.body.nullifier));
+        state.record_proto(
+            event::EventSpend {
+                nullifier: self.body.nullifier,
+            }
+            .to_proto(),
+        );
 
         Ok(())
     }

@@ -6,7 +6,7 @@
 mod changes;
 mod current_consensus_keys;
 mod delegation_token;
-mod event;
+pub mod event;
 mod governance_key;
 mod identity_key;
 mod penalty;

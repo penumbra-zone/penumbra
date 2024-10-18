@@ -253,7 +253,13 @@ pub(crate) trait ValidatorDataWrite: StateWrite {
             state_key::validators::pool::bonding_state::by_id(identity_key),
             state.clone(),
         );
-        self.record_proto(event::validator_bonding_state_change(*identity_key, state));
+        self.record_proto(
+            event::EventValidatorBondingStateChange {
+                identity_key: *identity_key,
+                bonding_state: state,
+            }
+            .to_proto(),
+        );
     }
 
     #[instrument(skip(self))]
@@ -270,10 +276,13 @@ pub(crate) trait ValidatorDataWrite: StateWrite {
             state_key::validators::power::by_id(identity_key),
             voting_power,
         );
-        self.record_proto(event::validator_voting_power_change(
-            *identity_key,
-            voting_power,
-        ));
+        self.record_proto(
+            event::EventValidatorVotingPowerChange {
+                identity_key: *identity_key,
+                voting_power,
+            }
+            .to_proto(),
+        );
 
         Ok(())
     }
@@ -290,7 +299,13 @@ pub(crate) trait ValidatorDataWrite: StateWrite {
         }
 
         self.put(state_key::validators::state::by_id(id), initial_state);
-        self.record_proto(event::validator_state_change(*id, initial_state));
+        self.record_proto(
+            event::EventValidatorStateChange {
+                identity_key: *id,
+                state: initial_state,
+            }
+            .to_proto(),
+        );
         Ok(())
     }
 
@@ -301,7 +316,13 @@ pub(crate) trait ValidatorDataWrite: StateWrite {
             state_key::validators::rate::current_by_id(identity_key),
             rate_data.clone(),
         );
-        self.record_proto(event::validator_rate_data_change(*identity_key, rate_data));
+        self.record_proto(
+            event::EventRateDataChange {
+                identity_key: *identity_key,
+                rate_data,
+            }
+            .to_proto(),
+        );
     }
 
     #[instrument(skip(self))]

@@ -17,7 +17,7 @@ use {
     async_trait::async_trait,
     cnidarium::StateWrite,
     futures::StreamExt as _,
-    penumbra_proto::StateWriteProto,
+    penumbra_proto::{DomainType, StateWriteProto},
     penumbra_sct::component::clock::EpochRead,
     std::collections::BTreeMap,
     tap::Tap,
@@ -178,7 +178,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
 
         if !voted {
             // If the validator didn't sign, we need to emit a missed block event.
-            self.record_proto(event::validator_missed_block(identity_key));
+            self.record_proto(event::EventValidatorMissedBlock { identity_key }.to_proto());
         }
 
         uptime.mark_height_as_signed(height, voted)?;
