@@ -1,0 +1,68 @@
+{
+  "actions": [
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "14628453666151192"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "UFM1b40dxx635gw9tG/6cr2Y3C/a+XyrXcOGN+o9RkDtPAnS5oZUxdihiMgt/BQluUbJ/wQW7xVUkZlSoyBCCq47FKHXISPWqOKa1NfREeQ="
+        },
+        "rseed": "3lSoLzevaFePCJnq1SS1F0c56fjHJpBuz1EbU9zB/Ns=",
+        "valueBlinding": "ZYVKhXkIKnUAWlK4ATLFCWcR4DHhV9vBAqCGsD8ADgA=",
+        "proofBlindingR": "Ne49inZPddL+KKkh76IFX5Y3EoHPtKlQl7XoTJgvawA=",
+        "proofBlindingS": "g86+HRmA+brIump4BPqBfkKtxU20FvJnYr9TG5B7iwY="
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "519914074422927014"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "CwMU5j4E9+k/WF/2jdaqPtRtb6u+j7duztKjwLGOR0xSkLxuxzzQvBT/3IXPQz1ig4F7FRyO1P3bi5zlev7pFpD8HV3wUH459sU69YFbA20="
+        },
+        "rseed": "Qlwq5bYzDEmgJ1bV2h7yqWRnU+HqotkX92YRyqeI+W4=",
+        "valueBlinding": "Xmody5S8HesEiqfL53UqsAIwOPP9F2LQiD4AfnaZKQE=",
+        "proofBlindingR": "7FJnerqJZfChM915xkFLdHYsImZrFUsk57RE3XQ9LAU=",
+        "proofBlindingS": "ZbWADDqCn/80FC1+MucBWoC4g9zJUm5TPcm6fVHR0Q4="
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "eRRYfhiyV+UsJ3zyy0up5ItLcyut+bFbNURKoNh3dcI="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP++dsi0OVgQYk3S8an7520="
+        },
+        "unbondingAmount": {
+          "lo": "502020172912843970"
+        },
+        "balanceBlinding": "jaTXUlgrOj694lV7G8gZxXOnM9LbhTliHmLKonLSbQE=",
+        "proofBlindingR": "h/WPPIjLR5vG7pFDVa3K0YiFQFseK3/DlzRrkanusg4=",
+        "proofBlindingS": "Qq51McQ+BiLfhHm5U/oIF1+tVPf0tdC46MIWiGzX7AM=",
+        "unbondingStartHeight": "58228"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4072114916",
+    "chainId": "afpdukr-8411462563989651600",
+    "fee": {
+      "amount": {
+        "lo": "74420168876627902"
+      }
+    }
+  }
+}

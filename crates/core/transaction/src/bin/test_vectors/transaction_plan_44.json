@@ -1,0 +1,68 @@
+{
+  "actions": [
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "763299710325967982"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "k//vahZw0KxEsxxDblDGczGvxBPA4rWXLdfGWqD67WbhEFt4EUe2hxBUYw8T+zIzkBnoa3r/pRj+0LqDfJB3FGtl8qJbkiVIS81ev9Xcgf8="
+        },
+        "rseed": "D5/faFC6OqNM5nLl+bjw83/aQ3tNa9B207zpH+3YQz4=",
+        "valueBlinding": "TemLr+ETlhKhCYGcYJIbijTTrbzj6LHJhgZh0ozLDgQ=",
+        "proofBlindingR": "vroAv6kImlsCCtMsnwqkuIT7D8B2r1ygcMavqGQSLQk=",
+        "proofBlindingS": "Zwlop9vOlTL92qQOWR28T6ZhRvVPj2YYcjlbOEiWKAE="
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "369598629410678895"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "O+ONV7U6KNUW2ut4ICzznfJoIXr/8BxhwE85kP99wG5YK7QIBpxGwUsGwQL5PAPAmEigeIaB4DejaLdaB5VqzFVqhQb77FFJKptMDg2FViw="
+        },
+        "rseed": "6c6/MAPgrpER2IA+4ZXPjpsFfqLnA0uiiDX7txiD0ok=",
+        "valueBlinding": "Wm1CaCabgWO9TYRmG3+Amow8vkU7X3/RxnWQqWRXcgE=",
+        "proofBlindingR": "zPeGW3bPgTr7wHD3juBJXh9LelQxfJ3n1vQHR13a6g8=",
+        "proofBlindingS": "yVFi4uRbhJFIRY3t+Vkm8BFCmRW2umNbliUItwOmzQQ="
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "MyGSA/I4f7RMOG8PLSXqylsgapVJXKMqNthJqtQ/N88="
+        },
+        "unbondedAmount": {
+          "lo": "696760287096988632"
+        },
+        "delegationAmount": {
+          "lo": "88404413891769458"
+        },
+        "fromEpoch": {
+          "index": "676",
+          "startHeight": "676"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "2994002955",
+    "chainId": "impdsea-70965792",
+    "fee": {
+      "amount": {
+        "lo": "567013024560662331"
+      }
+    }
+  }
+}
