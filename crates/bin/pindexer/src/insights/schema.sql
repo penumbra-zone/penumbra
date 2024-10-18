@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS insights_supply (
 
 CREATE TABLE _insights_price_list (
     position_id BYTEA PRIMARY KEY,
-    price FLOAT8 NOT NULL
+    price FLOAT8 NOT NULL,
+    reserves FLOAT8 NOT NULL
 );
 
 CREATE INDEX ON _insights_price_list(price);
@@ -57,3 +58,6 @@ CREATE TABLE IF NOT EXISTS _insights_shielded_pool_depositors (
     address TEXT NOT NULL,
     PRIMARY KEY (asset_id, address)
 );
+
+CREATE OR REPLACE VIEW insights_shielded_pool_latest AS
+    SELECT DISTINCT ON (asset_id) * FROM insights_shielded_pool ORDER BY asset_id, height DESC;

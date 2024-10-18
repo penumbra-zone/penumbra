@@ -21,6 +21,8 @@ impl IndexerExt for cometindex::Indexer {
                     "passet1w6e7fvgxsy6ccy3m8q0eqcuyw6mh3yzqu3uq9h58nu8m8mku359spvulf6",
                 )
                 .ok(),
+                // 1 USDC.
+                1_000_000.0,
             ))
     }
 }
