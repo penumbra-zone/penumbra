@@ -19,6 +19,7 @@ use ibc_types::DomainType;
 use prost::Message;
 use std::str::FromStr;
 
+use crate::component::rpc::utils::determine_snapshot_from_metadata;
 use crate::component::{ConnectionStateReadExt, HostInterface};
 use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
@@ -33,7 +34,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
         request: tonic::Request<QueryConnectionRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionResponse>, tonic::Status> {
         tracing::debug!("querying connection {:?}", request);
-        let snapshot = self.storage.latest_snapshot();
+
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
+
         let connection_id = &ConnectionId::from_str(&request.get_ref().connection_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
 

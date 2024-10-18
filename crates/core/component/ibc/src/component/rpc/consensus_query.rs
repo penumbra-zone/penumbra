@@ -31,6 +31,7 @@ use std::str::FromStr;
 
 use crate::component::{ChannelStateReadExt, ConnectionStateReadExt, HostInterface};
 
+use super::utils::determine_snapshot_from_metadata;
 use super::IbcQuery;
 
 #[async_trait]
@@ -364,7 +365,12 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         &self,
         request: tonic::Request<QueryPacketCommitmentRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketCommitmentResponse>, tonic::Status> {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
 
         let port_id = PortId::from_str(&request.get_ref().port_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
@@ -473,7 +479,12 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         &self,
         request: tonic::Request<QueryPacketReceiptRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketReceiptResponse>, tonic::Status> {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
 
         let port_id = PortId::from_str(&request.get_ref().port_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
@@ -513,7 +524,13 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         request: tonic::Request<QueryPacketAcknowledgementRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketAcknowledgementResponse>, tonic::Status>
     {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
+
         let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
             .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
         let port_id = PortId::from_str(request.get_ref().port_id.as_str())

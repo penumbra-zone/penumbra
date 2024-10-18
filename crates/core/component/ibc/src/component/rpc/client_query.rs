@@ -26,6 +26,7 @@ use crate::component::{ClientStateReadExt, HostInterface};
 use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
 
+use super::utils::determine_snapshot_from_metadata;
 use super::IbcQuery;
 
 #[async_trait]
@@ -34,7 +35,13 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
         &self,
         request: tonic::Request<QueryClientStateRequest>,
     ) -> std::result::Result<Response<QueryClientStateResponse>, Status> {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
+
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
 
@@ -111,7 +118,13 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
         &self,
         request: tonic::Request<QueryConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateResponse>, tonic::Status> {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
+
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
         let height = if request.get_ref().latest_height {
