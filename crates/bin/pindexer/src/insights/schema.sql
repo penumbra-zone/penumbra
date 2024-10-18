@@ -13,15 +13,6 @@ CREATE TABLE IF NOT EXISTS insights_supply (
     market_cap FLOAT8 GENERATED ALWAYS AS (total::FLOAT8 * price) STORED
 );
 
-
-CREATE TABLE _insights_price_list (
-    position_id BYTEA PRIMARY KEY,
-    price FLOAT8 NOT NULL,
-    reserves FLOAT8 NOT NULL
-);
-
-CREATE INDEX ON _insights_price_list(price);
-
 -- A working table to save the state around validators we need.
 --
 -- This is necessary because rate data changes increase the total supply,

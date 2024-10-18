@@ -4,9 +4,8 @@ use cometindex::{async_trait, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_app::genesis::Content;
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{
-    event::{EventArbExecution, EventPositionClose, EventPositionExecution, EventPositionOpen},
-    lp::position::{self, Position},
-    TradingPair,
+    event::{EventArbExecution, EventCandlestickData},
+    DirectedTradingPair,
 };
 use penumbra_fee::event::EventBlockFees;
 use penumbra_funding::event::EventFundingStreamReward;
@@ -71,25 +70,26 @@ async fn modify_validator_supply(
 struct Supply {
     total: u64,
     staked: u64,
+    price: Option<f64>,
 }
 
 async fn modify_supply(
     dbtx: &mut PgTransaction<'_>,
     height: u64,
     price_numeraire: Option<asset::Id>,
-    min_reserves: f64,
     f: Box<dyn FnOnce(Supply) -> anyhow::Result<Supply> + Send + 'static>,
 ) -> anyhow::Result<()> {
     let supply: Supply = {
-        let row: Option<(i64, i64)> = sqlx::query_as(
-            "SELECT total, staked FROM insights_supply ORDER BY HEIGHT DESC LIMIT 1",
+        let row: Option<(i64, i64, Option<f64>)> = sqlx::query_as(
+            "SELECT total, staked, price FROM insights_supply ORDER BY HEIGHT DESC LIMIT 1",
         )
         .fetch_optional(dbtx.as_mut())
         .await?;
-        row.map(|(total, staked)| {
+        row.map(|(total, staked, price)| {
             anyhow::Result::<_>::Ok(Supply {
                 total: total.try_into()?,
                 staked: staked.try_into()?,
+                price,
             })
         })
         .transpose()?
@@ -100,7 +100,7 @@ async fn modify_supply(
         r#"
         INSERT INTO 
             insights_supply(height, total, staked, price, price_numeraire_asset_id) 
-            VALUES ($1, $2, $3, (SELECT MAX(price) FROM _insights_price_list WHERE reserves >= $5), $4)
+            VALUES ($1, $2, $3, $5, $4)
         ON CONFLICT (height) DO UPDATE SET
         total = excluded.total,
         staked = excluded.staked,
@@ -112,7 +112,7 @@ async fn modify_supply(
     .bind(i64::try_from(supply.total)?)
     .bind(i64::try_from(supply.staked)?)
     .bind(price_numeraire.map(|x| x.to_bytes()))
-    .bind(min_reserves)
+    .bind(supply.price)
     .execute(dbtx.as_mut())
     .await?;
     Ok(())
@@ -194,65 +194,12 @@ async fn asset_flow(
 #[derive(Debug)]
 pub struct Component {
     price_numeraire: Option<asset::Id>,
-    min_reserves: f64,
 }
 
 impl Component {
     /// This component depends on a reference asset for the total supply price.
-    pub fn new(price_numeraire: Option<asset::Id>, min_reserves: f64) -> Self {
-        Self {
-            price_numeraire,
-            min_reserves,
-        }
-    }
-
-    async fn register_position(
-        &self,
-        dbtx: &mut PgTransaction<'_>,
-        position: &Position,
-    ) -> anyhow::Result<bool> {
-        let price_numeraire = match self.price_numeraire {
-            None => return Ok(false),
-            Some(x) => x,
-        };
-        let pair = position.phi.pair;
-        let (fee, p, q, r): (u32, Amount, Amount, Amount) =
-            if pair.asset_1() == *STAKING_TOKEN_ASSET_ID && pair.asset_2() == price_numeraire {
-                let c = &position.phi.component;
-                (c.fee, c.p, c.q, position.reserves_2().amount)
-            } else if pair.asset_2() == *STAKING_TOKEN_ASSET_ID && pair.asset_1() == price_numeraire
-            {
-                let c = &position.phi.component;
-                (c.fee, c.q, c.p, position.reserves_1().amount)
-            } else {
-                return Ok(false);
-            };
-
-        let price =
-            (1.0 - ((fee as f64) / 10000.0)) * (u128::from(p) as f64) / (u128::from(q) as f64);
-        let id = position.id();
-
-        sqlx::query("INSERT INTO _insights_price_list VALUES ($1, $2, $3)")
-            .bind(id.0.as_slice())
-            .bind(price)
-            .bind(r.value() as f64)
-            .execute(dbtx.as_mut())
-            .await?;
-        Ok(true)
-    }
-
-    async fn update_position(
-        &self,
-        dbtx: &mut PgTransaction<'_>,
-        id: position::Id,
-        reserves: Amount,
-    ) -> anyhow::Result<()> {
-        sqlx::query("UPDATE _insights_price_list SET reserves = $2 WHERE position_id = $1")
-            .bind(id.0.as_slice())
-            .bind(reserves.value() as f64)
-            .execute(dbtx.as_mut())
-            .await?;
-        Ok(())
+    pub fn new(price_numeraire: Option<asset::Id>) -> Self {
+        Self { price_numeraire }
     }
 }
 
@@ -321,11 +268,11 @@ async fn add_genesis_native_token_allocation_supply<'a>(
         dbtx,
         0,
         None,
-        0.0,
         Box::new(move |_| {
             Ok(Supply {
                 total: unstaked + staked,
                 staked,
+                price: None,
             })
         }),
     )
@@ -359,9 +306,7 @@ impl AppView for Component {
             <EventRateDataChange as DomainType>::Proto::full_name(),
             <EventBlockFees as DomainType>::Proto::full_name(),
             <EventArbExecution as DomainType>::Proto::full_name(),
-            <EventPositionOpen as DomainType>::Proto::full_name(),
-            <EventPositionExecution as DomainType>::Proto::full_name(),
-            <EventPositionClose as DomainType>::Proto::full_name(),
+            <EventCandlestickData as DomainType>::Proto::full_name(),
             <EventInboundFungibleTokenTransfer as DomainType>::Proto::full_name(),
             <EventOutboundFungibleTokenRefund as DomainType>::Proto::full_name(),
             <EventOutboundFungibleTokenTransfer as DomainType>::Proto::full_name(),
@@ -395,7 +340,6 @@ impl AppView for Component {
                 dbtx,
                 height,
                 self.price_numeraire,
-                self.min_reserves,
                 Box::new(move |supply| {
                     // The amount staked has changed, but no inflation has happened.
                     Ok(Supply {
@@ -422,7 +366,6 @@ impl AppView for Component {
                 dbtx,
                 height,
                 self.price_numeraire,
-                self.min_reserves,
                 Box::new(move |supply| {
                     Ok(Supply {
                         staked: u64::try_from(i64::try_from(supply.staked)? + delta)?,
@@ -457,12 +400,12 @@ impl AppView for Component {
                 dbtx,
                 height,
                 self.price_numeraire,
-                self.min_reserves,
                 Box::new(move |supply| {
                     // Value has been created or destroyed!
                     Ok(Supply {
                         total: u64::try_from(i64::try_from(supply.total)? + delta)?,
                         staked: u64::try_from(i64::try_from(supply.staked)? + delta)?,
+                        ..supply
                     })
                 }),
             )
@@ -477,7 +420,6 @@ impl AppView for Component {
                     dbtx,
                     height,
                     self.price_numeraire,
-                    self.min_reserves,
                     Box::new(move |supply| {
                         Ok(Supply {
                             total: supply.total + amount,
@@ -498,7 +440,6 @@ impl AppView for Component {
                     dbtx,
                     height,
                     self.price_numeraire,
-                    self.min_reserves,
                     Box::new(move |supply| {
                         Ok(Supply {
                             total: supply.total + profit,
@@ -514,49 +455,12 @@ impl AppView for Component {
                 dbtx,
                 height,
                 self.price_numeraire,
-                self.min_reserves,
                 Box::new(move |supply| {
                     Ok(Supply {
                         total: supply.total + amount,
                         ..supply
                     })
                 }),
-            )
-            .await?;
-        } else if let Ok(e) = EventPositionOpen::try_from_event(&event.event) {
-            let price_affected = self.register_position(dbtx, &e.position).await?;
-            if price_affected {
-                // This will update the price, if need be.
-                modify_supply(
-                    dbtx,
-                    height,
-                    self.price_numeraire,
-                    self.min_reserves,
-                    Box::new(|supply| Ok(Supply { ..supply })),
-                )
-                .await?;
-            }
-        } else if let Ok(e) = EventPositionExecution::try_from_event(&event.event) {
-            if let Some(price_numeraire) = self.price_numeraire {
-                if e.trading_pair == TradingPair::new(*STAKING_TOKEN_ASSET_ID, price_numeraire) {
-                    let reserves = if e.trading_pair.asset_1() == price_numeraire {
-                        e.reserves_1
-                    } else {
-                        e.reserves_2
-                    };
-                    self.update_position(dbtx, e.position_id, reserves).await?;
-                }
-            }
-        } else if let Ok(e) = EventPositionClose::try_from_event(&event.event) {
-            self.update_position(dbtx, e.position_id, 0u128.into())
-                .await?;
-            // This will update the price, if need be.
-            modify_supply(
-                dbtx,
-                height,
-                self.price_numeraire,
-                self.min_reserves,
-                Box::new(|supply| Ok(Supply { ..supply })),
             )
             .await?;
         } else if let Ok(e) = EventInboundFungibleTokenTransfer::try_from_event(&event.event) {
@@ -576,6 +480,24 @@ impl AppView for Component {
                 let flow = i128::try_from(e.value.amount.value())?;
                 // For outbound transfers, never increment unique count.
                 asset_flow(dbtx, e.value.asset_id, height, flow, DepositorExisted::No).await?;
+            }
+        } else if let Ok(e) = EventCandlestickData::try_from_event(&event.event) {
+            if let Some(pn) = self.price_numeraire {
+                if e.pair == DirectedTradingPair::new(*STAKING_TOKEN_ASSET_ID, pn) {
+                    let price = e.stick.close;
+                    modify_supply(
+                        dbtx,
+                        height,
+                        self.price_numeraire,
+                        Box::new(move |supply| {
+                            Ok(Supply {
+                                price: Some(price),
+                                ..supply
+                            })
+                        }),
+                    )
+                    .await?;
+                }
             }
         }
         tracing::debug!(?event, "unrecognized event");
