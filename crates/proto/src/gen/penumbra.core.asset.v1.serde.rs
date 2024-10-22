@@ -1039,6 +1039,9 @@ impl serde::Serialize for Metadata {
         if self.priority_score != 0 {
             len += 1;
         }
+        if !self.badges.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1.Metadata", len)?;
         if !self.description.is_empty() {
             struct_ser.serialize_field("description", &self.description)?;
@@ -1068,6 +1071,9 @@ impl serde::Serialize for Metadata {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("priorityScore", ToString::to_string(&self.priority_score).as_str())?;
         }
+        if !self.badges.is_empty() {
+            struct_ser.serialize_field("badges", &self.badges)?;
+        }
         struct_ser.end()
     }
 }
@@ -1090,6 +1096,7 @@ impl<'de> serde::Deserialize<'de> for Metadata {
             "images",
             "priority_score",
             "priorityScore",
+            "badges",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1103,6 +1110,7 @@ impl<'de> serde::Deserialize<'de> for Metadata {
             PenumbraAssetId,
             Images,
             PriorityScore,
+            Badges,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1134,6 +1142,7 @@ impl<'de> serde::Deserialize<'de> for Metadata {
                             "penumbraAssetId" | "penumbra_asset_id" => Ok(GeneratedField::PenumbraAssetId),
                             "images" => Ok(GeneratedField::Images),
                             "priorityScore" | "priority_score" => Ok(GeneratedField::PriorityScore),
+                            "badges" => Ok(GeneratedField::Badges),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1162,6 +1171,7 @@ impl<'de> serde::Deserialize<'de> for Metadata {
                 let mut penumbra_asset_id__ = None;
                 let mut images__ = None;
                 let mut priority_score__ = None;
+                let mut badges__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Description => {
@@ -1220,6 +1230,12 @@ impl<'de> serde::Deserialize<'de> for Metadata {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::Badges => {
+                            if badges__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("badges"));
+                            }
+                            badges__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1235,6 +1251,7 @@ impl<'de> serde::Deserialize<'de> for Metadata {
                     penumbra_asset_id: penumbra_asset_id__,
                     images: images__.unwrap_or_default(),
                     priority_score: priority_score__.unwrap_or_default(),
+                    badges: badges__.unwrap_or_default(),
                 })
             }
         }
