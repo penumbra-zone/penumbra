@@ -2,7 +2,7 @@ use std::fs::File;
 
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKeyBytes};
-use penumbra_asset::asset::{Cache, Id};
+use penumbra_asset::asset::Id;
 use penumbra_fee::Fee;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_keys::{Address, FullViewingKey};
@@ -10,7 +10,6 @@ use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_sct::epoch::Epoch;
 use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
-use penumbra_stake::validator::Validator;
 use penumbra_stake::{Delegate, IdentityKey, Penalty, Undelegate, UndelegateClaimPlan};
 use penumbra_transaction::{ActionPlan, TransactionParameters, TransactionPlan};
 use proptest::prelude::*;
