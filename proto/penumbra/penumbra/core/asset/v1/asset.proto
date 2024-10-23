@@ -67,6 +67,10 @@ message Metadata {
   //
   // This is solely for use in client-side registries.
   uint64 priority_score = 1986;
+
+  // Associated icons for asset.
+  // For ibc assets, usually an image of the source chain.
+  repeated AssetImage badges = 1987;
 }
 
 // DenomUnit represents a struct that describes a given denomination unit of the basic token.
