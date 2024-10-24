@@ -13,7 +13,6 @@ use ibc_proto::ibc::core::client::v1::{
 };
 use prost::Message;
 
-use crate::component::rpc::utils::height_from_str;
 use ibc_types::core::client::ClientId;
 use ibc_types::core::client::Height;
 use ibc_types::path::ClientConsensusStatePath;
@@ -27,6 +26,7 @@ use crate::component::{ClientStateReadExt, HostInterface};
 use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
 
+use super::utils::determine_snapshot_from_height_header;
 use super::IbcQuery;
 
 #[async_trait]
@@ -35,23 +35,11 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
         &self,
         request: tonic::Request<QueryClientStateRequest>,
     ) -> std::result::Result<Response<QueryClientStateResponse>, Status> {
-        let Some(height_val) = request.metadata().get("height") else {
-            return Err(tonic::Status::aborted("missing height"));
-        };
-
-        let height_str: &str = height_val
-            .to_str()
-            .map_err(|e| tonic::Status::aborted(format!("invalid height: {e}")))?;
-
-        let snapshot = if height_str == "0" {
-            self.storage.latest_snapshot()
-        } else {
-            let height = height_from_str(height_str)
-                .map_err(|e| tonic::Status::aborted(format!("couldn't get snapshot: {e}")))?;
-
-            self.storage
-                .snapshot(height.revision_height as u64)
-                .ok_or(tonic::Status::aborted(format!("invalid height")))?
+        let snapshot = match determine_snapshot_from_height_header(self.storage.clone(), &request) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
         };
 
         let client_id = ClientId::from_str(&request.get_ref().client_id)
@@ -128,23 +116,11 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
         &self,
         request: tonic::Request<QueryConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateResponse>, tonic::Status> {
-        let Some(height_val) = request.metadata().get("height") else {
-            return Err(tonic::Status::aborted("missing height"));
-        };
-
-        let height_str: &str = height_val
-            .to_str()
-            .map_err(|e| tonic::Status::aborted(format!("invalid height: {e}")))?;
-
-        let snapshot = if height_str == "0" {
-            self.storage.latest_snapshot()
-        } else {
-            let height = height_from_str(height_str)
-                .map_err(|e| tonic::Status::aborted(format!("couldn't get snapshot: {e}")))?;
-
-            self.storage
-                .snapshot(height.revision_height as u64)
-                .ok_or(tonic::Status::aborted(format!("invalid height")))?
+        let snapshot = match determine_snapshot_from_height_header(self.storage.clone(), &request) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
         };
 
         let client_id = ClientId::from_str(&request.get_ref().client_id)
