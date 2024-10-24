@@ -8,22 +8,18 @@ use ibc_proto::ibc::core::client::v1::Height;
 use tracing::debug;
 use tracing::instrument;
 
+type Type = tonic::metadata::MetadataMap;
+
+/// Determines which state snapshot to open given the height header in a [`MetadataMap`].
+///
+/// Returns the latest snapshot if the height header is 0, 0-0, or absent.
 #[instrument(skip_all, level = "debug")]
-pub(in crate::component::rpc) fn determine_snapshot_from_height_header<T>(
+pub(in crate::component::rpc) fn determine_snapshot_from_metadata(
     storage: Storage,
-    request: &tonic::Request<T>,
+    metadata: &Type,
 ) -> anyhow::Result<Snapshot> {
-    let height = match request.metadata().get("height") {
-        None => {
-            debug!("height header was missing; assuming a height of 0");
-            TheHeight::zero().into_inner()
-        }
-        Some(entry) => entry
-            .to_str()
-            .context("height header was present but its entry was not ASCII")
-            .and_then(parse_as_ibc_height)
-            .context("failed to height header as IBC height")?,
-    };
+    let height = determine_height_from_metadata(metadata)
+        .context("failed to determine height from metadata")?;
     if height.revision_height == 0 {
         Ok(storage.latest_snapshot())
     } else {
@@ -33,7 +29,24 @@ pub(in crate::component::rpc) fn determine_snapshot_from_height_header<T>(
     }
 }
 
-/// Utility to implement
+#[instrument(skip_all, level = "debug")]
+fn determine_height_from_metadata(
+    metadata: &tonic::metadata::MetadataMap,
+) -> anyhow::Result<Height> {
+    match metadata.get("height") {
+        None => {
+            debug!("height header was missing; assuming a height of 0");
+            Ok(TheHeight::zero().into_inner())
+        }
+        Some(entry) => entry
+            .to_str()
+            .context("height header was present but its entry was not ASCII")
+            .and_then(parse_as_ibc_height)
+            .context("failed to parse height header as IBC height"),
+    }
+}
+
+/// Newtype wrapper around [`Height`] to implement [`FromStr`].
 #[derive(Debug)]
 struct TheHeight(Height);
 
@@ -90,6 +103,9 @@ fn parse_as_ibc_height(input: &str) -> anyhow::Result<Height> {
 #[cfg(test)]
 mod tests {
     use ibc_proto::ibc::core::client::v1::Height;
+    use tonic::metadata::MetadataMap;
+
+    use crate::component::rpc::utils::determine_height_from_metadata;
 
     use super::TheHeight;
 
@@ -120,5 +136,25 @@ mod tests {
         assert_ibc_height_is_parsed_correctly("0-1", height(0, 1));
         assert_ibc_height_is_parsed_correctly("1-0", height(1, 0));
         assert_ibc_height_is_parsed_correctly("1-1", height(1, 1));
+    }
+
+    #[track_caller]
+    fn assert_ibc_height_is_determined_correctly(input: Option<&str>, expected: Height) {
+        let mut metadata = MetadataMap::new();
+        if let Some(input) = input {
+            metadata.insert("height", input.parse().unwrap());
+        }
+        let actual = determine_height_from_metadata(&metadata).unwrap();
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn determine_ibc_height_from_metadata() {
+        assert_ibc_height_is_determined_correctly(None, zero());
+        assert_ibc_height_is_determined_correctly(Some("0"), zero());
+        assert_ibc_height_is_determined_correctly(Some("0-0"), zero());
+        assert_ibc_height_is_determined_correctly(Some("0-1"), height(0, 1));
+        assert_ibc_height_is_determined_correctly(Some("1-0"), height(1, 0));
+        assert_ibc_height_is_determined_correctly(Some("1-1"), height(1, 1));
     }
 }

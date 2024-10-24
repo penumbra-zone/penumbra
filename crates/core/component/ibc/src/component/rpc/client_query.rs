@@ -26,7 +26,7 @@ use crate::component::{ClientStateReadExt, HostInterface};
 use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
 
-use super::utils::determine_snapshot_from_height_header;
+use super::utils::determine_snapshot_from_metadata;
 use super::IbcQuery;
 
 #[async_trait]
@@ -35,7 +35,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
         &self,
         request: tonic::Request<QueryClientStateRequest>,
     ) -> std::result::Result<Response<QueryClientStateResponse>, Status> {
-        let snapshot = match determine_snapshot_from_height_header(self.storage.clone(), &request) {
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
             Err(err) => return Err(tonic::Status::aborted(
                 format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
             )),
@@ -116,7 +116,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
         &self,
         request: tonic::Request<QueryConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateResponse>, tonic::Status> {
-        let snapshot = match determine_snapshot_from_height_header(self.storage.clone(), &request) {
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
             Err(err) => return Err(tonic::Status::aborted(
                 format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
             )),
