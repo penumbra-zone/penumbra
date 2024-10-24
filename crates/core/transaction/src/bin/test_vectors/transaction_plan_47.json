@@ -1,0 +1,77 @@
+{
+  "actions": [
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "978511977985001906"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "ktLJZugaPGtW7leE3KEqrP3nPQMi0nyC8tHYTmrXRrquyGekH4GxkScnqvX1GdhVUTZRUtZfwHPkb3Q1gmR9lhHcE+ZPutO/FPZP5XucgNo="
+        },
+        "rseed": "OlxG5cf4V8klcWgg6WQMJ2zlQtC12c0AHJTvVyccMY8=",
+        "valueBlinding": "C4Qfbj6HycDsrb0UqglNQAB1udmy8rvAzm2Un6sBdgM=",
+        "proofBlindingR": "z6W6DUCnM+Y7gVvKUmAngzvBvsFqbiZ6S9OLwXETlBI=",
+        "proofBlindingS": "M9/DphniyVTa6okAE+O4yzAPz8L3xoPbrSX7JuPtzQw="
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "h+MiAV/xsPlYnPlSpacuZkttciKZazGrR6UOOuoJ+Ic="
+        },
+        "epochIndex": "9113",
+        "unbondedAmount": {
+          "lo": "216312303961272689"
+        },
+        "delegationAmount": {
+          "lo": "711461472231955827"
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "bBHbUrmdq7J/wkVFTDsdoMfRSJDPI1uDNYIZnB3kaNs="
+        },
+        "epochIndex": "9812",
+        "unbondedAmount": {
+          "lo": "911479842452450927"
+        },
+        "delegationAmount": {
+          "lo": "23965281903679593"
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "VRhQLJ6pPFgjYp2+vx3SrOjq7+sAr7W4BR/twM0rzUY="
+        },
+        "unbondedAmount": {
+          "lo": "512187866258551424"
+        },
+        "delegationAmount": {
+          "lo": "249970204661111782"
+        },
+        "fromEpoch": {
+          "index": "2311",
+          "startHeight": "2311"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "2608249414",
+    "chainId": "tmqlsmfxzyllks-54969217584147797156858429488374",
+    "fee": {
+      "amount": {
+        "lo": "855455524674431313"
+      }
+    }
+  }
+}

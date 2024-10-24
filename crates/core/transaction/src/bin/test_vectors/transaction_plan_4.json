@@ -1,0 +1,47 @@
+{
+  "actions": [
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "eoPYlGLSxmPVqpYgm5RUIFNKa+84xmOsm9amiDCJH9Y="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP7SiM5wOvt+kP+XJHRTjvQ="
+        },
+        "unbondingAmount": {
+          "lo": "248672571880500913"
+        },
+        "balanceBlinding": "ci2g0yhSHru3kJ3/BxyEbI0ghgOWytC+xvYirr+5JgE=",
+        "proofBlindingR": "0qDfwxWv5YBuLLyjVvbr1R1wm4JWCQubyd5qNYqQEgc=",
+        "proofBlindingS": "BC8ODIIcJ7ytUZ/B4Blo0wcIXvQ6W1ligOgT5DbQYgo=",
+        "unbondingStartHeight": "18524"
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "3iaQpw5bLBHSYwTNPj5IBlmS3AsdtRDkE66IOSN/02U="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP/FBIFvAGjbi6xxDLKV6eI="
+        },
+        "unbondingAmount": {
+          "lo": "763649419606656713"
+        },
+        "balanceBlinding": "zv97AtHn+dmAv7kQCY12CpQmUBbB3OlH4+QKYvG61QA=",
+        "proofBlindingR": "Fp46MTcRfExqIelVFF9kuGYWmJjEkPj/YPJ112ACuhA=",
+        "proofBlindingS": "puWqQVQDs2X5VUUbGav16Kvm6Kf37fqnBbIBYY1i5Qo=",
+        "unbondingStartHeight": "97488"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "6482812689",
+    "chainId": "vjrjqpapvltpihd-66339646",
+    "fee": {
+      "amount": {
+        "lo": "141154504377057325"
+      }
+    }
+  }
+}
