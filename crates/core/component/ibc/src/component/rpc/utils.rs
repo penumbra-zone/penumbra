@@ -5,36 +5,32 @@ use anyhow::Context as _;
 use cnidarium::Snapshot;
 use cnidarium::Storage;
 use ibc_proto::ibc::core::client::v1::Height;
+use tracing::debug;
+use tracing::instrument;
 
+#[instrument(skip_all, level = "debug")]
 pub(in crate::component::rpc) fn determine_snapshot_from_height_header<T>(
     storage: Storage,
     request: &tonic::Request<T>,
 ) -> anyhow::Result<Snapshot> {
-    let height_entry = request
-        .metadata()
-        .get("height")
-        .context("no `height` header")?
-        .to_str()
-        .context("value of `height` header was not ASCII")?;
-
-    'state: {
-        let height = match parse_as_ibc_height(height_entry)
-            .context("failed to parse value as IBC height")
-        {
-            Err(err) => break 'state Err(err),
-            Ok(height) => height.revision_height,
-        };
-        if height == 0 {
-            Ok(storage.latest_snapshot())
-        } else {
-            storage
-                .snapshot(height)
-                .with_context(|| format!("could not open snapshot at revision height `{height}`"))
+    let height = match request.metadata().get("height") {
+        None => {
+            debug!("height header was missing; assuming a height of 0");
+            TheHeight::zero().into_inner()
         }
+        Some(entry) => entry
+            .to_str()
+            .context("height header was present but its entry was not ASCII")
+            .and_then(parse_as_ibc_height)
+            .context("failed to height header as IBC height")?,
+    };
+    if height.revision_height == 0 {
+        Ok(storage.latest_snapshot())
+    } else {
+        storage
+            .snapshot(height.revision_height)
+            .context("failed to create state snapshot from IBC height in height header")
     }
-    .with_context(|| {
-        format!("failed determine snapshot from `\"height\": \"{height_entry}` header")
-    })
 }
 
 /// Utility to implement
