@@ -10,9 +10,9 @@ use penumbra_view::ViewClient;
 use crate::{command::utils, App};
 
 #[derive(Debug, clap::Args)]
-pub struct LpsCmd {}
+pub struct LiquidityPositionsCmd {}
 
-impl LpsCmd {
+impl LiquidityPositionsCmd {
     pub fn offline(&self) -> bool {
         false
     }

@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use address::AddressCmd;
 use balance::BalanceCmd;
-use lps::LpsCmd;
+use lps::LiquidityPositionsCmd;
 use noble_address::NobleAddressCmd;
 use staked::StakedCmd;
 use transaction_hashes::TransactionHashesCmd;
@@ -51,7 +51,8 @@ pub enum ViewCmd {
     /// Displays a transaction's details by hash.
     Tx(TxCmd),
     /// View information about the liquidity positions you control.
-    Lps(LpsCmd),
+    #[clap(visible_alias = "lps")]
+    LiquidityPositions(LiquidityPositionsCmd),
 }
 
 impl ViewCmd {
@@ -67,7 +68,7 @@ impl ViewCmd {
             ViewCmd::Sync => false,
             ViewCmd::ListTransactionHashes(transactions_cmd) => transactions_cmd.offline(),
             ViewCmd::Tx(tx_cmd) => tx_cmd.offline(),
-            ViewCmd::Lps(lps_cmd) => lps_cmd.offline(),
+            ViewCmd::LiquidityPositions(lps_cmd) => lps_cmd.offline(),
         }
     }
 
@@ -115,7 +116,7 @@ impl ViewCmd {
                     .exec(&full_viewing_key, view_client, channel)
                     .await?;
             }
-            ViewCmd::Lps(cmd) => cmd.exec(app).await?,
+            ViewCmd::LiquidityPositions(cmd) => cmd.exec(app).await?,
         }
 
         Ok(())
