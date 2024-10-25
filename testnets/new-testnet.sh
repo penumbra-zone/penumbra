@@ -5,7 +5,7 @@ set -euo pipefail
 echo "#####################################################"
 PREVIOUS_TESTNET_DIRECTORY=$(find . -mindepth 1 -type d | sort | tail -n1)
 echo "previous testnet directory: $PREVIOUS_TESTNET_DIRECTORY"
-PREVIOUS_TESTNET_NUMBER=$(find . -mindepth 1 -type d | wc -l)
+PREVIOUS_TESTNET_NUMBER="$(find . -mindepth 1 -type d -exec basename {} \; | tail -n 1 | grep -Po '^\d+')"
 echo "previous testnet number: $PREVIOUS_TESTNET_NUMBER"
 NEW_TESTNET_NUMBER="0$(echo "1 + $PREVIOUS_TESTNET_NUMBER" | bc)"
 echo "new testnet number: $NEW_TESTNET_NUMBER"
@@ -15,8 +15,15 @@ echo "#####################################################"
 
 echo "Creating new testnet directory $NEW_TESTNET_DIRECTORY..."
 mkdir "$NEW_TESTNET_DIRECTORY"
-echo "Copying validators from $PREVIOUS_TESTNET_DIRECTORY to $NEW_TESTNET_DIRECTORY"
-cp "$PREVIOUS_TESTNET_DIRECTORY/validators.json" "$NEW_TESTNET_DIRECTORY/validators.json"
+if [[ -e "$PREVIOUS_TESTNET_DIRECTORY/validators.json" ]]; then
+    echo "Copying validators from $PREVIOUS_TESTNET_DIRECTORY to $NEW_TESTNET_DIRECTORY"
+    cp -v "$PREVIOUS_TESTNET_DIRECTORY/validators.json" "$NEW_TESTNET_DIRECTORY/validators.json"
+else
+    echo "Using default CI validator config"
+    # We inspect the validators config and pluck the first entry out, for a solo-validator setup.
+    # TODO: update pd to take an `--n-validators` arg so this is dynamic.
+    jq '.[0]' "validators-ci.json" | jq -s > "$NEW_TESTNET_DIRECTORY/validators.json"
+fi
 
 echo "Setting up allocations for new testnet..."
 # Truncate file, set CSV headers.
@@ -89,6 +96,15 @@ while read -r a; do
 1_000__000_000,upenumbra,$a
 EOM
 done < <(cut -d' ' -f1 "test_address_1.txt")
+
+
+# Miscellaneous "small" accounts, with just a bit of staking token to pay fees.
+# Useful for e.g. bootstrapping relayers on testnets/devnets.
+while read -r a; do
+    cat <<EOM >> base_allocations.csv
+200__000_000,upenumbra,$a
+EOM
+done < <(cut -d' ' -f1 "small_addresses.txt")
 
 # Copy new base allocations file to target testnet dir.
 cp -v base_allocations.csv "$NEW_TESTNET_DIRECTORY/allocations.csv"

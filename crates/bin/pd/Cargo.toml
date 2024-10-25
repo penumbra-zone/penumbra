@@ -59,7 +59,7 @@ metrics-util                     = "0.16.2"
 mime_guess                       = "2"
 once_cell                        = { workspace = true }
 pbjson-types                     = { workspace = true }
-penumbra-app                     = { workspace = true }
+penumbra-app                     = { workspace = true, default-features = true }
 penumbra-asset                   = { workspace = true, default-features = true }
 penumbra-auto-https              = { path = "../../util/auto-https" }
 penumbra-compact-block           = { workspace = true, default-features = true }

@@ -1,4 +1,4 @@
-use crate::{Message, Name};
+use crate::{DomainType, Message, Name};
 use anyhow::{self, Context};
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
@@ -120,4 +120,26 @@ mod tests {
         let proto_output2 = EventOutput::from_event(&abci_output).unwrap();
         assert_eq!(proto_output, proto_output2);
     }
+}
+
+/// An extension trait allowing for easy conversion from events into domain types.
+///
+/// This makes the task of writing code that processes events much more easy,
+/// since you can just attempt to parse the event directly into the specific domain
+/// type.
+pub trait EventDomainType: DomainType
+where
+    <Self as DomainType>::Proto: ProtoEvent,
+    anyhow::Error: From<<Self as TryFrom<<Self as DomainType>::Proto>>::Error>,
+{
+    fn try_from_event(event: &abci::Event) -> anyhow::Result<Self> {
+        Ok(<Self as DomainType>::Proto::from_event(event)?.try_into()?)
+    }
+}
+
+impl<T: DomainType> EventDomainType for T
+where
+    <T as DomainType>::Proto: ProtoEvent,
+    anyhow::Error: From<<Self as TryFrom<<Self as DomainType>::Proto>>::Error>,
+{
 }

@@ -141,7 +141,7 @@ impl Indexer {
         let watermark = current_watermark.unwrap_or(0);
 
         // Calculate new events count since the last watermark
-        sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM events WHERE rowid > $1")
+        sqlx::query_as::<_, (i64,)>("SELECT MAX(rowid) - $1 FROM events")
             .bind(watermark)
             .fetch_one(src_db)
             .await
@@ -152,6 +152,7 @@ impl Indexer {
         let mut relevant_events = 0usize;
 
         let mut es = read_events(&src_db, watermark);
+        let mut dbtx = dst_db.begin().await?;
         while let Some(event) = es.next().await.transpose()? {
             if scanned_events % 1000 == 0 {
                 tracing::info!(scanned_events, relevant_events);
@@ -178,8 +179,6 @@ impl Indexer {
 
             relevant_events += 1;
 
-            // Otherwise we have something to process. Make a dbtx
-            let mut dbtx = dst_db.begin().await?;
             for index in indexes {
                 if index.is_relevant(&event.as_ref().kind) {
                     tracing::debug!(?event, ?index, "relevant to index");
@@ -188,8 +187,15 @@ impl Indexer {
             }
             // Mark that we got to at least this event
             update_watermark(&mut dbtx, event.local_rowid).await?;
-            dbtx.commit().await?;
+            // Only commit in batches of <= 1000 events, for about a 5x performance increase when
+            // catching up.
+            if relevant_events % 1000 == 0 {
+                dbtx.commit().await?;
+                dbtx = dst_db.begin().await?;
+            }
         }
+        // Flush out the remaining changes.
+        dbtx.commit().await?;
 
         Ok(())
     }
@@ -217,28 +223,50 @@ fn read_events(
     watermark: i64,
 ) -> Pin<Box<dyn Stream<Item = Result<ContextualizedEvent>> + Send + '_>> {
     let event_stream = sqlx::query_as::<_, (i64, String, i64, Option<String>, serde_json::Value)>(
+        // This query does some shenanigans to ensure good performance.
+        // The main trick is that we know that each event has 1 block and <= 1 transaction associated
+        // with it, so we can "encourage" (force) Postgres to avoid doing a hash join and
+        // then a sort, and instead work from the events in a linear fashion.
+        // Basically, this query ends up doing:
+        //
+        // for event in events >= id:
+        //   attach attributes
+        //   attach block
+        //   attach transaction?
         r#"
-SELECT 
-    events.rowid, 
-    events.type, 
+SELECT
+    events.rowid,
+    events.type,
     blocks.height AS block_height,
     tx_results.tx_hash,
-    jsonb_object_agg(attributes.key, attributes.value) AS attrs
-FROM 
-    events 
-LEFT JOIN 
-    attributes ON events.rowid = attributes.event_id
-JOIN 
-    blocks ON events.block_id = blocks.rowid
-LEFT JOIN 
-    tx_results ON events.tx_id = tx_results.rowid
-WHERE
-    events.rowid > $1
-GROUP BY 
-    events.rowid, 
-    events.type, 
-    blocks.height, 
-    tx_results.tx_hash
+    events.attrs
+FROM (
+    SELECT 
+        rowid, 
+        type, 
+        block_id,
+        tx_id,
+        jsonb_object_agg(attributes.key, attributes.value) AS attrs
+    FROM 
+        events 
+    LEFT JOIN
+        attributes ON rowid = attributes.event_id
+    WHERE
+        rowid > $1
+    GROUP BY 
+        rowid, 
+        type,
+        block_id, 
+        tx_id
+) events
+LEFT JOIN LATERAL (
+    SELECT * FROM blocks WHERE blocks.rowid = events.block_id LIMIT 1
+) blocks
+ON TRUE
+LEFT JOIN LATERAL (
+    SELECT * FROM tx_results WHERE tx_results.rowid = events.tx_id LIMIT 1
+) tx_results
+ON TRUE
 ORDER BY
     events.rowid ASC
         "#,

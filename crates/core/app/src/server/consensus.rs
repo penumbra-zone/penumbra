@@ -173,8 +173,8 @@ impl Consensus {
         &mut self,
         proposal: request::ProcessProposal,
     ) -> Result<response::ProcessProposal> {
-        tracing::info!(height = ?proposal.height, proposer = ?proposal.proposer_address, hash = %proposal.hash, "processing proposal");
-        // We process the propopsal in an isolated state fork. Eventually, we should cache this work and
+        tracing::info!(height = ?proposal.height, proposer = ?proposal.proposer_address, proposal_hash = %proposal.hash, "processing proposal");
+        // We process the proposal in an isolated state fork. Eventually, we should cache this work and
         // re-use it when processing a `FinalizeBlock` message (starting in `0.38.x`).
         let mut tmp_app = App::new(self.storage.latest_snapshot());
         Ok(tmp_app.process_proposal(proposal).await)
@@ -187,7 +187,9 @@ impl Consensus {
         // We don't need to print the block height, because it will already be
         // included in the span modeling the abci request handling.
         tracing::info!(time = ?begin_block.header.time, "beginning block");
+
         let events = self.app.begin_block(&begin_block).await;
+
         Ok(response::BeginBlock { events })
     }
 

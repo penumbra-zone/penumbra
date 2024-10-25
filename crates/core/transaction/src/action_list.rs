@@ -29,6 +29,21 @@ pub struct ActionList {
 }
 
 impl ActionList {
+    /// Returns an immutable reference to a list of action plans.
+    pub fn actions(&self) -> &Vec<ActionPlan> {
+        &self.actions
+    }
+
+    /// Returns an immutable reference to a map of change outputs.
+    pub fn change_outputs(&self) -> &BTreeMap<asset::Id, OutputPlan> {
+        &self.change_outputs
+    }
+
+    /// Returns an immutable reference to the fee.
+    pub fn fee(&self) -> &Fee {
+        &self.fee
+    }
+
     /// Returns true if the resulting transaction would require a memo.
     pub fn requires_memo(&self) -> bool {
         let has_change_outputs = !self.change_outputs.is_empty();

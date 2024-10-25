@@ -1,3 +1,6 @@
+// These mock-consensus helper traits aren't consumed just yet
+#![allow(dead_code)]
+
 use {
     async_trait::async_trait, cnidarium::TempStorage, penumbra_mock_consensus::TestNode,
     penumbra_sct::component::clock::EpochRead as _, tap::Tap,

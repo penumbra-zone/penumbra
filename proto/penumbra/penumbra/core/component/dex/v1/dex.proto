@@ -737,6 +737,17 @@ message EventValueCircuitBreakerDebit {
   num.v1.Amount new_balance = 3;
 }
 
+// Emitted whenever there's non-empty candlestick data for a particular pair.
+//
+// Beware: if there's no activity on a given pair, there's no guarantee
+// that a candlestick will be emitted.
+message EventCandlestickData {
+  // The pair the candlestick is for.
+  DirectedTradingPair pair = 1;
+  // The candlestick for this particular pair.
+  CandlestickData stick = 2;
+}
+
 message DexParameters {
   // Whether or not the DEX is enabled.
   bool is_enabled = 1;

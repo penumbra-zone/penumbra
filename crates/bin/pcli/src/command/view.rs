@@ -2,6 +2,7 @@ use anyhow::Result;
 
 use address::AddressCmd;
 use balance::BalanceCmd;
+use noble_address::NobleAddressCmd;
 use staked::StakedCmd;
 use transaction_hashes::TransactionHashesCmd;
 use tx::TxCmd;
@@ -14,6 +15,7 @@ use self::auction::AuctionCmd;
 mod address;
 mod auction;
 mod balance;
+mod noble_address;
 mod staked;
 mod wallet_id;
 
@@ -28,6 +30,8 @@ pub enum ViewCmd {
     WalletId(WalletIdCmd),
     /// View one of your addresses, either by numerical index, or a random ephemeral one.
     Address(AddressCmd),
+    /// View the Noble forwarding address associated with one of your addresses, either by numerical index, or a random ephemeral one.
+    NobleAddress(NobleAddressCmd),
     /// View your account balances.
     Balance(BalanceCmd),
     /// View your staked delegation tokens.
@@ -52,6 +56,7 @@ impl ViewCmd {
             ViewCmd::Auction(auction_cmd) => auction_cmd.offline(),
             ViewCmd::WalletId(wallet_id_cmd) => wallet_id_cmd.offline(),
             ViewCmd::Address(address_cmd) => address_cmd.offline(),
+            ViewCmd::NobleAddress(address_cmd) => address_cmd.offline(),
             ViewCmd::Balance(balance_cmd) => balance_cmd.offline(),
             ViewCmd::Staked(staked_cmd) => staked_cmd.offline(),
             ViewCmd::Reset(_) => true,
@@ -90,6 +95,9 @@ impl ViewCmd {
             }
             ViewCmd::Address(address_cmd) => {
                 address_cmd.exec(&full_viewing_key)?;
+            }
+            ViewCmd::NobleAddress(noble_address_cmd) => {
+                noble_address_cmd.exec(&full_viewing_key)?;
             }
             ViewCmd::Balance(balance_cmd) => {
                 let view_client = app.view();

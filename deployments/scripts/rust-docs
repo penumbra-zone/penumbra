@@ -31,6 +31,7 @@ cargo +nightly doc --no-deps \
   -p pcli \
   -p pclientd \
   -p pd \
+  -p pmonitor \
   -p penumbra-app \
   -p penumbra-asset \
   -p penumbra-community-pool \

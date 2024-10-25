@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_num::Amount;
-use penumbra_proto::StateWriteProto;
+use penumbra_proto::{DomainType, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead;
 
 use crate::{
@@ -132,7 +132,7 @@ impl ActionHandler for Delegate {
         // We queue the delegation so it can be processed at the epoch boundary.
         tracing::debug!(?self, "queuing delegation for next epoch");
         state.push_delegation(self.clone());
-        state.record_proto(event::delegate(self));
+        state.record_proto(event::EventDelegate::from(self).to_proto());
         Ok(())
     }
 }

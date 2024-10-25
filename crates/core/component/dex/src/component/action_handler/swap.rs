@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
-use penumbra_proto::StateWriteProto;
+use penumbra_proto::{DomainType as _, StateWriteProto};
 use penumbra_sct::component::source::SourceContext;
 
 use crate::{
@@ -66,7 +66,7 @@ impl ActionHandler for Swap {
         );
         state.add_recently_accessed_asset(swap.body.trading_pair.asset_2(), fixed_candidates);
 
-        state.record_proto(event::swap(self));
+        state.record_proto(event::EventSwap::from(self).to_proto());
 
         Ok(())
     }

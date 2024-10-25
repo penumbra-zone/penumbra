@@ -68,6 +68,7 @@ impl NetworkConfig {
         peer_address_template: Option<String>,
         external_addresses: Option<Vec<TendermintAddress>>,
         allocations_input_file: Option<PathBuf>,
+        allocation_address: Option<Address>,
         validators_input_file: Option<PathBuf>,
         tendermint_timeout_commit: Option<tendermint::Timeout>,
         active_validator_limit: Option<u64>,
@@ -90,6 +91,11 @@ impl NetworkConfig {
             allocations.push(v.delegation_allocation()?);
         }
 
+        // Add an extra allocation for a dynamic wallet address.
+        if let Some(address) = allocation_address {
+            tracing::info!(%address, "adding dynamic allocation to genesis");
+            allocations.extend(NetworkAllocation::simple(address));
+        }
         // Convert to domain type, for use with other Penumbra interfaces.
         // We do this conversion once and store it in the struct for convenience.
         let validators: anyhow::Result<Vec<Validator>> =
@@ -390,6 +396,7 @@ pub fn network_generate(
     external_addresses: Vec<TendermintAddress>,
     validators_input_file: Option<PathBuf>,
     allocations_input_file: Option<PathBuf>,
+    allocation_address: Option<Address>,
     proposal_voting_blocks: Option<u64>,
     gas_price_simple: Option<u64>,
 ) -> anyhow::Result<()> {
@@ -400,6 +407,7 @@ pub fn network_generate(
         peer_address_template,
         Some(external_addresses),
         allocations_input_file,
+        allocation_address,
         validators_input_file,
         tendermint_timeout_commit,
         active_validator_limit,
@@ -455,6 +463,26 @@ impl NetworkAllocation {
         }
 
         Ok(res)
+    }
+    /// Creates a basic set of genesis [Allocation]s for the provided [Address].
+    /// Returns multiple Allocations, so that it's immediately possible to use the DEX,
+    /// for basic interactive testing of swap behavior.
+    /// For more control over precise allocation amounts, use [from_csv].
+    pub fn simple(address: Address) -> Vec<Allocation> {
+        vec![
+            Allocation {
+                address: address.clone(),
+                raw_denom: "upenumbra".into(),
+                // The `upenumbra` base denom is millionths, so `10^6 * n`
+                // results in `n` `penumbra` tokens.
+                raw_amount: (100_000 * 10u128.pow(6)).into(),
+            },
+            Allocation {
+                address: address.clone(),
+                raw_denom: "test_usd".into(),
+                raw_amount: (1_000 as u128).into(),
+            },
+        ]
     }
 }
 
@@ -632,8 +660,12 @@ impl TryFrom<NetworkAllocation> for shielded_pool_genesis::Allocation {
         Ok(shielded_pool_genesis::Allocation {
             raw_amount: a.amount.into(),
             raw_denom: a.denom.clone(),
-            address: Address::from_str(&a.address)
-                .context("invalid address format in genesis allocations")?,
+            address: Address::from_str(&a.address).with_context(|| {
+                format!(
+                    "invalid address format in genesis allocations: {}",
+                    &a.address
+                )
+            })?,
         })
     }
 }
@@ -729,6 +761,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         )?;
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
@@ -750,6 +783,7 @@ mod tests {
             "test-chain-4567",
             None,
             Some(String::from("validator.local")),
+            None,
             None,
             None,
             Some(ci_validators_filepath),

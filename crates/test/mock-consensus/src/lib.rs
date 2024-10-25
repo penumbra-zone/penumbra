@@ -82,12 +82,8 @@ pub struct TestNode<C> {
     last_app_hash: Vec<u8>,
     /// The last validator set hash value.
     last_validator_set_hash: Option<tendermint::Hash>,
-    /// The tendermint validators associated with the node.
-    /// Updated via processing updates within `BeginBlock` requests.
-    // pub validators: ValidatorSet,
-    /// The last tendermint commit.
-    // TODO: move the create_tendermint_header into TestNode and change vis on this
-    pub last_commit: Option<Commit>,
+    /// The last tendermint block header commit value.
+    last_commit: Option<tendermint::block::Commit>,
     /// The consensus params hash.
     consensus_params_hash: Vec<u8>,
     /// The current block [`Height`][tendermint::block::Height].
@@ -125,6 +121,16 @@ impl<C> TestNode<C> {
     /// Returns the last `app_hash` value, represented as a slice of bytes.
     pub fn last_app_hash(&self) -> &[u8] {
         &self.last_app_hash
+    }
+
+    /// Returns the last `commit` value.
+    pub fn last_commit(&self) -> Option<&Commit> {
+        self.last_commit.as_ref()
+    }
+
+    /// Returns the last `validator_set_hash` value.
+    pub fn last_validator_set_hash(&self) -> Option<&tendermint::Hash> {
+        self.last_validator_set_hash.as_ref()
     }
 
     /// Returns the most recent `timestamp` value.

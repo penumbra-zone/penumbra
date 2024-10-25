@@ -1,0 +1,9 @@
+[
+  {
+    "name": "Penumbra Labs CI 1",
+    "website": "https://penumbra.zone",
+    "description": "This is a validator run by Penumbra Labs, using testnets as a public CI",
+    "funding_streams": [],
+    "sequence_number": 0
+  }
+]

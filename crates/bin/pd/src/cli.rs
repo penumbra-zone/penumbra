@@ -167,8 +167,14 @@ pub enum NetworkCommand {
         /// Path to CSV file containing initial allocations [default: latest testnet].
         #[clap(long, parse(from_os_str))]
         allocations_input_file: Option<PathBuf>,
-        /// Path to JSON file containing initial validator configs [default: latest testnet].
+        /// Penumbra wallet address to include in genesis allocations.
+        /// Intended to make dev experience nicer on first run:
+        /// generate a wallet, view its address, then generate a devnet
+        /// with that address included in the base allocations.
+        #[clap(long)]
+        allocation_address: Option<penumbra_keys::Address>,
         #[clap(long, parse(from_os_str))]
+        /// Path to JSON file containing initial validator configs [default: latest testnet].
         validators_input_file: Option<PathBuf>,
         /// Testnet name [default: latest testnet].
         #[clap(long)]

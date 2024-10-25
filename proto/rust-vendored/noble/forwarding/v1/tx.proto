@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package noble.forwarding.v1;
+
+option go_package = "github.com/noble-assets/forwarding/x/forwarding/types";
+
+service Msg {
+  rpc RegisterAccount(noble.forwarding.v1.MsgRegisterAccount) returns (noble.forwarding.v1.MsgRegisterAccountResponse);
+  rpc ClearAccount(noble.forwarding.v1.MsgClearAccount) returns (noble.forwarding.v1.MsgClearAccountResponse);
+}
+
+//
+
+message MsgRegisterAccount {
+  string signer = 1;
+  string recipient = 2;
+  string channel = 3;
+}
+
+message MsgRegisterAccountResponse {
+  string address = 1;
+}
+
+message MsgClearAccount {
+  string signer = 1;
+  string address = 2;
+}
+
+message MsgClearAccountResponse {}

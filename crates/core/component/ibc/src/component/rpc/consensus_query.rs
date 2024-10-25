@@ -71,9 +71,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         let res = QueryChannelResponse {
             channel,
             proof: proof.encode_to_vec(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: snapshot.version(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
             }),
         };
 
@@ -252,9 +257,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         Ok(tonic::Response::new(QueryChannelClientStateResponse {
             identified_client_state: Some(identified_client_state),
             proof: proof.encode_to_vec(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: snapshot.version(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
             }),
         }))
     }
@@ -339,9 +349,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
             consensus_state: consensus_state_any,
             client_id: connection.client_id.clone().to_string(),
             proof: proof.encode_to_vec(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: snapshot.version(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
             }),
         }))
     }
@@ -385,9 +400,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         Ok(tonic::Response::new(QueryPacketCommitmentResponse {
             commitment,
             proof: proof.encode_to_vec(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: snapshot.version(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
             }),
         }))
     }
@@ -487,9 +507,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         Ok(tonic::Response::new(QueryPacketReceiptResponse {
             received: receipt.is_some(),
             proof: proof.encode_to_vec(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: snapshot.version(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
             }),
         }))
     }
@@ -532,9 +557,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         Ok(tonic::Response::new(QueryPacketAcknowledgementResponse {
             acknowledgement,
             proof: proof.encode_to_vec(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: snapshot.version(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
             }),
         }))
     }
@@ -725,9 +755,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         Ok(tonic::Response::new(QueryNextSequenceReceiveResponse {
             next_sequence_receive: next_recv_sequence,
             proof: proof.encode_to_vec(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: snapshot.version(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
             }),
         }))
     }
@@ -761,9 +796,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         Ok(tonic::Response::new(QueryNextSequenceSendResponse {
             next_sequence_send: next_send_sequence,
             proof: proof.encode_to_vec(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: snapshot.version(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
             }),
         }))
     }

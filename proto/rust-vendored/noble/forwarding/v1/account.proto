@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package noble.forwarding.v1;
+
+import "cosmos/auth/v1beta1/auth.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/noble-assets/forwarding/x/forwarding/types";
+
+message ForwardingAccount {
+  cosmos.auth.v1beta1.BaseAccount base_account = 1 [(gogoproto.embed) = true];
+
+  string channel = 2;
+  string recipient = 3;
+  int64 created_at = 4;
+}
+
+message ForwardingPubKey {
+  option (gogoproto.goproto_stringer) = false;
+
+  bytes key = 1;
+}

@@ -1258,11 +1258,11 @@ impl Storage {
         dbtx.execute(
             "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed)
                 VALUES (?1, ?2, ?3, ?4, ?5)
-                ON CONFLICT (note_commitment) 
-                DO UPDATE SET 
-                address = excluded.address, 
-                amount = excluded.amount, 
-                asset_id = excluded.asset_id, 
+                ON CONFLICT (note_commitment)
+                DO UPDATE SET
+                address = excluded.address,
+                amount = excluded.amount,
+                asset_id = excluded.asset_id,
                 rseed = excluded.rseed",
             (note_commitment, address, amount, asset_id, rseed),
         )?;
@@ -1432,7 +1432,7 @@ impl Storage {
                 let params_bytes = params.encode_to_vec();
                 // We expect app_params to be present already but may as well use an upsert
                 dbtx.execute(
-                    "INSERT INTO kv (k, v) VALUES ('app_params', ?1) 
+                    "INSERT INTO kv (k, v) VALUES ('app_params', ?1)
                     ON CONFLICT(k) DO UPDATE SET v = excluded.v",
                     [&params_bytes[..]],
                 )?;
@@ -1460,12 +1460,12 @@ impl Storage {
                     (note_commitment, nullifier, position, height_created, address_index, source, height_spent, tx_hash)
                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7)
                     ON CONFLICT (note_commitment)
-                    DO UPDATE SET nullifier = excluded.nullifier, 
-                    position = excluded.position, 
-                    height_created = excluded.height_created, 
-                    address_index = excluded.address_index, 
-                    source = excluded.source, 
-                    height_spent = excluded.height_spent, 
+                    DO UPDATE SET nullifier = excluded.nullifier,
+                    position = excluded.position,
+                    height_created = excluded.height_created,
+                    address_index = excluded.address_index,
+                    source = excluded.source,
+                    height_spent = excluded.height_spent,
                     tx_hash = excluded.tx_hash",
                     (
                         &note_commitment,
@@ -1492,12 +1492,12 @@ impl Storage {
                 dbtx.execute(
                     "INSERT INTO swaps (swap_commitment, swap, position, nullifier, output_data, height_claimed, source)
                     VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6)
-                    ON CONFLICT (swap_commitment) 
-                    DO UPDATE SET swap = excluded.swap, 
-                    position = excluded.position, 
-                    nullifier = excluded.nullifier, 
-                    output_data = excluded.output_data, 
-                    height_claimed = excluded.height_claimed, 
+                    ON CONFLICT (swap_commitment)
+                    DO UPDATE SET swap = excluded.swap,
+                    position = excluded.position,
+                    nullifier = excluded.nullifier,
+                    output_data = excluded.output_data,
+                    height_claimed = excluded.height_claimed,
                     source = excluded.source",
                     (
                         &swap_commitment,
@@ -1589,13 +1589,15 @@ impl Storage {
                 let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
                 let tx_hash = tx_hash_owned.as_slice();
                 let tx_block_height = filtered_block.height as i64;
-                let return_address = transaction.decrypt_memo(&fvk).map_or(None, |x| Some(x.return_address().to_vec()));
+                let decrypted_memo = transaction.decrypt_memo(&fvk).ok();
+                let memo_text = decrypted_memo.clone().map_or(None,|x| Some(x.text().to_string()));
+                let return_address = decrypted_memo.map_or(None, |x| Some(x.return_address().to_vec()));
 
                 tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
 
                 dbtx.execute(
-                    "INSERT OR IGNORE INTO tx (tx_hash, tx_bytes, block_height, return_address) VALUES (?1, ?2, ?3, ?4)",
-                    (&tx_hash, &tx_bytes, tx_block_height, return_address),
+                    "INSERT OR IGNORE INTO tx (tx_hash, tx_bytes, block_height, return_address, memo_text) VALUES (?1, ?2, ?3, ?4, ?5)",
+                    (&tx_hash, &tx_bytes, tx_block_height, return_address, memo_text),
                 )?;
 
                 // Associate all of the spent nullifiers with the transaction by hash.
@@ -1755,5 +1757,32 @@ impl Storage {
         .await??;
 
         Ok(records)
+    }
+
+    /// Get all transactions with a matching memo text. The `pattern` argument
+    /// should include SQL wildcards, such as `%` and `_`, to match substrings,
+    /// e.g. `%foo%`.
+    pub async fn transactions_matching_memo(
+        &self,
+        pattern: String,
+    ) -> anyhow::Result<Vec<(u64, Vec<u8>, Transaction, String)>> {
+        let pattern = pattern.to_owned();
+        tracing::trace!(?pattern, "searching for memos matching");
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            pool.get()?
+                .prepare_cached("SELECT block_height, tx_hash, tx_bytes, memo_text FROM tx WHERE memo_text LIKE ?1 ESCAPE '\\'")?
+                .query_and_then([pattern], |row| {
+                    let block_height: u64 = row.get("block_height")?;
+                    let tx_hash: Vec<u8> = row.get("tx_hash")?;
+                    let tx_bytes: Vec<u8> = row.get("tx_bytes")?;
+                    let tx = Transaction::decode(tx_bytes.as_slice())?;
+                    let memo_text: String = row.get("memo_text")?;
+                    anyhow::Ok((block_height, tx_hash, tx, memo_text))
+                })?
+                .collect()
+        })
+        .await?
     }
 }

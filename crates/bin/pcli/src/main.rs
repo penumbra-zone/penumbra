@@ -10,8 +10,8 @@ use pcli::{command::*, opt::Opt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Display a warning message to the user so they don't get upset when all their tokens are lost.
-    if std::env::var("PCLI_UNLEASH_DANGER").is_err() {
+    // Preserved for posterity and memory
+    if std::env::var("PCLI_DISPLAY_WARNING").is_ok() {
         pcli::warning::display();
     }
 
@@ -63,8 +63,8 @@ async fn main() -> Result<()> {
         Command::View(view_cmd) => view_cmd.exec(&mut app).await?,
         Command::Validator(cmd) => cmd.exec(&mut app).await?,
         Command::Query(cmd) => cmd.exec(&mut app).await?,
-        Command::Ceremony(cmd) => cmd.exec(&mut app).await?,
         Command::Threshold(cmd) => cmd.exec(&mut app).await?,
+        Command::Migrate(cmd) => cmd.exec(&mut app).await?,
     }
 
     Ok(())

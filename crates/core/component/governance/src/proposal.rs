@@ -1,5 +1,6 @@
 use anyhow::Context;
 use bytes::Bytes;
+use ibc_types::core::client::ClientId;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -144,6 +145,9 @@ impl TryFrom<pb::Proposal> for Proposal {
                     if freeze_ibc_client.client_id.len() > 128 {
                         anyhow::bail!("client ID must be less than 128 bytes");
                     }
+                    // Validation: Check the client ID is valid using the validation inside `ClientId::from_str`.
+                    ClientId::from_str(&freeze_ibc_client.client_id)
+                        .map_err(|e| anyhow::anyhow!("invalid client id: {e}"))?;
                     ProposalPayload::FreezeIbcClient {
                         client_id: freeze_ibc_client.client_id,
                     }
@@ -153,6 +157,9 @@ impl TryFrom<pb::Proposal> for Proposal {
                     if unfreeze_ibc_client.client_id.len() > 128 {
                         anyhow::bail!("client ID must be less than 128 bytes");
                     }
+                    // Validation: Check the client ID is valid using the validation inside `ClientId::from_str`.
+                    ClientId::from_str(&unfreeze_ibc_client.client_id)
+                        .map_err(|e| anyhow::anyhow!("invalid client id: {e}"))?;
                     ProposalPayload::UnfreezeIbcClient {
                         client_id: unfreeze_ibc_client.client_id,
                     }
@@ -202,29 +209,21 @@ impl TryFrom<ProposalToml> for Proposal {
 
 /// The specific kind of a proposal.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "clap", derive(clap::Subcommand))]
 #[serde(try_from = "pb::ProposalKind", into = "pb::ProposalKind")]
 pub enum ProposalKind {
     /// A signaling proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 100))]
     Signaling,
     /// An emergency proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 200))]
     Emergency,
     /// A parameter change proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 300))]
     ParameterChange,
     /// A Community Pool spend proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 400))]
     CommunityPoolSpend,
     /// An upgrade proposal.
-    #[cfg_attr(feature = "clap", clap(display_order = 500))]
     UpgradePlan,
     /// A proposal to freeze an IBC client.
-    #[cfg_attr(feature = "clap", clap(display_order = 600))]
     FreezeIbcClient,
     /// A proposal to unfreeze an IBC client.
-    #[cfg_attr(feature = "clap", clap(display_order = 700))]
     UnfreezeIbcClient,
 }
 

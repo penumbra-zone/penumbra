@@ -1,6 +1,7 @@
 //! [Payment address][Address] facilities.
 
 use std::{
+    fmt::Display,
     io::{Cursor, Read, Write},
     sync::OnceLock,
 };
@@ -12,6 +13,7 @@ use f4jumble::{f4jumble, f4jumble_inv};
 use penumbra_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str, DomainType};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 mod r1cs;
 pub use r1cs::AddressVar;
@@ -212,6 +214,49 @@ impl Address {
             &proto_address.inner,
             bech32str::compat_address::BECH32_PREFIX,
             bech32str::Bech32,
+        )
+    }
+
+    /// Generate a Noble forwarding address.
+    pub fn noble_forwarding_address(&self, channel: &str) -> NobleForwardingAddress {
+        NobleForwardingAddress {
+            channel: channel.to_string(),
+            recipient: format!("{}", self),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct NobleForwardingAddress {
+    pub channel: String,
+    pub recipient: String,
+}
+
+impl NobleForwardingAddress {
+    pub fn bytes(&self) -> Vec<u8> {
+        // Based on https://github.com/noble-assets/forwarding/blob/main/x/forwarding/types/account.go#L17
+        let channel = self.channel.clone();
+        let recipient = self.recipient.clone();
+        let bz = format!("{channel}{recipient}").as_bytes().to_owned();
+        let th = Sha256::digest("forwarding".as_bytes());
+        let mut hasher = Sha256::new();
+        hasher.update(th);
+        hasher.update(bz);
+
+        // This constructs the account bytes for the Noble forwarding address
+        // Only use bytes 12 and on:
+        hasher.finalize()[12..].to_vec()
+    }
+}
+
+impl Display for NobleForwardingAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let addr_bytes = &self.bytes();
+
+        write!(
+            f,
+            "{}",
+            bech32str::encode(&addr_bytes, "noble", bech32str::Bech32)
         )
     }
 }

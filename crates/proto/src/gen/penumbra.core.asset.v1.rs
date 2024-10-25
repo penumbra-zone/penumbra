@@ -89,6 +89,10 @@ pub struct Metadata {
     /// This is solely for use in client-side registries.
     #[prost(uint64, tag = "1986")]
     pub priority_score: u64,
+    /// Associated icons for asset.
+    /// For ibc assets, usually an image of the source chain.
+    #[prost(message, repeated, tag = "1987")]
+    pub badges: ::prost::alloc::vec::Vec<AssetImage>,
 }
 impl ::prost::Name for Metadata {
     const NAME: &'static str = "Metadata";

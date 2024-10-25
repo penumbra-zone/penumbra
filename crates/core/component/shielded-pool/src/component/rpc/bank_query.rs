@@ -30,7 +30,7 @@ use super::Server;
 impl BankQuery for Server {
     /// Returns the total supply for all IBC assets.
     /// Internally-minted assets (Penumbra tokens, LP tokens, delegation tokens, etc.)
-    /// are also included but the supplies are hardcoded at 0 for now.
+    /// are also included but the supplies are will only reflect what has been transferred out.
     ///
     /// TODO: Implement a way to fetch the total supply for these assets.
     /// TODO: implement pagination
@@ -107,7 +107,11 @@ impl BankQuery for Server {
             }
             let denom_metadata = denom_metadata.expect("should not be an error");
 
-            total_supply.insert(denom_metadata, amount);
+            // Add to the total supply seen for this denom.
+            total_supply
+                .entry(denom_metadata)
+                .and_modify(|a| *a += amount)
+                .or_insert(amount);
         }
 
         Ok(tonic::Response::new(QueryTotalSupplyResponse {

@@ -175,6 +175,48 @@ pub struct ValidatorKeys {
 }
 
 impl ValidatorKeys {
+    /// Use a hard-coded seed to generate a new set of validator keys.
+    pub fn from_seed(seed: [u8; 32]) -> Self {
+        // Create the spend key for this node.
+        let seed = SpendKeyBytes(seed);
+        let spend_key = SpendKey::from(seed.clone());
+
+        // Create signing key and verification key for this node.
+        let validator_id_sk = spend_key.spend_auth_key();
+        let validator_id_vk = VerificationKey::from(validator_id_sk);
+
+        let validator_cons_sk = ed25519_consensus::SigningKey::new(OsRng);
+
+        // generate consensus key for tendermint.
+        let validator_cons_sk = tendermint::PrivateKey::Ed25519(
+            validator_cons_sk
+                .as_bytes()
+                .as_slice()
+                .try_into()
+                .expect("32 bytes"),
+        );
+        let validator_cons_pk = validator_cons_sk.public_key();
+
+        // generate P2P auth key for tendermint.
+        let node_key_sk = ed25519_consensus::SigningKey::from(seed.0);
+        let signing_key_bytes = node_key_sk.as_bytes().as_slice();
+
+        // generate consensus key for tendermint.
+        let node_key_sk =
+            tendermint::PrivateKey::Ed25519(signing_key_bytes.try_into().expect("32 bytes"));
+        let node_key_pk = node_key_sk.public_key();
+
+        ValidatorKeys {
+            validator_id_sk: validator_id_sk.clone(),
+            validator_id_vk,
+            validator_cons_sk,
+            validator_cons_pk,
+            node_key_sk,
+            node_key_pk,
+            validator_spend_key: seed,
+        }
+    }
+
     pub fn generate() -> Self {
         // Create the spend key for this node.
         // TODO: change to use seed phrase
@@ -198,7 +240,7 @@ impl ValidatorKeys {
         let validator_cons_pk = validator_cons_sk.public_key();
 
         // generate P2P auth key for tendermint.
-        let node_key_sk = ed25519_consensus::SigningKey::new(OsRng);
+        let node_key_sk = ed25519_consensus::SigningKey::from(seed.0);
         let signing_key_bytes = node_key_sk.as_bytes().as_slice();
 
         // generate consensus key for tendermint.

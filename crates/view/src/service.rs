@@ -186,22 +186,9 @@ impl ViewServer {
         transaction: Transaction,
         await_detection: bool,
     ) -> BroadcastTransactionStream {
-        use penumbra_app::AppActionHandler;
-
         let self2 = self.clone();
         try_stream! {
-                // 1. Pre-check the transaction for (stateless) validity.
-                transaction
-                    .check_stateless(())
-                    .await
-                    .map_err(|e| {
-                        tonic::Status::unavailable(format!(
-                            "transaction pre-submission checks failed: {:#?}",
-                            e
-                        ))
-                    })?;
-
-                // 2. Broadcast the transaction to the network.
+                // 1. Broadcast the transaction to the network.
                 // Note that "synchronous" here means "wait for the tx to be accepted by
                 // the fullnode", not "wait for the tx to be included on chain.
                 let mut fullnode_client = self2.tendermint_proxy_client().await
@@ -241,7 +228,7 @@ impl ViewServer {
                 // The transaction was submitted so we provide a status update
                 yield BroadcastTransactionResponse{ status: Some(BroadcastStatus::BroadcastSuccess(BroadcastSuccess{id:Some(transaction.id().into())}))};
 
-                // 3. Optionally wait for the transaction to be detected by the view service.
+                // 2. Optionally wait for the transaction to be detected by the view service.
                 let nullifier = if await_detection {
                     // This needs to be only *spend* nullifiers because the nullifier detection
                     // is broken for swaps, https://github.com/penumbra-zone/penumbra/issues/1749

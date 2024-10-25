@@ -28,3 +28,7 @@ mod test_node_ext;
 /// See [`ValidatorDataRead`][penumbra_stake::component::validator_handler::ValidatorDataRead],
 /// and [`ValidatorDataReadExt`].
 mod validator_read_ext;
+
+/// Methods for testing IBC functionality.
+#[allow(unused)]
+pub mod ibc_tests;

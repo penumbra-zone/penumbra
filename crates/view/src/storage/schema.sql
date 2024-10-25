@@ -54,7 +54,8 @@ CREATE TABLE tx (
     tx_hash                 BLOB PRIMARY KEY NOT NULL,
     tx_bytes                BLOB NOT NULL,
     block_height            BIGINT NOT NULL,
-    return_address          BLOB
+    return_address          BLOB,
+    memo_text               TEXT
 );
 
 -- This table just records the mapping from note commitments to note plaintexts.

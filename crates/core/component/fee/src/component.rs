@@ -4,12 +4,12 @@ mod view;
 
 use std::sync::Arc;
 
-use crate::{genesis, Fee};
+use crate::{event::EventBlockFees, genesis, Fee};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
-use penumbra_proto::core::component::fee::v1 as pb;
 use penumbra_proto::state::StateWriteProto as _;
+use penumbra_proto::DomainType as _;
 use tendermint::abci;
 use tracing::instrument;
 
@@ -56,11 +56,14 @@ impl Component for FeeComponent {
 
         let swapped_total = swapped_base + swapped_tip;
 
-        state_ref.record_proto(pb::EventBlockFees {
-            swapped_fee_total: Some(Fee::from_staking_token_amount(swapped_total).into()),
-            swapped_base_fee_total: Some(Fee::from_staking_token_amount(swapped_base).into()),
-            swapped_tip_total: Some(Fee::from_staking_token_amount(swapped_tip).into()),
-        });
+        state_ref.record_proto(
+            EventBlockFees {
+                swapped_fee_total: Fee::from_staking_token_amount(swapped_total),
+                swapped_base_fee_total: Fee::from_staking_token_amount(swapped_base),
+                swapped_tip_total: Fee::from_staking_token_amount(swapped_tip),
+            }
+            .to_proto(),
+        );
     }
 
     #[instrument(name = "fee", skip(_state))]

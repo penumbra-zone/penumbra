@@ -66,15 +66,18 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
         let conn =
             conn.map_err(|e| tonic::Status::aborted(format!("couldn't decode connection: {e}")))?;
 
-        let height = Height {
-            revision_number: 0,
-            revision_height: snapshot.version(),
-        };
-
         let res = QueryConnectionResponse {
             connection: conn,
             proof: proof.encode_to_vec(),
-            proof_height: Some(height),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
+            }),
         };
 
         Ok(tonic::Response::new(res))
@@ -98,7 +101,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
         _request: tonic::Request<QueryConnectionsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionsResponse>, tonic::Status> {
         let snapshot = self.storage.latest_snapshot();
-        let height = snapshot.version();
+        let height = snapshot.version() + 1;
 
         let connection_counter = snapshot
             .get_connection_counter()
@@ -171,9 +174,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
         Ok(tonic::Response::new(QueryClientConnectionsResponse {
             connection_paths,
             proof: proof.encode_to_vec(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: snapshot.version(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
             }),
         }))
     }
@@ -219,9 +227,14 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
         Ok(tonic::Response::new(QueryConnectionClientStateResponse {
             identified_client_state: Some(identified_client_state),
             proof: proof.encode_to_vec(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: snapshot.version(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                revision_height: HI::get_block_height(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+                    + 1,
+                revision_number: HI::get_revision_number(&snapshot)
+                    .await
+                    .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
             }),
         }))
     }
@@ -271,9 +284,13 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
                 consensus_state: consensus_state_any,
                 client_id: client_id.to_string(),
                 proof: proof.encode_to_vec(),
-                proof_height: Some(Height {
-                    revision_number: 0,
-                    revision_height: snapshot.version(),
+                proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                    revision_height: HI::get_block_height(&snapshot).await.map_err(|e| {
+                        tonic::Status::aborted(format!("couldn't decode height: {e}"))
+                    })? + 1,
+                    revision_number: HI::get_revision_number(&snapshot).await.map_err(|e| {
+                        tonic::Status::aborted(format!("couldn't decode height: {e}"))
+                    })?,
                 }),
             },
         ))
