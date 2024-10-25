@@ -2,7 +2,8 @@
   description = "A nix development shell and build environment for penumbra";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
@@ -150,7 +151,9 @@
             inherit LIBCLANG_PATH ROCKSDB_LIB_DIR;
             inputsFrom = [ penumbra ];
             packages = [
+              buf
               cargo-nextest
+              cargo-release
               cargo-watch
               glibcLocales # for postgres initdb locale support
               cometbft
