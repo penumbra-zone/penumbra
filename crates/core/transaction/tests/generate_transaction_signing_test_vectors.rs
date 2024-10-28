@@ -4,6 +4,10 @@ use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey, VerificationKeyBytes};
 use ed25519_consensus::SigningKey as Ed25519SigningKey;
 use penumbra_asset::asset::Id;
+use penumbra_dex::{
+    swap::{SwapPlaintext, SwapPlan},
+    TradingPair,
+};
 use penumbra_fee::Fee;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_keys::{Address, FullViewingKey};
@@ -185,6 +189,36 @@ fn validator_definition_strategy() -> impl Strategy<Value = Definition> {
     })
 }
 
+fn swap_plaintext_strategy() -> impl Strategy<Value = SwapPlaintext> {
+    (
+        amount_strategy(),
+        amount_strategy(),
+        asset_id_strategy(),
+        asset_id_strategy(),
+        address_strategy(),
+    )
+        .prop_map(|(delta_1_i, delta_2_i, asset_1, asset_2, claim_address)| {
+            let trading_pair = TradingPair::new(asset_1, asset_2);
+            SwapPlaintext::new(
+                &mut OsRng,
+                trading_pair,
+                delta_1_i,
+                delta_2_i,
+                Fee::from_staking_token_amount(0u64.into()),
+                claim_address,
+            )
+        })
+}
+
+fn swap_plan_strategy() -> impl Strategy<Value = SwapPlan> {
+    (swap_plaintext_strategy()).prop_map(|swap_plaintext| SwapPlan {
+        proof_blinding_r: Fq::rand(&mut OsRng),
+        proof_blinding_s: Fq::rand(&mut OsRng),
+        swap_plaintext,
+        fee_blinding: Fr::rand(&mut OsRng),
+    })
+}
+
 fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
     prop_oneof![
         spend_plan_strategy(fvk).prop_map(ActionPlan::Spend),
@@ -193,8 +227,8 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         undelegate_plan_strategy().prop_map(ActionPlan::Undelegate),
         undelegate_claim_plan_strategy().prop_map(ActionPlan::UndelegateClaim),
         validator_definition_strategy().prop_map(ActionPlan::ValidatorDefinition),
-        /*
         swap_plan_strategy().prop_map(ActionPlan::Swap),
+        /*
         swap_claim_plan_strategy().prop_map(ActionPlan::SwapClaim),
         ibc_action_strategy().prop_map(ActionPlan::IbcAction),*/
     ]
