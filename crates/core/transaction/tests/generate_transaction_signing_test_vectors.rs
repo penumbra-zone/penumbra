@@ -1,7 +1,8 @@
 use std::fs::File;
 
 use decaf377::{Fq, Fr};
-use decaf377_rdsa::{SpendAuth, VerificationKeyBytes};
+use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey, VerificationKeyBytes};
+use ed25519_consensus::SigningKey as Ed25519SigningKey;
 use penumbra_asset::asset::Id;
 use penumbra_fee::Fee;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
@@ -10,13 +11,17 @@ use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_sct::epoch::Epoch;
 use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
-use penumbra_stake::{Delegate, IdentityKey, Penalty, Undelegate, UndelegateClaimPlan};
+use penumbra_stake::{
+    validator, validator::Definition, Delegate, FundingStreams, GovernanceKey, IdentityKey,
+    Penalty, Undelegate, UndelegateClaimPlan,
+};
 use penumbra_transaction::{ActionPlan, TransactionParameters, TransactionPlan};
 use proptest::prelude::*;
 use proptest::strategy::ValueTree;
 use proptest::test_runner::{Config, TestRunner};
 use rand_core::OsRng;
 use std::io::Write;
+use tendermint;
 
 fn amount_strategy() -> impl Strategy<Value = Amount> {
     let inner_uint_range = 0u128..1_000_000_000_000_000_000u128;
@@ -135,6 +140,51 @@ fn undelegate_claim_plan_strategy() -> impl Strategy<Value = UndelegateClaimPlan
         )
 }
 
+fn signing_key_strategy() -> impl Strategy<Value = SigningKey<SpendAuth>> {
+    prop::strategy::LazyJust::new(|| SigningKey::<SpendAuth>::new(OsRng))
+}
+
+fn consensus_secret_key_strategy() -> impl Strategy<Value = Ed25519SigningKey> {
+    prop::strategy::LazyJust::new(|| Ed25519SigningKey::new(OsRng))
+}
+
+fn validator_strategy() -> impl Strategy<Value = (validator::Validator, SigningKey<SpendAuth>)> {
+    (signing_key_strategy(), consensus_secret_key_strategy()).prop_map(
+        move |(new_validator_id_sk, new_validator_consensus_sk)| {
+            let new_validator_id = IdentityKey(VerificationKey::from(&new_validator_id_sk).into());
+            let new_validator_consensus = new_validator_consensus_sk.verification_key();
+            (
+                validator::Validator {
+                    identity_key: new_validator_id.clone(),
+                    consensus_key: tendermint::PublicKey::from_raw_ed25519(
+                        &new_validator_consensus.to_bytes(),
+                    )
+                    .expect("consensus key is valid"),
+                    governance_key: GovernanceKey(new_validator_id_sk.into()),
+                    enabled: true,
+                    sequence_number: 0,
+                    name: "test validator".to_string(),
+                    website: String::default(),
+                    description: String::default(),
+                    funding_streams: FundingStreams::default(),
+                },
+                new_validator_id_sk,
+            )
+        },
+    )
+}
+
+fn validator_definition_strategy() -> impl Strategy<Value = Definition> {
+    (validator_strategy()).prop_map(|(new_validator, new_validator_id_sk)| {
+        let bytes = new_validator.encode_to_vec();
+        let auth_sig = new_validator_id_sk.sign(OsRng, &bytes);
+        Definition {
+            validator: new_validator,
+            auth_sig,
+        }
+    })
+}
+
 fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
     prop_oneof![
         spend_plan_strategy(fvk).prop_map(ActionPlan::Spend),
@@ -142,8 +192,8 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         delegate_plan_strategy().prop_map(ActionPlan::Delegate),
         undelegate_plan_strategy().prop_map(ActionPlan::Undelegate),
         undelegate_claim_plan_strategy().prop_map(ActionPlan::UndelegateClaim),
-        /*
         validator_definition_strategy().prop_map(ActionPlan::ValidatorDefinition),
+        /*
         swap_plan_strategy().prop_map(ActionPlan::Swap),
         swap_claim_plan_strategy().prop_map(ActionPlan::SwapClaim),
         ibc_action_strategy().prop_map(ActionPlan::IbcAction),*/

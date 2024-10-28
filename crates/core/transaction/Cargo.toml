@@ -68,3 +68,5 @@ proptest = {workspace = true}
 proptest = {workspace = true}
 proptest-derive = {workspace = true}
 serde_json = {workspace = true}
+tendermint = {workspace = true}
+ed25519-consensus = {workspace = true}
