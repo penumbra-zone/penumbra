@@ -48,9 +48,9 @@ mod unstaked_supply {
         /// The supply that's not locked in any component.
         pub um: u64,
         /// The supply locked in the auction component.
-        pub auction: u64,
+        pub auction: i64,
         /// The supply locked in the dex component.
-        pub dex: u64,
+        pub dex: i64,
         /// The supply which has been (forever) locked away after arb.
         pub arb: u64,
         /// The supply which has been (forever) locked away as paid fees.
@@ -114,7 +114,9 @@ mod unstaked_supply {
         f: impl FnOnce(Option<Supply>) -> Result<Supply>,
     ) -> Result<()> {
         let supply = get_supply(dbtx, height).await?;
+        // tracing::warn!(?supply, "supply");
         let new_supply = f(supply)?;
+        // tracing::warn!(?new_supply, "new_supply");
         set_supply(dbtx, height, new_supply).await
     }
 }
@@ -513,12 +515,15 @@ impl Event {
                     return Ok(());
                 }
 
-                let added = u64::try_from(new_balance.value() - previous_balance.value())?;
+                let added = i64::try_from(new_balance.value() - previous_balance.value())?;
                 unstaked_supply::modify(dbtx, *height, |current| {
                     let current = current.unwrap_or_default();
                     Ok(unstaked_supply::Supply {
-                        um: current.um - added,
-                        auction: current.auction + added,
+                        um: current.um - added as u64,
+                        auction: current.auction.checked_add(added).ok_or(anyhow!(format!(
+                            "AuctionVCB overflow: {} + {}",
+                            current.auction, added
+                        )))?,
                         ..current
                     })
                 })
@@ -534,12 +539,15 @@ impl Event {
                     return Ok(());
                 }
 
-                let removed = u64::try_from(previous_balance.value() - new_balance.value())?;
+                let removed = i64::try_from(previous_balance.value() - new_balance.value())?;
                 unstaked_supply::modify(dbtx, *height, |current| {
                     let current = current.unwrap_or_default();
                     Ok(unstaked_supply::Supply {
-                        um: current.um + removed,
-                        auction: current.auction - removed,
+                        um: current.um + removed as u64,
+                        auction: current.auction.checked_sub(removed).ok_or(anyhow!(format!(
+                            "AuctionVCB underflow: {} - {}",
+                            current.auction, removed
+                        )))?,
                         ..current
                     })
                 })
@@ -555,12 +563,15 @@ impl Event {
                     return Ok(());
                 }
 
-                let added = u64::try_from(new_balance.value() - previous_balance.value())?;
+                let added = i64::try_from(new_balance.value() - previous_balance.value())?;
                 unstaked_supply::modify(dbtx, *height, |current| {
                     let current = current.unwrap_or_default();
                     Ok(unstaked_supply::Supply {
-                        um: current.um - added,
-                        dex: current.dex + added,
+                        um: current.um - added as u64,
+                        dex: current.dex.checked_sub(added).ok_or(anyhow!(format!(
+                            "DexVCB overflow: {} + {}",
+                            current.dex, added
+                        )))?,
                         ..current
                     })
                 })
@@ -576,12 +587,15 @@ impl Event {
                     return Ok(());
                 }
 
-                let removed = u64::try_from(previous_balance.value() - new_balance.value())?;
+                let removed = i64::try_from(previous_balance.value() - new_balance.value())?;
                 unstaked_supply::modify(dbtx, *height, |current| {
                     let current = current.unwrap_or_default();
                     Ok(unstaked_supply::Supply {
-                        um: current.um + removed,
-                        dex: current.dex - removed,
+                        um: current.um + removed as u64,
+                        dex: current.dex.checked_add(removed).ok_or(anyhow!(format!(
+                            "DexVCB underflow: {} - {}",
+                            current.dex, removed
+                        )))?,
                         ..current
                     })
                 })
