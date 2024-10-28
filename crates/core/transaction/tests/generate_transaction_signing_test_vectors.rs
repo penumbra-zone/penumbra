@@ -6,7 +6,8 @@ use ed25519_consensus::SigningKey as Ed25519SigningKey;
 use penumbra_asset::asset::Id;
 use penumbra_dex::{
     swap::{SwapPlaintext, SwapPlan},
-    TradingPair,
+    swap_claim::SwapClaimPlan,
+    BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
@@ -219,6 +220,64 @@ fn swap_plan_strategy() -> impl Strategy<Value = SwapPlan> {
     })
 }
 
+fn batch_swap_output_data_strategy() -> impl Strategy<Value = BatchSwapOutputData> {
+    // Represents a filled swap
+    let delta_1 = (4001..2000000000u128).prop_map(Amount::from);
+    let delta_2 = (4001..2000000000u128).prop_map(Amount::from);
+
+    let lambda_1 = (2..2000u64).prop_map(Amount::from);
+    let lambda_2 = (2..2000u64).prop_map(Amount::from);
+
+    let unfilled_1 = (2..2000u64).prop_map(Amount::from);
+    let unfilled_2 = (2..2000u64).prop_map(Amount::from);
+
+    (
+        delta_1,
+        delta_2,
+        lambda_1,
+        lambda_2,
+        unfilled_1,
+        unfilled_2,
+        asset_id_strategy(),
+        asset_id_strategy(),
+    )
+        .prop_map(
+            |(
+                delta_1,
+                delta_2,
+                lambda_1,
+                lambda_2,
+                unfilled_1,
+                unfilled_2,
+                asset_id_1,
+                asset_id_2,
+            )| BatchSwapOutputData {
+                delta_1,
+                delta_2,
+                lambda_1,
+                lambda_2,
+                unfilled_1,
+                unfilled_2,
+                height: 0u64.into(),
+                trading_pair: TradingPair::new(asset_id_1, asset_id_2),
+                sct_position_prefix: Default::default(),
+            },
+        )
+}
+
+fn swap_claim_plan_strategy() -> impl Strategy<Value = SwapClaimPlan> {
+    (swap_plaintext_strategy(), batch_swap_output_data_strategy()).prop_map(
+        |(swap_plaintext, output_data)| SwapClaimPlan {
+            swap_plaintext,
+            position: penumbra_tct::Position::from(0u64),
+            output_data,
+            epoch_duration: 1000u64,
+            proof_blinding_r: Fq::rand(&mut OsRng),
+            proof_blinding_s: Fq::rand(&mut OsRng),
+        },
+    )
+}
+
 fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
     prop_oneof![
         spend_plan_strategy(fvk).prop_map(ActionPlan::Spend),
@@ -228,9 +287,7 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         undelegate_claim_plan_strategy().prop_map(ActionPlan::UndelegateClaim),
         validator_definition_strategy().prop_map(ActionPlan::ValidatorDefinition),
         swap_plan_strategy().prop_map(ActionPlan::Swap),
-        /*
-        swap_claim_plan_strategy().prop_map(ActionPlan::SwapClaim),
-        ibc_action_strategy().prop_map(ActionPlan::IbcAction),*/
+        swap_claim_plan_strategy().prop_map(ActionPlan::SwapClaim), //ibc_action_strategy().prop_map(ActionPlan::IbcAction),
     ]
 }
 
