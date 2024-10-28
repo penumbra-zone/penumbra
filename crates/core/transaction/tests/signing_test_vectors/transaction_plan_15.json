@@ -1,0 +1,77 @@
+{
+  "actions": [
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "231454366390763873"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "F92zMF96FuS9G7fwFjCcBEh3YsmzNzf/ohk/43DSob93F1ZM0hC3dVfVp1cGdwL3SojWX0cKVVQJzMuYJ98N12Yxd+Y3F1W9dSkj0JxvBeY="
+        },
+        "rseed": "hBHrU5JlWMigf2bEe4Qyzf2kZy/9QgSPUqpL5zmMdP8=",
+        "valueBlinding": "qQzR6hRVOCj3IMLHg1iH2bT9nF8rDNDU1ZXniFfJJgA=",
+        "proofBlindingR": "xSPBHLwFHIKH6PNPADo4wiDt8xwg+iyjwb4TcNnNRQM=",
+        "proofBlindingS": "SGiH3zEMQyGcmIC7N7SFc1cUIEpWEd5zCUj/UGQEcwg="
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "v3xDzaj6fTpY7nN0/BqyazwKQEDqDuBjvylMYCH47ME="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP9If8uSOinHeaa1Cw8nuzA="
+        },
+        "unbondingAmount": {
+          "lo": "204709337388480704"
+        },
+        "balanceBlinding": "9Y84UZOPYmKzlSmaniNmXgp4fkcuYewINtNdy9FM+gE=",
+        "proofBlindingR": "oynEjZ9UusEEmVtwGA8/vVCcux02yOrDbXgSfOcWMgY=",
+        "proofBlindingS": "YQTOwUWxj5pcZ+2I3m52FWe8EycPyxvO+P6n2+hjIwc=",
+        "unbondingStartHeight": "57067"
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "aOHEevSt11tZZletRJafw73ZIkGeVhgcES3APnJbnr8="
+        },
+        "epochIndex": "2700",
+        "unbondedAmount": {
+          "lo": "793985957825157866"
+        },
+        "delegationAmount": {
+          "lo": "305809731833116050"
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "Dh/kQWg/WWIzdw+IDOt5O97WjnbwCvUqgNTsW3AM1y0="
+        },
+        "epochIndex": "5417",
+        "unbondedAmount": {
+          "lo": "480873938104397880"
+        },
+        "delegationAmount": {
+          "lo": "763877041351292009"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4222679761",
+    "chainId": "urgszzcvn-832071548541297601650773308",
+    "fee": {
+      "amount": {
+        "lo": "823529464829198955"
+      }
+    }
+  }
+}

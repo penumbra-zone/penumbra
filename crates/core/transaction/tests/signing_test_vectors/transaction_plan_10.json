@@ -1,0 +1,67 @@
+{
+  "actions": [
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "SdfT0zxHhDUgVzv6jKaLtRpc2MDvelZ9FPGfqBSWhF4="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP9If8uSOinHeaa1Cw8nuzA="
+        },
+        "unbondingAmount": {
+          "lo": "915713347816803621"
+        },
+        "balanceBlinding": "aRuAqk9bu1CxH7ivqJdTLFP8xAy0jkVoKvUy2txqqAI=",
+        "proofBlindingR": "rgX3C4S75SkBtG3bJbTldlusZSQmDiE46n4qmLLgdAA=",
+        "proofBlindingS": "3Jz8+ozv3wRE0uYbkIUNBC93TYByza3SPcBvXsSDixI=",
+        "unbondingStartHeight": "56385"
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "908749639001457866"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "tqm8b6wvruLK9nwagBSY8jggRq2ypqqMfD2XGN8AR4w=",
+          "address": {
+            "inner": "3LAK1sZCkBbQA4KZZh8aQUGCRX2nEVxB/ZIyttMHBjA4/hgnLdzPcwH2Gza9u7bPWXNCw1AkQs/n5+pxVFZXMCMhqOoQPL1m8vgBvxiB3Rs="
+          }
+        },
+        "position": "157060469252131",
+        "randomizer": "lA+oSLW4Yxbe5wGCSGoiYOB3ysJJWwAvC0Et3JdCBQM=",
+        "valueBlinding": "QfqGS/9lLl/2FaOJ7oylmoTa89y8oAz1+r/15Br+PwE=",
+        "proofBlindingR": "dYZjLTcMz+LW7UcdYw1u58Xyeok0z/PWDMPPeQihSgo=",
+        "proofBlindingS": "2hldd9VsSKlZJkuVr77AY4YbJWi6ktFSjQcw9quTmg0="
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "jMjHiEgrQx5AJKqTW9IkCSHOGAKwu1qH6uxjX2brEjA="
+        },
+        "epochIndex": "5884",
+        "unbondedAmount": {
+          "lo": "572742703047797932"
+        },
+        "delegationAmount": {
+          "lo": "655460600903163596"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "1345750113",
+    "chainId": "lyvkywmesqwbdkgfscysnxvltssnzb-6724898087891401402218149",
+    "fee": {
+      "amount": {
+        "lo": "696963850121520528"
+      }
+    }
+  }
+}

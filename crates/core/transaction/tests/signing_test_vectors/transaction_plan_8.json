@@ -1,0 +1,78 @@
+{
+  "actions": [
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "2TvTEZwn/mhzG5DQrmzXLKXrJwSqGntB5XPkXY8zsTc="
+        },
+        "unbondedAmount": {
+          "lo": "636371089244529747"
+        },
+        "delegationAmount": {
+          "lo": "334081744999537207"
+        },
+        "fromEpoch": {
+          "index": "6532",
+          "startHeight": "6532"
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "EzXBVFb/BGPNtj8XcdCukE6aEd8T3VUPFRDPky3N7FI="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP7SiM5wOvt+kP+XJHRTjvQ="
+        },
+        "unbondingAmount": {
+          "lo": "940409364106681725"
+        },
+        "balanceBlinding": "fKk4+aHc/NFspoo7eQzw63w15n5X03ku4wblnW+XhgE=",
+        "proofBlindingR": "Nltm3BiAV6UH5DS3hN2cj92HxKk5M63xm05SRybdBAo=",
+        "proofBlindingS": "H+SeLbsFsIWvDr0/8N8+pDE8jMAono561h3ohX3F/gw=",
+        "unbondingStartHeight": "31828"
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "ZEM2JeiOMlQ1YlyduC6tYeysm0xfxQIZSFulINFdMGI="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP4A0bcXWOIZZSvTw2ETQE8="
+        },
+        "unbondingAmount": {
+          "lo": "609798686434881590"
+        },
+        "balanceBlinding": "6F9HawS6MDArOYd/46wpXHkhRmn6fKXss/041/tWewQ=",
+        "proofBlindingR": "jIl5ObxaESadyrnAlqEpsAzsOOs1It91ALObodMexQ4=",
+        "proofBlindingS": "oQ/rg2oPCxh2FyZdSVKSpD+TyzD0yPOhjiI1Eii3MxI=",
+        "unbondingStartHeight": "31833"
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "hQBZwn0GnaWeA+eN41mew+L61fDNoqCkR6UZ3To8o1s="
+        },
+        "epochIndex": "4358",
+        "unbondedAmount": {
+          "lo": "431778998157820639"
+        },
+        "delegationAmount": {
+          "lo": "321891246722262106"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "1355606002",
+    "chainId": "maz-66289856735103781114211533342273",
+    "fee": {
+      "amount": {
+        "lo": "605277319941347925"
+      }
+    }
+  }
+}

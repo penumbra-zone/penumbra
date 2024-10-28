@@ -1,0 +1,80 @@
+{
+  "actions": [
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "549MkpSeCxtds2RLeBcv3Ps0blnLtWjfX1xMIwu4nEM="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP7FbVz6rNnoPkJa7mMfigo="
+        },
+        "unbondingAmount": {
+          "lo": "559975170113574496"
+        },
+        "balanceBlinding": "9bevHz7Op3WhLKR3q3IshTec0pD6eQayyDS4VcaDdgE=",
+        "proofBlindingR": "UfufBDDra0lJCqHpD1vagnf3UJqQaPdeNE+AunjZhwk=",
+        "proofBlindingS": "DUfMBqGcGOstjcaEs+qSvCBciIoyeC1Jtbxo9u23bws=",
+        "unbondingStartHeight": "55772"
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "SRRcHU83hmAp2M1HGC4ZTn6201q1XZ47lXZ1Q5zMRo8="
+        },
+        "epochIndex": "891",
+        "unbondedAmount": {
+          "lo": "183525040920340644"
+        },
+        "delegationAmount": {
+          "lo": "547529927586940985"
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "fGbna/9JhhxlFz8Z1eR90VKmoAxDvY7NN3tEnOYvVvI="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP3ztkWhysCDEm6XjU/fO2U="
+        },
+        "unbondingAmount": {
+          "lo": "490742039491134810"
+        },
+        "balanceBlinding": "KWXGs9SpEYaIn2h7xSLc8VHQlZRjH2MlBHfZgdZX5gI=",
+        "proofBlindingR": "LILsoaIxmieJq+5ap26N3rSWa7vUGvx4G2QwXKKVPg4=",
+        "proofBlindingS": "beFANM3vKxj7PixdguQb150/0sUsGy20XULedkEM7QU=",
+        "unbondingStartHeight": "41899"
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "95039831953821011"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "QQadmzBHniExdBofgbH37FgGu1o0thophjPHIshOd6korK0IViwzEijF5l2O4kjKawk0B2dm9Zsn/fKqX424WG3nuI76jvAEKUPHeVA4Y/Q="
+        },
+        "rseed": "zMqcj95AmNPH5pAoD5Qoc2QcKkcID7Qk0pXPUD79ZxA=",
+        "valueBlinding": "aud8vIszb2EWm23ff0HXRpO6Ex09oDyj34udaOsjSwM=",
+        "proofBlindingR": "jkAL134Qe/kLIueItQhlgpG2ZqQ4BO0qoNqHl3GJgBE=",
+        "proofBlindingS": "odfjjt4YDZSAHg6cH67Dor+Upr0ZXaNgQ+PAJkE9IQ0="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4540113106",
+    "chainId": "tjakwajsqbytnmkevrxpybfwjlwbar-663198741",
+    "fee": {
+      "amount": {
+        "lo": "548041176806851066"
+      }
+    }
+  }
+}

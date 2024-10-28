@@ -1,0 +1,76 @@
+{
+  "actions": [
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "R3IydB2ZjuCP92NeqDYjFpyUcRE2Nqa4uOGFoBG4Vy8="
+        },
+        "unbondedAmount": {
+          "lo": "509272267849748832"
+        },
+        "delegationAmount": {
+          "lo": "727020989368480894"
+        },
+        "fromEpoch": {
+          "index": "4190",
+          "startHeight": "4190"
+        }
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "389931789456622587"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "VkDQZ6+ou/GF4eX2uwm2zgW7XIoJgH8UZw/yej93j5I=",
+          "address": {
+            "inner": "uA8oL/5yVV9UYmdL3aLSqzidBeHitCW9nbvblwW+gP9Tut1JrW3RrEzl45hk2r9KtuWxTD+AlU8VrX8BGI352IVPsp3SKnuQpHhkTlVOj4A="
+          }
+        },
+        "position": "77326898505831",
+        "randomizer": "r6/7H6N+5l1Gnwb38JFKnyoYhjHlR2oBHJUso2WG1gA=",
+        "valueBlinding": "W9fCv5fVpF/D1jD9lON4Tzd+Wd8PNfEtzyHPoCe6DQE=",
+        "proofBlindingR": "IKdUl4hT+rg1ygHpkvpCEwhF/9x6XCvP4/BBq1AaRxI=",
+        "proofBlindingS": "Vk9MFPDx97bOI3AkWtj8s9JzGxfYMBqFb7yrKRFfIxE="
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "574630264746210271"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "zPELYmQzsLee5qRqBDei3aLjO2OkozISZLlCvoeIU9s=",
+          "address": {
+            "inner": "uA8oL/5yVV9UYmdL3aLSqzidBeHitCW9nbvblwW+gP9Tut1JrW3RrEzl45hk2r9KtuWxTD+AlU8VrX8BGI352IVPsp3SKnuQpHhkTlVOj4A="
+          }
+        },
+        "position": "6695114100584",
+        "randomizer": "ELO+/859ge4Kt7d2YS7YqJ+E72OzE3RmOC8/sFx+lwE=",
+        "valueBlinding": "wLGFNuSviErYxdUP4yGDYOqqwoSNW32LFmGG/8SAegM=",
+        "proofBlindingR": "K21kWR7T3Le+NeG70SdgDiHqL0pNsdvp6dEq1AOA2RE=",
+        "proofBlindingS": "c1g5zC1YXrHWNbQQ/Jt+AMHT9jfFkTzdwA8J1IeqgQA="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "9323795746",
+    "chainId": "njtmzrx-9008714883162568444605285",
+    "fee": {
+      "amount": {
+        "lo": "618438744607492421"
+      }
+    }
+  }
+}

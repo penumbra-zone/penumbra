@@ -1,0 +1,78 @@
+{
+  "actions": [
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "SXlkPI9npEhZ++73GlwXPZU/FWezgmEIJmLsTmOm3aw="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP2rn1WbPQfIS13MY/FBIFw="
+        },
+        "unbondingAmount": {
+          "lo": "665803379835461129"
+        },
+        "balanceBlinding": "n329jBMV+0Y8MAuWb7IDlttMP+MsHsv2t//WlN12QAE=",
+        "proofBlindingR": "KoS2QR1OUNr070ekLJiWPAlKsCHgDH3WuqPWDs0cKQg=",
+        "proofBlindingS": "MZnCzVi6Ok4heu03KKkFxWy6YaqJKoldzvyriLJwaQ4=",
+        "unbondingStartHeight": "20836"
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "PKWPTZ0ENj6x4QWZuu0oKHlX7cJVV/uKmAkQTGvAEBk="
+        },
+        "epochIndex": "1493",
+        "unbondedAmount": {
+          "lo": "648848776789498692"
+        },
+        "delegationAmount": {
+          "lo": "874131216256450870"
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "M/vW/J7cEJR392QZpg07gUPcJkh1tZwgrXMxLI/UpJg="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP3Zf2K2rn1WbPQfIS13MZA="
+        },
+        "unbondingAmount": {
+          "lo": "170557535306928883"
+        },
+        "balanceBlinding": "VhULtt6k3TBHn9c1IddRzYqioj1grCjzYbuM3+/HowM=",
+        "proofBlindingR": "AD4FWa6xwK2yIed1dXNJfAZZZKiKyn9dQxtWF6L2IAk=",
+        "proofBlindingS": "xzmic93Q5TRBjsCTdvJPvsVQu72EIS/OP8qhP20O0g4=",
+        "unbondingStartHeight": "25505"
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "5tVKpYACP8w7BcpQ+9a6yoMD4fWlj1zRfDQOTOIAfmY="
+        },
+        "unbondedAmount": {
+          "lo": "409432885190296979"
+        },
+        "delegationAmount": {
+          "lo": "591029990752709823"
+        },
+        "fromEpoch": {
+          "index": "5989",
+          "startHeight": "5989"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "3435179329",
+    "chainId": "rmrdnpklg-6358874635",
+    "fee": {
+      "amount": {
+        "lo": "682611481141627267"
+      }
+    }
+  }
+}

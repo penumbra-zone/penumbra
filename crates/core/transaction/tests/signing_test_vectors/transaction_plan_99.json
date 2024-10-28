@@ -1,0 +1,53 @@
+{
+  "actions": [
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "870879450197484257"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "C8yPJs2yzXSu6CjWqFucX6rF38cB/cssBIQrkwvZtho=",
+          "address": {
+            "inner": "Y5llB9irVKBwneBh8fKtZJwkCitbxzWQuN0QCY6jYR4tazgwL0YID/LKx9QL2sEVCzJaXUcgyvkFFSffubFxwaI8kQKBIx3fFcslKBidv6w="
+          }
+        },
+        "position": "102810785290596",
+        "randomizer": "WdmFvspv7aYCgmfqYWKBkePOTHMpmRiRm0JfuLBlEwA=",
+        "valueBlinding": "vEG0qrPBwTNfTY8a+ZLBdmSyt2gEdKDX9c/2XRc8pAM=",
+        "proofBlindingR": "a2ez4orN2xhyGenw8qEyTPvlpXGljNR2Efp9gPO1hhI=",
+        "proofBlindingS": "8BksAfaiWbGSHGOKBswdmUpsjhl+6mbK5TBGpxZQJgg="
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "/ww1YzwHhSjQ5e3O30Qf3fNDC3EPlSIejy4k+fUBCgU="
+        },
+        "unbondedAmount": {
+          "lo": "633254279414671760"
+        },
+        "delegationAmount": {
+          "lo": "900052667838112190"
+        },
+        "fromEpoch": {
+          "index": "7011",
+          "startHeight": "7011"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "7205113245",
+    "chainId": "journplpvrp-9112",
+    "fee": {
+      "amount": {
+        "lo": "754108697164883384"
+      }
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "actions": [
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "112539488496422162"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "Gk2yarPFbiV8WOAhWXw7iTA2Vu8CpEKbzNQ69IQaX/8=",
+          "address": {
+            "inner": "UxZiJz1almnjsvJzjduZbdtsbw/cBux6Tpi1jqJ8wgtgZOSgWgaia7q6V6vw8EXb58RUuxGXyaGVmyrOSZ+DhXn3I+JNRswUur1VDQiyuaM="
+          }
+        },
+        "position": "30834087325169",
+        "randomizer": "cMqDPuLarSlsr6RoptnguCmjveGts2bl4c4oUpnjpwA=",
+        "valueBlinding": "GtEKyX6iEB8KQ9clCQnb8HHrtQo8IQ8gf7RpV1yB0QE=",
+        "proofBlindingR": "SPetIROoB11an9WHZIJ2jppqWDbu9rvdF0tKftLfAA0=",
+        "proofBlindingS": "aiZ6yEHJN7tlHstdid8CN0pzWKc8G4++vsiWWoKcVAY="
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "EMYWV8gscy1nfw/rElaiZ+QaDjQaU/k4G4HaCKlemN4="
+        },
+        "unbondedAmount": {
+          "lo": "411841646121563422"
+        },
+        "delegationAmount": {
+          "lo": "299615454335912857"
+        },
+        "fromEpoch": {
+          "index": "1135",
+          "startHeight": "1135"
+        }
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "17496348918716391"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "bt3Yjka4xDYsbM0cFS5XPmaPzc/Z+Gj/txGFMTVAFmOS3s4om2Xo3h4D69wVStKk33nOy4jAisEPP99JbBVkWIOk017uE5nOruHBXUmJzFw="
+        },
+        "rseed": "VWQ7oMhJ8WZ1vy3AiLrPpV9ju31W3ElVAJO2bzkmQwA=",
+        "valueBlinding": "ZJKZ998K7km99tOqp0ez5EySim2cm9umn/7fwrNX0gE=",
+        "proofBlindingR": "S1im7xr5V2feGLnIp5CawAV1M/gVjB38gI9M5vaE2Q8=",
+        "proofBlindingS": "+MVYvAm8Z+xpJ4OK/VBCCa+GD73r8VcDWyFV3eB6owI="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4590600296",
+    "chainId": "oubsgmdpkncaqn-56609641",
+    "fee": {
+      "amount": {
+        "lo": "106844230424111145"
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "actions": [
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "660835472837797058"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "eUOrY3ZMaLIa5HIM7gIbkIPIlCgFDBCyA+KudH+L6nM=",
+          "address": {
+            "inner": "UsTKXqPb6RgdiMS3MHuqcwhoUSP/OdUvEA94jlubCVbXmxDF/aLSmWDsPJnPquoCmz5B6H3/IAI+6Z/brDPzCQoH8vdA0FbJPCVuhmNOQds="
+          }
+        },
+        "position": "156776735350307",
+        "randomizer": "ZO8vziY1sqR7O6y0dBAP6dN/MvYO8SlkWXYNxIz9qAQ=",
+        "valueBlinding": "5d3fhQfgW/h2XIlQEk/coTmqib6St6sILR52aKpwRwE=",
+        "proofBlindingR": "dBpqOo8MW/YIXnlBzkLnEe5wJ2fi/wGSRXnULZ1S+As=",
+        "proofBlindingS": "I8kBu1C1LsN+vTXQwRCmbjg+t42o6LS2T8prouEWmg4="
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "878561148991068055"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "NZfNNU1HCw0cgmcBWBjUjs5WMo1EaNYMXHbdjCjezZA=",
+          "address": {
+            "inner": "UsTKXqPb6RgdiMS3MHuqcwhoUSP/OdUvEA94jlubCVbXmxDF/aLSmWDsPJnPquoCmz5B6H3/IAI+6Z/brDPzCQoH8vdA0FbJPCVuhmNOQds="
+          }
+        },
+        "position": "113454754975695",
+        "randomizer": "xrzc1UykCahc9oII4AItqO/ry16fM/FA1S517ZP2kQE=",
+        "valueBlinding": "LZi9o0mimaMZTOwx2xsmpnN/ugTlqveGDRkW2ORsqwA=",
+        "proofBlindingR": "DZl/9jI0fW0Vl/iz3rCMTAUtOJJ1Kf736oAGwdge/wA=",
+        "proofBlindingS": "js+4tfeP4Y8UDoOuFGoDsdoIOsDV7u9KiOYRuLECaQU="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4818723539",
+    "chainId": "yvnzxsmlnowhrjluhdah-90395",
+    "fee": {
+      "amount": {
+        "lo": "961389217382693907"
+      }
+    }
+  }
+}

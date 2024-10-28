@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "yOCzfF4p0AfVZSoBIlbYDDAttUHtg0IEca4k6NQbsDk="
+        },
+        "epochIndex": "4187",
+        "unbondedAmount": {
+          "lo": "955773304762201257"
+        },
+        "delegationAmount": {
+          "lo": "84869032701413913"
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "CfvQnKbkofvHbb17zyzm/bxlp2/m7DZHfQu5US4s1iU="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP8uSOinHeaa1Cw8nuy/sVw="
+        },
+        "unbondingAmount": {
+          "lo": "274802015251163073"
+        },
+        "balanceBlinding": "8HXMC15P2GON8e5mrCAwyOE4xI79Yq3r3H2cH5Jz0AA=",
+        "proofBlindingR": "mAJsBJReEqyzRhopyLDaBJPnsgd1+2OR5YUk/GwVkwk=",
+        "proofBlindingS": "I9mDHYIu2JyPeNjpmn0ROMLHr063mZeKI28cpSqmrAk=",
+        "unbondingStartHeight": "67480"
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "jL/a1Ly895Q3rdU1rMo23o17ps00t+NxS3H4Mlu0jl0="
+        },
+        "epochIndex": "4251",
+        "unbondedAmount": {
+          "lo": "268601070531900679"
+        },
+        "delegationAmount": {
+          "lo": "979147075813486783"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "5541644933",
+    "chainId": "dhzkqogvmxfznkpf-8935987586377848",
+    "fee": {
+      "amount": {
+        "lo": "90733631954573693"
+      }
+    }
+  }
+}

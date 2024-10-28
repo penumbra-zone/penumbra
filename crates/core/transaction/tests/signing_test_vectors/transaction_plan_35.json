@@ -1,0 +1,81 @@
+{
+  "actions": [
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "XH3HYRYayKFHK4Okh0tP0O9QiN+HZrPPJFbBkNbuynM="
+        },
+        "unbondedAmount": {
+          "lo": "349488085389905702"
+        },
+        "delegationAmount": {
+          "lo": "9979531476545686"
+        },
+        "fromEpoch": {
+          "index": "9129",
+          "startHeight": "9129"
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "1LsPjZjf4zClWAnNt511FRMjXth9k7sehos4JnU87n8="
+        },
+        "unbondedAmount": {
+          "lo": "664106519394709793"
+        },
+        "delegationAmount": {
+          "lo": "145682081203942336"
+        },
+        "fromEpoch": {
+          "index": "5709",
+          "startHeight": "5709"
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "wzb6osFeoRYj9yDpBZxyvMmsm5g+GgJCp9NhBPMIO0A="
+        },
+        "unbondedAmount": {
+          "lo": "223479731991182340"
+        },
+        "delegationAmount": {
+          "lo": "537522463435038748"
+        },
+        "fromEpoch": {
+          "index": "4310",
+          "startHeight": "4310"
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "ttO/J6g1WLiaERhnqdMNiKwMUITCnnWcsdWYnB9YmoA="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP987ZFocrAgxJul41P3zto="
+        },
+        "unbondingAmount": {
+          "lo": "279760704804562761"
+        },
+        "balanceBlinding": "31Av6j1N++eOQzrE5bOWoDBl0qEcQobAHy0k91G8GAM=",
+        "proofBlindingR": "axOoqAb0IWhPvNAwZ0uUfcO7d3NQJq/4Kr0Zm6aScBA=",
+        "proofBlindingS": "TWYHOThLYUI6jnid+gQZYdD/81Bsw6/5QkBGJp3jMQs=",
+        "unbondingStartHeight": "7134"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "5960765081",
+    "chainId": "xjqanhvahxirqbxpedkyexjuj-57410166441477",
+    "fee": {
+      "amount": {
+        "lo": "786084325462793549"
+      }
+    }
+  }
+}

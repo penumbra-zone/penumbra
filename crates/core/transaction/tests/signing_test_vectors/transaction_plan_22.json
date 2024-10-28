@@ -1,0 +1,69 @@
+{
+  "actions": [
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "VVTpqJ7BRJvSuk+0o37pH/v6yN446RkxsG+llzlKk+k="
+        },
+        "epochIndex": "6050",
+        "unbondedAmount": {
+          "lo": "976106514094998354"
+        },
+        "delegationAmount": {
+          "lo": "690393762278658132"
+        }
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "180946429839637209"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "Hk0MFE3xTnjVl7ntvpmhwJY71M4GcQVUqMbKCER90jM=",
+          "address": {
+            "inner": "TSvjs+5+YQDd9alNKvhS2Qfzzncz8JuYnM8MA9I6IENoH/SgQRW/VSqBT1IkDhJ7WkNWbH0drpWEm6Q/Cq2vKeZAcC+QCRKoiiN6Chjgjp4="
+          }
+        },
+        "position": "220958585025007",
+        "randomizer": "lTk95KcO9GZTNHhkoGc7tHPUelphqOH8JOK34nseaAM=",
+        "valueBlinding": "9pdMJZwLFzkQnGUwXj6VYcROx+BHw1XjA39FVBK6mwE=",
+        "proofBlindingR": "BHRPDqZ3jmCPxgAcV1ZmBkRjCU9B3B490LaZDrSjmww=",
+        "proofBlindingS": "0Ovqjl2JtkAA6tzKIUfxtHmAzQajpKszHQctgG1MiQ0="
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "827376131372495889"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "Pgian4DSDSaB6GdCJH9w2A4YeJU/TU+X38+bodEURZ6lLr/+PC/WW/0opgpxeozPzDGZOVdB5ULGCuICepVRk58kXITRAtB+TVOK9h1DvlQ="
+        },
+        "rseed": "npxf4aIdjzpc0z0lt3TQyFAV3IiHwmiiLi2Ka0oZ24U=",
+        "valueBlinding": "vtjDWmDNRAYyi0aOs1Ej61Q6impFvCvNevz2xIr0jQM=",
+        "proofBlindingR": "hf6r0l43twvCnIg4ZMOUv1FtnkzURr6uhaVabis5Dw0=",
+        "proofBlindingS": "tNsBgWmdedbhmazh1lrbTB4he6yxomDy/BeJeM6crwM="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4412491959",
+    "chainId": "rlydxddafnuozumpudhbqtdlftd-90613264751916",
+    "fee": {
+      "amount": {
+        "lo": "782015614590199131"
+      }
+    }
+  }
+}

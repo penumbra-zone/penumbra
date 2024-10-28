@@ -1,0 +1,67 @@
+{
+  "actions": [
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "Xso+ahqQ27kR4P8uBR07MdvffcShCu7mwlQFRuU3Pi4="
+        },
+        "epochIndex": "3810",
+        "unbondedAmount": {
+          "lo": "310495613859307059"
+        },
+        "delegationAmount": {
+          "lo": "548526391332811281"
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "FEBHZL5uoXrXg+ddz7M2g5qlkY+1GgCDAFAHIa6Y7dc="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP9B8hLXcxj8UEgW8AaNuLs="
+        },
+        "unbondingAmount": {
+          "lo": "218348390375676968"
+        },
+        "balanceBlinding": "YINz0IUBkm/Z7ES9eYdbcgqTwJbClJ/Qfkv11K3C4gA=",
+        "proofBlindingR": "P6bZCXcf069bYH852UO7xB2xudMh7S5oUTEREiP5dQ8=",
+        "proofBlindingS": "Y/i0l+zcIJoRz5qKwOfzAMfTlZ084ALQ12swLukwQgU=",
+        "unbondingStartHeight": "54625"
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "266535903463035252"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "NzSD7OHuxDFK2xNG1obgl02Q67chCikWQQjvDqVaf1k=",
+          "address": {
+            "inner": "7oA7kIwOzHyBz2c/+Q37qjIaOCudpGBDtFPR0SamqRrYiMzgxYKXGYpgDeEdlftnMTC8hjQPtvhJEQBF83+ru1A1X9meGgyCUjWAh0lfGZA="
+          }
+        },
+        "position": "226258345342289",
+        "randomizer": "vlKlhxCCowpeAKoKokGqcJVG+AC85p1xeDEpYZsMbwA=",
+        "valueBlinding": "3Gk7Mb6x+mBqXvZ344H8d9YALCFbDs8QBiY1llgrPgM=",
+        "proofBlindingR": "zONpyLpybMsWoz1iQAeumgnJDgXzmUW9pki7zZIR0gI=",
+        "proofBlindingS": "UwrUY1s9gMUxxGjBmQHTpMXF+x0CosBFAjjbDmVv2gU="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "9912185228",
+    "chainId": "tngisteeseljyetlfhp-5705863418031293333465",
+    "fee": {
+      "amount": {
+        "lo": "625721660095010316"
+      }
+    }
+  }
+}

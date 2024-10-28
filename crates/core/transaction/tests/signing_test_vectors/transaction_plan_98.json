@@ -1,0 +1,72 @@
+{
+  "actions": [
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "364664766922504292"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "3pZgD9BH/+lzqBTz48Jtu6ciEINMZou5+hw9UISo+1I=",
+          "address": {
+            "inner": "0VQ4DWiuc5QMWL9WOUC1c2IjYwwvpmLGYUszvnVH/Na80ZRO0eMMgZ1Unrd7h9ZI17nTSKs8P44XCpJi+NfNPV0rnGuhwyI50CaZHVISu9c="
+          }
+        },
+        "position": "119470987244247",
+        "randomizer": "nUw2mRan6RPt9RDG5NRUpf+xTXtclan7GopxqA6WSwQ=",
+        "valueBlinding": "/c4E10BwctOCCbY3qyF9WR+wZpRXYHn2SvYhDJu8BQQ=",
+        "proofBlindingR": "icMInfpQK+L/chWQ8xPzWsqquq/v7D/eIlBrdWL3rA4=",
+        "proofBlindingS": "54JO90HRlwdTvQivpup6KFx2p7xgsIFOIX1pNP2XlQQ="
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "2ZbuDnFQtfKKmAIm+QK6oyeBYadZIgyiM5+CpRqgHvE="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP+XJHRTjvNNahYeT3Zf2K4="
+        },
+        "unbondingAmount": {
+          "lo": "235993810159704234"
+        },
+        "balanceBlinding": "z5BlBkbtM11E1UmWgVODHspVyd24l9xvC/dd8Tw2ZgQ=",
+        "proofBlindingR": "OEqAnj0VespeUR/KoahhhWrGUEW0ugcGvpLsN6V+exI=",
+        "proofBlindingS": "I4qz4+w+oChJm8qJ0EH36dbSVLcGdf1cC9kPL/DIUxA=",
+        "unbondingStartHeight": "9564"
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "534048315258633513"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "IVtwcPcJ/mpKQrMCI+uV/Qsl3KFk7mbblDseK5aWJJ26MCr9eiB4SEsK4yufswB/1vIU5OEjcb5+9AiHO1P0a7hqQH7GHrZyfSZMbFeYWLA="
+        },
+        "rseed": "8JUnW9DJiTV6btDpopXutnRCwbIl9GXxCqDcfAMtawI=",
+        "valueBlinding": "D7ZLXYKlzn/Wtl0uCBWW1FKttKBhD5TvoYoA/cCUUQQ=",
+        "proofBlindingR": "9YUoURxICDdBlejgtqhr0NZ5iLyE8qC/pJkVWuEVnAs=",
+        "proofBlindingS": "ZG1qq1qw13ri8WVxQKV2Tz5A8dnDYhj3u7MtYznIJwo="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4541703279",
+    "chainId": "sxdvpvjastkpljgi-3200446148625243",
+    "fee": {
+      "amount": {
+        "lo": "57250346463325496"
+      }
+    }
+  }
+}

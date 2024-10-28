@@ -1,0 +1,80 @@
+{
+  "actions": [
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "NJMYdfx6sS5eCu6V0u9yMfUf7WZ+n2emaHGVJQtJ4xs="
+        },
+        "epochIndex": "7986",
+        "unbondedAmount": {
+          "lo": "673093694124775648"
+        },
+        "delegationAmount": {
+          "lo": "358294340353482791"
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "7LSbv2qBwI/PM6CVALEVnnPIkQGol04Uvz7FZFXbfFc="
+        },
+        "unbondedAmount": {
+          "lo": "739575050099489007"
+        },
+        "delegationAmount": {
+          "lo": "742781923339830935"
+        },
+        "fromEpoch": {
+          "index": "8609",
+          "startHeight": "8609"
+        }
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "466680806276818636"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "vPo7vVvG1Q3X7WJQNiTPICANMPw+969LeaUM+PrwGxc/CKljhvcZqMQ3EPjT2vWg73jo6kKBguO+51yw9lUYX67yX8HQJ7X1e9rgzPMs+qg="
+        },
+        "rseed": "S2up6rI8h2iBDCIBCwW1NoYijfy5eFvp+PkfAIebCwo=",
+        "valueBlinding": "OMKidiGcVG4kj6EDdk80YCOXHgvlyZoXxnukzh54KQA=",
+        "proofBlindingR": "KnIIR3kWVNxvzk5yY4iPZAI+ddQytoAkITfxi8HVXg8=",
+        "proofBlindingS": "HCktRd7w8OxUzKzkg5ZUW6lGXe7o2cNt3tqK1JybvwA="
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "LNunDGkN7ALJ2WUEPd3kGueIu/mJqM7yPwljsTItU24="
+        },
+        "unbondedAmount": {
+          "lo": "609723330776702445"
+        },
+        "delegationAmount": {
+          "lo": "232428998608321202"
+        },
+        "fromEpoch": {
+          "index": "1583",
+          "startHeight": "1583"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "7070373471",
+    "chainId": "ygfaofdvkqtfkn-20206600793605982",
+    "fee": {
+      "amount": {
+        "lo": "798922723186108354"
+      }
+    }
+  }
+}

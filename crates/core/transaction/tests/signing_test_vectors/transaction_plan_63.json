@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "edVM7Yq9rYgRpbZOvhLwG7Jz+GC7wwF/gX+/YCbkV8Q="
+        },
+        "epochIndex": "1172",
+        "unbondedAmount": {
+          "lo": "352449645523530259"
+        },
+        "delegationAmount": {
+          "lo": "40490270444972513"
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "qNe2fTc31yVnl4bQnR0avW55MRCz6CegpQY8H18RAjI="
+        },
+        "unbondedAmount": {
+          "lo": "591002315863251605"
+        },
+        "delegationAmount": {
+          "lo": "512280534731369656"
+        },
+        "fromEpoch": {
+          "index": "3882",
+          "startHeight": "3882"
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "32Cj+nWH7Mc7fT7YQDY2Wl2kgF6CJOm+USnGKtAdtEM="
+        },
+        "epochIndex": "475",
+        "unbondedAmount": {
+          "lo": "266693554101120261"
+        },
+        "delegationAmount": {
+          "lo": "782581578294061463"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "8890800443",
+    "chainId": "xokyif-798006168756595183115445488",
+    "fee": {
+      "amount": {
+        "lo": "154830710802355126"
+      }
+    }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "actions": [
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "81508514323578547"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "pkUhZH+odaWhtBvDxwbu8rS/YI0hFN67R8Mx8wW+Yjw=",
+          "address": {
+            "inner": "cBFd+P1ijk6L9DGMKX5BNthWz44gSTdHfDJYoP8mKX6xL+38p2z86xQ6mkx4ED3R5M/K6rG5dIVyppgQU5ay24CQjfevYSi7DGNUQ4YpRWg="
+          }
+        },
+        "position": "201115912489998",
+        "randomizer": "lep09aB2udOeRUj+8Ij3l8WRm/mDJRmNNBatthG+rQA=",
+        "valueBlinding": "pgYpBvOuxG5THQpWNkpQHwMGQfpJI+CnSaq+IdnTPQE=",
+        "proofBlindingR": "MiPwGFb14AWjd1qKSUDw/oYkWVxHkrbfxfxjG6lwWgk=",
+        "proofBlindingS": "JVEs9kimAPR4Se0GKTX6doerPySxhSXO9y6iaci6HRI="
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "odMKLrBDxx2F7ZBL6DkVaez7n9JWUdtkgT5HxAiCvWg="
+        },
+        "epochIndex": "5979",
+        "unbondedAmount": {
+          "lo": "550617203507357361"
+        },
+        "delegationAmount": {
+          "lo": "497938558515442662"
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "muHY2Lm2yvs3pI7bb2L7/qDfswifddE3swIUTB6gQqY="
+        },
+        "epochIndex": "8444",
+        "unbondedAmount": {
+          "lo": "887753807892534140"
+        },
+        "delegationAmount": {
+          "lo": "6461185583209438"
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "RagVpckP+ZK8trAWgFrTx36nTJe+kDKfaHNjuw8uoek="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP4hllK9PDYRNATqSowVTJk="
+        },
+        "unbondingAmount": {
+          "lo": "837648665754996953"
+        },
+        "balanceBlinding": "SuasWWcvTbp1i5drh7eCrU5omtR1Ws6QfiTMynwPNgI=",
+        "proofBlindingR": "7+brpQNctfsGTJwhb3Z5C6voU5DcV65u0A88+y20bRI=",
+        "proofBlindingS": "PraMtu1E9SYPcWwEXnGl5wjqpdoQ0bZklJYUD2J3qA0=",
+        "unbondingStartHeight": "46700"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "2788765837",
+    "chainId": "rjjdcxmenqigyg-3166253639",
+    "fee": {
+      "amount": {
+        "lo": "97562676247548406"
+      }
+    }
+  }
+}

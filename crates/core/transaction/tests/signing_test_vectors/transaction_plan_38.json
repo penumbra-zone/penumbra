@@ -1,0 +1,77 @@
+{
+  "actions": [
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "855459498878033004"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "fWZPs/GgpN4QzyBbEAtNGw6JM8naY4J2wScZJV16cv7fNRBthmlxaKdHEGCfhhmrB3eDczGdHZ9LcZ5cTvWlfh/b5l/3o21fSX1Gl+g8lNA="
+        },
+        "rseed": "2oUxzmSN0ltcGsCiPaf5rHkFunQZpZic6jrjqMNkYYI=",
+        "valueBlinding": "87qumUZMUBGeAd8hsPQfJfzBR2IzCxRIwJh/ciiqbQE=",
+        "proofBlindingR": "4C4thtCtke+cWiFK7pjVYXE3I8d49jmwLIM52SuYBQ8=",
+        "proofBlindingS": "jBsv+vubtg51hh8NVGkLhNbZGD/Wpk5zFz9M8mpVhA4="
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "FLwQP50cdQG2k3FQxk2dPqtfzSAzymURnj60+y5ijEY="
+        },
+        "epochIndex": "7072",
+        "unbondedAmount": {
+          "lo": "781398338092905118"
+        },
+        "delegationAmount": {
+          "lo": "564059903153964475"
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "G+WnMj7S5EM8n90TFN9sn7CJ0EGx7BSQfn3Z6yZjY/U="
+        },
+        "epochIndex": "9358",
+        "unbondedAmount": {
+          "lo": "583008984765016078"
+        },
+        "delegationAmount": {
+          "lo": "856209464825376411"
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "ou8/2qxbD7HveIoLUxESsos9eTmj6LbSFTRlTXgTUZ8="
+        },
+        "unbondedAmount": {
+          "lo": "37566074533032902"
+        },
+        "delegationAmount": {
+          "lo": "758415126594772858"
+        },
+        "fromEpoch": {
+          "index": "9750",
+          "startHeight": "9750"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "7928606067",
+    "chainId": "tjau-6321599007185673",
+    "fee": {
+      "amount": {
+        "lo": "274981976404637910"
+      }
+    }
+  }
+}

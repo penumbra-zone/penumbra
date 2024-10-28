@@ -1,0 +1,76 @@
+{
+  "actions": [
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "372717923466767679"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "WgBo5GmhhiklgByaQqvOfDcP9yIc3PTaWyXDYvNrVQ4=",
+          "address": {
+            "inner": "RhW+25L8PQVa8i3LwJ5gioPpJnOL4MQD5IcdXJAZYkCfTlutqeiZYy+w3hUhD93EW3XBxdP5KsuFDJZLb55Z2uqUUmRBWBOGgy7diyoJz+M="
+          }
+        },
+        "position": "269871483530585",
+        "randomizer": "EGaHC9o6IAY2DSZL5XH5jz3QfbGQopT4jojdwNl9nAQ=",
+        "valueBlinding": "CnttMvDhDXPdZQJR3Lppf8NACp94ClgihRRd9NYMoQM=",
+        "proofBlindingR": "mspgynoSKqwiCenKP+Fg1Zj0WRqZC8Xpwh9sl/QYmwE=",
+        "proofBlindingS": "ygfieTKtpc0hxI2Af3O8ZyXUL2muykvofjW2W1BGYA0="
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "857527985687138101"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "haK1ex5/wld7fV4dVCA42T9n2qlloL3aBb72T0LditA=",
+          "address": {
+            "inner": "RhW+25L8PQVa8i3LwJ5gioPpJnOL4MQD5IcdXJAZYkCfTlutqeiZYy+w3hUhD93EW3XBxdP5KsuFDJZLb55Z2uqUUmRBWBOGgy7diyoJz+M="
+          }
+        },
+        "position": "279250535226137",
+        "randomizer": "+d3cxRuF4VuKEK9fGAI9r5kH8LFyEToBLnlLq9YNWAE=",
+        "valueBlinding": "TQcayLwqamNgSpczcbF/btLHHXqCeI6/9dbl2qJKVgE=",
+        "proofBlindingR": "cWidaSknEQAFH6qwpKrG70x93j2RV+IaOB+hMyEWNgY=",
+        "proofBlindingS": "yzCcovDxJtDcNpgvCopEZigknQLZNVtAy3lztkZ5xgI="
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "qH6ymdcu36/+MnfhWtmW+W9TJ/Xi9yCx8UwpmWyqtBE="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP2X9itq59Vmz0HyEtdzGP0="
+        },
+        "unbondingAmount": {
+          "lo": "561701819443051770"
+        },
+        "balanceBlinding": "9ilFCLcMzNBSQKe9mOrZ1bwAMg2y5Rsbxs6FSS9MCgQ=",
+        "proofBlindingR": "uGJ7ocE9goE71aCis0/jqM0cYZAo9EFibrAA7xmWdw4=",
+        "proofBlindingS": "QD6mUaRIz9NeM59nO+hlax4eSuAVuBPUO7/pQ+7oggM=",
+        "unbondingStartHeight": "33572"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "3054318032",
+    "chainId": "k-1519483855719066469961",
+    "fee": {
+      "amount": {
+        "lo": "244656497692822532"
+      }
+    }
+  }
+}
