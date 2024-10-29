@@ -3,6 +3,12 @@ use std::fs::File;
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey, VerificationKeyBytes};
 use ed25519_consensus::SigningKey as Ed25519SigningKey;
+use ibc_types::core::{
+    channel::{msgs::MsgRecvPacket, packet::Sequence, ChannelId, Packet, PortId},
+    client::Height,
+    commitment::MerkleProof,
+};
+use ibc_types::timestamp::Timestamp;
 use penumbra_asset::asset::Id;
 use penumbra_dex::{
     swap::{SwapPlaintext, SwapPlan},
@@ -10,6 +16,7 @@ use penumbra_dex::{
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_ibc::IbcRelay;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_keys::{Address, FullViewingKey};
 use penumbra_num::Amount;
@@ -278,6 +285,39 @@ fn swap_claim_plan_strategy() -> impl Strategy<Value = SwapClaimPlan> {
     )
 }
 
+fn sequence_strategy() -> impl Strategy<Value = Sequence> {
+    (4001..2000000000u64).prop_map(Sequence)
+}
+
+fn ibc_action_strategy() -> impl Strategy<Value = IbcRelay> {
+    (
+        sequence_strategy(),
+        0..1000000000u64,
+        0..1000000000u64,
+        address_strategy(),
+    )
+        .prop_map(|(sequence, revision_number, revision_height, src)| {
+            IbcRelay::RecvPacket(MsgRecvPacket {
+                packet: Packet {
+                    sequence,
+                    port_on_a: PortId::default(),
+                    chan_on_a: ChannelId::default(),
+                    port_on_b: PortId::default(),
+                    chan_on_b: ChannelId::default(),
+                    data: vec![],
+                    timeout_height_on_b: ibc_types::core::channel::TimeoutHeight::At(
+                        Height::new(revision_number, revision_height).expect("test value"),
+                    ),
+                    timeout_timestamp_on_b: Timestamp::now(),
+                },
+                proof_commitment_on_a: MerkleProof { proofs: vec![] },
+                proof_height_on_a: Height::new(revision_number, revision_height)
+                    .expect("test value"),
+                signer: src.to_string(),
+            })
+        })
+}
+
 fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
     prop_oneof![
         spend_plan_strategy(fvk).prop_map(ActionPlan::Spend),
@@ -287,7 +327,8 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         undelegate_claim_plan_strategy().prop_map(ActionPlan::UndelegateClaim),
         validator_definition_strategy().prop_map(ActionPlan::ValidatorDefinition),
         swap_plan_strategy().prop_map(ActionPlan::Swap),
-        swap_claim_plan_strategy().prop_map(ActionPlan::SwapClaim), //ibc_action_strategy().prop_map(ActionPlan::IbcAction),
+        swap_claim_plan_strategy().prop_map(ActionPlan::SwapClaim),
+        ibc_action_strategy().prop_map(ActionPlan::IbcAction),
     ]
 }
 
