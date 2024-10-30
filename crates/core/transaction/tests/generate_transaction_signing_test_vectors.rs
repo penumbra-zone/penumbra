@@ -9,7 +9,7 @@ use ibc_types::core::{
     commitment::MerkleProof,
 };
 use ibc_types::timestamp::Timestamp;
-use penumbra_asset::asset::Id;
+use penumbra_asset::asset::{Id, Metadata};
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::{
@@ -33,7 +33,7 @@ use penumbra_keys::{Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_sct::epoch::Epoch;
-use penumbra_shielded_pool::{Note, OutputPlan, Rseed, SpendPlan};
+use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, Rseed, SpendPlan};
 use penumbra_stake::{
     validator, validator::Definition, Delegate, FundingStreams, GovernanceKey, IdentityKey,
     Penalty, Undelegate, UndelegateClaimPlan,
@@ -513,6 +513,40 @@ fn community_pool_output_strategy() -> impl Strategy<Value = CommunityPoolOutput
         .prop_map(|(value, address)| CommunityPoolOutput { value, address })
 }
 
+fn denom_strategy() -> impl Strategy<Value = String> {
+    prop::string::string_regex(r"[a-zA-Z0-9]+").unwrap()
+}
+
+fn ics20_withdrawal_strategy() -> impl Strategy<Value = Ics20Withdrawal> {
+    (
+        amount_strategy(),
+        address_strategy(),
+        address_strategy(),
+        denom_strategy(),
+        0..1000000000u64,
+        0..1000000000u64,
+    )
+        .prop_map(
+            |(
+                amount,
+                destination_chain_address,
+                return_address,
+                denom,
+                revision_number,
+                revision_height,
+            )| Ics20Withdrawal {
+                amount,
+                denom: Metadata::try_from(&denom[..]).expect("valid test denom"),
+                destination_chain_address: destination_chain_address.to_string(),
+                return_address,
+                timeout_height: Height::new(revision_number, revision_height).expect("test value"),
+                timeout_time: 0u64,
+                source_channel: ChannelId::default(),
+                use_compat_address: false,
+            },
+        )
+}
+
 fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
     prop_oneof![
         spend_plan_strategy(fvk).prop_map(ActionPlan::Spend),
@@ -535,6 +569,7 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         community_pool_deposit_strategy().prop_map(ActionPlan::CommunityPoolDeposit),
         community_pool_spend_strategy().prop_map(ActionPlan::CommunityPoolSpend),
         community_pool_output_strategy().prop_map(ActionPlan::CommunityPoolOutput),
+        ics20_withdrawal_strategy().prop_map(ActionPlan::Ics20Withdrawal),
     ]
 }
 
