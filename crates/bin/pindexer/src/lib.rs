@@ -7,7 +7,6 @@ pub mod dex_ex;
 pub mod ibc;
 pub mod insights;
 mod parsing;
-pub mod shielded_pool;
 pub mod stake;
 pub mod supply;
 
