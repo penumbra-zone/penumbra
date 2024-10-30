@@ -11,9 +11,14 @@ use ibc_types::core::{
 use ibc_types::timestamp::Timestamp;
 use penumbra_asset::asset::Id;
 use penumbra_dex::{
+    lp::{
+        plan::PositionWithdrawPlan,
+        position::{Position, State as PositionState},
+        Reserves, TradingFunction,
+    },
     swap::{SwapPlaintext, SwapPlan},
     swap_claim::SwapClaimPlan,
-    BatchSwapOutputData, TradingPair,
+    BatchSwapOutputData, PositionClose, PositionOpen, TradingPair,
 };
 use penumbra_fee::Fee;
 use penumbra_governance::{
@@ -441,6 +446,59 @@ fn proposal_deposit_claim_strategy() -> impl Strategy<Value = ProposalDepositCla
         })
 }
 
+fn position_state_strategy() -> impl Strategy<Value = PositionState> {
+    prop_oneof![Just(PositionState::Opened), Just(PositionState::Closed)]
+}
+
+fn trading_function_strategy() -> impl Strategy<Value = TradingFunction> {
+    (
+        amount_strategy(),
+        amount_strategy(),
+        asset_id_strategy(),
+        asset_id_strategy(),
+    )
+        .prop_map(|(p, q, asset_1, asset_2)| {
+            let trading_pair = TradingPair::new(asset_1, asset_2);
+            TradingFunction::new(trading_pair, 0u32, p, q)
+        })
+}
+
+fn position_strategy() -> impl Strategy<Value = Position> {
+    (
+        position_state_strategy(),
+        amount_strategy(),
+        amount_strategy(),
+        trading_function_strategy(),
+    )
+        .prop_map(|(state, r1, r2, phi)| Position {
+            state,
+            reserves: Reserves { r1, r2 },
+            phi,
+            nonce: [0u8; 32],
+            close_on_fill: true,
+        })
+}
+
+fn position_open_strategy() -> impl Strategy<Value = PositionOpen> {
+    (position_strategy()).prop_map(|position| PositionOpen { position })
+}
+
+fn position_close_strategy() -> impl Strategy<Value = PositionClose> {
+    (position_strategy()).prop_map(|position| PositionClose {
+        position_id: position.id(),
+    })
+}
+
+fn position_withdraw_strategy() -> impl Strategy<Value = PositionWithdrawPlan> {
+    (position_strategy()).prop_map(|position| PositionWithdrawPlan {
+        position_id: position.id(),
+        reserves: position.reserves,
+        rewards: vec![],
+        pair: position.phi.pair,
+        sequence: 1u64,
+    })
+}
+
 fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
     prop_oneof![
         spend_plan_strategy(fvk).prop_map(ActionPlan::Spend),
@@ -457,6 +515,9 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         delegator_vote_strategy().prop_map(ActionPlan::DelegatorVote),
         validator_vote_strategy().prop_map(ActionPlan::ValidatorVote),
         proposal_deposit_claim_strategy().prop_map(ActionPlan::ProposalDepositClaim),
+        position_open_strategy().prop_map(ActionPlan::PositionOpen),
+        position_close_strategy().prop_map(ActionPlan::PositionClose),
+        position_withdraw_strategy().prop_map(ActionPlan::PositionWithdraw),
     ]
 }
 
