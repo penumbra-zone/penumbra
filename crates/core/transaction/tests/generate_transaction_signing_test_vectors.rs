@@ -16,6 +16,7 @@ use penumbra_dex::{
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_governance::{Proposal, ProposalPayload, ProposalSubmit, ProposalWithdraw};
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_keys::{Address, FullViewingKey};
@@ -318,6 +319,33 @@ fn ibc_action_strategy() -> impl Strategy<Value = IbcRelay> {
         })
 }
 
+fn proposal_strategy() -> impl Strategy<Value = Proposal> {
+    (
+        prop::string::string_regex(r"[a-z]+-[0-9]+").unwrap(),
+        prop::string::string_regex(r"[a-z]+-[0-9]+").unwrap(),
+    )
+        .prop_map(|(title, description)| Proposal {
+            id: 0u64,
+            title,
+            description,
+            payload: ProposalPayload::Signaling { commit: None },
+        })
+}
+
+fn proposal_submit_strategy() -> impl Strategy<Value = ProposalSubmit> {
+    (proposal_strategy(), amount_strategy()).prop_map(|(proposal, deposit_amount)| ProposalSubmit {
+        proposal,
+        deposit_amount,
+    })
+}
+
+fn proposal_withdraw_strategy() -> impl Strategy<Value = ProposalWithdraw> {
+    (0u64..1000000000u64).prop_map(|proposal| ProposalWithdraw {
+        proposal,
+        reason: String::default(),
+    })
+}
+
 fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
     prop_oneof![
         spend_plan_strategy(fvk).prop_map(ActionPlan::Spend),
@@ -328,6 +356,8 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         validator_definition_strategy().prop_map(ActionPlan::ValidatorDefinition),
         swap_plan_strategy().prop_map(ActionPlan::Swap),
         swap_claim_plan_strategy().prop_map(ActionPlan::SwapClaim),
+        proposal_submit_strategy().prop_map(ActionPlan::ProposalSubmit),
+        proposal_withdraw_strategy().prop_map(ActionPlan::ProposalWithdraw),
         ibc_action_strategy().prop_map(ActionPlan::IbcAction),
     ]
 }
