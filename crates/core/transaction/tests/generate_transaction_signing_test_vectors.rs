@@ -10,6 +10,15 @@ use ibc_types::core::{
 };
 use ibc_types::timestamp::Timestamp;
 use penumbra_asset::asset::{Id, Metadata};
+use penumbra_auction::auction::{
+    dutch::{
+        actions::{
+            ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdrawPlan,
+        },
+        DutchAuctionDescription,
+    },
+    AuctionId,
+};
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::{
@@ -547,6 +556,57 @@ fn ics20_withdrawal_strategy() -> impl Strategy<Value = Ics20Withdrawal> {
         )
 }
 
+fn auction_dutch_schedule_strategy() -> impl Strategy<Value = ActionDutchAuctionSchedule> {
+    (
+        value_strategy(),
+        asset_id_strategy(),
+        amount_strategy(),
+        amount_strategy(),
+        0..1000000000u64,
+        0..1000000000u64,
+        prop::array::uniform32(any::<u8>()),
+    )
+        .prop_map(
+            |(input, output_id, max_output, min_output, start_height, step_count, nonce)| {
+                ActionDutchAuctionSchedule {
+                    description: DutchAuctionDescription {
+                        input,
+                        output_id,
+                        max_output,
+                        min_output,
+                        start_height,
+                        end_height: start_height + 1,
+                        step_count,
+                        nonce,
+                    },
+                }
+            },
+        )
+}
+
+fn auction_dutch_withdraw_plan_strategy() -> impl Strategy<Value = ActionDutchAuctionWithdrawPlan> {
+    (
+        prop::array::uniform32(any::<u8>()),
+        0..1000000000u64,
+        value_strategy(),
+        value_strategy(),
+    )
+        .prop_map(|(auction_id_bytes, seq, reserves_input, reserves_output)| {
+            ActionDutchAuctionWithdrawPlan {
+                auction_id: AuctionId(auction_id_bytes),
+                seq,
+                reserves_input,
+                reserves_output,
+            }
+        })
+}
+
+fn auction_dutch_end_strategy() -> impl Strategy<Value = ActionDutchAuctionEnd> {
+    (prop::array::uniform32(any::<u8>())).prop_map(|auction_id_bytes| ActionDutchAuctionEnd {
+        auction_id: AuctionId(auction_id_bytes),
+    })
+}
+
 fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
     prop_oneof![
         spend_plan_strategy(fvk).prop_map(ActionPlan::Spend),
@@ -570,6 +630,9 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         community_pool_spend_strategy().prop_map(ActionPlan::CommunityPoolSpend),
         community_pool_output_strategy().prop_map(ActionPlan::CommunityPoolOutput),
         ics20_withdrawal_strategy().prop_map(ActionPlan::Ics20Withdrawal),
+        auction_dutch_end_strategy().prop_map(ActionPlan::ActionDutchAuctionEnd),
+        auction_dutch_withdraw_plan_strategy().prop_map(ActionPlan::ActionDutchAuctionWithdraw),
+        auction_dutch_schedule_strategy().prop_map(ActionPlan::ActionDutchAuctionSchedule),
     ]
 }
 
