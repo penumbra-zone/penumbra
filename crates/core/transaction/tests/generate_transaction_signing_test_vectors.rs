@@ -10,6 +10,7 @@ use ibc_types::core::{
 };
 use ibc_types::timestamp::Timestamp;
 use penumbra_asset::asset::Id;
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::{
         plan::PositionWithdrawPlan,
@@ -499,6 +500,19 @@ fn position_withdraw_strategy() -> impl Strategy<Value = PositionWithdrawPlan> {
     })
 }
 
+fn community_pool_deposit_strategy() -> impl Strategy<Value = CommunityPoolDeposit> {
+    (value_strategy()).prop_map(|value| CommunityPoolDeposit { value })
+}
+
+fn community_pool_spend_strategy() -> impl Strategy<Value = CommunityPoolSpend> {
+    (value_strategy()).prop_map(|value| CommunityPoolSpend { value })
+}
+
+fn community_pool_output_strategy() -> impl Strategy<Value = CommunityPoolOutput> {
+    (value_strategy(), address_strategy())
+        .prop_map(|(value, address)| CommunityPoolOutput { value, address })
+}
+
 fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
     prop_oneof![
         spend_plan_strategy(fvk).prop_map(ActionPlan::Spend),
@@ -518,6 +532,9 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         position_open_strategy().prop_map(ActionPlan::PositionOpen),
         position_close_strategy().prop_map(ActionPlan::PositionClose),
         position_withdraw_strategy().prop_map(ActionPlan::PositionWithdraw),
+        community_pool_deposit_strategy().prop_map(ActionPlan::CommunityPoolDeposit),
+        community_pool_spend_strategy().prop_map(ActionPlan::CommunityPoolSpend),
+        community_pool_output_strategy().prop_map(ActionPlan::CommunityPoolOutput),
     ]
 }
 
