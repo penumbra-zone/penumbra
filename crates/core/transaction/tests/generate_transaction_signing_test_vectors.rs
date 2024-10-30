@@ -16,14 +16,18 @@ use penumbra_dex::{
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
-use penumbra_governance::{Proposal, ProposalPayload, ProposalSubmit, ProposalWithdraw};
+use penumbra_governance::{
+    proposal_state::{Outcome as ProposalOutcome, Withdrawn},
+    DelegatorVotePlan, Proposal, ProposalDepositClaim, ProposalPayload, ProposalSubmit,
+    ProposalWithdraw, ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, Vote,
+};
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_keys::{Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_sct::epoch::Epoch;
-use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
+use penumbra_shielded_pool::{Note, OutputPlan, Rseed, SpendPlan};
 use penumbra_stake::{
     validator, validator::Definition, Delegate, FundingStreams, GovernanceKey, IdentityKey,
     Penalty, Undelegate, UndelegateClaimPlan,
@@ -332,6 +336,10 @@ fn proposal_strategy() -> impl Strategy<Value = Proposal> {
         })
 }
 
+fn proposal_id_strategy() -> impl Strategy<Value = u64> {
+    0u64..1000000000u64
+}
+
 fn proposal_submit_strategy() -> impl Strategy<Value = ProposalSubmit> {
     (proposal_strategy(), amount_strategy()).prop_map(|(proposal, deposit_amount)| ProposalSubmit {
         proposal,
@@ -340,10 +348,97 @@ fn proposal_submit_strategy() -> impl Strategy<Value = ProposalSubmit> {
 }
 
 fn proposal_withdraw_strategy() -> impl Strategy<Value = ProposalWithdraw> {
-    (0u64..1000000000u64).prop_map(|proposal| ProposalWithdraw {
+    (proposal_id_strategy()).prop_map(|proposal| ProposalWithdraw {
         proposal,
         reason: String::default(),
     })
+}
+
+fn vote_strategy() -> impl Strategy<Value = Vote> {
+    prop_oneof![Just(Vote::Yes), Just(Vote::No), Just(Vote::Abstain),]
+}
+
+fn note_strategy_without_address() -> impl Strategy<Value = Note> {
+    (
+        address_strategy(),
+        value_strategy(),
+        prop::array::uniform32(any::<u8>()),
+    )
+        .prop_map(|(address, value, rseed_bytes)| {
+            Note::from_parts(address, value, Rseed(rseed_bytes))
+                .expect("should be a valid test note")
+        })
+}
+
+fn delegator_vote_strategy() -> impl Strategy<Value = DelegatorVotePlan> {
+    (
+        proposal_id_strategy(),
+        vote_strategy(),
+        amount_strategy(),
+        note_strategy_without_address(),
+    )
+        .prop_map(
+            |(proposal, vote, unbonded_amount, staked_note)| DelegatorVotePlan {
+                proposal,
+                vote,
+                start_position: penumbra_tct::Position::from(0u64),
+                staked_note,
+                unbonded_amount,
+                position: penumbra_tct::Position::from(0u64),
+                randomizer: Fr::rand(&mut OsRng),
+                proof_blinding_r: Fq::rand(&mut OsRng),
+                proof_blinding_s: Fq::rand(&mut OsRng),
+            },
+        )
+}
+
+fn validator_vote_strategy() -> impl Strategy<Value = ValidatorVote> {
+    (
+        proposal_id_strategy(),
+        vote_strategy(),
+        identity_key_strategy(),
+        signing_key_strategy(),
+        prop::string::string_regex(r"[a-zA-Z0-9]+").unwrap(),
+    )
+        .prop_map(|(proposal, vote, identity_key, signing_key, reason)| {
+            let governance_key = GovernanceKey(signing_key.into());
+            let body = ValidatorVoteBody {
+                proposal,
+                vote,
+                identity_key,
+                governance_key,
+                reason: ValidatorVoteReason(reason),
+            };
+
+            let bytes = body.encode_to_vec();
+            let auth_sig = signing_key.sign(OsRng, &bytes);
+            ValidatorVote { body, auth_sig }
+        })
+}
+
+fn proposal_outcome_strategy() -> impl Strategy<Value = ProposalOutcome<()>> {
+    prop_oneof![
+        Just(ProposalOutcome::Passed),
+        Just(ProposalOutcome::Failed {
+            withdrawn: Withdrawn::No
+        }),
+        Just(ProposalOutcome::Slashed {
+            withdrawn: Withdrawn::No
+        }),
+    ]
+}
+
+fn proposal_deposit_claim_strategy() -> impl Strategy<Value = ProposalDepositClaim> {
+    (
+        proposal_id_strategy(),
+        amount_strategy(),
+        proposal_outcome_strategy(),
+    )
+        .prop_map(|(proposal, deposit_amount, outcome)| ProposalDepositClaim {
+            proposal,
+            deposit_amount,
+            outcome,
+        })
 }
 
 fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
@@ -359,6 +454,9 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         proposal_submit_strategy().prop_map(ActionPlan::ProposalSubmit),
         proposal_withdraw_strategy().prop_map(ActionPlan::ProposalWithdraw),
         ibc_action_strategy().prop_map(ActionPlan::IbcAction),
+        delegator_vote_strategy().prop_map(ActionPlan::DelegatorVote),
+        validator_vote_strategy().prop_map(ActionPlan::ValidatorVote),
+        proposal_deposit_claim_strategy().prop_map(ActionPlan::ProposalDepositClaim),
     ]
 }
 
