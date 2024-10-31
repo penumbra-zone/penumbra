@@ -1,59 +1,51 @@
 {
   "actions": [
     {
-      "output": {
-        "value": {
-          "amount": {
-            "lo": "846829303509364674"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+      "proposalDepositClaim": {
+        "proposal": "290435110",
+        "depositAmount": {
+          "lo": "397061836821711838"
         },
-        "destAddress": {
-          "inner": "NdkwJrWYdWlhoinZIgXY5QjeoxE17dMhVJMVsGIZNJI+R6nBiqogaVjlDpY1QOHkOAn1bL9aBVtBvenLmoVFTrDxuseHUK3tr6FdTg5s/kA="
-        },
-        "rseed": "lMHe5m071tCM/+K/IJlLyprdBrPlqrH7luy75L15KoM=",
-        "valueBlinding": "sDcH2L9CiMZsBqGss4e4JWvikxgc1tnTmirshLsGAQI=",
-        "proofBlindingR": "Fgcy3B1zDXP3SVjaSwzM1SWuu7D1iyT98zuievkAwhE=",
-        "proofBlindingS": "gAzRgQSEg1opFuaC1Q3taLOpWx/Dot5BYwuNFTshKwc="
-      }
-    },
-    {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "+/dytnMvj/hZOZotZdxw0z9lHxSq9IKXlN4l97v2WHg="
-        },
-        "epochIndex": "9583",
-        "unbondedAmount": {
-          "lo": "185464689442586510"
-        },
-        "delegationAmount": {
-          "lo": "485757004365560057"
+        "outcome": {
+          "slashed": {}
         }
       }
     },
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "iH3ZDnIUj93JTx/kOCjJyvuyJJzjD0bD+to7FQgeeAg="
+      "proposalDepositClaim": {
+        "proposal": "925454871",
+        "depositAmount": {
+          "lo": "996803853926948758"
         },
-        "epochIndex": "714",
+        "outcome": {
+          "passed": {}
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "/avzFpkBoNh4BBdAXNWyYJkGJ7oP9fv8yCRM7zbEXOk="
+        },
         "unbondedAmount": {
-          "lo": "108649513131271317"
+          "lo": "530511781458972404"
         },
         "delegationAmount": {
-          "lo": "787343715761070035"
+          "lo": "150481363579985174"
+        },
+        "fromEpoch": {
+          "index": "8627",
+          "startHeight": "8627"
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "9967698916",
-    "chainId": "elykjtvaejdlmansdxxt-14656638205",
+    "expiryHeight": "5830716849",
+    "chainId": "togtwejgefspbzqxkjzx-53973943018851518386",
     "fee": {
       "amount": {
-        "lo": "284561288530846476"
+        "lo": "694466351950944283"
       }
     }
   }

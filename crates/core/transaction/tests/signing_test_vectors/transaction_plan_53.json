@@ -1,48 +1,98 @@
 {
   "actions": [
     {
-      "output": {
-        "value": {
-          "amount": {
-            "lo": "941603688890236180"
+      "swapClaim": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "delta1I": {
+            "lo": "958497548301180222"
+          },
+          "delta2I": {
+            "lo": "762289167720109656"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "1ULbkzsd9b5KY3FyTdO88HIlZ682nF1mwuSkQ4/A7heFxP4oh5Rb0kEIDfDTI8+3EnLFH4U7zXXRuNuUAFst9ry/bU3HIPgH0s8oL6Hs/14="
+          },
+          "rseed": "2AmW1IePatTBC1T2mHTfhtOo5UQYhWGgHn6btwRWutQ="
+        },
+        "outputData": {
+          "delta1": {
+            "lo": "1405614755"
+          },
+          "delta2": {
+            "lo": "661376073"
+          },
+          "lambda1": {
+            "lo": "1258"
+          },
+          "lambda2": {
+            "lo": "791"
+          },
+          "unfilled1": {
+            "lo": "840"
+          },
+          "unfilled2": {
+            "lo": "247"
+          },
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           }
         },
-        "destAddress": {
-          "inner": "YdvTf/3KSMoY+mVtEzyJRxoYEvLJFAaG3Fp2HMTw3bvMosVPNTFKvQJpBb6uRfOHRu1p8CfEdyqS0JS6oIVmIhIaFzTsXIdY/yUoqMQKXwI="
-        },
-        "rseed": "8jfaQ9liJCnjMoSSIqh2C+h6+5edln3WZsRVpb9t1fM=",
-        "valueBlinding": "VxT7yhPPR2bx/aJ9KCvB0c/3dJVo44FP0yjIran4hwI=",
-        "proofBlindingR": "uCfFAny3sNa9H0WQmLZh+jqn55b43p1hmZGqUUmQVAE=",
-        "proofBlindingS": "z44qylZ73+ikc4YN8sQhxY6lrBJsjpOOJEnAzkWNdxE="
+        "epochDuration": "1000",
+        "proofBlindingR": "WQHBry8oVP6WAjz5+c6iSEQL/LNbCmHFoqHJPpa7sg4=",
+        "proofBlindingS": "oG0qp8wOBzJcSI8Cehv7ba6jsrZWmPqe5dBuNaUyIwc="
       }
     },
     {
-      "undelegateClaim": {
-        "validatorIdentity": {
-          "ik": "Kxz3sGaPtPu8gwLPBen07nriY/0A1T4RrNm9M8xWCS4="
+      "delegatorVote": {
+        "proposal": "7874140",
+        "vote": {
+          "vote": "VOTE_ABSTAIN"
         },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP3tKIznA6+36Q/5ckdFOPA="
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "977817854302871386"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "L8kg8Nexj/jKzj+XdvMlm/cslBiraB5VsFNxO7IpCFk=",
+          "address": {
+            "inner": "DV44x2Hg8fWCQklYN2scETG+Psm5A/JGsd6fuwJNf8gCfJvZbFTtjwwiAry0wc7HHWsh2FDITF9MNq+/z3KsJqf3qaJy1kkAoMy0fJQmArs="
+          }
         },
-        "unbondingAmount": {
-          "lo": "603815062033168845"
+        "unbondedAmount": {
+          "lo": "762957993842331273"
         },
-        "balanceBlinding": "S9CjR6CPMPSFR7+h05yPRoEy2gIpkZWHOEvlCLMeZQI=",
-        "proofBlindingR": "q9lpluiGKMZkMQyAb0+B+FaFaBFRUCUtHavDQUErzQY=",
-        "proofBlindingS": "kDWEQh9aKdMoQhcrcK6kf9LcrZjhHfTMNlrQ7sN+wwA=",
-        "unbondingStartHeight": "66615"
+        "randomizer": "bBPsXClhVMyyRCeml/RShekIeb4YbJes30F8OqiH8wE=",
+        "proofBlindingR": "nH/mFAudgSXoNPgqD3ceF6UoedpmRvrEPC9BiluwJw0=",
+        "proofBlindingS": "/3+71UPitlRw6vw8Yf/L+rA4FoP8gQGRqEZHDx34Dg4="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6263461160",
-    "chainId": "iscwwfkandiouqpbfqdwgraxqq-653820325488592328450",
+    "expiryHeight": "4419191355",
+    "chainId": "qfxqscwkbkxnzzupuoraglpkoxqxgxo-01",
     "fee": {
       "amount": {
-        "lo": "466715557265632284"
+        "lo": "441751357449821089"
       }
     }
   }

@@ -1,40 +1,55 @@
 {
   "actions": [
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "dxgHmu4JY4mNGo6YjgsQu2Q6R//63lXXEM2jXpFPV20="
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "638605499233781675"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         },
-        "epochIndex": "535",
-        "unbondedAmount": {
-          "lo": "502583308995289800"
+        "destAddress": {
+          "inner": "1eVfb4503/Pxzpb4qtXP9KPGDq4nAUTVPLvWmXvDHLN9BAn+CuIaZlpnT5RkPD6S5jjSEx9C/+b6iXIP0zAdekuHW/NQYJWhGXyl7Yo0GWU="
         },
-        "delegationAmount": {
-          "lo": "806760223878577038"
-        }
+        "rseed": "YjwNHhlwNZ9Jf8eLnkaXNlzfipThtMsaRAwajeOAP74=",
+        "valueBlinding": "zuzjK/ww1oUKjLTkB9UHIPzQHa4pLTyM76UbphPW8gA=",
+        "proofBlindingR": "2aIsa/xQnVtdmJLCkbnS9hZoUV4lATH0MjmIGS/VkQ0=",
+        "proofBlindingS": "LqKZgQDZCJ9WiptMy4uqJK6ILbySQu5lqvcPA6AjpBI="
       }
     },
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "3zFeL+seNIL6H8CNH4c9cfnSwXDhEYlPIUhpgegbirY="
+      "actionDutchAuctionWithdraw": {
+        "auctionId": {
+          "inner": "ewYH3EhX0+c66PQghC0IzBAKVS9+s5bSQv8/ZqTYD7A="
         },
-        "epochIndex": "1860",
-        "unbondedAmount": {
-          "lo": "757630126625039048"
+        "seq": "768874545",
+        "reservesInput": {
+          "amount": {
+            "lo": "582874434659878222"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         },
-        "delegationAmount": {
-          "lo": "248683654654327089"
+        "reservesOutput": {
+          "amount": {
+            "lo": "826718086799857812"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "5706811200",
-    "chainId": "fgveibaakgbhdgzdvcrhbkelt-71681068636500296607030",
+    "expiryHeight": "5804750154",
+    "chainId": "mdspsngqqszfchxqilztcpjuujgii-8466",
     "fee": {
       "amount": {
-        "lo": "691463479430235768"
+        "lo": "533557175117294104"
       }
     }
   }

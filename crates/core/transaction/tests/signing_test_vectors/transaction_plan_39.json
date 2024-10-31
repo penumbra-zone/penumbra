@@ -1,60 +1,31 @@
 {
   "actions": [
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "KkZA15aW0xwY568Zk/h678YVniB5pZQj5W5bB7t+MuY="
-        },
-        "epochIndex": "3731",
-        "unbondedAmount": {
-          "lo": "496222963611237735"
-        },
-        "delegationAmount": {
-          "lo": "541790682352682976"
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "XTDpe9No0XGJuhIof9R/H0nzlbndN47FcWp19oan5DA="
         }
       }
     },
     {
-      "undelegateClaim": {
-        "validatorIdentity": {
-          "ik": "VttqEcXSvu9B5mqoniU3AxQ+CqrQdZbgy1b48kjB1u8="
+      "proposalSubmit": {
+        "proposal": {
+          "title": "ynnajcmmygjtvzebgdinw-5281",
+          "description": "yakipgupcjcwbzbhcjfh-6887007188777625904",
+          "signaling": {}
         },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP8nuy/sVtXPqs2eg+Qlruc="
-        },
-        "unbondingAmount": {
-          "lo": "908282451599287516"
-        },
-        "balanceBlinding": "LDE9cqEkdZTWmlxZKjm04HJ9kLXNCER8YbdOq7I7owM=",
-        "proofBlindingR": "Ax7MEyULP331NF36TFDraMyFIgeWAswC+/vgFLJTEgo=",
-        "proofBlindingS": "X+dmcaU5McuPuo93134nILoOFrCJXsj3e5U3vR07axE=",
-        "unbondingStartHeight": "9722"
-      }
-    },
-    {
-      "undelegateClaim": {
-        "validatorIdentity": {
-          "ik": "5OGmVZGm2eV7PukO+wx2vkHguM5P5ilPR7ggKYcr7BQ="
-        },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP8UEgW8AaNuLrHEMspXp4c="
-        },
-        "unbondingAmount": {
-          "lo": "537619180901141024"
-        },
-        "balanceBlinding": "4pRfaAmY8TsR/6MWolVt7m/T+pszdMJs8/gDqyz9ZwA=",
-        "proofBlindingR": "4VGdHj094Z28gjp4iDCwy3LVGl8I46eNd9wi1PmpDAM=",
-        "proofBlindingS": "RXXWfvk0zdAGqnezuq2gp/wq/RH+PCcPSU2YV5G0Aw8=",
-        "unbondingStartHeight": "52369"
+        "depositAmount": {
+          "lo": "765831618350417324"
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6899950762",
-    "chainId": "nolyudnadwduslxasi-09629662460091164199854860",
+    "expiryHeight": "30254982",
+    "chainId": "lmmpzfvkmrjymqhr-821068746509121003911302",
     "fee": {
       "amount": {
-        "lo": "839324754511465160"
+        "lo": "887886743953552340"
       }
     }
   }

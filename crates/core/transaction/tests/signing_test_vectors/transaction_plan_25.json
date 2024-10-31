@@ -1,71 +1,77 @@
 {
   "actions": [
     {
-      "spend": {
-        "note": {
-          "value": {
-            "amount": {
-              "lo": "112539488496422162"
-            },
-            "assetId": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
-          },
-          "rseed": "Gk2yarPFbiV8WOAhWXw7iTA2Vu8CpEKbzNQ69IQaX/8=",
-          "address": {
-            "inner": "UxZiJz1almnjsvJzjduZbdtsbw/cBux6Tpi1jqJ8wgtgZOSgWgaia7q6V6vw8EXb58RUuxGXyaGVmyrOSZ+DhXn3I+JNRswUur1VDQiyuaM="
-          }
-        },
-        "position": "30834087325169",
-        "randomizer": "cMqDPuLarSlsr6RoptnguCmjveGts2bl4c4oUpnjpwA=",
-        "valueBlinding": "GtEKyX6iEB8KQ9clCQnb8HHrtQo8IQ8gf7RpV1yB0QE=",
-        "proofBlindingR": "SPetIROoB11an9WHZIJ2jppqWDbu9rvdF0tKftLfAA0=",
-        "proofBlindingS": "aiZ6yEHJN7tlHstdid8CN0pzWKc8G4++vsiWWoKcVAY="
-      }
-    },
-    {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "EMYWV8gscy1nfw/rElaiZ+QaDjQaU/k4G4HaCKlemN4="
-        },
-        "unbondedAmount": {
-          "lo": "411841646121563422"
-        },
-        "delegationAmount": {
-          "lo": "299615454335912857"
-        },
-        "fromEpoch": {
-          "index": "1135",
-          "startHeight": "1135"
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrMBCPP8zbICEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsIxvbjSxCL0fqiA0DAmL7QoLXqgRgSAgoAGgsIxvbjSxCL0fqiAyKPAXBlbnVtYnJhMXJ3bmo2Y3k5Nm42NXhodjhkZW1hNG02MGZnOWdxamd2aDA3bnA4ODNlY3dxdHJlMGY5NnR2MDRyeDU3dXlwa2YydDQ5YXVlZjM4a2h2d2tmNWprc3hzOXl3Njl3cDh0emo3NTB4MjBlbHRlcDdzdHRjbXZjd241aDRhMHNsNGs5eTlzaDcy"
         }
       }
     },
     {
-      "output": {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "kcrksmeyxustsnjbr-60",
+          "description": "krcxzlpefqzl-75956368",
+          "signaling": {}
+        },
+        "depositAmount": {
+          "lo": "38351685330180206"
+        }
+      }
+    },
+    {
+      "communityPoolOutput": {
         "value": {
           "amount": {
-            "lo": "17496348918716391"
+            "lo": "415888003349099833"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "destAddress": {
-          "inner": "bt3Yjka4xDYsbM0cFS5XPmaPzc/Z+Gj/txGFMTVAFmOS3s4om2Xo3h4D69wVStKk33nOy4jAisEPP99JbBVkWIOk017uE5nOruHBXUmJzFw="
+        "address": {
+          "inner": "zK3UmgXb59dD/4C9/L7P4htU0Ee1rPiWWdUU5AoyqgkW4nLr3VF6ORk2JhOyQlZKIvievUOuytmQvtylncSglmyC0qDP8zz+DWw+/FYHFCo="
+        }
+      }
+    },
+    {
+      "swap": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "920853597152247593"
+          },
+          "delta2I": {
+            "lo": "677865656587699464"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "i9huSFlTnxHEv1AumWjld1PfJ9s63YrojO92xAVyzfIcVG0Z3SCKJQOFUDc0GbzEqz9IWdvFshvu5KQ0T8djRxauxxR1w3RiD0oMuYoRMCM="
+          },
+          "rseed": "++fkdOajvAONYLoezkuIU6nXn/mC+2ndEgwdHS4FMcg="
         },
-        "rseed": "VWQ7oMhJ8WZ1vy3AiLrPpV9ju31W3ElVAJO2bzkmQwA=",
-        "valueBlinding": "ZJKZ998K7km99tOqp0ez5EySim2cm9umn/7fwrNX0gE=",
-        "proofBlindingR": "S1im7xr5V2feGLnIp5CawAV1M/gVjB38gI9M5vaE2Q8=",
-        "proofBlindingS": "+MVYvAm8Z+xpJ4OK/VBCCa+GD73r8VcDWyFV3eB6owI="
+        "feeBlinding": "Q0DcLLLIqaOvq7gv2Y1rZ7/w29SF94i8cR5VQxly7QE=",
+        "proofBlindingR": "2NRy+/3HlDXi9fCZaKrlJQ7IN5T6yaep4lKDe2t7zQo=",
+        "proofBlindingS": "3WBWe6fyQgkjStsyOQjW/n1y/prYDzB2Gr7f4PCfsws="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "4590600296",
-    "chainId": "oubsgmdpkncaqn-56609641",
+    "expiryHeight": "8982080025",
+    "chainId": "hwbwaix-06083225540254",
     "fee": {
       "amount": {
-        "lo": "106844230424111145"
+        "lo": "516487876813519810"
       }
     }
   }

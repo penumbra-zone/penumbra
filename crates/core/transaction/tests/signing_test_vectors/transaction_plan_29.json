@@ -1,43 +1,53 @@
 {
   "actions": [
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "YGDGSuo2tH7tw1nq4HhJJ8ocsQdZI/e8q/VXlf60TC8="
+      "validatorVote": {
+        "body": {
+          "proposal": "284956779",
+          "vote": {
+            "vote": "VOTE_YES"
+          },
+          "identityKey": {
+            "ik": "zwa90BizdLKHBr7podM1nq1N9nWrmnDPM2vuILNPcSo="
+          },
+          "governanceKey": {
+            "gk": "LlsJYxRy7uSVLWAJ/gU5GCJQV6ErMEGJkDliyCUpsAU="
+          },
+          "reason": {
+            "reason": "gOG78117V3KSEJa9Usetiav5"
+          }
         },
-        "epochIndex": "3871",
-        "unbondedAmount": {
-          "lo": "853438944939804281"
-        },
-        "delegationAmount": {
-          "lo": "169032597737478199"
+        "authSig": {
+          "inner": "wDyN6yGx6Epnv/P7pK/vPG6R+4jjh1i7cpa8cY2dnQHOy/5YBBo34rcqnjMYcIjglWobb3a07u2ke7xdfdLWAg=="
         }
       }
     },
     {
-      "undelegateClaim": {
-        "validatorIdentity": {
-          "ik": "R41dmVfQYVo7Z/0kTFt9T498hhojPo3kkh9iS6DYrJY="
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "724571558176573681"
         },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP6rNnoPkJa7mMfigkC3gDU="
+        "denom": {
+          "denom": "OONIY11e"
         },
-        "unbondingAmount": {
-          "lo": "847425146711852950"
+        "destinationChainAddress": "penumbra1hrgv7fzh0vgq49adz6ydqnqgy23v6n9qhjrze526uuw4g5dfyaz4aqpjl3kyq0qg3dqh43ecpmuea4yk7f5q0sjqy0ew603tklcj7ya0423szgwd8vzxa7x2h35re99zu7qf7l",
+        "returnAddress": {
+          "inner": "F4MDyCqggl2Zynn7rCOdzyeqbBuGObQcGsXvM+KyUsDz7Ku23Pj65ZvN5peYr5xsYTaXnw/asUKrP/HKCrrcw9qkFNIyp2Mh+v7mh1HFAiI="
         },
-        "balanceBlinding": "AWUHLuLmrbfZPrik0sdyKGJ4Oshj1qDuv8ciKFLkpgA=",
-        "proofBlindingR": "pfjJuV9OWLAWU6kVFoglr2Qth/YVIjX9ddACdJWb2A8=",
-        "proofBlindingS": "uiecwJCZG8sLk4lGXpgEAoLf1G2BD17dyKSwG+bEkgM=",
-        "unbondingStartHeight": "44557"
+        "timeoutHeight": {
+          "revisionNumber": "412249556",
+          "revisionHeight": "834100005"
+        },
+        "sourceChannel": "channel-0"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6647051010",
-    "chainId": "stgbionvbcgmcofritghqhj-52842395814932983632238",
+    "expiryHeight": "1145458065",
+    "chainId": "ywhlvhz-2",
     "fee": {
       "amount": {
-        "lo": "855479489470233363"
+        "lo": "269386633792776289"
       }
     }
   }

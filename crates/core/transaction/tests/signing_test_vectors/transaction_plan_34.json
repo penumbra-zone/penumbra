@@ -1,69 +1,73 @@
 {
   "actions": [
     {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "4CYAzd4MHxiH0AtOGmc1Xm2PakyxiOZ1FJITkoePdF8="
-        },
-        "unbondedAmount": {
-          "lo": "288178665277268641"
-        },
-        "delegationAmount": {
-          "lo": "779165064433361071"
-        },
-        "fromEpoch": {
-          "index": "9361",
-          "startHeight": "9361"
-        }
-      }
-    },
-    {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "1/+6e5mC+9hWb1GaF3Mze8D4vyxVCddgENBL+fI/CVg="
-        },
-        "unbondedAmount": {
-          "lo": "405457838524121154"
-        },
-        "delegationAmount": {
-          "lo": "762274312046082805"
-        },
-        "fromEpoch": {
-          "index": "5827",
-          "startHeight": "5827"
-        }
-      }
-    },
-    {
-      "spend": {
-        "note": {
-          "value": {
-            "amount": {
-              "lo": "779335764155704269"
-            },
-            "assetId": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
+      "communityPoolSpend": {
+        "value": {
+          "amount": {
+            "lo": "567411047180918499"
           },
-          "rseed": "dRvm6FHyCKfOt4aBGQOgokIh0uWFCacNv/48dL4AnWc=",
-          "address": {
-            "inner": "vWA2eue0o1S3ABe2jQ3wKFVNYlRREjZmLFY3nEZuzKozwNLL5xHobEns4i2yprSZVp3qvZY+FXfi6hU/eUBSfdweHCiGS1Q+slA3KotxZA8="
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "134335054560426875"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "position": "132606305984773",
-        "randomizer": "zottzCJCK+sP7HtqZa/ZdRQaBHco+/kpjoOnM737gwA=",
-        "valueBlinding": "VDeQptsdD2okpKjysfwQ4aBkKhBOBLc3JJzlfEqvQAI=",
-        "proofBlindingR": "E7NzsW8Q6rRTeOcwMuIliU2XjU2gmcNXSPDmPUhaCgc=",
-        "proofBlindingS": "SI9adv6Ft3yqlvGWAUlq4D48OtyTIcJIeR3Q7kT0MgQ="
+        "address": {
+          "inner": "rf4jm0otOkE/2MhHd2FbVbh6JDZCVuVJvA+HSgrBKi9r2Dz2/Jwq7BTx9D2qy/iogStl/+btLhHU1vz/5ljwa9QsI3HtsADOEDJK1grFD6s="
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "DMoriA1O6850+k1D5KJfpkS3pyXnQ8olcEs3uEYbSKM="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP52yLQ5WBBiTdLxqfvnbIw="
+        },
+        "unbondingAmount": {
+          "lo": "924905935703523117"
+        },
+        "balanceBlinding": "0Hqt52XGLzTo3HjziSdvtKDDdlFfK5eiZE4g7kcNBAI=",
+        "proofBlindingR": "Q893WcuijPGA5XKY37eliQHbbGwqPth+61KsoRcdDgs=",
+        "proofBlindingS": "lKHu82NrCRm0L934qC6/+QJ73g7ROz32YpSnFAIPxww=",
+        "unbondingStartHeight": "69210"
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "R3LnktqQoEV1pp+jZ7xB7sjqkfwIZHR+WjoAixXndJc="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP/5ckdFOO801qFh5Pdl/Ys="
+        },
+        "unbondingAmount": {
+          "lo": "179386025472799049"
+        },
+        "balanceBlinding": "qdEf9wzGCi5RdysBUZ4DdZmttBc4ysDdZm/4UEsyRgM=",
+        "proofBlindingR": "GWcPXubEwOE2wJH3a4yAqYy5OPJZgSbHN5Q7SX3J9gk=",
+        "proofBlindingS": "jzurW8jRcffVwtYl88JSzd2fKCAeyv2MFOn+9dORTwA=",
+        "unbondingStartHeight": "29104"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "1672545952",
-    "chainId": "qwjzugegnskzelosqkmefouks-64995085313526933798",
+    "expiryHeight": "4047898859",
+    "chainId": "duoqkrgeymhrkors-7241458566280794217392",
     "fee": {
       "amount": {
-        "lo": "318113624009902829"
+        "lo": "69710397248927342"
       }
     }
   }

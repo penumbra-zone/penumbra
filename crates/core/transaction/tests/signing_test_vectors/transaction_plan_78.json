@@ -1,46 +1,58 @@
 {
   "actions": [
     {
-      "undelegateClaim": {
-        "validatorIdentity": {
-          "ik": "kEo1ykCeRM69jtfrv2tlgI1gEP+SMO+uxp5BXC6A6fM="
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "2998218174805594"
+          },
+          "r2": {
+            "lo": "845753515854215497"
+          }
         },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP9itq59Vmz0HyEtdzGPxQU="
+        "positionId": {
+          "inner": "8SwMXaaQfgZY1TqjWVvmoyiTBf1feslEQnON5w0MXU0="
         },
-        "unbondingAmount": {
-          "lo": "38547236452021722"
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         },
-        "balanceBlinding": "kGUSeBMD5X7yitXVhsY3Bwrp1IRSczBC6CNOJhc4wwM=",
-        "proofBlindingR": "cIHHlcdxscXbkaqi0T5kRsm3zfAHYMrL4EBe+JcDEw8=",
-        "proofBlindingS": "STj/Td/OUC2omVQJVDXnvKQqKo2lb/yJyCigIAWEww0=",
-        "unbondingStartHeight": "82427"
+        "sequence": "1"
       }
     },
     {
       "undelegateClaim": {
         "validatorIdentity": {
-          "ik": "CiEfvo68IaAOUPpPKzqCXfHug5D86akXhqJr0Vm63OE="
+          "ik": "Jju1bsKrn1c3KZ5zTDkwVUV3Kv17d38XILrahr96DBE="
         },
         "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP9itq59Vmz0HyEtdzGPxQU="
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP8uSOinHeaa1Cw8nuy/sVw="
         },
         "unbondingAmount": {
-          "lo": "654279363051957880"
+          "lo": "759098308161705917"
         },
-        "balanceBlinding": "IbJnD1F0ptwEacbr3kLzQ8JfnDqYBi2NJEa0aDOK2gA=",
-        "proofBlindingR": "v7z0D9JBbNOsYTlw/h2CJ+raXcO6KOlGbjTqg0TnWgo=",
-        "proofBlindingS": "nUPUmpsHwMGoWwQez2pSOk2XF41Ec8HiDRws1vHEAw0=",
-        "unbondingStartHeight": "36291"
+        "balanceBlinding": "QiSS6nxQhaoO/ftU9SGxw8+ayxH4oVmPAXm7Hrm2kgA=",
+        "proofBlindingR": "hqzYh0tnWa2FeKak2C2wLuoLbHpZnAhjSQ8rWeSeSQ4=",
+        "proofBlindingS": "C+Ja+Ck10/HhIonYhk9fQeMp3Fi8XS812VqXMHyDeAI=",
+        "unbondingStartHeight": "96027"
+      }
+    },
+    {
+      "proposalWithdraw": {
+        "proposal": "987713522"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "9514286861",
-    "chainId": "txrttltoewdnohfzkxdzonvp-26474385433645437040910969",
+    "expiryHeight": "1539522175",
+    "chainId": "xrzalo-7580521163329717690",
     "fee": {
       "amount": {
-        "lo": "624494753261439728"
+        "lo": "4513131285468227"
       }
     }
   }

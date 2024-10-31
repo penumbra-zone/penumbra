@@ -1,46 +1,37 @@
 {
   "actions": [
     {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "mAIZd/tnW1S86Oaks4oI5gfAj51KWod3sz4j0R2kqhg="
+      "proposalDepositClaim": {
+        "proposal": "689883150",
+        "depositAmount": {
+          "lo": "169393152499615694"
         },
-        "unbondedAmount": {
-          "lo": "580199483100126024"
-        },
-        "delegationAmount": {
-          "lo": "719720323312465998"
-        },
-        "fromEpoch": {
-          "index": "8531",
-          "startHeight": "8531"
+        "outcome": {
+          "failed": {}
         }
       }
     },
     {
-      "undelegateClaim": {
+      "delegate": {
         "validatorIdentity": {
-          "ik": "3MaYrBct49za+DPMO/0R9bc/cpqflRG5RWbyPLoAH2U="
+          "ik": "wqA9fnZGn9YTV8TB7X9XmyYUMdcDvA7aW1KNHGa1TJE="
         },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP6XjU/fO2RaHKwIMSbpeNU="
+        "epochIndex": "6726",
+        "unbondedAmount": {
+          "lo": "972176713087358483"
         },
-        "unbondingAmount": {
-          "lo": "195419511680308822"
-        },
-        "balanceBlinding": "MDHb30H9ZfJhaHJSW5VOTAa8kMy/ZuuiI5tl5XJm0QM=",
-        "proofBlindingR": "oApkdqKBCwqRwpk8R1BIgpTa42jPe0il0RPfc2dwDAY=",
-        "proofBlindingS": "z3sFTb+FBI+6jOpyu8XNgGaLxDFdzwlYbQxXjmbchAo=",
-        "unbondingStartHeight": "44038"
+        "delegationAmount": {
+          "lo": "885414211593882465"
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6662281230",
-    "chainId": "sunqhfrflfvmegcafbg-5398384933",
+    "expiryHeight": "3715525953",
+    "chainId": "jolxe-84624395377984128911110845038766",
     "fee": {
       "amount": {
-        "lo": "669859854724147103"
+        "lo": "646445886750715744"
       }
     }
   }

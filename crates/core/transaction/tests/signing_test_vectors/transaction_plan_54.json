@@ -1,46 +1,65 @@
 {
   "actions": [
     {
-      "undelegateClaim": {
-        "validatorIdentity": {
-          "ik": "LH8W9CH9gQkep5DueGJyJgJidOvnwVtMFWyjAvl8q8A="
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "iLny4M+Mq8sAak5rMdt+lE3oXHGqs33MKXy/jgwg0Ac="
+          },
+          "consensusKey": "NpIKLSY7jK5/iM4NnaIuzfvzBSXJO5t80UmgjobB8ic=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "iLny4M+Mq8sAak5rMdt+lE3oXHGqs33MKXy/jgwg0Ac="
+          }
         },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP2lEZzgdfb9If8uSOinHec="
-        },
-        "unbondingAmount": {
-          "lo": "129859922681103980"
-        },
-        "balanceBlinding": "CzNiZslcIvoybosXv7KuH+/CWcBE5q5ysJz7eIqifQQ=",
-        "proofBlindingR": "cAjMf0zMzWY/R9ks4/O8/Yp3ErrvyDfhQ1LTCrDNVBA=",
-        "proofBlindingS": "V7J1OkFXjHpJYxo18J5BDixWu2dg+R9V/Pq9IQQkvxE=",
-        "unbondingStartHeight": "1873"
+        "authSig": "oJBrdJNwasA17QAP6wn//L5VAnXSNC5LVZKLyxtdHQa5m+SJK6r3QVIgB3tbFlp0ti4BWv8vRrnfRFFTAe2+Ag=="
       }
     },
     {
-      "undelegateClaim": {
-        "validatorIdentity": {
-          "ik": "fjLdCq9Z0AwzNfxocTTgLFGIrHlu5GJV9NVh7SpPuh4="
-        },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP2yLQ5WBBiTdLxqfvnbItE="
-        },
-        "unbondingAmount": {
-          "lo": "593681758700759404"
-        },
-        "balanceBlinding": "l9VUROHgDKv1EC2Aoq8sI+/V+BYAZ2iWmGSXMU5rsAE=",
-        "proofBlindingR": "zeEbinMXnpitgxJspjCAJKxhjeqRxrx9Kq4HFbELQQI=",
-        "proofBlindingS": "OmiJqdw1IBX+7oNk3xfePTguT1FNRYkIBmG6LVCSeAQ=",
-        "unbondingStartHeight": "99392"
+      "positionOpen": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "358931458774794304"
+              },
+              "q": {
+                "lo": "458103987296919217"
+              }
+            },
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
+            }
+          },
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_OPENED"
+          },
+          "reserves": {
+            "r1": {
+              "lo": "569052995210047825"
+            },
+            "r2": {
+              "lo": "818343598863903521"
+            }
+          },
+          "closeOnFill": true
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "290387361",
-    "chainId": "dunieruxmose-8541825530936429402",
+    "expiryHeight": "2877556417",
+    "chainId": "dxjzhoot-7635474495673234927",
     "fee": {
       "amount": {
-        "lo": "413122670429073654"
+        "lo": "378296821848840338"
       }
     }
   }

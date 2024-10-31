@@ -1,49 +1,46 @@
 {
   "actions": [
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "FzcFUtk+9LDTWD0v737yx9nzGsRXFZU39rQE0Ulpp9U="
-        },
-        "epochIndex": "9986",
-        "unbondedAmount": {
-          "lo": "930385144242697302"
-        },
-        "delegationAmount": {
-          "lo": "454504810478821633"
+      "positionClose": {
+        "positionId": {
+          "inner": "3M43F9k+SwRsWjZIhTdySOp/8R44CEradfEzUYQKrzo="
         }
       }
     },
     {
-      "spend": {
-        "note": {
-          "value": {
+      "actionDutchAuctionSchedule": {
+        "description": {
+          "input": {
             "amount": {
-              "lo": "956507135018254065"
+              "lo": "635431313666200624"
             },
             "assetId": {
               "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
             }
           },
-          "rseed": "cjofg3jBzKqHJ3SavI7WXq+bR7nI8yGBPopX3Kx5o0w=",
-          "address": {
-            "inner": "FxRo3zTXs//lODflY5ZojZ/V+9C4Idq0/X5N51whCd+1lW6GZEukiah3DI0cLSWBtNYufk+ZZcO4itfFn7/Xv30hXoLRkMf1ek2LdPMcRqw="
-          }
-        },
-        "position": "156700579286365",
-        "randomizer": "vG4OdvsbHxM719r+XCKUZSb3VrVt6pwg3FzZfLPSKgI=",
-        "valueBlinding": "bN9FI99QdyEIuITfLKZAhEyY/E7D0vXCEdbbDHW01gA=",
-        "proofBlindingR": "pZNc9HO2JTV3ih0uVuFRJyxsvzxNlSmoIa9EpYtmNw0=",
-        "proofBlindingS": "TbL6RUlUfsyKuzWhnZ59lmYVsqXdQSRZi80zHFSGWwQ="
+          "outputId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "maxOutput": {
+            "lo": "968182021175373968"
+          },
+          "minOutput": {
+            "lo": "481943553144497287"
+          },
+          "startHeight": "141560138",
+          "endHeight": "141560139",
+          "stepCount": "385732289",
+          "nonce": "zA1u4MqCerHjYwcayHAxPAAl0cWCaUZxlle6tBWbW5Y="
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "5910127713",
-    "chainId": "jzugpivdztckau-801996175733",
+    "expiryHeight": "4202828864",
+    "chainId": "zwrovhwvux-1555802955862562584415078604787",
     "fee": {
       "amount": {
-        "lo": "832957109649130611"
+        "lo": "623834726199234692"
       }
     }
   }

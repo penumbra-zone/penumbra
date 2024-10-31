@@ -136,10 +136,10 @@ effect_hash = BLAKE2b-512(len(type_url) || type_url || eh(tx_params) || eh(fee) 
 
 where the `type_url` is the variable-length Type URL of the transaction body message, and `len(type_url)` is the length of that string encoded as 8 bytes in little-endian byte order.
 
-Test vectors for the effect hash computation for 100 randomly generated `TransactionPlan`s are available [here](https://github.com/penumbra-zone/penumbra/tree/main/crates/core/transaction/tests/signing_test_vectors). You can also use a tool in that same repository to generate additional test vectors via:
+Test vectors for the effect hash computation for 100 randomly generated `TransactionPlan`s are available [here](https://github.com/penumbra-zone/penumbra/tree/main/crates/core/transaction/tests/signing_test_vectors). You can also use a tool in that same repository to re-generate those test vectors or generate additional random test vectors via:
 
 ```
-cargo test --test generate_transaction_signing_test_vectors
+cargo test -- --ignored --test generate_transaction_signing_test_vectors
 ```
 
 ## `Binding` Signature

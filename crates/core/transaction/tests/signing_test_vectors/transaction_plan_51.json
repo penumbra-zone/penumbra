@@ -1,75 +1,82 @@
 {
   "actions": [
     {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "R3IydB2ZjuCP92NeqDYjFpyUcRE2Nqa4uOGFoBG4Vy8="
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "288822294649015597"
+          },
+          "r2": {
+            "lo": "459024833642480735"
+          }
         },
-        "unbondedAmount": {
-          "lo": "509272267849748832"
+        "positionId": {
+          "inner": "GzOmgxCOOcLgFvHD1lsVkEJwTolZhIM9ZXEadOyVHoI="
         },
-        "delegationAmount": {
-          "lo": "727020989368480894"
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         },
-        "fromEpoch": {
-          "index": "4190",
-          "startHeight": "4190"
+        "sequence": "1"
+      }
+    },
+    {
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "PwvrR+xrtZB4Xiro6cTqIRmNXJtydVd3KR7leAJe6Ic="
         }
       }
     },
     {
-      "spend": {
-        "note": {
+      "delegatorVote": {
+        "proposal": "541740445",
+        "vote": {
+          "vote": "VOTE_ABSTAIN"
+        },
+        "stakedNote": {
           "value": {
             "amount": {
-              "lo": "389931789456622587"
+              "lo": "572633255744364421"
             },
             "assetId": {
               "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
             }
           },
-          "rseed": "VkDQZ6+ou/GF4eX2uwm2zgW7XIoJgH8UZw/yej93j5I=",
+          "rseed": "lL8LHjUh+k7eg2fW5afrKp8NfkQx2Yi5wBZGn5lD1Pw=",
           "address": {
-            "inner": "uA8oL/5yVV9UYmdL3aLSqzidBeHitCW9nbvblwW+gP9Tut1JrW3RrEzl45hk2r9KtuWxTD+AlU8VrX8BGI352IVPsp3SKnuQpHhkTlVOj4A="
+            "inner": "gsWZa3riNJFwUJvS+GuJSO6upsK0nklORGp5Swl/TNny7VDxlxMT5LApQXx2vdXhLCkhJVPWCiANg6IMtCRCRNuGuSS+qQ1grfgUykQFTe0="
           }
         },
-        "position": "77326898505831",
-        "randomizer": "r6/7H6N+5l1Gnwb38JFKnyoYhjHlR2oBHJUso2WG1gA=",
-        "valueBlinding": "W9fCv5fVpF/D1jD9lON4Tzd+Wd8PNfEtzyHPoCe6DQE=",
-        "proofBlindingR": "IKdUl4hT+rg1ygHpkvpCEwhF/9x6XCvP4/BBq1AaRxI=",
-        "proofBlindingS": "Vk9MFPDx97bOI3AkWtj8s9JzGxfYMBqFb7yrKRFfIxE="
+        "unbondedAmount": {
+          "lo": "428752071407756273"
+        },
+        "randomizer": "rP1nJQ2vM+S/JdNAQhOyvbfItixiPxhDcuoMoFOt0wI=",
+        "proofBlindingR": "UIN6dSK10tWMPGLGFP2EQnH7RIPxQAXCwBKbRueUzhE=",
+        "proofBlindingS": "BngSyskgmNBrLkcGy/UHYzvPgeIaUwlqXZanHgfd0ws="
       }
     },
     {
-      "spend": {
-        "note": {
-          "value": {
-            "amount": {
-              "lo": "574630264746210271"
-            },
-            "assetId": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
-          },
-          "rseed": "zPELYmQzsLee5qRqBDei3aLjO2OkozISZLlCvoeIU9s=",
-          "address": {
-            "inner": "uA8oL/5yVV9UYmdL3aLSqzidBeHitCW9nbvblwW+gP9Tut1JrW3RrEzl45hk2r9KtuWxTD+AlU8VrX8BGI352IVPsp3SKnuQpHhkTlVOj4A="
-          }
+      "proposalDepositClaim": {
+        "proposal": "693570752",
+        "depositAmount": {
+          "lo": "209388441450832082"
         },
-        "position": "6695114100584",
-        "randomizer": "ELO+/859ge4Kt7d2YS7YqJ+E72OzE3RmOC8/sFx+lwE=",
-        "valueBlinding": "wLGFNuSviErYxdUP4yGDYOqqwoSNW32LFmGG/8SAegM=",
-        "proofBlindingR": "K21kWR7T3Le+NeG70SdgDiHqL0pNsdvp6dEq1AOA2RE=",
-        "proofBlindingS": "c1g5zC1YXrHWNbQQ/Jt+AMHT9jfFkTzdwA8J1IeqgQA="
+        "outcome": {
+          "failed": {}
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "9323795746",
-    "chainId": "njtmzrx-9008714883162568444605285",
+    "expiryHeight": "5085012632",
+    "chainId": "oryiem-09808985418868",
     "fee": {
       "amount": {
-        "lo": "618438744607492421"
+        "lo": "665210448174199572"
       }
     }
   }

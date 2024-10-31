@@ -1,48 +1,66 @@
 {
   "actions": [
     {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "BhsOPZkCBuyNMZnidpeSwxsgy64nl+uFCxN1JmcN5zM="
-        },
-        "unbondedAmount": {
-          "lo": "799725799423225294"
-        },
-        "delegationAmount": {
-          "lo": "781137312093727329"
-        },
-        "fromEpoch": {
-          "index": "6042",
-          "startHeight": "6042"
-        }
-      }
-    },
-    {
-      "output": {
+      "communityPoolOutput": {
         "value": {
           "amount": {
-            "lo": "614695253164977411"
+            "lo": "583421664133655087"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "destAddress": {
-          "inner": "fstgU9xqYaV9lgyVxpo8Q57+u2tPPBUE6boMQ87H+xP5J4SHBCPty0HPLu2fiVnBwL/xuxmxzo8sUoo1hiC7SpGsnaGigYY62X+aSn89Z7k="
+        "address": {
+          "inner": "xvDem21q64twopAVCkLaAi/5Pw72xNKfFo93dpOcADJ5RUJeirWLYVX8dmd8JE0iHK1mynLhYxOqp7WZ/0jJXG8osYrLoVULg8VwhJfNNH8="
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "rTwIr57Z+TzTvbDVJ24HUFcJ7WutMUIp4EUDhwxQt2I="
         },
-        "rseed": "1i/5TFooC7iEP3TWPSr0wCwcz38pEvaIeKkqSk0COSI=",
-        "valueBlinding": "yW9t8SVv36RRCVDW2a1qeEyD6H2sB6PJ7aLeNgfDuQI=",
-        "proofBlindingR": "6trxtAn3j/VKGzCTntJXPx/S1jHJ9P/PVZa17B4wXhI=",
-        "proofBlindingS": "wVdh0pPPJ5WIrfzcWeaLrfDa9ZyzkhUFYBBE6tbGbQw="
+        "unbondedAmount": {
+          "lo": "882852371013310612"
+        },
+        "delegationAmount": {
+          "lo": "80180876037711740"
+        },
+        "fromEpoch": {
+          "index": "3632",
+          "startHeight": "3632"
+        }
+      }
+    },
+    {
+      "validatorVote": {
+        "body": {
+          "proposal": "737482718",
+          "vote": {
+            "vote": "VOTE_YES"
+          },
+          "identityKey": {
+            "ik": "U/Pc1t1cOFmWbMi9X2cUNbY9u7VMwz1ZMiBBG5498aU="
+          },
+          "governanceKey": {
+            "gk": "truCGSfNBu6Yq9pojTHH/PlRb4uML1hF5ejpUZ/fqAc="
+          },
+          "reason": {
+            "reason": "3kiGnfqhr9xVO"
+          }
+        },
+        "authSig": {
+          "inner": "ApVDYCRHX0+YQjA/82y2kzLNdCEgyxsoyoMy3xnHZQhuvmEa01BZwhZbncFYgqCZP0m5yn6jEYQoJqBM3mHtAg=="
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "2549617066",
-    "chainId": "racz-00834022775604",
+    "expiryHeight": "475967717",
+    "chainId": "huuxdjbhq-3",
     "fee": {
       "amount": {
-        "lo": "251599007916379343"
+        "lo": "449393802929298074"
       }
     }
   }

@@ -1,8 +1,7 @@
-use std::fs::File;
-
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey, VerificationKeyBytes};
 use ed25519_consensus::SigningKey as Ed25519SigningKey;
+use ibc_proto::ics23::CommitmentProof;
 use ibc_types::core::{
     channel::{msgs::MsgRecvPacket, packet::Sequence, ChannelId, Packet, PortId},
     client::Height,
@@ -38,6 +37,7 @@ use penumbra_governance::{
 };
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_keys::test_keys::SEED_PHRASE;
 use penumbra_keys::{Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::DomainType;
@@ -53,6 +53,8 @@ use proptest::strategy::ValueTree;
 use proptest::test_runner::{Config, TestRunner};
 use rand_core::OsRng;
 use std::io::Write;
+use std::str::FromStr;
+use std::{fs::File, io::Read};
 use tendermint;
 
 fn amount_strategy() -> impl Strategy<Value = Amount> {
@@ -324,13 +326,16 @@ fn ibc_action_strategy() -> impl Strategy<Value = IbcRelay> {
                     chan_on_a: ChannelId::default(),
                     port_on_b: PortId::default(),
                     chan_on_b: ChannelId::default(),
-                    data: vec![],
+                    data: vec![0u8; 100],
                     timeout_height_on_b: ibc_types::core::channel::TimeoutHeight::At(
                         Height::new(revision_number, revision_height).expect("test value"),
                     ),
                     timeout_timestamp_on_b: Timestamp::now(),
                 },
-                proof_commitment_on_a: MerkleProof { proofs: vec![] },
+                // this can't be empty
+                proof_commitment_on_a: MerkleProof {
+                    proofs: vec![CommitmentProof::default()],
+                },
                 proof_height_on_a: Height::new(revision_number, revision_height)
                     .expect("test value"),
                 signer: src.to_string(),
@@ -666,15 +671,15 @@ fn transaction_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = Tran
 }
 
 #[test]
+#[ignore]
 fn generate_transaction_signing_test_vectors() {
+    // Run this to regenerate the `EffectHash` test vectors. Ignored by default.
     let mut runner = TestRunner::new(Config::default());
     let test_vectors_dir = "tests/signing_test_vectors";
     std::fs::create_dir_all(test_vectors_dir).expect("failed to create test vectors dir");
 
-    let rng = OsRng;
-
     for i in 0..100 {
-        let seed_phrase = SeedPhrase::generate(rng);
+        let seed_phrase = SeedPhrase::from_str(SEED_PHRASE).expect("test seed phrase is valid");
         let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
         let value_tree = transaction_plan_strategy(fvk)
@@ -712,5 +717,37 @@ fn generate_transaction_signing_test_vectors() {
         hash_file
             .write_all(effect_hash_hex.as_bytes())
             .expect("Failed to write hash file");
+    }
+}
+
+#[test]
+fn effect_hash_test_vectors() {
+    // This parses the transaction plan, computes the effect hash, and verifies that it
+    // matches the expected effect hash.
+    let test_vectors_dir = "tests/signing_test_vectors";
+    let seed_phrase = SeedPhrase::from_str(SEED_PHRASE).expect("test seed phrase is valid");
+    let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+    let fvk = sk.full_viewing_key();
+
+    for i in 0..100 {
+        let proto_file_path = format!("{}/transaction_plan_{}.proto", test_vectors_dir, i);
+        let mut proto_file = File::open(&proto_file_path).expect("Failed to open Protobuf file");
+        let mut transaction_plan_encoded = Vec::<u8>::new();
+        proto_file
+            .read_to_end(&mut transaction_plan_encoded)
+            .expect("Failed to read Protobuf file");
+        let transaction_plan = TransactionPlan::decode(&transaction_plan_encoded[..])
+            .expect("should be able to decode transaction plan");
+        let effect_hash_hex = hex::encode(
+            transaction_plan
+                .effect_hash(fvk)
+                .expect("should be able to compute effect hash")
+                .0,
+        );
+
+        let hash_file_path = format!("{}/effect_hash_{}.txt", test_vectors_dir, i);
+        let expected_effect_hash = std::fs::read_to_string(&hash_file_path)
+            .expect("should be able to read expected effect hash");
+        assert_eq!(effect_hash_hex, expected_effect_hash);
     }
 }
