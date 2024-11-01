@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 #[serde(try_from = "pb::SwapExecution", into = "pb::SwapExecution")]
 pub struct SwapExecution {
     pub traces: Vec<Vec<Value>>,
+    /// The input value that was consumed.
     pub input: Value,
+    /// The output value that was produced.
     pub output: Value,
 }
 
