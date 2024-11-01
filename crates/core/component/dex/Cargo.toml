@@ -3,6 +3,10 @@ name = "penumbra-dex"
 version = {workspace = true}
 edition = {workspace = true}
 
+[[test]]
+name = "penumbra-dex-integration-tests"
+path = "tests/integration/mod.rs"
+
 [features]
 component = [
     "cnidarium-component",
