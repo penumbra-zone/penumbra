@@ -1,6 +1,6 @@
-use std::{collections::HashMap, pin::Pin, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
-use futures::{Stream, StreamExt, TryStreamExt};
+use futures::TryStreamExt;
 use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, Transaction};
 use tendermint::abci;
 
