@@ -83,7 +83,7 @@ async fn catchup(
     let state_cp = state.clone();
     tasks.spawn(async move {
         let mut height = lowest_index_height.next();
-        while height < src_height {
+        while height <= src_height {
             let first = height;
             let (last, next_height) = first.advance(DEFAULT_BATCH_SIZE, src_height);
             height = next_height;
