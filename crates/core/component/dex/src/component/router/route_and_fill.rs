@@ -44,11 +44,21 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         // executions up to the specified `execution_budget` parameter.
         let execution_circuit_breaker = ExecutionCircuitBreaker::new(execution_budget);
 
+        // We clamp the deltas to the maximum input for batch swaps.
+        let clamped_delta_1 = delta_1.min(MAX_RESERVE_AMOUNT.into());
+        let clamped_delta_2 = delta_2.min(MAX_RESERVE_AMOUNT.into());
+
+        tracing::debug!(
+            ?clamped_delta_1,
+            ?clamped_delta_2,
+            "clamped deltas to maximum amount"
+        );
+
         let swap_execution_1_for_2 = self
             .route_and_fill(
                 trading_pair.asset_1(),
                 trading_pair.asset_2(),
-                delta_1,
+                clamped_delta_1,
                 params.clone(),
                 execution_circuit_breaker.clone(),
             )
@@ -58,7 +68,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             .route_and_fill(
                 trading_pair.asset_2(),
                 trading_pair.asset_1(),
-                delta_2,
+                clamped_delta_2,
                 params.clone(),
                 execution_circuit_breaker,
             )
@@ -67,6 +77,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         let (lambda_2, unfilled_1) = match &swap_execution_1_for_2 {
             Some(swap_execution) => (
                 swap_execution.output.amount,
+                // The unfilled amount of asset 1 is the trade input minus the amount consumed, plus the excess.
                 delta_1 - swap_execution.input.amount,
             ),
             None => (0u64.into(), delta_1),
@@ -148,9 +159,10 @@ pub trait RouteAndFill: StateWrite + Sized {
     where
         Self: 'static,
     {
-        tracing::debug!(?input, ?asset_1, ?asset_2, "starting route_and_fill");
+        tracing::debug!(?input, ?asset_1, ?asset_2, "prepare to route and fill");
 
         if input == Amount::zero() {
+            tracing::debug!("no input, short-circuit exit");
             return Ok(None);
         }
 
@@ -162,13 +174,12 @@ pub trait RouteAndFill: StateWrite + Sized {
         // An ordered list of execution traces that were used to fill the trade.
         let mut traces: Vec<Vec<Value>> = Vec::new();
 
-        let max_delta_1: Amount = MAX_RESERVE_AMOUNT.into();
-
         // Termination conditions:
         // 1. We have no more `delta_1` remaining
         // 2. A path can no longer be found
         // 3. We have reached the `RoutingParams` specified price limit
         // 4. The execution circuit breaker has been triggered based on the number of path searches and executions
+        // 5. An unrecoverable error occurred during the execution of the route.
         loop {
             // Check if we have exceeded the execution circuit breaker limits.
             if execution_circuit_breaker.exceeded_limits() {
@@ -196,21 +207,20 @@ pub trait RouteAndFill: StateWrite + Sized {
                 break;
             }
 
-            // We split off the entire batch swap into smaller chunks to avoid causing
-            // a series of overflow in the DEX.
+            // We prepare the input for this execution round, which is the remaining unfilled amount of asset 1.
             let delta_1 = Value {
-                amount: total_unfilled_1.min(max_delta_1),
                 asset_id: asset_1,
+                amount: total_unfilled_1,
             };
 
-            tracing::debug!(?path, delta_1 = ?delta_1.amount, "found path, filling up to spill price");
+            tracing::debug!(?path, ?delta_1, "found path, filling up to spill price");
 
-            let execution = Arc::get_mut(self)
+            let execution_result = Arc::get_mut(self)
                 .expect("expected state to have no other refs")
                 .fill_route(delta_1, &path, spill_price)
                 .await;
 
-            let execution = match execution {
+            let swap_execution = match execution_result {
                 Ok(execution) => execution,
                 Err(FillError::ExecutionOverflow(position_id)) => {
                     // We have encountered an overflow during the execution of the route.
@@ -233,24 +243,25 @@ pub trait RouteAndFill: StateWrite + Sized {
 
             // Immediately track the execution in the state.
             (total_output_2, total_unfilled_1) = {
-                let lambda_2 = execution.output;
-                let unfilled_1 = Value {
-                    amount: total_unfilled_1
-                        .checked_sub(&execution.input.amount)
-                        .expect("unable to subtract unfilled input from total input"),
-                    asset_id: asset_1,
-                };
-                tracing::debug!(input = ?delta_1.amount, output = ?lambda_2.amount, unfilled = ?unfilled_1.amount, "filled along best path");
+                // The exact amount of asset 1 that was consumed in this execution round.
+                let consumed_input = swap_execution.input;
+                // The output of this execution round is the amount of asset 2 that was filled.
+                let produced_output = swap_execution.output;
 
-                assert_eq!(lambda_2.asset_id, asset_2);
-                assert_eq!(unfilled_1.asset_id, asset_1);
+                tracing::debug!(consumed_input = ?consumed_input.amount, output = ?produced_output.amount, "filled along best path");
+
+                // Sanity check that the input and output assets are correct.
+                assert_eq!(produced_output.asset_id, asset_2);
+                assert_eq!(consumed_input.asset_id, asset_1);
 
                 // Append the traces from this execution to the outer traces.
-                traces.append(&mut execution.traces.clone());
+                traces.append(&mut swap_execution.traces.clone());
 
                 (
-                    total_output_2 + lambda_2.amount,
-                    total_unfilled_1 - delta_1.amount + unfilled_1.amount,
+                    // The total output of asset 2 is the sum of all outputs.
+                    total_output_2 + produced_output.amount,
+                    // The total unfilled amount of asset 1 is the remaining unfilled amount minus the amount consumed.
+                    total_unfilled_1 - consumed_input.amount,
                 )
             };
 
@@ -260,7 +271,7 @@ pub trait RouteAndFill: StateWrite + Sized {
             }
 
             // Ensure that we've actually executed, or else bail out.
-            let Some(accurate_max_price) = execution.max_price() else {
+            let Some(accurate_max_price) = swap_execution.max_price() else {
                 tracing::debug!("no traces in execution, exiting route_and_fill");
                 break;
             };
@@ -278,8 +289,7 @@ pub trait RouteAndFill: StateWrite + Sized {
             }
         }
 
-        // If we didn't execute against any position at all, there
-        // are no execution records to return.
+        // If we didn't execute against any position at all, there are no execution records to return.
         if traces.is_empty() {
             return Ok(None);
         } else {
@@ -287,6 +297,7 @@ pub trait RouteAndFill: StateWrite + Sized {
                 traces,
                 input: Value {
                     asset_id: asset_1,
+                    // The total amount of asset 1 that was actually consumed across rounds.
                     amount: input - total_unfilled_1,
                 },
                 output: Value {

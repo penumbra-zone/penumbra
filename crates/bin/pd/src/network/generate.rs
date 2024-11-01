@@ -428,8 +428,8 @@ pub fn network_generate(
 /// Represents initial allocations to the testnet.
 #[derive(Debug, Deserialize)]
 pub struct NetworkAllocation {
-    #[serde(deserialize_with = "string_u64")]
-    pub amount: u64,
+    #[serde(deserialize_with = "string_u128")]
+    pub amount: u128,
     pub denom: String,
     pub address: String,
 }
@@ -670,17 +670,17 @@ impl TryFrom<NetworkAllocation> for shielded_pool_genesis::Allocation {
     }
 }
 
-fn string_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
+fn string_u128<'de, D>(deserializer: D) -> Result<u128, D::Error>
 where
     D: de::Deserializer<'de>,
 {
-    struct U64StringVisitor;
+    struct U128StringVisitor;
 
-    impl<'de> de::Visitor<'de> for U64StringVisitor {
-        type Value = u64;
+    impl<'de> de::Visitor<'de> for U128StringVisitor {
+        type Value = u128;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a string containing a u64 with optional underscores")
+            formatter.write_str("a string containing a u128 with optional underscores")
         }
 
         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -688,10 +688,17 @@ where
             E: de::Error,
         {
             let r = v.replace('_', "");
-            r.parse::<u64>().map_err(E::custom)
+            r.parse::<u128>().map_err(E::custom)
         }
 
         fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(v as u128)
+        }
+
+        fn visit_u128<E>(self, v: u128) -> std::prelude::v1::Result<Self::Value, E>
         where
             E: de::Error,
         {
@@ -699,7 +706,7 @@ where
         }
     }
 
-    deserializer.deserialize_any(U64StringVisitor)
+    deserializer.deserialize_any(U128StringVisitor)
 }
 
 #[cfg(test)]
