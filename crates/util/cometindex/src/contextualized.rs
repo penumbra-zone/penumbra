@@ -1,6 +1,6 @@
 use tendermint::abci::Event;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ContextualizedEvent {
     pub event: Event,
     pub block_height: u64,

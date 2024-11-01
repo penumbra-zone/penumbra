@@ -1,12 +1,16 @@
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{async_trait, index::EventBatch, sqlx, AppView, PgTransaction};
 use penumbra_proto::{core::component::sct::v1 as pb, event::ProtoEvent};
-use sqlx::{types::chrono::DateTime, PgPool};
+use sqlx::types::chrono::DateTime;
 
 #[derive(Debug)]
 pub struct Block {}
 
 #[async_trait]
 impl AppView for Block {
+    fn name(&self) -> String {
+        "block".to_string()
+    }
+
     async fn init_chain(
         &self,
         dbtx: &mut PgTransaction,
@@ -27,34 +31,33 @@ CREATE TABLE IF NOT EXISTS block_details (
         Ok(())
     }
 
-    fn is_relevant(&self, type_str: &str) -> bool {
-        type_str == "penumbra.core.component.sct.v1.EventBlockRoot"
-    }
-
-    async fn index_event(
+    async fn index_batch(
         &self,
         dbtx: &mut PgTransaction,
-        event: &ContextualizedEvent,
-        _src_db: &PgPool,
+        batch: EventBatch,
     ) -> Result<(), anyhow::Error> {
-        let pe = pb::EventBlockRoot::from_event(event.as_ref())?;
-        let timestamp = pe.timestamp.unwrap_or_default();
+        for event in batch.events() {
+            let pe = match pb::EventBlockRoot::from_event(event.as_ref()) {
+                Ok(pe) => pe,
+                Err(_) => continue,
+            };
+            let timestamp = pe.timestamp.unwrap_or_default();
 
-        sqlx::query(
-            "
+            sqlx::query(
+                "
             INSERT INTO block_details (height, timestamp, root)
             VALUES ($1, $2, $3)
             ",
-        )
-        .bind(i64::try_from(pe.height)?)
-        .bind(DateTime::from_timestamp(
-            timestamp.seconds,
-            u32::try_from(timestamp.nanos)?,
-        ))
-        .bind(pe.root.unwrap().inner)
-        .execute(dbtx.as_mut())
-        .await?;
-
+            )
+            .bind(i64::try_from(pe.height)?)
+            .bind(DateTime::from_timestamp(
+                timestamp.seconds,
+                u32::try_from(timestamp.nanos)?,
+            ))
+            .bind(pe.root.unwrap().inner)
+            .execute(dbtx.as_mut())
+            .await?;
+        }
         Ok(())
     }
 }

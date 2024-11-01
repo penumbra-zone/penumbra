@@ -1,5 +1,4 @@
 mod contextualized;
-pub mod engine;
 pub mod index;
 pub mod indexer;
 pub mod opt;

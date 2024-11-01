@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, iter};
 
-use cometindex::{async_trait, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{async_trait, index::EventBatch, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_app::genesis::Content;
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{
@@ -10,7 +10,7 @@ use penumbra_dex::{
 use penumbra_fee::event::EventBlockFees;
 use penumbra_funding::event::EventFundingStreamReward;
 use penumbra_num::Amount;
-use penumbra_proto::{event::EventDomainType, DomainType, Name};
+use penumbra_proto::event::EventDomainType;
 use penumbra_shielded_pool::event::{
     EventInboundFungibleTokenTransfer, EventOutboundFungibleTokenRefund,
     EventOutboundFungibleTokenTransfer,
@@ -20,7 +20,6 @@ use penumbra_stake::{
     validator::Validator,
     IdentityKey,
 };
-use sqlx::PgPool;
 
 use crate::parsing::parse_content;
 
@@ -280,47 +279,12 @@ async fn add_genesis_native_token_allocation_supply<'a>(
 
     Ok(())
 }
-#[async_trait]
-impl AppView for Component {
-    async fn init_chain(
-        &self,
-        dbtx: &mut PgTransaction,
-        app_state: &serde_json::Value,
-    ) -> Result<(), anyhow::Error> {
-        for statement in include_str!("schema.sql").split(";") {
-            sqlx::query(statement).execute(dbtx.as_mut()).await?;
-        }
 
-        // decode the initial supply from the genesis
-        // initial app state is not recomputed from events, because events are not emitted in init_chain.
-        // instead, the indexer directly parses the genesis.
-        add_genesis_native_token_allocation_supply(dbtx, &parse_content(app_state.clone())?)
-            .await?;
-        Ok(())
-    }
-
-    fn is_relevant(&self, type_str: &str) -> bool {
-        [
-            <EventUndelegate as DomainType>::Proto::full_name(),
-            <EventDelegate as DomainType>::Proto::full_name(),
-            <EventRateDataChange as DomainType>::Proto::full_name(),
-            <EventBlockFees as DomainType>::Proto::full_name(),
-            <EventArbExecution as DomainType>::Proto::full_name(),
-            <EventCandlestickData as DomainType>::Proto::full_name(),
-            <EventInboundFungibleTokenTransfer as DomainType>::Proto::full_name(),
-            <EventOutboundFungibleTokenRefund as DomainType>::Proto::full_name(),
-            <EventOutboundFungibleTokenTransfer as DomainType>::Proto::full_name(),
-            <EventFundingStreamReward as DomainType>::Proto::full_name(),
-        ]
-        .into_iter()
-        .any(|x| type_str == x)
-    }
-
+impl Component {
     async fn index_event(
         &self,
-        dbtx: &mut PgTransaction,
+        dbtx: &mut PgTransaction<'_>,
         event: &ContextualizedEvent,
-        _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         let height = event.block_height;
         if let Ok(e) = EventUndelegate::try_from_event(&event.event) {
@@ -501,6 +465,41 @@ impl AppView for Component {
             }
         }
         tracing::debug!(?event, "unrecognized event");
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl AppView for Component {
+    async fn init_chain(
+        &self,
+        dbtx: &mut PgTransaction,
+        app_state: &serde_json::Value,
+    ) -> Result<(), anyhow::Error> {
+        for statement in include_str!("schema.sql").split(";") {
+            sqlx::query(statement).execute(dbtx.as_mut()).await?;
+        }
+
+        // decode the initial supply from the genesis
+        // initial app state is not recomputed from events, because events are not emitted in init_chain.
+        // instead, the indexer directly parses the genesis.
+        add_genesis_native_token_allocation_supply(dbtx, &parse_content(app_state.clone())?)
+            .await?;
+        Ok(())
+    }
+
+    fn name(&self) -> String {
+        "insights".to_string()
+    }
+
+    async fn index_batch(
+        &self,
+        dbtx: &mut PgTransaction,
+        batch: EventBatch,
+    ) -> Result<(), anyhow::Error> {
+        for event in batch.events() {
+            self.index_event(dbtx, event).await?;
+        }
         Ok(())
     }
 }

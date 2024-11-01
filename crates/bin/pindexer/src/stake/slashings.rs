@@ -1,11 +1,51 @@
 use anyhow::{anyhow, Result};
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
+use cometindex::{
+    async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
+};
 
 use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
 use penumbra_stake::IdentityKey;
 
 #[derive(Debug)]
 pub struct Slashings {}
+
+impl Slashings {
+    async fn index_event(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        event: &ContextualizedEvent,
+    ) -> Result<(), anyhow::Error> {
+        let pe = match pb::EventSlashingPenaltyApplied::from_event(event.as_ref()) {
+            Ok(pe) => pe,
+            Err(_) => return Ok(()),
+        };
+        let ik = IdentityKey::try_from(
+            pe.identity_key
+                .ok_or_else(|| anyhow!("missing ik in event"))?,
+        )?;
+
+        let height = event.block_height;
+        let epoch_index = pe.epoch_index;
+
+        let penalty_json = serde_json::to_string(
+            &pe.new_penalty
+                .ok_or_else(|| anyhow!("missing new_penalty"))?,
+        )?;
+
+        sqlx::query(
+            "INSERT INTO stake_slashings (height, ik, epoch_index, penalty) 
+             VALUES ($1, $2, $3, $4)",
+        )
+        .bind(height as i64)
+        .bind(ik.to_string())
+        .bind(epoch_index as i64)
+        .bind(penalty_json)
+        .execute(dbtx.as_mut())
+        .await?;
+
+        Ok(())
+    }
+}
 
 #[async_trait]
 impl AppView for Slashings {
@@ -41,44 +81,18 @@ impl AppView for Slashings {
         Ok(())
     }
 
-    fn is_relevant(&self, type_str: &str) -> bool {
-        match type_str {
-            "penumbra.core.component.stake.v1.EventSlashingPenaltyApplied" => true,
-            _ => false,
-        }
+    fn name(&self) -> String {
+        "stake/slashings".to_string()
     }
 
-    async fn index_event(
+    async fn index_batch(
         &self,
         dbtx: &mut PgTransaction,
-        event: &ContextualizedEvent,
-        _src_db: &PgPool,
+        batch: EventBatch,
     ) -> Result<(), anyhow::Error> {
-        let pe = pb::EventSlashingPenaltyApplied::from_event(event.as_ref())?;
-        let ik = IdentityKey::try_from(
-            pe.identity_key
-                .ok_or_else(|| anyhow!("missing ik in event"))?,
-        )?;
-
-        let height = event.block_height;
-        let epoch_index = pe.epoch_index;
-
-        let penalty_json = serde_json::to_string(
-            &pe.new_penalty
-                .ok_or_else(|| anyhow!("missing new_penalty"))?,
-        )?;
-
-        sqlx::query(
-            "INSERT INTO stake_slashings (height, ik, epoch_index, penalty) 
-             VALUES ($1, $2, $3, $4)",
-        )
-        .bind(height as i64)
-        .bind(ik.to_string())
-        .bind(epoch_index as i64)
-        .bind(penalty_json)
-        .execute(dbtx.as_mut())
-        .await?;
-
+        for event in batch.events() {
+            self.index_event(dbtx, event).await?;
+        }
         Ok(())
     }
 }

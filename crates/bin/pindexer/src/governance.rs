@@ -1,5 +1,7 @@
 use anyhow::{anyhow, Context, Result};
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{
+    async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
+};
 use penumbra_governance::{
     proposal::ProposalPayloadToml, proposal_state, DelegatorVote, Proposal, ProposalDepositClaim,
     ProposalWithdraw, ValidatorVote,
@@ -10,7 +12,6 @@ use penumbra_proto::{
     event::ProtoEvent,
 };
 use penumbra_stake::IdentityKey;
-use sqlx::PgPool;
 
 #[derive(Debug)]
 pub struct GovernanceProposals {}
@@ -24,16 +25,119 @@ const EVENT_PROPOSAL_FAILED: &str = "penumbra.core.component.governance.v1.Event
 const EVENT_PROPOSAL_SLASHED: &str = "penumbra.core.component.governance.v1.EventProposalSlashed";
 const EVENT_PROPOSAL_DEPOSIT_CLAIM: &str =
     "penumbra.core.component.governance.v1.EventProposalDepositClaim";
-const ALL_RELEVANT_EVENTS: &[&str] = &[
-    EVENT_PROPOSAL_SUBMIT,
-    EVENT_DELEGATOR_VOTE,
-    EVENT_VALIDATOR_VOTE,
-    EVENT_PROPOSAL_WITHDRAW,
-    EVENT_PROPOSAL_PASSED,
-    EVENT_PROPOSAL_FAILED,
-    EVENT_PROPOSAL_SLASHED,
-    EVENT_PROPOSAL_DEPOSIT_CLAIM,
-];
+
+impl GovernanceProposals {
+    async fn index_event(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        event: &ContextualizedEvent,
+    ) -> Result<(), anyhow::Error> {
+        match event.event.kind.as_str() {
+            EVENT_PROPOSAL_SUBMIT => {
+                let pe = pb::EventProposalSubmit::from_event(event.as_ref())?;
+                let start_block_height = pe.start_height;
+                let end_block_height = pe.end_height;
+                let submit = pe
+                    .submit
+                    .ok_or_else(|| anyhow!("missing submit in event"))?;
+                let deposit_amount = submit
+                    .deposit_amount
+                    .ok_or_else(|| anyhow!("missing deposit amount in event"))?
+                    .try_into()
+                    .context("error converting deposit amount")?;
+                let proposal = submit
+                    .proposal
+                    .ok_or_else(|| anyhow!("missing proposal in event"))?
+                    .try_into()
+                    .context("error converting proposal")?;
+                handle_proposal_submit(
+                    dbtx,
+                    proposal,
+                    deposit_amount,
+                    start_block_height,
+                    end_block_height,
+                    event.block_height,
+                )
+                .await?;
+            }
+            EVENT_DELEGATOR_VOTE => {
+                let pe = pb::EventDelegatorVote::from_event(event.as_ref())?;
+                let vote = pe
+                    .vote
+                    .ok_or_else(|| anyhow!("missing vote in event"))?
+                    .try_into()
+                    .context("error converting delegator vote")?;
+                let validator_identity_key = pe
+                    .validator_identity_key
+                    .ok_or_else(|| anyhow!("missing validator identity key in event"))?
+                    .try_into()
+                    .context("error converting validator identity key")?;
+                handle_delegator_vote(dbtx, vote, validator_identity_key, event.block_height)
+                    .await?;
+            }
+            EVENT_VALIDATOR_VOTE => {
+                let pe = pb::EventValidatorVote::from_event(event.as_ref())?;
+                let voting_power = pe.voting_power;
+                let vote = pe
+                    .vote
+                    .ok_or_else(|| anyhow!("missing vote in event"))?
+                    .try_into()
+                    .context("error converting vote")?;
+                handle_validator_vote(dbtx, vote, voting_power, event.block_height).await?;
+            }
+            EVENT_PROPOSAL_WITHDRAW => {
+                let pe = pb::EventProposalWithdraw::from_event(event.as_ref())?;
+                let proposal_withdraw: ProposalWithdraw = pe
+                    .withdraw
+                    .ok_or_else(|| anyhow!("missing withdraw in event"))?
+                    .try_into()
+                    .context("error converting proposal withdraw")?;
+                let proposal = proposal_withdraw.proposal;
+                let reason = proposal_withdraw.reason;
+                handle_proposal_withdraw(dbtx, proposal, reason).await?;
+            }
+            EVENT_PROPOSAL_PASSED => {
+                let pe = pb::EventProposalPassed::from_event(event.as_ref())?;
+                let proposal = pe
+                    .proposal
+                    .ok_or_else(|| anyhow!("missing proposal in event"))?
+                    .try_into()
+                    .context("error converting proposal")?;
+                handle_proposal_passed(dbtx, proposal).await?;
+            }
+            EVENT_PROPOSAL_FAILED => {
+                let pe = pb::EventProposalFailed::from_event(event.as_ref())?;
+                let proposal = pe
+                    .proposal
+                    .ok_or_else(|| anyhow!("missing proposal in event"))?
+                    .try_into()
+                    .context("error converting proposal")?;
+                handle_proposal_failed(dbtx, proposal).await?;
+            }
+            EVENT_PROPOSAL_SLASHED => {
+                let pe = pb::EventProposalSlashed::from_event(event.as_ref())?;
+                let proposal = pe
+                    .proposal
+                    .ok_or_else(|| anyhow!("missing proposal in event"))?
+                    .try_into()
+                    .context("error converting proposal")?;
+                handle_proposal_slashed(dbtx, proposal).await?;
+            }
+            EVENT_PROPOSAL_DEPOSIT_CLAIM => {
+                let pe = pb::EventProposalDepositClaim::from_event(event.as_ref())?;
+                let deposit_claim = pe
+                    .deposit_claim
+                    .ok_or_else(|| anyhow!("missing deposit claim in event"))?
+                    .try_into()
+                    .context("error converting deposit claim")?;
+                handle_proposal_deposit_claim(dbtx, deposit_claim).await?;
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+}
 
 #[async_trait]
 impl AppView for GovernanceProposals {
@@ -213,119 +317,18 @@ impl AppView for GovernanceProposals {
         Ok(())
     }
 
-    fn is_relevant(&self, type_str: &str) -> bool {
-        ALL_RELEVANT_EVENTS.contains(&type_str)
+    fn name(&self) -> String {
+        "governance".to_string()
     }
 
-    async fn index_event(
+    async fn index_batch(
         &self,
         dbtx: &mut PgTransaction,
-        event: &ContextualizedEvent,
-        _src_db: &PgPool,
+        batch: EventBatch,
     ) -> Result<(), anyhow::Error> {
-        match event.event.kind.as_str() {
-            EVENT_PROPOSAL_SUBMIT => {
-                let pe = pb::EventProposalSubmit::from_event(event.as_ref())?;
-                let start_block_height = pe.start_height;
-                let end_block_height = pe.end_height;
-                let submit = pe
-                    .submit
-                    .ok_or_else(|| anyhow!("missing submit in event"))?;
-                let deposit_amount = submit
-                    .deposit_amount
-                    .ok_or_else(|| anyhow!("missing deposit amount in event"))?
-                    .try_into()
-                    .context("error converting deposit amount")?;
-                let proposal = submit
-                    .proposal
-                    .ok_or_else(|| anyhow!("missing proposal in event"))?
-                    .try_into()
-                    .context("error converting proposal")?;
-                handle_proposal_submit(
-                    dbtx,
-                    proposal,
-                    deposit_amount,
-                    start_block_height,
-                    end_block_height,
-                    event.block_height,
-                )
-                .await?;
-            }
-            EVENT_DELEGATOR_VOTE => {
-                let pe = pb::EventDelegatorVote::from_event(event.as_ref())?;
-                let vote = pe
-                    .vote
-                    .ok_or_else(|| anyhow!("missing vote in event"))?
-                    .try_into()
-                    .context("error converting delegator vote")?;
-                let validator_identity_key = pe
-                    .validator_identity_key
-                    .ok_or_else(|| anyhow!("missing validator identity key in event"))?
-                    .try_into()
-                    .context("error converting validator identity key")?;
-                handle_delegator_vote(dbtx, vote, validator_identity_key, event.block_height)
-                    .await?;
-            }
-            EVENT_VALIDATOR_VOTE => {
-                let pe = pb::EventValidatorVote::from_event(event.as_ref())?;
-                let voting_power = pe.voting_power;
-                let vote = pe
-                    .vote
-                    .ok_or_else(|| anyhow!("missing vote in event"))?
-                    .try_into()
-                    .context("error converting vote")?;
-                handle_validator_vote(dbtx, vote, voting_power, event.block_height).await?;
-            }
-            EVENT_PROPOSAL_WITHDRAW => {
-                let pe = pb::EventProposalWithdraw::from_event(event.as_ref())?;
-                let proposal_withdraw: ProposalWithdraw = pe
-                    .withdraw
-                    .ok_or_else(|| anyhow!("missing withdraw in event"))?
-                    .try_into()
-                    .context("error converting proposal withdraw")?;
-                let proposal = proposal_withdraw.proposal;
-                let reason = proposal_withdraw.reason;
-                handle_proposal_withdraw(dbtx, proposal, reason).await?;
-            }
-            EVENT_PROPOSAL_PASSED => {
-                let pe = pb::EventProposalPassed::from_event(event.as_ref())?;
-                let proposal = pe
-                    .proposal
-                    .ok_or_else(|| anyhow!("missing proposal in event"))?
-                    .try_into()
-                    .context("error converting proposal")?;
-                handle_proposal_passed(dbtx, proposal).await?;
-            }
-            EVENT_PROPOSAL_FAILED => {
-                let pe = pb::EventProposalFailed::from_event(event.as_ref())?;
-                let proposal = pe
-                    .proposal
-                    .ok_or_else(|| anyhow!("missing proposal in event"))?
-                    .try_into()
-                    .context("error converting proposal")?;
-                handle_proposal_failed(dbtx, proposal).await?;
-            }
-            EVENT_PROPOSAL_SLASHED => {
-                let pe = pb::EventProposalSlashed::from_event(event.as_ref())?;
-                let proposal = pe
-                    .proposal
-                    .ok_or_else(|| anyhow!("missing proposal in event"))?
-                    .try_into()
-                    .context("error converting proposal")?;
-                handle_proposal_slashed(dbtx, proposal).await?;
-            }
-            EVENT_PROPOSAL_DEPOSIT_CLAIM => {
-                let pe = pb::EventProposalDepositClaim::from_event(event.as_ref())?;
-                let deposit_claim = pe
-                    .deposit_claim
-                    .ok_or_else(|| anyhow!("missing deposit claim in event"))?
-                    .try_into()
-                    .context("error converting deposit claim")?;
-                handle_proposal_deposit_claim(dbtx, deposit_claim).await?;
-            }
-            _ => {}
+        for event in batch.events() {
+            self.index_event(dbtx, event).await?;
         }
-
         Ok(())
     }
 }

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
+use cometindex::{async_trait, index::EventBatch, sqlx, AppView, PgTransaction};
 
 use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
 use penumbra_stake::IdentityKey;
@@ -45,29 +45,33 @@ impl AppView for MissedBlocks {
         Ok(())
     }
 
-    fn is_relevant(&self, type_str: &str) -> bool {
-        type_str == "penumbra.core.component.stake.v1.EventValidatorMissedBlock"
+    fn name(&self) -> String {
+        "stake/missed_blocks".to_string()
     }
 
-    async fn index_event(
+    async fn index_batch(
         &self,
         dbtx: &mut PgTransaction,
-        event: &ContextualizedEvent,
-        _src_db: &PgPool,
+        batch: EventBatch,
     ) -> Result<(), anyhow::Error> {
-        let pe = pb::EventValidatorMissedBlock::from_event(event.as_ref())?;
-        let ik: IdentityKey = pe
-            .identity_key
-            .ok_or_else(|| anyhow::anyhow!("missing ik in event"))?
-            .try_into()?;
+        for event in batch.events() {
+            let pe = match pb::EventValidatorMissedBlock::from_event(event.as_ref()) {
+                Ok(pe) => pe,
+                Err(_) => continue,
+            };
+            let ik: IdentityKey = pe
+                .identity_key
+                .ok_or_else(|| anyhow::anyhow!("missing ik in event"))?
+                .try_into()?;
 
-        let height = event.block_height;
+            let height = event.block_height;
 
-        sqlx::query("INSERT INTO stake_missed_blocks (height, ik) VALUES ($1, $2)")
-            .bind(height as i64)
-            .bind(ik.to_string())
-            .execute(dbtx.as_mut())
-            .await?;
+            sqlx::query("INSERT INTO stake_missed_blocks (height, ik) VALUES ($1, $2)")
+                .bind(height as i64)
+                .bind(ik.to_string())
+                .execute(dbtx.as_mut())
+                .await?;
+        }
 
         Ok(())
     }
