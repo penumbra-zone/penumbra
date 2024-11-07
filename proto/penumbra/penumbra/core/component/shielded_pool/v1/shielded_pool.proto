@@ -42,7 +42,7 @@ message FmdMetaParameters {
   }
 
   // How much time users have to transition to new parameters.
-  uint64 fmd_grace_period_blocks = 1; 
+  uint64 fmd_grace_period_blocks = 1;
   // The algorithm governing how the parameters change.
   oneof algorithm {
     uint32 fixed_precision_bits = 2;
@@ -154,7 +154,10 @@ message SpendBody {
   sct.v1.Nullifier nullifier = 6;
   // The randomized validating key for the spend authorization signature.
   crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 4;
+  // NEW: An encryption of the commitment of the input note to the sender's OVK.
+  optional bytes backref_commitment = 7;
 }
+
 message SpendView {
   message Visible {
     Spend spend = 1;

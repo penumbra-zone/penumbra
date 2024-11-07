@@ -91,6 +91,7 @@ impl From<Body> for pb::SpendBody {
             balance_commitment: Some(msg.balance_commitment.into()),
             nullifier: Some(msg.nullifier.into()),
             rk: Some(msg.rk.into()),
+            backref_commitment: None,
         }
     }
 }
