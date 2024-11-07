@@ -5643,6 +5643,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand",
+ "rand_chacha",
  "rand_core",
  "regex",
  "serde",

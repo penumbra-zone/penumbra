@@ -462,8 +462,12 @@ mod tests {
     /// we compute the same auth hash for the plan and for the transaction.
     #[test]
     fn plan_effect_hash_matches_transaction_effect_hash() {
-        let rng = OsRng;
-        let seed_phrase = SeedPhrase::generate(rng);
+        use rand::{Rng, SeedableRng};
+        use rand_chacha::ChaCha20Rng;
+
+        let seed = [0u8; 32]; // Define a seed (32 bytes for ChaCha20Rng)
+        let mut rng = ChaCha20Rng::from_seed(seed);
+        let seed_phrase = SeedPhrase::generate(rng.clone());
         let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
         let (addr, _dtk) = fvk.incoming().payment_address(0u32.into());
@@ -471,7 +475,7 @@ mod tests {
         let mut sct = tct::Tree::new();
 
         let note0 = Note::generate(
-            &mut OsRng,
+            &mut rng,
             &addr,
             Value {
                 amount: 10000u64.into(),
@@ -479,7 +483,7 @@ mod tests {
             },
         );
         let note1 = Note::generate(
-            &mut OsRng,
+            &mut rng,
             &addr,
             Value {
                 amount: 20000u64.into(),
@@ -502,7 +506,7 @@ mod tests {
         );
 
         let swap_plaintext = SwapPlaintext::new(
-            &mut OsRng,
+            &mut rng,
             trading_pair,
             100000u64.into(),
             1u64.into(),
@@ -516,15 +520,13 @@ mod tests {
             addr.clone(),
         );
 
-        let mut rng = OsRng;
-
         let memo_plaintext = MemoPlaintext::new(Address::dummy(&mut rng), "".to_string()).unwrap();
         let mut plan: TransactionPlan = TransactionPlan {
             // Put outputs first to check that the auth hash
             // computation is not affected by plan ordering.
             actions: vec![
                 OutputPlan::new(
-                    &mut OsRng,
+                    &mut rng,
                     Value {
                         amount: 30000u64.into(),
                         asset_id: *STAKING_TOKEN_ASSET_ID,
@@ -532,9 +534,9 @@ mod tests {
                     addr.clone(),
                 )
                 .into(),
-                SpendPlan::new(&mut OsRng, note0, 0u64.into()).into(),
-                SpendPlan::new(&mut OsRng, note1, 1u64.into()).into(),
-                SwapPlan::new(&mut OsRng, swap_plaintext).into(),
+                SpendPlan::new(&mut rng, note0, 0u64.into()).into(),
+                SpendPlan::new(&mut rng, note1, 1u64.into()).into(),
+                SwapPlan::new(&mut rng, swap_plaintext).into(),
             ],
             transaction_parameters: TransactionParameters {
                 expiry_height: 0,
@@ -542,9 +544,9 @@ mod tests {
                 chain_id: "penumbra-test".to_string(),
             },
             detection_data: Some(DetectionDataPlan {
-                clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1.try_into().unwrap())],
+                clue_plans: vec![CluePlan::new(&mut rng, addr, 1.try_into().unwrap())],
             }),
-            memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone())),
+            memo: Some(MemoPlan::new(&mut rng, memo_plaintext.clone())),
         };
 
         // Sort actions within the transaction plan.
@@ -572,6 +574,8 @@ mod tests {
         let transaction_effect_hash = transaction.effect_hash();
 
         assert_eq!(plan_effect_hash, transaction_effect_hash);
+        println!("{:?}", plan_effect_hash);
+        println!("{:?}", transaction_effect_hash);
 
         let decrypted_memo = transaction.decrypt_memo(fvk).expect("can decrypt memo");
         assert_eq!(decrypted_memo, memo_plaintext);
