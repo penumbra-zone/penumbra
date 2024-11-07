@@ -2,13 +2,11 @@ use std::fmt::Display;
 
 use anyhow::{anyhow, Context};
 use chrono::{Datelike, Days, TimeZone, Timelike as _, Utc};
-use cometindex::{async_trait, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{async_trait, index::EventBatch, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_asset::asset;
 use penumbra_dex::{event::EventCandlestickData, CandlestickData};
 use penumbra_proto::{event::EventDomainType, DomainType};
 use penumbra_sct::event::EventBlockRoot;
-use prost::Name as _;
-use sqlx::PgPool;
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
 
@@ -453,35 +451,11 @@ impl Component {
     pub fn new() -> Self {
         Self {}
     }
-}
-
-#[async_trait]
-impl AppView for Component {
-    async fn init_chain(
-        &self,
-        dbtx: &mut PgTransaction,
-        _: &serde_json::Value,
-    ) -> Result<(), anyhow::Error> {
-        for statement in include_str!("schema.sql").split(";") {
-            sqlx::query(statement).execute(dbtx.as_mut()).await?;
-        }
-        Ok(())
-    }
-
-    fn is_relevant(&self, type_str: &str) -> bool {
-        [
-            <EventCandlestickData as DomainType>::Proto::full_name(),
-            <EventBlockRoot as DomainType>::Proto::full_name(),
-        ]
-        .into_iter()
-        .any(|x| type_str == x)
-    }
 
     async fn index_event(
         &self,
-        dbtx: &mut PgTransaction,
+        dbtx: &mut PgTransaction<'_>,
         event: &ContextualizedEvent,
-        _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         if let Ok(e) = EventCandlestickData::try_from_event(&event.event) {
             let height = event.block_height;
@@ -504,7 +478,35 @@ impl AppView for Component {
             }
             summary::update_all(dbtx, time).await?;
         }
-        tracing::debug!(?event, "unrecognized event");
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl AppView for Component {
+    async fn init_chain(
+        &self,
+        dbtx: &mut PgTransaction,
+        _: &serde_json::Value,
+    ) -> Result<(), anyhow::Error> {
+        for statement in include_str!("schema.sql").split(";") {
+            sqlx::query(statement).execute(dbtx.as_mut()).await?;
+        }
+        Ok(())
+    }
+
+    fn name(&self) -> String {
+        "dex_ex".to_string()
+    }
+
+    async fn index_batch(
+        &self,
+        dbtx: &mut PgTransaction,
+        batch: EventBatch,
+    ) -> Result<(), anyhow::Error> {
+        for event in batch.events() {
+            self.index_event(dbtx, event).await?;
+        }
         Ok(())
     }
 }

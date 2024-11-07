@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 
 use anyhow::{anyhow, Result};
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
+use cometindex::{
+    async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
+};
 
 use penumbra_app::genesis::Content;
 use penumbra_asset::asset;
@@ -17,57 +19,11 @@ use crate::parsing::parse_content;
 #[derive(Debug)]
 pub struct ValidatorSet {}
 
-#[async_trait]
-impl AppView for ValidatorSet {
-    async fn init_chain(
-        &self,
-        dbtx: &mut PgTransaction,
-        app_state: &serde_json::Value,
-    ) -> Result<(), anyhow::Error> {
-        sqlx::query(
-            // table name is module path + struct name
-            // note: protobuf data is encoded as protojson for ease of consumers
-            // hence TEXT fields
-            "CREATE TABLE stake_validator_set (
-                id SERIAL PRIMARY KEY,
-                ik TEXT NOT NULL,
-                name TEXT NOT NULL,
-                definition TEXT NOT NULL,
-                voting_power BIGINT NOT NULL,
-                queued_delegations BIGINT NOT NULL,
-                queued_undelegations BIGINT NOT NULL,
-                validator_state TEXT NOT NULL,
-                bonding_state TEXT NOT NULL
-            );",
-        )
-        .execute(dbtx.as_mut())
-        .await?;
-
-        sqlx::query("CREATE UNIQUE INDEX idx_stake_validator_set_ik ON stake_validator_set(ik);")
-            .execute(dbtx.as_mut())
-            .await?;
-
-        add_genesis_validators(dbtx, &parse_content(app_state.clone())?).await?;
-        Ok(())
-    }
-
-    fn is_relevant(&self, type_str: &str) -> bool {
-        match type_str {
-            "penumbra.core.component.stake.v1.EventValidatorDefinitionUpload" => true,
-            "penumbra.core.component.stake.v1.EventDelegate" => true,
-            "penumbra.core.component.stake.v1.EventUndelegate" => true,
-            "penumbra.core.component.stake.v1.EventValidatorVotingPowerChange" => true,
-            "penumbra.core.component.stake.v1.EventValidatorStateChange" => true,
-            "penumbra.core.component.stake.v1.EventValidatorBondingStateChange" => true,
-            _ => false,
-        }
-    }
-
+impl ValidatorSet {
     async fn index_event(
         &self,
-        dbtx: &mut PgTransaction,
+        dbtx: &mut PgTransaction<'_>,
         event: &ContextualizedEvent,
-        _src_db: &PgPool,
     ) -> Result<(), anyhow::Error> {
         match event.event.kind.as_str() {
             "penumbra.core.component.stake.v1.EventValidatorDefinitionUpload" => {
@@ -142,6 +98,56 @@ impl AppView for ValidatorSet {
             _ => {}
         }
 
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl AppView for ValidatorSet {
+    async fn init_chain(
+        &self,
+        dbtx: &mut PgTransaction,
+        app_state: &serde_json::Value,
+    ) -> Result<(), anyhow::Error> {
+        sqlx::query(
+            // table name is module path + struct name
+            // note: protobuf data is encoded as protojson for ease of consumers
+            // hence TEXT fields
+            "CREATE TABLE stake_validator_set (
+                id SERIAL PRIMARY KEY,
+                ik TEXT NOT NULL,
+                name TEXT NOT NULL,
+                definition TEXT NOT NULL,
+                voting_power BIGINT NOT NULL,
+                queued_delegations BIGINT NOT NULL,
+                queued_undelegations BIGINT NOT NULL,
+                validator_state TEXT NOT NULL,
+                bonding_state TEXT NOT NULL
+            );",
+        )
+        .execute(dbtx.as_mut())
+        .await?;
+
+        sqlx::query("CREATE UNIQUE INDEX idx_stake_validator_set_ik ON stake_validator_set(ik);")
+            .execute(dbtx.as_mut())
+            .await?;
+
+        add_genesis_validators(dbtx, &parse_content(app_state.clone())?).await?;
+        Ok(())
+    }
+
+    fn name(&self) -> String {
+        "stake/validator_set".to_string()
+    }
+
+    async fn index_batch(
+        &self,
+        dbtx: &mut PgTransaction,
+        batch: EventBatch,
+    ) -> Result<(), anyhow::Error> {
+        for event in batch.events() {
+            self.index_event(dbtx, event).await?;
+        }
         Ok(())
     }
 }

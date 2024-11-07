@@ -55,6 +55,8 @@ CREATE TABLE events (
   type VARCHAR NOT NULL
 );
 
+CREATE INDEX ON events(block_id);
+
 -- The attributes table records event attributes.
 CREATE TABLE attributes (
    event_id      BIGINT NOT NULL REFERENCES events(rowid),
