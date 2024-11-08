@@ -8,6 +8,7 @@
 pub mod metrics;
 
 pub mod cli;
+pub mod compat;
 pub mod migrate;
 pub mod network;
 pub mod zipserve;

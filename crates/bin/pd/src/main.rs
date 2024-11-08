@@ -12,6 +12,7 @@ use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{NetworkCommand, Opt, RootCommand},
+    compat::get_state_version,
     migrate::Migration::{Mainnet1, ReadyToStart},
     network::{
         config::{get_network_dir, parse_tm_address, url_has_necessary_parts},
@@ -97,11 +98,14 @@ async fn main() -> anyhow::Result<()> {
             };
             let rocksdb_home = pd_home.join("rocksdb");
 
-            let storage = Storage::load(rocksdb_home, SUBSTORE_PREFIXES.to_vec())
+            let storage = Storage::load(rocksdb_home.clone(), SUBSTORE_PREFIXES.to_vec())
                 .await
                 .context(
                     "Unable to initialize RocksDB storage - is there another `pd` process running?",
                 )?;
+            tracing::debug!(?rocksdb_home, "inspecting state version");
+            let v = get_state_version(storage.clone()).await?.unwrap();
+            tracing::warn!("found state version: {}", v);
 
             tracing::info!(
                 ?abci_bind,
