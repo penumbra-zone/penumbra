@@ -1,3 +1,4 @@
+use penumbra_keys::BackreferenceKey;
 use penumbra_tct as tct;
 
 pub const ENCRYPTED_BACKREF_LEN: usize = 48;
