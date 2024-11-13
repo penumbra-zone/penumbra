@@ -12,7 +12,7 @@ use crate::keys::wallet_id::WalletId;
 use crate::{
     fmd, ka, prf,
     rdsa::{SpendAuth, VerificationKey},
-    Address, AddressView,
+    Address, AddressView, BackreferenceKey,
 };
 
 use super::{AddressIndex, DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
@@ -118,6 +118,11 @@ impl FullViewingKey {
     /// Returns the spend verification key contained in this full viewing key.
     pub fn spend_verification_key(&self) -> &VerificationKey<SpendAuth> {
         &self.ak
+    }
+
+    /// Construct the backreference key for this full viewing key.
+    pub fn backref_key(&self) -> BackreferenceKey {
+        BackreferenceKey::derive(self.outgoing()).clone()
     }
 
     /// Hashes the full viewing key into an [`WalletId`].

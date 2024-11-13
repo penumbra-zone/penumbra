@@ -93,7 +93,7 @@ impl From<Body> for pb::SpendBody {
             balance_commitment: Some(msg.balance_commitment.into()),
             nullifier: Some(msg.nullifier.into()),
             rk: Some(msg.rk.into()),
-            encrypted_backref: msg.encrypted_backref.bytes,
+            encrypted_backref: msg.encrypted_backref.into(),
         }
     }
 }
@@ -121,14 +121,20 @@ impl TryFrom<pb::SpendBody> for Body {
             .context("malformed rk")?;
 
         // `EncryptedBackref` must have 0 or `ENCRYPTED_BACKREF_LEN` bytes.
-        if proto.encrypted_backref.len() != ENCRYPTED_BACKREF_LEN
-            && proto.encrypted_backref.len() != 0
-        {
+        let encrypted_backref: EncryptedBackref;
+        if proto.encrypted_backref.len() == ENCRYPTED_BACKREF_LEN {
+            let bytes: [u8; ENCRYPTED_BACKREF_LEN] = proto
+                .encrypted_backref
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("invalid encrypted backref"))?;
+            encrypted_backref = EncryptedBackref::try_from(bytes)
+                .map_err(|_| anyhow::anyhow!("invalid encrypted backref"))?;
+        } else if proto.encrypted_backref.len() == 0 {
+            encrypted_backref = EncryptedBackref::try_from([0u8; ENCRYPTED_BACKREF_LEN])
+                .context("invalid encrypted backref")?;
+        } else {
             return Err(anyhow::anyhow!("invalid encrypted backref length"));
         }
-        let encrypted_backref = EncryptedBackref {
-            bytes: proto.encrypted_backref,
-        };
 
         Ok(Body {
             balance_commitment,
