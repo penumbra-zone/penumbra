@@ -95,7 +95,7 @@ async fn write_app_version_safeguard<S: StateWriteProto>(s: &mut S, x: u64) -> a
 ///
 /// You should call this before starting a node.
 ///
-/// This will succeed if no app version is saved, or if the app version saved matches
+/// This will succeed if no app version was found in local storage, or if the app version saved matches
 /// exactly.
 ///
 /// This will also result in the current app version being stored, so that future
@@ -118,7 +118,7 @@ pub async fn assert_latest_app_version(s: Storage) -> anyhow::Result<()> {
 ///
 /// This will check that the app version is currently the previous version, if set at all.
 ///
-/// This is the only way to change the app version, and should be called during a migration
+/// This is the recommended way to change the app version, and should be called during a migration
 /// with breaking consensus logic.
 pub async fn migrate_app_version<S: StateWriteProto>(s: &mut S, to: u64) -> anyhow::Result<()> {
     anyhow::ensure!(to > 1, "you can't migrate to the first penumbra version!");

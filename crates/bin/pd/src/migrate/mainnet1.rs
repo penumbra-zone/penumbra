@@ -113,7 +113,7 @@ pub async fn migrate(
         let start_time = std::time::SystemTime::now();
 
         // Note, when this bit of code was added, the upgrade happened months ago,
-        // and the verison safeguard mechanism was not in place. However,
+        // and the version safeguard mechanism was not in place. However,
         // adding this will prevent someone running version 0.80.X with the
         // safeguard patch from accidentally running the migraton again, since they
         // will already have version 8 written into the state. But, if someone is syncing
