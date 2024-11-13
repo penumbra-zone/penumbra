@@ -40,3 +40,25 @@ impl Backref {
         Ok(EncryptedBackref { bytes: ciphertext })
     }
 }
+
+impl EncryptedBackref {
+    pub fn decrypt(&self, brk: &BackreferenceKey, nullifier: &Nullifier) -> Result<Backref> {
+        let cipher = ChaCha20Poly1305::new(&brk.0);
+
+        let nonce_bytes = &nullifier.to_bytes()[..12];
+        let nonce = Nonce::from_slice(&nonce_bytes);
+
+        let plaintext = cipher
+            .decrypt(nonce, self.bytes.as_ref())
+            .map_err(|_| anyhow::anyhow!("decryption error"))?;
+
+        let note_commitment_bytes: [u8; 32] = plaintext
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("decryption error"))?;
+
+        Ok(Backref {
+            note_commitment: tct::StateCommitment::try_from(note_commitment_bytes)
+                .map_err(|_| anyhow::anyhow!("decryption error"))?,
+        })
+    }
+}
