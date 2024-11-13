@@ -11,7 +11,7 @@ use penumbra_keys::{
 };
 use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{Note, NoteView};
+use penumbra_shielded_pool::{EncryptedBackref, Note, NoteView};
 use penumbra_tct::structure::Hash;
 use penumbra_transaction::{view, ActionPlan, ActionView, TransactionPlan, TransactionView};
 use termion::{color, input::TermRead};
@@ -82,6 +82,8 @@ fn pretty_print_transaction_plan(
                 balance_commitment: dummy_commitment(),
                 nullifier: Nullifier(Fq::default()),
                 rk: dummy_pk(),
+                // todo: populate property
+                encrypted_backref: EncryptedBackref { bytes: vec![] },
             },
             auth_sig: dummy_sig(),
             proof: dummy_proof_spend(),

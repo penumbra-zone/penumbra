@@ -9,7 +9,7 @@ use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use super::{Body, Spend, SpendProof};
-use crate::{Note, Rseed, SpendProofPrivate, SpendProofPublic};
+use crate::{EncryptedBackref, Note, Rseed, SpendProofPrivate, SpendProofPublic};
 
 /// A planned [`Spend`](Spend).
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -79,6 +79,8 @@ impl SpendPlan {
             balance_commitment: self.balance().commit(self.value_blinding),
             nullifier: self.nullifier(fvk),
             rk: self.rk(fvk),
+            // todo: populate property
+            encrypted_backref: EncryptedBackref { bytes: vec![] },
         }
     }
 

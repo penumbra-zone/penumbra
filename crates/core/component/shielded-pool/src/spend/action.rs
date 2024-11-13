@@ -9,6 +9,7 @@ use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::SpendProof;
+use crate::{backref::ENCRYPTED_BACKREF_LEN, EncryptedBackref};
 
 #[derive(Clone, Debug)]
 pub struct Spend {
@@ -23,6 +24,7 @@ pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub nullifier: Nullifier,
     pub rk: VerificationKey<SpendAuth>,
+    pub encrypted_backref: EncryptedBackref,
 }
 
 impl EffectingData for Body {
@@ -91,6 +93,7 @@ impl From<Body> for pb::SpendBody {
             balance_commitment: Some(msg.balance_commitment.into()),
             nullifier: Some(msg.nullifier.into()),
             rk: Some(msg.rk.into()),
+            encrypted_backref: msg.encrypted_backref.bytes,
         }
     }
 }
@@ -117,10 +120,21 @@ impl TryFrom<pb::SpendBody> for Body {
             .try_into()
             .context("malformed rk")?;
 
+        // `EncryptedBackref` must have 0 or `ENCRYPTED_BACKREF_LEN` bytes.
+        if proto.encrypted_backref.len() != ENCRYPTED_BACKREF_LEN
+            && proto.encrypted_backref.len() != 0
+        {
+            return Err(anyhow::anyhow!("invalid encrypted backref length"));
+        }
+        let encrypted_backref = EncryptedBackref {
+            bytes: proto.encrypted_backref,
+        };
+
         Ok(Body {
             balance_commitment,
             nullifier,
             rk,
+            encrypted_backref,
         })
     }
 }
