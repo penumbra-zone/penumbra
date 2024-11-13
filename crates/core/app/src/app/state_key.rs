@@ -1,3 +1,9 @@
+pub mod app_version {
+    pub fn safeguard() -> &'static str {
+        "application/version/safeguard"
+    }
+}
+
 pub mod genesis {
     pub fn app_state() -> &'static str {
         "application/genesis/app_state"

@@ -71,13 +71,9 @@ fn check_version(ctx: CheckContext, expected: u64, found: Option<u64>) -> anyhow
     }
 }
 
-fn state_key() -> Vec<u8> {
-    b"penumbra_app_version_safeguard".to_vec()
-}
-
 async fn read_app_version_safeguard<S: StateReadProto>(s: &S) -> anyhow::Result<Option<u64>> {
     let out = s
-        .nonverifiable_get_proto(&state_key())
+        .nonverifiable_get_proto(crate::app::state_key::app_version::safeguard().as_bytes())
         .await
         .context("while reading app version safeguard")?;
     Ok(out)
@@ -86,7 +82,12 @@ async fn read_app_version_safeguard<S: StateReadProto>(s: &S) -> anyhow::Result<
 // Neither async nor a result are needed, but only right now, so I'm putting these here
 // to reserve the right to change them later.
 async fn write_app_version_safeguard<S: StateWriteProto>(s: &mut S, x: u64) -> anyhow::Result<()> {
-    s.nonverifiable_put_proto(state_key(), x);
+    s.nonverifiable_put_proto(
+        crate::app::state_key::app_version::safeguard()
+            .as_bytes()
+            .to_vec(),
+        x,
+    );
     Ok(())
 }
 
