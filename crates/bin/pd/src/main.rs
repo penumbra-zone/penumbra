@@ -19,7 +19,7 @@ use pd::{
         join::network_join,
     },
 };
-use penumbra_app::app_version::{assert_latest_app_version, migrate_app_version};
+use penumbra_app::app_version::assert_latest_app_version;
 use penumbra_app::SUBSTORE_PREFIXES;
 use rand::Rng;
 use rand_core::OsRng;
