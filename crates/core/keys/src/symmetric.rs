@@ -347,7 +347,7 @@ impl TryFrom<&[u8]> for WrappedMemoKey {
 
 /// Represents a symmetric `ChaCha20Poly1305` key used for Spend backreferences.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct BackreferenceKey(Key);
+pub struct BackreferenceKey(pub Key);
 
 impl BackreferenceKey {
     pub fn derive(ovk: &OutgoingViewingKey) -> Self {
