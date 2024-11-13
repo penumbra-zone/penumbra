@@ -3789,6 +3789,9 @@ impl serde::Serialize for SpendBody {
         if self.rk.is_some() {
             len += 1;
         }
+        if !self.encrypted_backref.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.SpendBody", len)?;
         if let Some(v) = self.balance_commitment.as_ref() {
             struct_ser.serialize_field("balanceCommitment", v)?;
@@ -3798,6 +3801,10 @@ impl serde::Serialize for SpendBody {
         }
         if let Some(v) = self.rk.as_ref() {
             struct_ser.serialize_field("rk", v)?;
+        }
+        if !self.encrypted_backref.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("encryptedBackref", pbjson::private::base64::encode(&self.encrypted_backref).as_str())?;
         }
         struct_ser.end()
     }
@@ -3813,6 +3820,8 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
             "balanceCommitment",
             "nullifier",
             "rk",
+            "encrypted_backref",
+            "encryptedBackref",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3820,6 +3829,7 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
             BalanceCommitment,
             Nullifier,
             Rk,
+            EncryptedBackref,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3845,6 +3855,7 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                             "balanceCommitment" | "balance_commitment" => Ok(GeneratedField::BalanceCommitment),
                             "nullifier" => Ok(GeneratedField::Nullifier),
                             "rk" => Ok(GeneratedField::Rk),
+                            "encryptedBackref" | "encrypted_backref" => Ok(GeneratedField::EncryptedBackref),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3867,6 +3878,7 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                 let mut balance_commitment__ = None;
                 let mut nullifier__ = None;
                 let mut rk__ = None;
+                let mut encrypted_backref__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::BalanceCommitment => {
@@ -3887,6 +3899,14 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                             }
                             rk__ = map_.next_value()?;
                         }
+                        GeneratedField::EncryptedBackref => {
+                            if encrypted_backref__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("encryptedBackref"));
+                            }
+                            encrypted_backref__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3896,6 +3916,7 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                     balance_commitment: balance_commitment__,
                     nullifier: nullifier__,
                     rk: rk__,
+                    encrypted_backref: encrypted_backref__.unwrap_or_default(),
                 })
             }
         }
