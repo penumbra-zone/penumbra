@@ -1,7 +1,8 @@
 use std::fmt::Write as _;
 
 use anyhow::{anyhow, Context};
-use cnidarium::{StateDelta, StateRead, StateWrite, Storage};
+use cnidarium::{StateDelta, Storage};
+use penumbra_proto::{StateReadProto, StateWriteProto};
 
 use super::APP_VERSION;
 
@@ -74,29 +75,18 @@ fn state_key() -> Vec<u8> {
     b"penumbra_app_version_safeguard".to_vec()
 }
 
-async fn read_app_version_safeguard<S: StateRead>(s: &S) -> anyhow::Result<Option<u64>> {
-    const CTX: &'static str = "while reading app_version_safeguard";
-
-    let res = s.nonverifiable_get_raw(&state_key()).await.context(CTX)?;
-    match res {
-        None => Ok(None),
-        Some(x) => {
-            let bytes: [u8; 8] = x
-                .try_into()
-                .map_err(|bad: Vec<u8>| {
-                    anyhow!("expected bytes to have length 8, found: {}", bad.len())
-                })
-                .context(CTX)?;
-            Ok(Some(u64::from_le_bytes(bytes)))
-        }
-    }
+async fn read_app_version_safeguard<S: StateReadProto>(s: &S) -> anyhow::Result<Option<u64>> {
+    let out = s
+        .nonverifiable_get_proto(&state_key())
+        .await
+        .context("while reading app version safeguard")?;
+    Ok(out)
 }
 
 // Neither async nor a result are needed, but only right now, so I'm putting these here
 // to reserve the right to change them later.
-async fn write_app_version_safeguard<S: StateWrite>(s: &mut S, x: u64) -> anyhow::Result<()> {
-    let bytes = u64::to_le_bytes(x).to_vec();
-    s.nonverifiable_put_raw(state_key(), bytes);
+async fn write_app_version_safeguard<S: StateWriteProto>(s: &mut S, x: u64) -> anyhow::Result<()> {
+    s.nonverifiable_put_proto(state_key(), x);
     Ok(())
 }
 
@@ -129,7 +119,7 @@ pub async fn assert_latest_app_version(s: Storage) -> anyhow::Result<()> {
 ///
 /// This is the only way to change the app version, and should be called during a migration
 /// with breaking consensus logic.
-pub async fn migrate_app_version<S: StateWrite>(s: &mut S, to: u64) -> anyhow::Result<()> {
+pub async fn migrate_app_version<S: StateWriteProto>(s: &mut S, to: u64) -> anyhow::Result<()> {
     anyhow::ensure!(to > 1, "you can't migrate to the first penumbra version!");
     let found = read_app_version_safeguard(s).await?;
     check_version(CheckContext::Migration, to - 1, found)?;
