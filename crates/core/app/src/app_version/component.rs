@@ -110,6 +110,11 @@ async fn write_app_version_safeguard<S: StateWrite>(s: &mut S, x: u64) -> anyhow
 /// This will also result in the current app version being stored, so that future
 /// calls to this function will be checked against this state.
 pub async fn assert_latest_app_version(s: Storage) -> anyhow::Result<()> {
+    // If the storage is not initialized, avoid touching it at all,
+    // to avoid complaints about it already being initialized before the first genesis.
+    if s.latest_version() == u64::MAX {
+        return Ok(());
+    }
     let mut delta = StateDelta::new(s.latest_snapshot());
     let found = read_app_version_safeguard(&delta).await?;
     check_version(CheckContext::Running, APP_VERSION, found)?;
