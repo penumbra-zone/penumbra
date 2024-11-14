@@ -52,7 +52,7 @@ fn check_version(ctx: CheckContext, expected: u64, found: Option<u64>) -> anyhow
         }
         CheckContext::Migration => {
             let expected_name = version_to_software_version(expected);
-            let found_name = version_to_software_version(expected);
+            let found_name = version_to_software_version(found);
             let mut error = String::new();
             error.push_str("app version mismatch:\n");
             write!(
