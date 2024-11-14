@@ -127,3 +127,20 @@ pub async fn migrate_app_version<S: StateWriteProto>(s: &mut S, to: u64) -> anyh
     write_app_version_safeguard(s, to).await?;
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    /// Confirm there's a matching branch on the APP_VERSION to crate version lookup.
+    /// It's possible to overlook that update when bumping the APP_VERSION, so this test
+    /// ensures that if the APP_VERSION was changed, so was the match arm.
+    fn ensure_app_version_is_current_in_checks() -> anyhow::Result<()> {
+        let result = version_to_software_version(APP_VERSION);
+        assert!(
+            result != "unknown",
+            "APP_VERSION lacks a corresponding software version"
+        );
+        Ok(())
+    }
+}
