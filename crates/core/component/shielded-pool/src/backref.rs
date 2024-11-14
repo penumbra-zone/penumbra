@@ -10,6 +10,7 @@ use penumbra_tct as tct;
 
 pub const ENCRYPTED_BACKREF_LEN: usize = 48;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Backref {
     note_commitment: tct::StateCommitment,
 }
@@ -108,5 +109,53 @@ impl TryFrom<[u8; 0]> for EncryptedBackref {
 impl From<EncryptedBackref> for Vec<u8> {
     fn from(encrypted_backref: EncryptedBackref) -> Vec<u8> {
         encrypted_backref.bytes
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use penumbra_asset::{asset, Value};
+    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use rand_core::OsRng;
+
+    use crate::Note;
+
+    #[test]
+    fn encrypted_backref_round_trip() {
+        let rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk = sk.full_viewing_key();
+        let brk = fvk.backref_key();
+
+        let ivk = fvk.incoming();
+        let (sender, _dtk_d) = ivk.payment_address(0u32.into());
+
+        let value_to_send = Value {
+            amount: 1u64.into(),
+            asset_id: asset::Cache::with_known_assets()
+                .get_unit("upenumbra")
+                .unwrap()
+                .id(),
+        };
+
+        let note = Note::generate(&mut OsRng, &sender, value_to_send);
+        let note_commitment: penumbra_tct::StateCommitment = note.commit();
+        let nk = *sk.nullifier_key();
+        let mut sct = tct::Tree::new();
+
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
+        let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
+
+        let backref = Backref::new(note_commitment);
+        let encrypted_backref = backref.encrypt(&brk, &nullifier).unwrap();
+
+        let decrypted_backref = encrypted_backref.decrypt(&brk, &nullifier).unwrap();
+
+        assert_eq!(backref, decrypted_backref);
     }
 }
