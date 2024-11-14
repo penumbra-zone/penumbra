@@ -135,85 +135,87 @@ impl From<EncryptedBackref> for Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-    use rand_core::OsRng;
 
-    use crate::Note;
+    use crate::{Note, Rseed};
 
-    #[test]
-    fn encrypted_backref_zero_length() {
-        let rng = OsRng;
+    proptest! {
+        #[test]
+        fn encrypted_backref_zero_length(seed_phrase_randomness in any::<[u8; 32]>(), amount_to_send in any::<u64>(), rseed_randomness in any::<[u8; 32]>()) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk = sk.full_viewing_key();
+            let brk = fvk.backref_key();
 
-        let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let fvk = sk.full_viewing_key();
-        let brk = fvk.backref_key();
+            let ivk = fvk.incoming();
+            let (sender, _dtk_d) = ivk.payment_address(0u32.into());
 
-        let ivk = fvk.incoming();
-        let (sender, _dtk_d) = ivk.payment_address(0u32.into());
+            let value_to_send = Value {
+                amount: amount_to_send.into(),
+                asset_id: asset::Cache::with_known_assets()
+                    .get_unit("upenumbra")
+                    .unwrap()
+                    .id(),
+            };
+            let rseed = Rseed(rseed_randomness);
 
-        let value_to_send = Value {
-            amount: 1u64.into(),
-            asset_id: asset::Cache::with_known_assets()
-                .get_unit("upenumbra")
-                .unwrap()
-                .id(),
-        };
+            let note = Note::from_parts(sender, value_to_send, rseed).expect("valid note");
+            let note_commitment: penumbra_tct::StateCommitment = note.commit();
+            let nk = *sk.nullifier_key();
+            let mut sct = tct::Tree::new();
 
-        let note = Note::generate(&mut OsRng, &sender, value_to_send);
-        let note_commitment: penumbra_tct::StateCommitment = note.commit();
-        let nk = *sk.nullifier_key();
-        let mut sct = tct::Tree::new();
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
-        let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
+            let encrypted_backref = EncryptedBackref::dummy();
+            assert!(encrypted_backref.is_empty());
+            assert_eq!(encrypted_backref.len(), 0);
 
-        let encrypted_backref = EncryptedBackref::dummy();
-        assert!(encrypted_backref.is_empty());
-        assert_eq!(encrypted_backref.len(), 0);
-
-        // Decrypting a zero-length encrypted backref should return `None`.
-        let decrypted_backref = encrypted_backref.decrypt(&brk, &nullifier).unwrap();
-        assert_eq!(decrypted_backref, None);
+            // Decrypting a zero-length encrypted backref should return `None`.
+            let decrypted_backref = encrypted_backref.decrypt(&brk, &nullifier).unwrap();
+            assert_eq!(decrypted_backref, None);
+        }
     }
 
-    #[test]
-    fn encrypted_backref_round_trip() {
-        let rng = OsRng;
+    proptest! {
+        #[test]
+        fn encrypted_backref_round_trip(seed_phrase_randomness in any::<[u8; 32]>(), amount_to_send in any::<u64>(), rseed_randomness in any::<[u8; 32]>()) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk = sk.full_viewing_key();
+            let brk = fvk.backref_key();
 
-        let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let fvk = sk.full_viewing_key();
-        let brk = fvk.backref_key();
+            let ivk = fvk.incoming();
+            let (sender, _dtk_d) = ivk.payment_address(0u32.into());
 
-        let ivk = fvk.incoming();
-        let (sender, _dtk_d) = ivk.payment_address(0u32.into());
+            let value_to_send = Value {
+                amount: amount_to_send.into(),
+                asset_id: asset::Cache::with_known_assets()
+                    .get_unit("upenumbra")
+                    .unwrap()
+                    .id(),
+            };
+            let rseed = Rseed(rseed_randomness);
 
-        let value_to_send = Value {
-            amount: 1u64.into(),
-            asset_id: asset::Cache::with_known_assets()
-                .get_unit("upenumbra")
-                .unwrap()
-                .id(),
-        };
+            let note = Note::from_parts(sender, value_to_send, rseed).expect("valid note");
+            let note_commitment: penumbra_tct::StateCommitment = note.commit();
+            let nk = *sk.nullifier_key();
+            let mut sct = tct::Tree::new();
 
-        let note = Note::generate(&mut OsRng, &sender, value_to_send);
-        let note_commitment: penumbra_tct::StateCommitment = note.commit();
-        let nk = *sk.nullifier_key();
-        let mut sct = tct::Tree::new();
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
-        let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
+            let backref = Backref::new(note_commitment);
+            let encrypted_backref = backref.encrypt(&brk, &nullifier).unwrap();
 
-        let backref = Backref::new(note_commitment);
-        let encrypted_backref = backref.encrypt(&brk, &nullifier).unwrap();
+            let decrypted_backref = encrypted_backref.decrypt(&brk, &nullifier).unwrap();
 
-        let decrypted_backref = encrypted_backref.decrypt(&brk, &nullifier).unwrap();
-
-        assert_eq!(Some(backref), decrypted_backref);
+            assert_eq!(Some(backref), decrypted_backref);
+        }
     }
 }
