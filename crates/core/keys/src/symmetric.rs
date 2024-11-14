@@ -353,7 +353,7 @@ impl BackreferenceKey {
     pub fn derive(ovk: &OutgoingViewingKey) -> Self {
         let mut kdf_params = blake2b_simd::Params::new();
         kdf_params.personal(b"Penumbra_Backref");
-        kdf_params.hash_length(64);
+        kdf_params.hash_length(32);
         let mut kdf = kdf_params.to_state();
         kdf.update(&ovk.to_bytes());
 
