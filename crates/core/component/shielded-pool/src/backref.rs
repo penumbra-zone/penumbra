@@ -48,12 +48,29 @@ impl Backref {
 }
 
 impl EncryptedBackref {
-    pub fn decrypt(&self, brk: &BackreferenceKey, nullifier: &Nullifier) -> Result<Backref> {
+    pub fn is_empty(&self) -> bool {
+        self.bytes.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.bytes.len()
+    }
+
+    pub fn dummy() -> Self {
+        Self { bytes: vec![] }
+    }
+
+    /// Decrypts the encrypted backref, returning a backref if the decryption is successful,
+    /// or `None` if the encrypted backref is zero-length.
+    pub fn decrypt(
+        &self,
+        brk: &BackreferenceKey,
+        nullifier: &Nullifier,
+    ) -> Result<Option<Backref>> {
         // We might have a 0-length encrypted backref, which
         // is treated as a valid value and means that the note has no backref.
-        if self.bytes.is_empty() {
-            let zero_commitment = tct::StateCommitment::try_from([0u8; 32])?;
-            return Ok(Backref::new(zero_commitment));
+        if self.is_empty() {
+            return Ok(None);
         }
 
         let cipher = ChaCha20Poly1305::new(&brk.0);
@@ -69,7 +86,10 @@ impl EncryptedBackref {
             .try_into()
             .map_err(|_| anyhow::anyhow!("decryption error"))?;
 
-        Backref::try_from(note_commitment_bytes).map_err(|_| anyhow::anyhow!("decryption error"))
+        let backref = Backref::try_from(note_commitment_bytes)
+            .map_err(|_| anyhow::anyhow!("decryption error"))?;
+
+        Ok(Some(backref))
     }
 }
 
