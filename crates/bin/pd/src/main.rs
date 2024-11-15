@@ -19,6 +19,7 @@ use pd::{
         join::network_join,
     },
 };
+use penumbra_app::app_version::assert_latest_app_version;
 use penumbra_app::SUBSTORE_PREFIXES;
 use rand::Rng;
 use rand_core::OsRng;
@@ -102,6 +103,7 @@ async fn main() -> anyhow::Result<()> {
                 .context(
                     "Unable to initialize RocksDB storage - is there another `pd` process running?",
                 )?;
+            assert_latest_app_version(storage.clone()).await?;
 
             tracing::info!(
                 ?abci_bind,

@@ -7,6 +7,7 @@ use ibc_types::core::channel::{Packet, PortId};
 use ibc_types::transfer::acknowledgement::TokenTransferAcknowledgement;
 use jmt::RootHash;
 use penumbra_app::app::StateReadExt as _;
+use penumbra_app::app_version::migrate_app_version;
 use penumbra_governance::StateWriteExt;
 use penumbra_ibc::{component::ChannelStateWriteExt as _, IbcRelay};
 use penumbra_sct::component::clock::EpochManager;
@@ -110,6 +111,16 @@ pub async fn migrate(
     let mut delta = StateDelta::new(initial_state);
     let (migration_duration, post_upgrade_root_hash) = {
         let start_time = std::time::SystemTime::now();
+
+        // Note, when this bit of code was added, the upgrade happened months ago,
+        // and the version safeguard mechanism was not in place. However,
+        // adding this will prevent someone running version 0.80.X with the
+        // safeguard patch from accidentally running the migraton again, since they
+        // will already have version 8 written into the state. But, if someone is syncing
+        // up from genesis, then version 0.79 will not have written anything into the safeguard,
+        // and this method will not complain. So, this addition provides a safeguard
+        // for existing nodes, while also not impeding syncing up a node from scratch.
+        migrate_app_version(&mut delta, 8).await?;
 
         // Reinsert all of the erroneously removed packets
         replace_lost_packets(&mut delta).await?;

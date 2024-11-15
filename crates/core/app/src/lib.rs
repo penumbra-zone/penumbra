@@ -13,9 +13,8 @@ pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> = Lazy::new(|| {
 /// The substore prefix used for storing historical CometBFT block data.
 pub static COMETBFT_SUBSTORE_PREFIX: &'static str = "cometbft-data";
 
-/// Representation of the Penumbra application version. Notably, this is distinct
-/// from the crate version(s). This number should only ever be incremented.
-pub const APP_VERSION: u64 = 8;
+pub mod app_version;
+pub use app_version::APP_VERSION;
 
 pub mod genesis;
 pub mod params;
