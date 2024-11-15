@@ -54,6 +54,14 @@ fn check_version(ctx: CheckContext, expected: u64, found: Option<u64>) -> anyhow
             let expected_name = version_to_software_version(expected);
             let found_name = version_to_software_version(found);
             let mut error = String::new();
+            if found == APP_VERSION {
+                write!(
+                    &mut error,
+                    "state already migrated to version {}",
+                    APP_VERSION
+                )?;
+                anyhow::bail!(error);
+            }
             error.push_str("app version mismatch:\n");
             write!(
                 &mut error,
