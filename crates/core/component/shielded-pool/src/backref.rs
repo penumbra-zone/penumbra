@@ -26,11 +26,7 @@ impl Backref {
         Self { note_commitment }
     }
 
-    pub fn encrypt(
-        &self,
-        brk: &BackreferenceKey,
-        nullifier: &Nullifier,
-    ) -> Result<EncryptedBackref> {
+    pub fn encrypt(&self, brk: &BackreferenceKey, nullifier: &Nullifier) -> EncryptedBackref {
         let cipher = ChaCha20Poly1305::new(&brk.0);
 
         // Nonce is the first 12 bytes of the nullifier
@@ -41,9 +37,9 @@ impl Backref {
 
         let ciphertext = cipher
             .encrypt(nonce, plaintext.as_ref())
-            .map_err(|_| anyhow::anyhow!("encryption error"))?;
+            .expect("encryption should succeed  ");
 
-        Ok(EncryptedBackref { bytes: ciphertext })
+        EncryptedBackref { bytes: ciphertext }
     }
 }
 
@@ -211,7 +207,7 @@ mod tests {
             let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
             let backref = Backref::new(note_commitment);
-            let encrypted_backref = backref.encrypt(&brk, &nullifier).unwrap();
+            let encrypted_backref = backref.encrypt(&brk, &nullifier);
 
             let decrypted_backref = encrypted_backref.decrypt(&brk, &nullifier).unwrap();
 
