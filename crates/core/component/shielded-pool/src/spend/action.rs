@@ -130,8 +130,7 @@ impl TryFrom<pb::SpendBody> for Body {
             encrypted_backref = EncryptedBackref::try_from(bytes)
                 .map_err(|_| anyhow::anyhow!("invalid encrypted backref"))?;
         } else if proto.encrypted_backref.len() == 0 {
-            encrypted_backref = EncryptedBackref::try_from([0u8; ENCRYPTED_BACKREF_LEN])
-                .context("invalid encrypted backref")?;
+            encrypted_backref = EncryptedBackref::dummy();
         } else {
             return Err(anyhow::anyhow!("invalid encrypted backref length"));
         }
