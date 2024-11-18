@@ -1,7 +1,9 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 
 use anyhow::{anyhow, Result};
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{
+    async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
+};
 use penumbra_app::genesis::Content;
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
@@ -13,7 +15,7 @@ use penumbra_proto::{
     },
 };
 use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::{Postgres, Transaction};
 use std::iter;
 
 use crate::parsing::parse_content;
@@ -900,19 +902,20 @@ async fn add_genesis_native_token_allocation_supply<'a>(
 }
 
 #[derive(Debug)]
-pub struct Component {
-    event_strings: HashSet<&'static str>,
-}
+pub struct Component {}
 
 impl Component {
     pub fn new() -> Self {
-        let event_strings = Event::NAMES.into_iter().collect();
-        Self { event_strings }
+        Self {}
     }
 }
 
 #[async_trait]
 impl AppView for Component {
+    fn name(&self) -> String {
+        "supply".to_string()
+    }
+
     async fn init_chain(
         &self,
         dbtx: &mut PgTransaction,
@@ -930,16 +933,18 @@ impl AppView for Component {
         Ok(())
     }
 
-    fn is_relevant(&self, type_str: &str) -> bool {
-        self.event_strings.contains(type_str)
-    }
-
-    async fn index_event(
+    async fn index_batch(
         &self,
         dbtx: &mut PgTransaction,
-        event: &ContextualizedEvent,
-        _src_db: &PgPool,
+        batch: EventBatch,
     ) -> Result<(), anyhow::Error> {
-        Event::try_from(event)?.index(dbtx).await
+        for event in batch.events() {
+            let e = match Event::try_from(event) {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+            e.index(dbtx).await?;
+        }
+        Ok(())
     }
 }

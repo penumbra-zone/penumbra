@@ -133,6 +133,7 @@ pub enum RootCommand {
         #[clap(long, display_order = 200)]
         comet_home: Option<PathBuf>,
         /// If set, force a migration to occur even if the chain is not halted.
+        /// Will not override a detected mismatch in state versions.
         #[clap(long, display_order = 1000)]
         force: bool,
         /// If set, edit local state to permit the node to start, despite

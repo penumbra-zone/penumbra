@@ -2,7 +2,7 @@
 
 resolver = "2"
 
-exclude = ["tools/proto-compiler", "tools/parameter-setup"]
+exclude = ["tools/proto-compiler"]
 
 # Also remember to add to deployments/scripts/rust-docs
 members = [
@@ -55,6 +55,7 @@ members = [
   "crates/view",
   "crates/wallet",
   "tools/summonerd",
+  "tools/parameter-setup",
 ]
 
 # Config for 'cargo dist'
@@ -104,7 +105,7 @@ push = false
 [workspace.package]
 authors    = ["Penumbra Labs <team@penumbralabs.xyz"]
 edition    = "2021"
-version    = "0.80.7"
+version    = "0.80.8"
 repository = "https://github.com/penumbra-zone/penumbra"
 homepage   = "https://penumbra.zone"
 license    = "MIT OR Apache-2.0"

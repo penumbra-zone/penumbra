@@ -27,7 +27,7 @@ decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
 derivative = {workspace = true}
 ethnum = {workspace = true}
-f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
+f4jumble = "0.1.0"
 hex = {workspace = true}
 hmac = "0.12.0"
 ibig = {workspace = true}

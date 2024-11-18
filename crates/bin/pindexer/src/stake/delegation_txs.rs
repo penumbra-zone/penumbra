@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use cometindex::{async_trait, sqlx, AppView, ContextualizedEvent, PgPool, PgTransaction};
+use cometindex::{async_trait, index::EventBatch, sqlx, AppView, PgTransaction};
 use penumbra_num::Amount;
 use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
 use penumbra_stake::IdentityKey;
@@ -47,29 +47,28 @@ impl AppView for DelegationTxs {
         Ok(())
     }
 
-    fn is_relevant(&self, type_str: &str) -> bool {
-        type_str == "penumbra.core.component.stake.v1.EventDelegate"
+    fn name(&self) -> String {
+        "stake/delegation_txs".to_string()
     }
 
-    async fn index_event(
-        &self,
-        dbtx: &mut PgTransaction,
-        event: &ContextualizedEvent,
-        _src_db: &PgPool,
-    ) -> Result<()> {
-        let pe = pb::EventDelegate::from_event(event.as_ref())?;
+    async fn index_batch(&self, dbtx: &mut PgTransaction, batch: EventBatch) -> Result<()> {
+        for event in batch.events() {
+            let pe = match pb::EventDelegate::from_event(event.as_ref()) {
+                Ok(pe) => pe,
+                Err(_) => continue,
+            };
 
-        let ik: IdentityKey = pe
-            .identity_key
-            .ok_or_else(|| anyhow::anyhow!("missing ik in event"))?
-            .try_into()?;
+            let ik: IdentityKey = pe
+                .identity_key
+                .ok_or_else(|| anyhow::anyhow!("missing ik in event"))?
+                .try_into()?;
 
-        let amount = Amount::try_from(
-            pe.amount
-                .ok_or_else(|| anyhow::anyhow!("missing amount in event"))?,
-        )?;
+            let amount = Amount::try_from(
+                pe.amount
+                    .ok_or_else(|| anyhow::anyhow!("missing amount in event"))?,
+            )?;
 
-        sqlx::query(
+            sqlx::query(
             "INSERT INTO stake_delegation_txs (ik, amount, height, tx_hash) VALUES ($1, $2, $3, $4)"
         )
         .bind(ik.to_string())
@@ -78,6 +77,7 @@ impl AppView for DelegationTxs {
         .bind(event.tx_hash.ok_or_else(|| anyhow!("missing tx hash in event"))?)
         .execute(dbtx.as_mut())
         .await?;
+        }
 
         Ok(())
     }

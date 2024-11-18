@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use cometindex::{async_trait, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{async_trait, index::EventBatch, AppView, ContextualizedEvent, PgTransaction};
 use penumbra_asset::Value;
 use penumbra_keys::Address;
 use penumbra_proto::{
@@ -8,7 +8,6 @@ use penumbra_proto::{
     },
     event::ProtoEvent as _,
 };
-use sqlx::PgPool;
 
 /// The kind of event we might care about.
 #[derive(Clone, Copy, Debug)]
@@ -198,6 +197,10 @@ impl Component {
 
 #[async_trait]
 impl AppView for Component {
+    fn name(&self) -> String {
+        "ibc".to_string()
+    }
+
     async fn init_chain(
         &self,
         dbtx: &mut PgTransaction,
@@ -206,18 +209,19 @@ impl AppView for Component {
         init_db(dbtx).await
     }
 
-    fn is_relevant(&self, type_str: &str) -> bool {
-        EventKind::try_from(type_str).is_ok()
-    }
-
-    #[tracing::instrument(skip_all, fields(height = event.block_height, name = event.event.kind.as_str()))]
-    async fn index_event(
+    async fn index_batch(
         &self,
         dbtx: &mut PgTransaction,
-        event: &ContextualizedEvent,
-        _src_db: &PgPool,
-    ) -> anyhow::Result<()> {
-        let transfer = Event::try_from(event)?.db_transfer();
-        create_transfer(dbtx, event.block_height, transfer).await
+        batch: EventBatch,
+    ) -> Result<(), anyhow::Error> {
+        for event in batch.events() {
+            let parsed = match Event::try_from(event) {
+                Ok(p) => p,
+                Err(_) => continue,
+            };
+            let transfer = parsed.db_transfer();
+            create_transfer(dbtx, event.block_height, transfer).await?;
+        }
+        Ok(())
     }
 }
