@@ -4,12 +4,14 @@ use tct::Root;
 
 use anyhow::Result;
 use ark_r1cs_std::{
-    prelude::{EqGadget, FieldVar},
+    prelude::{EqGadget, FieldVar, ToBitsGadget},
     uint8::UInt8,
-    ToBitsGadget,
 };
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
+use decaf377::{
+    r1cs::{fqvar_ext::FqVarExtension, FqVar},
+    Bls12_377, Fq, Fr,
+};
 
 use ark_ff::ToConstraintField;
 use ark_groth16::{
@@ -189,7 +191,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         //
         // We short circuit the merkle path verification if the note is a _dummy_ spend (a spend
         // with zero value), since these are never committed to the state commitment tree.
-        let is_not_dummy = note_var.amount().is_eq(&FqVar::zero())?.not();
+        let is_not_dummy = FqVar::not(&note_var.amount().is_eq(&FqVar::zero())?)?;
         merkle_path_var.verify(
             cs.clone(),
             &is_not_dummy,

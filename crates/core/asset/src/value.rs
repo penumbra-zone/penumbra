@@ -3,7 +3,10 @@
 use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
-use decaf377::{r1cs::FqVar, Fq};
+use decaf377::{
+    r1cs::{fqvar_ext::FqVarExtension, FqVar},
+    Fq,
+};
 
 use std::{
     convert::{TryFrom, TryInto},
@@ -319,7 +322,7 @@ impl EqGadget<Fq> for ValueVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         let amount_eq = self.amount.is_eq(&other.amount)?;
         let asset_id_eq = self.asset_id.is_eq(&other.asset_id)?;
-        amount_eq.and(&asset_id_eq)
+        FqVar::and(&amount_eq, &asset_id_eq)
     }
 }
 

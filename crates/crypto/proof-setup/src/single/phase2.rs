@@ -1,5 +1,5 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
-use ark_ec::Group;
+use ark_ec::PrimeGroup;
 use ark_ff::Zero;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Validate};
 use rand_core::{CryptoRngCore, OsRng};

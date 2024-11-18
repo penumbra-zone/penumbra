@@ -4,7 +4,7 @@ use rand_core::{CryptoRng, RngCore};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
-    r1cs::{ElementVar, FqVar},
+    r1cs::{fqvar_ext::FqVarExtension, ElementVar, FqVar},
     Fq, Fr,
 };
 
@@ -157,12 +157,13 @@ impl IncomingViewingKeyVar {
             core::cmp::Ordering::Less,
             false,
         )?;
-        let overflows = a_var
-            .is_eq(&FqVar::new_constant(
-                cs.clone(),
-                &Fq::from(MOD_R_QUOTIENT as u64),
-            )?)?
-            .and(&is_less_than_q_minus_4_mod_r.not())?;
+        let overflows = FqVar::and(
+            &FqVar::is_eq(
+                &a_var,
+                &FqVar::new_constant(cs.clone(), &Fq::from(MOD_R_QUOTIENT as u64))?,
+            )?,
+            &FqVar::not(&is_less_than_q_minus_4_mod_r)?,
+        )?;
         overflows.enforce_equal(&Boolean::FALSE)?;
 
         Ok(IncomingViewingKeyVar { inner: ivk_mod_r })

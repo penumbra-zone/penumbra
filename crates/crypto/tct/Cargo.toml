@@ -10,7 +10,7 @@ r1cs = ["ark-r1cs-std", "ark-relations", "decaf377/r1cs", "poseidon377/r1cs"]
 parallel = ["ark-r1cs-std/parallel", "ark-ff/parallel", "decaf377/parallel", "poseidon377/parallel"]
 
 [dependencies]
-ark-ed-on-bls12-377 = "0.4"
+ark-ed-on-bls12-377 = "0.5"
 ark-ff = {workspace = true, default-features = false}
 ark-r1cs-std = {workspace = true, optional = true, default-features = false}
 ark-relations = {workspace = true, optional = true}

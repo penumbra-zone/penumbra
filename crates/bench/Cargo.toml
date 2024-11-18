@@ -61,7 +61,7 @@ name = "arkworks"
 harness = false
 
 [dependencies]
-ark-bls12-377 = "0.4.0"
+ark-bls12-377 = "0.5.0"
 ark-ec = {workspace = true}
 ark-ff = {workspace = true, default-features = false}
 ark-groth16 = {workspace = true, default-features = false}
