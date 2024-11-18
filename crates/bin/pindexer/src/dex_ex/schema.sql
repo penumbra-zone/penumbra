@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS dex_ex_pairs_summary (
   the_window TEXT NOT NULL,
   price FLOAT8 NOT NULL,
   price_then FLOAT8 NOT NULL,
+  low FLOAT8 NOT NULL,
+  high FLOAT8 NOT NULL,
   liquidity FLOAT8 NOT NULL,
   liquidity_then FLOAT8 NOT NULL,
   direct_volume_over_window FLOAT8 NOT NULL,
