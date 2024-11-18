@@ -386,7 +386,7 @@ impl Component {
                     self.price_numeraire,
                     Box::new(move |supply| {
                         Ok(Supply {
-                            total: supply.total + amount,
+                            total: supply.total - amount,
                             ..supply
                         })
                     }),
@@ -406,7 +406,7 @@ impl Component {
                     self.price_numeraire,
                     Box::new(move |supply| {
                         Ok(Supply {
-                            total: supply.total + profit,
+                            total: supply.total - profit,
                             ..supply
                         })
                     }),
