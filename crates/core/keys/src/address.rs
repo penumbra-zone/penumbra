@@ -363,8 +363,7 @@ impl TryFrom<&[u8]> for Address {
             anyhow::bail!("address malformed");
         }
 
-        let unjumbled_bytes =
-            f4jumble_inv(jumbled_bytes).ok_or_else(|| anyhow::anyhow!("invalid address"))?;
+        let unjumbled_bytes = f4jumble_inv(jumbled_bytes).context("invalid address")?;
         let mut bytes = Cursor::new(unjumbled_bytes);
 
         let mut diversifier_bytes = [0u8; 16];
