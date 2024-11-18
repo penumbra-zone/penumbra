@@ -1,7 +1,13 @@
 //! This module defines how to verify TCT auth paths in a rank-1 constraint system.
 use crate::{internal::hash::DOMAIN_SEPARATOR, Position, Proof, StateCommitment};
 use ark_ff::ToConstraintField;
+use ark_r1cs_std::alloc::{AllocVar, AllocationMode};
+use ark_r1cs_std::eq::EqGadget;
+use ark_r1cs_std::fields::FieldVar;
+use ark_r1cs_std::prelude::{Boolean, ToBitsGadget};
+use ark_r1cs_std::select::CondSelectGadget;
 use ark_r1cs_std::uint64::UInt64;
+use ark_r1cs_std::R1CSVar;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::r1cs::fqvar_ext::FqVarExtension;
 use decaf377::{r1cs::FqVar, Fq};
