@@ -151,6 +151,7 @@ async fn asset_flow(
     asset_id: asset::Id,
     height: u64,
     flow: i128,
+    refund: bool,
     depositor_existed: DepositorExisted,
 ) -> anyhow::Result<()> {
     let asset_pool: Option<(String, String, i32)> = sqlx::query_as("SELECT total_value, current_value, unique_depositors FROM insights_shielded_pool WHERE asset_id = $1 ORDER BY height DESC LIMIT 1").bind(asset_id.to_bytes()).fetch_optional(dbtx.as_mut()).await?;
@@ -164,7 +165,7 @@ async fn asset_flow(
         })
         .transpose()?
         .unwrap_or((0i128, 0i128, 0i32));
-    asset_pool.0 += flow.abs();
+    asset_pool.0 += if refund { 0 } else { flow.max(0) };
     asset_pool.1 += flow;
     asset_pool.2 += match depositor_existed {
         DepositorExisted::Yes => 0,
@@ -431,19 +432,35 @@ impl Component {
             if e.value.asset_id != *STAKING_TOKEN_ASSET_ID {
                 let existed = register_depositor(dbtx, e.value.asset_id, &e.sender).await?;
                 let flow = i128::try_from(e.value.amount.value())?;
-                asset_flow(dbtx, e.value.asset_id, height, flow, existed).await?;
+                asset_flow(dbtx, e.value.asset_id, height, flow, false, existed).await?;
             }
         } else if let Ok(e) = EventOutboundFungibleTokenTransfer::try_from_event(&event.event) {
             if e.value.asset_id != *STAKING_TOKEN_ASSET_ID {
                 let flow = i128::try_from(e.value.amount.value())?;
                 // For outbound transfers, never increment unique count
-                asset_flow(dbtx, e.value.asset_id, height, -flow, DepositorExisted::No).await?;
+                asset_flow(
+                    dbtx,
+                    e.value.asset_id,
+                    height,
+                    -flow,
+                    false,
+                    DepositorExisted::No,
+                )
+                .await?;
             }
         } else if let Ok(e) = EventOutboundFungibleTokenRefund::try_from_event(&event.event) {
             if e.value.asset_id != *STAKING_TOKEN_ASSET_ID {
                 let flow = i128::try_from(e.value.amount.value())?;
                 // For outbound transfers, never increment unique count.
-                asset_flow(dbtx, e.value.asset_id, height, flow, DepositorExisted::No).await?;
+                asset_flow(
+                    dbtx,
+                    e.value.asset_id,
+                    height,
+                    flow,
+                    true,
+                    DepositorExisted::No,
+                )
+                .await?;
             }
         } else if let Ok(e) = EventCandlestickData::try_from_event(&event.event) {
             if let Some(pn) = self.price_numeraire {
