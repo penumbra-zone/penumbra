@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS dex_ex_pairs_block_snapshot (
   asset_start BYTEA NOT NULL,
   asset_end BYTEA NOT NULL,
   price FLOAT8 NOT NULL,
+  low FLOAT8 NOT NULL,
+  high FLOAT8 NOT NULL,
   liquidity FLOAT8 NOT NULL,
   direct_volume FLOAT8 NOT NULL,
   swap_volume FLOAT8 NOT NULL,

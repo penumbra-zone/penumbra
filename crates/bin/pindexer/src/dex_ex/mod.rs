@@ -444,6 +444,8 @@ mod summary {
                 COALESCE(SUM(direct_volume), 0.0) AS direct_volume_over_window,
                 COALESCE(SUM(swap_volume), 0.0) AS swap_volume_over_window,
                 COALESCE(SUM(trades), 0.0) AS trades_over_window
+                COALESCE(MIN(price), 0.0) AS low,
+                COALESCE(MAX(price), 0.0) AS high
             FROM snapshots
             WHERE time <= $3
             AND time >= $4
@@ -452,6 +454,7 @@ mod summary {
         SELECT 
             $1, $2, $5,
             price, price_then,
+            low, high,
             liquidity, liquidity_then,
             direct_volume_over_window,
             swap_volume_over_window,
