@@ -16,3 +16,5 @@
 !deployments/relayer/
 # summonerd tool, for orchestrating contributions
 !tools/summonerd/
+# parameter setup tool, for wrangling circuit configuration
+!tools/parameter-setup/
