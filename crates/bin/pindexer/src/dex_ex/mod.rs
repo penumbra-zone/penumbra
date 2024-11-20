@@ -480,8 +480,8 @@ mod summary {
         now AS (
             SELECT price, liquidity            
             FROM snapshots
-            WHERE time >= $3
-            ORDER BY time ASC
+            WHERE time <= $3
+            ORDER BY time DESC
             LIMIT 1
         ),
         sums AS (
