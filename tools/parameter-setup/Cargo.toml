@@ -1,26 +1,22 @@
 [package]
 name = "penumbra-parameter-setup"
-version = "0.1.0"
-edition = "2021"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
 publish = false
+repository = { workspace = true }
+version = { workspace = true }
 
 [dependencies]
-penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
-penumbra-proof-setup = { path = "../../crates/crypto/proof-setup", features = [
-    "parallel",
-] }
-penumbra-dex = { path = "../../crates/core/component/dex/" }
-penumbra-community-pool = { path = "../../crates/core/component/community-pool/", features = [
-    "component",
-] }
-penumbra-governance = { path = "../../crates/core/component/governance/" }
-penumbra-shielded-pool = { path = "../../crates/core/component/shielded-pool/", features = [
-    "parallel",
-] }
-penumbra-stake = { path = "../../crates/core/component/stake/", features = [
-    "component",
-] }
 ark-groth16 = { workspace = true }
 ark-serialize = { workspace = true }
 decaf377 = { workspace = true, features = ["r1cs"] }
+penumbra-community-pool = { workspace = true , features = ["component"] }
+penumbra-dex = { workspace = true }
+penumbra-governance = { workspace = true }
+penumbra-proof-params = { workspace = true }
+penumbra-proof-setup = { workspace = true, features = ["parallel"] }
+penumbra-shielded-pool = { workspace = true, features = ["parallel"] }
+penumbra-stake = { workspace = true, features = ["component"] }
 rand_core = { workspace = true }
