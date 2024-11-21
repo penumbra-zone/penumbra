@@ -5236,7 +5236,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-parameter-setup"
-version = "0.1.0"
+version = "0.80.8"
 dependencies = [
  "ark-groth16",
  "ark-serialize",
