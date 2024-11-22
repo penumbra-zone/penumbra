@@ -41,6 +41,11 @@ pub struct Ics20Withdrawal {
     // Whether to use a "compat" (bech32, non-m) address for the return address in the withdrawal,
     // for compatability with chains that expect to be able to parse the return address as bech32.
     pub use_compat_address: bool,
+
+    // Arbitrary string data to be included in the `memo` field
+    // of the ICS-20 FungibleTokenPacketData for this withdrawal.
+    // Commonly used for packet forwarding support, or other protocols that may support usage of the memo field.
+    pub ics20_memo: String,
 }
 
 #[cfg(feature = "component")]
@@ -118,6 +123,7 @@ impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
             timeout_time: w.timeout_time,
             source_channel: w.source_channel.to_string(),
             use_compat_address: w.use_compat_address,
+            ics20_memo: w.ics20_memo.to_string(),
         }
     }
 }
@@ -148,6 +154,7 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
             timeout_time: s.timeout_time,
             source_channel: ChannelId::from_str(&s.source_channel)?,
             use_compat_address: s.use_compat_address,
+            ics20_memo: s.ics20_memo,
         })
     }
 }
@@ -164,7 +171,7 @@ impl From<Ics20Withdrawal> for pb::FungibleTokenPacketData {
             denom: w.denom.to_string(),
             receiver: w.destination_chain_address,
             sender: return_address,
-            memo: "".to_string(),
+            memo: w.ics20_memo,
         }
     }
 }
