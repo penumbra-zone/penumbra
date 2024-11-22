@@ -25,6 +25,9 @@ pub mod nullifier_derivation;
 pub mod output;
 pub mod spend;
 
+pub mod backref;
+pub use backref::{Backref, EncryptedBackref};
+
 pub use convert::{ConvertCircuit, ConvertProof, ConvertProofPrivate, ConvertProofPublic};
 pub use nullifier_derivation::{
     NullifierDerivationCircuit, NullifierDerivationProof, NullifierDerivationProofPrivate,

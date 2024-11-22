@@ -9,7 +9,7 @@ use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use super::{Body, Spend, SpendProof};
-use crate::{Note, Rseed, SpendProofPrivate, SpendProofPublic};
+use crate::{Backref, Note, Rseed, SpendProofPrivate, SpendProofPublic};
 
 /// A planned [`Spend`](Spend).
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -75,10 +75,14 @@ impl SpendPlan {
 
     /// Construct the [`spend::Body`] described by this [`SpendPlan`].
     pub fn spend_body(&self, fvk: &FullViewingKey) -> Body {
+        // Construct the backreference for this spend.
+        let backref = Backref::new(self.note.commit());
+        let encrypted_backref = backref.encrypt(&fvk.backref_key(), &self.nullifier(fvk));
         Body {
             balance_commitment: self.balance().commit(self.value_blinding),
             nullifier: self.nullifier(fvk),
             rk: self.rk(fvk),
+            encrypted_backref,
         }
     }
 

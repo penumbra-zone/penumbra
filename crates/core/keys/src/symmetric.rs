@@ -344,3 +344,20 @@ impl TryFrom<&[u8]> for WrappedMemoKey {
         Ok(Self(bytes))
     }
 }
+
+/// Represents a symmetric `ChaCha20Poly1305` key used for Spend backreferences.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct BackreferenceKey(pub Key);
+
+impl BackreferenceKey {
+    pub fn derive(ovk: &OutgoingViewingKey) -> Self {
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.personal(b"Penumbra_Backref");
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&ovk.to_bytes());
+
+        let key = kdf.finalize();
+        Self(*Key::from_slice(key.as_bytes()))
+    }
+}
