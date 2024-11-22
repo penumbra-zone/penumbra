@@ -9,3 +9,4 @@
 | 7 (Testnet 78)            | v0.78.x                | v0.37.5  |   v1     |
 | 7 (Mainnet)               | v0.79.x                | v0.37.x  |   v1     |
 | 8 (Mainnet)               | v0.80.x                | v0.37.x  |   v1     |
+| 9 (Mainnet)               | v0.81.x                | v0.37.x  |   v1     |
