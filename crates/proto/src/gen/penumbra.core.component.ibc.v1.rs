@@ -73,6 +73,11 @@ pub struct Ics20Withdrawal {
     /// for compatability with chains that expect to be able to parse the return address as bech32.
     #[prost(bool, tag = "8")]
     pub use_compat_address: bool,
+    /// Arbitrary string data to be included in the `memo` field
+    /// of the ICS-20 FungibleTokenPacketData for this withdrawal.
+    /// Commonly used for packet forwarding support, or other protocols that may support usage of the memo field.
+    #[prost(string, tag = "9")]
+    pub ics20_memo: ::prost::alloc::string::String,
 }
 impl ::prost::Name for Ics20Withdrawal {
     const NAME: &'static str = "Ics20Withdrawal";
