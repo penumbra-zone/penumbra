@@ -1133,6 +1133,7 @@ impl TxCmd {
                     // TODO: impl From<u64> for ChannelId
                     source_channel: ChannelId::from_str(format!("channel-{}", channel).as_ref())?,
                     use_compat_address: *use_compat_address,
+                    ics20_memo: "".to_string(),
                 };
 
                 let plan = Planner::new(OsRng)
