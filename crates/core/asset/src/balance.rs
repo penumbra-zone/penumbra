@@ -3,7 +3,6 @@ use ark_r1cs_std::uint8::UInt8;
 use ark_relations::r1cs::SynthesisError;
 use penumbra_num::{Amount, AmountVar};
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use std::{
     collections::{btree_map, BTreeMap},
     fmt::{self, Debug, Formatter},
@@ -29,15 +28,48 @@ use decaf377::{r1cs::ElementVar, Fq, Fr};
 use imbalance::Imbalance;
 
 use self::commitment::BalanceCommitmentVar;
+use penumbra_proto::{penumbra::core::asset::v1 as pb, DomainType};
 
 /// A `Balance` is a "vector of [`Value`]s", where some values may be required, while others may be
 /// provided. For a transaction to be valid, its balance must be zero.
-#[serde_as]
 #[derive(Clone, Eq, Default, Serialize, Deserialize)]
+#[serde(try_from = "pb::Balance", into = "pb::Balance")]
 pub struct Balance {
     negated: bool,
-    #[serde_as(as = "Vec<(_, _)>")]
     balance: BTreeMap<Id, Imbalance<NonZeroU128>>,
+}
+
+/* Protobuf impls */
+impl DomainType for Balance {
+    type Proto = pb::Balance;
+}
+
+impl TryFrom<pb::Balance> for Balance {
+    type Error = anyhow::Error;
+
+    fn try_from(v: pb::Balance) -> Result<Self, Self::Error> {
+        let mut balance_map = BTreeMap::new();
+
+        for imbalance_value in v.balance.into_iter().map(TryInto::try_into) {
+            let value: Value = imbalance_value?;
+            let amount = NonZeroU128::new(value.amount.into())
+                .ok_or_else(|| anyhow::anyhow!("amount must be non-zero"))?;
+
+            let imbalance = Imbalance::Provided(amount); // todo: fix this placeholder
+            balance_map.insert(value.asset_id, imbalance);
+        }
+
+        Ok(Self {
+            negated: v.negated,
+            balance: balance_map,
+        })
+    }
+}
+
+impl From<Balance> for pb::Balance {
+    fn from(v: Balance) -> Self {
+        Self::try_from(v).unwrap()
+    }
 }
 
 impl Debug for Balance {
