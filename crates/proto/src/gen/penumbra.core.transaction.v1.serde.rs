@@ -4062,6 +4062,213 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
         deserializer.deserialize_struct("penumbra.core.transaction.v1.TransactionPlan", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for TransactionSummary {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.effects.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.TransactionSummary", len)?;
+        if !self.effects.is_empty() {
+            struct_ser.serialize_field("effects", &self.effects)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for TransactionSummary {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "effects",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Effects,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "effects" => Ok(GeneratedField::Effects),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = TransactionSummary;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1.TransactionSummary")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TransactionSummary, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut effects__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Effects => {
+                            if effects__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("effects"));
+                            }
+                            effects__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(TransactionSummary {
+                    effects: effects__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1.TransactionSummary", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_summary::Effects {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.address.is_some() {
+            len += 1;
+        }
+        if self.balance.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.TransactionSummary.Effects", len)?;
+        if let Some(v) = self.address.as_ref() {
+            struct_ser.serialize_field("address", v)?;
+        }
+        if let Some(v) = self.balance.as_ref() {
+            struct_ser.serialize_field("balance", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_summary::Effects {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "address",
+            "balance",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Address,
+            Balance,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "address" => Ok(GeneratedField::Address),
+                            "balance" => Ok(GeneratedField::Balance),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_summary::Effects;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1.TransactionSummary.Effects")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_summary::Effects, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut address__ = None;
+                let mut balance__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Address => {
+                            if address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("address"));
+                            }
+                            address__ = map_.next_value()?;
+                        }
+                        GeneratedField::Balance => {
+                            if balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("balance"));
+                            }
+                            balance__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(transaction_summary::Effects {
+                    address: address__,
+                    balance: balance__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1.TransactionSummary.Effects", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for TransactionView {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

@@ -71,6 +71,39 @@ impl ::prost::Name for TransactionParameters {
         ::prost::alloc::format!("penumbra.core.transaction.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionSummary {
+    #[prost(message, repeated, tag = "1")]
+    pub effects: ::prost::alloc::vec::Vec<transaction_summary::Effects>,
+}
+/// Nested message and enum types in `TransactionSummary`.
+pub mod transaction_summary {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Effects {
+        #[prost(message, optional, tag = "1")]
+        pub address: ::core::option::Option<super::super::super::keys::v1::AddressView>,
+        #[prost(message, optional, tag = "2")]
+        pub balance: ::core::option::Option<super::super::super::asset::v1::Balance>,
+    }
+    impl ::prost::Name for Effects {
+        const NAME: &'static str = "Effects";
+        const PACKAGE: &'static str = "penumbra.core.transaction.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.transaction.v1.TransactionSummary.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for TransactionSummary {
+    const NAME: &'static str = "TransactionSummary";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1.{}", Self::NAME)
+    }
+}
 /// Detection data used by a detection server performing Fuzzy Message Detection.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
