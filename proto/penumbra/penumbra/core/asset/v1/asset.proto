@@ -92,6 +92,13 @@ message Value {
   AssetId asset_id = 2;
 }
 
+message Balance {
+  // Indicates if the balance is negated.
+  bool negated = 1;
+  // Represents the vector of 'Values' in the balance.
+  repeated Value balance = 2;
+}
+
 // Represents a value of a known or unknown denomination.
 message ValueView {
   // A value whose asset ID is known and has metadata.
