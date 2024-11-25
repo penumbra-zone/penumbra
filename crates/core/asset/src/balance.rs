@@ -67,8 +67,8 @@ impl TryFrom<pb::Balance> for Balance {
 }
 
 impl From<Balance> for pb::Balance {
-    fn from(v: Balance) -> Self {
-        Self::try_from(v).unwrap()
+    fn from(_v: Balance) -> Self {
+        todo!() // todo: implement fallible conversion 
     }
 }
 
