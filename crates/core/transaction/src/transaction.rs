@@ -49,15 +49,15 @@ pub struct TransactionBody {
 #[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(try_from = "pbt::TransactionSummary", into = "pbt::TransactionSummary")]
 pub struct TransactionSummary {
-    effects: Vec<Effects>,
+    pub effects: Vec<Effects>,
 }
 
 /// Represents an individual effect of a transaction.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pbt::Effects", into = "pbt::Effects")]
 pub struct Effects {
-    address: AddressView,
-    balance: Balance,
+    pub address: AddressView,
+    pub balance: Balance,
 }
 
 impl EffectingData for TransactionBody {

@@ -1,8 +1,10 @@
 use anyhow::Context;
 use decaf377_rdsa::{Binding, Signature};
+use penumbra_asset::Balance;
 use penumbra_keys::AddressView;
 use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
 
+use penumbra_shielded_pool::{OutputView, SpendView};
 use serde::{Deserialize, Serialize};
 
 pub mod action_view;
@@ -13,8 +15,9 @@ use penumbra_tct as tct;
 pub use transaction_perspective::TransactionPerspective;
 
 use crate::{
-    memo::MemoCiphertext, Action, DetectionData, Transaction, TransactionBody,
-    TransactionParameters,
+    memo::MemoCiphertext,
+    transaction::{Effects, TransactionSummary},
+    Action, DetectionData, Transaction, TransactionBody, TransactionParameters,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -93,6 +96,48 @@ impl TransactionView {
 
     pub fn action_views(&self) -> impl Iterator<Item = &ActionView> {
         self.body_view.action_views.iter()
+    }
+
+    pub fn summary(&self) -> TransactionSummary {
+        let mut effects = Vec::new();
+
+        for action_view in &self.body_view.action_views {
+            match action_view {
+                ActionView::Spend(spend_view) => match spend_view {
+                    SpendView::Visible { spend: _, note } => {
+                        let value = note.value.value();
+                        let balance = Balance::from(value);
+                        let address = AddressView::Opaque {
+                            address: note.address(),
+                        };
+
+                        effects.push(Effects { address, balance });
+                    }
+                    SpendView::Opaque { spend: _ } => continue,
+                },
+                ActionView::Output(output_view) => match output_view {
+                    OutputView::Visible {
+                        output: _,
+                        note,
+                        payload_key: _,
+                    } => {
+                        let value = note.value.value();
+                        let balance = -Balance::from(value);
+                        let address = AddressView::Opaque {
+                            address: note.address(),
+                        };
+
+                        effects.push(Effects { address, balance });
+                    }
+                    OutputView::Opaque { output: _ } => continue,
+                },
+                ActionView::Swap(_) => todo!(),
+                ActionView::SwapClaim(_) => todo!(),
+                _ => {}
+            }
+        }
+
+        TransactionSummary { effects }
     }
 }
 
