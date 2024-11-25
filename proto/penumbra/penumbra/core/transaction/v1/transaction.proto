@@ -54,11 +54,14 @@ message TransactionParameters {
   component.fee.v1.Fee fee = 3;
 }
 
+// Represents an individual effect of a transaction.
+message Effects {
+  keys.v1.AddressView address = 1;
+  asset.v1.Balance balance = 2;
+}
+
+// Represents a transaction summary containing multiple effects.
 message TransactionSummary {
-  message Effects {
-      keys.v1.AddressView address = 1;
-      asset.v1.Balance balance = 2;
-  }
   repeated Effects effects = 1;
 }
 
