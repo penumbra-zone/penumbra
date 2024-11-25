@@ -645,7 +645,7 @@ impl Events {
     }
 
     fn with_candle(&mut self, pair: DirectedTradingPair, candle: Candle) {
-        // Popular both this pair and the flipped pair, and if the flipped pair
+        // Populate both this pair and the flipped pair, and if the flipped pair
         // is already populated, we need to mix the two candles together.
         let flip = pair.flip();
         let new_candle = match self.candles.get(&flip).cloned() {
