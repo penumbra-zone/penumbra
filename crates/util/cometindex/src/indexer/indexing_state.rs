@@ -1,7 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
 use futures::TryStreamExt;
-use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, Transaction};
+use sqlx::{
+    encode::IsNull,
+    postgres::{PgArgumentBuffer, PgPoolOptions},
+    PgPool, Postgres, Transaction,
+};
 use tendermint::abci;
 
 use crate::{
@@ -68,7 +72,7 @@ impl TryFrom<i64> for Height {
 
 impl<'r> sqlx::Decode<'r, Postgres> for Height {
     fn decode(
-        value: <Postgres as sqlx::database::HasValueRef<'r>>::ValueRef,
+        value: <Postgres as sqlx::Database>::ValueRef<'r>,
     ) -> Result<Self, sqlx::error::BoxDynError> {
         Ok(Height::try_from(
             <i64 as sqlx::Decode<'r, Postgres>>::decode(value)?,
@@ -85,10 +89,10 @@ impl sqlx::Type<Postgres> for Height {
 impl<'q> sqlx::Encode<'q, Postgres> for Height {
     fn encode_by_ref(
         &self,
-        buf: &mut <Postgres as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
-    ) -> sqlx::encode::IsNull {
-        <i64 as sqlx::Encode<'q, Postgres>>::encode(
-            i64::try_from(self.0).expect("height should never exceed i64::MAX"),
+        buf: &mut PgArgumentBuffer,
+    ) -> Result<IsNull, Box<(dyn std::error::Error + std::marker::Send + Sync + 'static)>> {
+        <i64 as sqlx::Encode<'q, Postgres>>::encode_by_ref(
+            &i64::try_from(self.0).expect("height should never exceed i64::MAX"),
             buf,
         )
     }
