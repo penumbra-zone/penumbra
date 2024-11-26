@@ -76,3 +76,25 @@ CREATE TABLE IF NOT EXISTS dex_ex_aggregate_summary (
   top_price_mover_end BYTEA NOT NULL,
   top_price_mover_change_percent FLOAT8 NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS dex_ex_position_executions (
+  id SERIAL PRIMARY KEY,
+  -- Block height when this execution occurred
+  height BIGINT NOT NULL,
+  time TIMESTAMPTZ NOT NULL,
+  position_id BYTEA NOT NULL,
+  asset_1 BYTEA NOT NULL,
+  asset_2 BYTEA NOT NULL,
+  reserves_1 NUMERIC(39) NOT NULL,
+  reserves_2 NUMERIC(39) NOT NULL,
+  prev_reserves_1 NUMERIC(39) NOT NULL,
+  prev_reserves_2 NUMERIC(39) NOT NULL,
+  context_start BYTEA NOT NULL,
+  context_end BYTEA NOT NULL
+);
+
+CREATE INDEX ON dex_ex_position_executions (position_id);
+CREATE INDEX ON dex_ex_position_executions (asset_1, asset_2);
+CREATE INDEX ON dex_ex_position_executions (time);
+-- Add index for height queries
+CREATE INDEX ON dex_ex_position_executions (height);

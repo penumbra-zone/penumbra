@@ -15,6 +15,7 @@ use penumbra_dex::{
 use penumbra_proto::event::EventDomainType;
 use penumbra_sct::event::EventBlockRoot;
 use std::collections::{HashMap, HashSet};
+use sqlx::types::BigDecimal;
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
 
@@ -598,16 +599,20 @@ struct PairMetrics {
 #[derive(Debug)]
 struct Events {
     time: Option<DateTime>,
+    height: Option<u64>,
     candles: HashMap<DirectedTradingPair, Candle>,
     metrics: HashMap<DirectedTradingPair, PairMetrics>,
+    executions: Vec<EventPositionExecution>,
 }
 
 impl Events {
     fn new() -> Self {
         Self {
             time: None,
+            height: None,
             candles: HashMap::new(),
             metrics: HashMap::new(),
+            executions: Vec::new(),
         }
     }
 
@@ -675,6 +680,8 @@ impl Events {
 
     pub fn extract(block: &BlockEvents) -> anyhow::Result<Self> {
         let mut out = Self::new();
+        out.height = Some(block.height);
+
         for event in &block.events {
             if let Ok(e) = EventCandlestickData::try_from_event(&event.event) {
                 let candle = Candle::from_candlestick_data(&e.stick);
@@ -708,6 +715,8 @@ impl Events {
                     true,
                 );
             } else if let Ok(e) = EventPositionExecution::try_from_event(&event.event) {
+                out.executions.push(e.clone());
+
                 out.with_reserve_change(
                     &e.trading_pair,
                     Some(Reserves {
@@ -751,6 +760,48 @@ impl Component {
             min_liquidity,
         }
     }
+
+    async fn store_executions(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        height: u64,
+        time: DateTime,
+        executions: &[EventPositionExecution],
+    ) -> anyhow::Result<()> {
+        for execution in executions {
+            sqlx::query(
+                "
+                INSERT INTO dex_ex_position_executions (
+                    height,
+                    time,
+                    position_id,
+                    asset_1,
+                    asset_2,
+                    reserves_1,
+                    reserves_2,
+                    prev_reserves_1,
+                    prev_reserves_2,
+                    context_start,
+                    context_end
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                ",
+            )
+            .bind(height as i64)
+            .bind(time)
+            .bind(execution.position_id.0.to_vec())
+            .bind(execution.trading_pair.asset_1().to_bytes())
+            .bind(execution.trading_pair.asset_2().to_bytes())
+            .bind(BigDecimal::from(execution.reserves_1.value()))
+            .bind(BigDecimal::from(execution.reserves_2.value()))
+            .bind(BigDecimal::from(execution.prev_reserves_1.value()))
+            .bind(BigDecimal::from(execution.prev_reserves_2.value()))
+            .bind(execution.context.start.to_bytes())
+            .bind(execution.context.end.to_bytes())
+            .execute(dbtx.as_mut())
+            .await?;
+        }
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -784,6 +835,12 @@ impl AppView for Component {
                 .time
                 .expect(&format!("no block root event at height {}", block.height));
             last_time = Some(time);
+
+            // Store position executions
+            if !events.executions.is_empty() {
+                self.store_executions(dbtx, block.height, time, &events.executions)
+                    .await?;
+            }
 
             for (pair, candle) in &events.candles {
                 for window in Window::all() {
