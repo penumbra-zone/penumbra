@@ -14,8 +14,8 @@ use penumbra_dex::{
 };
 use penumbra_proto::event::EventDomainType;
 use penumbra_sct::event::EventBlockRoot;
-use std::collections::{HashMap, HashSet};
 use sqlx::types::BigDecimal;
+use std::collections::{HashMap, HashSet};
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
 
@@ -768,6 +768,7 @@ impl Component {
         time: DateTime,
         executions: &[EventPositionExecution],
     ) -> anyhow::Result<()> {
+        /*
         for execution in executions {
             sqlx::query(
                 "
@@ -800,6 +801,7 @@ impl Component {
             .execute(dbtx.as_mut())
             .await?;
         }
+         */
         Ok(())
     }
 }
