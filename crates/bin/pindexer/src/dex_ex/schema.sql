@@ -98,3 +98,48 @@ CREATE INDEX ON dex_ex_position_executions (asset_1, asset_2);
 CREATE INDEX ON dex_ex_position_executions (time);
 -- Add index for height queries
 CREATE INDEX ON dex_ex_position_executions (height);
+
+CREATE TABLE IF NOT EXISTS dex_ex_position_opens (
+  id SERIAL PRIMARY KEY,
+  height BIGINT NOT NULL,
+  time TIMESTAMPTZ NOT NULL,
+  position_id BYTEA NOT NULL,
+  asset_1 BYTEA NOT NULL,
+  asset_2 BYTEA NOT NULL,
+  reserves_1 NUMERIC(39) NOT NULL,
+  reserves_2 NUMERIC(39) NOT NULL,
+  trading_fee INTEGER NOT NULL  -- stored as basis points
+);
+
+CREATE INDEX ON dex_ex_position_opens (position_id);
+CREATE INDEX ON dex_ex_position_opens (asset_1, asset_2);
+CREATE INDEX ON dex_ex_position_opens (time);
+CREATE INDEX ON dex_ex_position_opens (height);
+
+CREATE TABLE IF NOT EXISTS dex_ex_position_closes (
+  id SERIAL PRIMARY KEY,
+  height BIGINT NOT NULL,
+  time TIMESTAMPTZ NOT NULL,
+  position_id BYTEA NOT NULL
+);
+
+CREATE INDEX ON dex_ex_position_closes (position_id);
+CREATE INDEX ON dex_ex_position_closes (time);
+CREATE INDEX ON dex_ex_position_closes (height);
+
+CREATE TABLE IF NOT EXISTS dex_ex_position_withdraws (
+  id SERIAL PRIMARY KEY,
+  height BIGINT NOT NULL,
+  time TIMESTAMPTZ NOT NULL,
+  position_id BYTEA NOT NULL,
+  asset_1 BYTEA NOT NULL,
+  asset_2 BYTEA NOT NULL,
+  reserves_1 NUMERIC(39) NOT NULL,
+  reserves_2 NUMERIC(39) NOT NULL,
+  sequence BIGINT NOT NULL
+);
+
+CREATE INDEX ON dex_ex_position_withdraws (position_id);
+CREATE INDEX ON dex_ex_position_withdraws (asset_1, asset_2);
+CREATE INDEX ON dex_ex_position_withdraws (time);
+CREATE INDEX ON dex_ex_position_withdraws (height);

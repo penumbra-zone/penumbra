@@ -7,7 +7,8 @@ use cometindex::{
 use penumbra_asset::asset;
 use penumbra_dex::{
     event::{
-        EventCandlestickData, EventPositionExecution, EventPositionOpen, EventPositionWithdraw,
+        EventCandlestickData, EventPositionClose, EventPositionExecution, EventPositionOpen,
+        EventPositionWithdraw,
     },
     lp::Reserves,
     DirectedTradingPair, TradingPair,
@@ -603,6 +604,9 @@ struct Events {
     candles: HashMap<DirectedTradingPair, Candle>,
     metrics: HashMap<DirectedTradingPair, PairMetrics>,
     executions: Vec<EventPositionExecution>,
+    position_opens: Vec<EventPositionOpen>,
+    position_closes: Vec<EventPositionClose>,
+    position_withdraws: Vec<EventPositionWithdraw>,
 }
 
 impl Events {
@@ -613,6 +617,9 @@ impl Events {
             candles: HashMap::new(),
             metrics: HashMap::new(),
             executions: Vec::new(),
+            position_opens: Vec::new(),
+            position_closes: Vec::new(),
+            position_withdraws: Vec::new(),
         }
     }
 
@@ -693,6 +700,7 @@ impl Events {
                 ))?;
                 out.with_time(time);
             } else if let Ok(e) = EventPositionOpen::try_from_event(&event.event) {
+                out.position_opens.push(e.clone());
                 out.with_reserve_change(
                     &e.trading_pair,
                     None,
@@ -702,7 +710,10 @@ impl Events {
                     },
                     false,
                 );
+            } else if let Ok(e) = EventPositionClose::try_from_event(&event.event) {
+                out.position_closes.push(e.clone());
             } else if let Ok(e) = EventPositionWithdraw::try_from_event(&event.event) {
+                out.position_withdraws.push(e.clone());
                 // TODO: use close positions to track liquidity more precisely, in practic I (ck) expect few
                 // positions to close with being withdrawn.
                 out.with_reserve_change(
@@ -768,7 +779,6 @@ impl Component {
         time: DateTime,
         executions: &[EventPositionExecution],
     ) -> anyhow::Result<()> {
-        /*
         for execution in executions {
             sqlx::query(
                 "
@@ -801,7 +811,104 @@ impl Component {
             .execute(dbtx.as_mut())
             .await?;
         }
-         */
+        Ok(())
+    }
+
+    async fn store_position_opens(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        height: u64,
+        time: DateTime,
+        opens: &[EventPositionOpen],
+    ) -> anyhow::Result<()> {
+        for open in opens {
+            sqlx::query(
+                "
+                INSERT INTO dex_ex_position_opens (
+                    height,
+                    time,
+                    position_id,
+                    asset_1,
+                    asset_2,
+                    reserves_1,
+                    reserves_2,
+                    trading_fee
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                ",
+            )
+            .bind(height as i64)
+            .bind(time)
+            .bind(open.position_id.0.to_vec())
+            .bind(open.trading_pair.asset_1().to_bytes())
+            .bind(open.trading_pair.asset_2().to_bytes())
+            .bind(BigDecimal::from(open.reserves_1.value()))
+            .bind(BigDecimal::from(open.reserves_2.value()))
+            .bind(open.trading_fee as i32)
+            .execute(dbtx.as_mut())
+            .await?;
+        }
+        Ok(())
+    }
+
+    async fn store_position_closes(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        height: u64,
+        time: DateTime,
+        closes: &[EventPositionClose],
+    ) -> anyhow::Result<()> {
+        for close in closes {
+            sqlx::query(
+                "
+                INSERT INTO dex_ex_position_closes (
+                    height,
+                    time,
+                    position_id
+                ) VALUES ($1, $2, $3)
+                ",
+            )
+            .bind(height as i64)
+            .bind(time)
+            .bind(close.position_id.0.to_vec())
+            .execute(dbtx.as_mut())
+            .await?;
+        }
+        Ok(())
+    }
+
+    async fn store_position_withdraws(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        height: u64,
+        time: DateTime,
+        withdraws: &[EventPositionWithdraw],
+    ) -> anyhow::Result<()> {
+        for withdraw in withdraws {
+            sqlx::query(
+                "
+                INSERT INTO dex_ex_position_withdraws (
+                    height,
+                    time,
+                    position_id,
+                    asset_1,
+                    asset_2,
+                    reserves_1,
+                    reserves_2,
+                    sequence
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                ",
+            )
+            .bind(height as i64)
+            .bind(time)
+            .bind(withdraw.position_id.0.to_vec())
+            .bind(withdraw.trading_pair.asset_1().to_bytes())
+            .bind(withdraw.trading_pair.asset_2().to_bytes())
+            .bind(BigDecimal::from(withdraw.reserves_1.value()))
+            .bind(BigDecimal::from(withdraw.reserves_2.value()))
+            .bind(withdraw.sequence as i64)
+            .execute(dbtx.as_mut())
+            .await?;
+        }
         Ok(())
     }
 }
@@ -838,9 +945,21 @@ impl AppView for Component {
                 .expect(&format!("no block root event at height {}", block.height));
             last_time = Some(time);
 
-            // Store position executions
+            // Store all position-related events
             if !events.executions.is_empty() {
                 self.store_executions(dbtx, block.height, time, &events.executions)
+                    .await?;
+            }
+            if !events.position_opens.is_empty() {
+                self.store_position_opens(dbtx, block.height, time, &events.position_opens)
+                    .await?;
+            }
+            if !events.position_closes.is_empty() {
+                self.store_position_closes(dbtx, block.height, time, &events.position_closes)
+                    .await?;
+            }
+            if !events.position_withdraws.is_empty() {
+                self.store_position_withdraws(dbtx, block.height, time, &events.position_withdraws)
                     .await?;
             }
 
