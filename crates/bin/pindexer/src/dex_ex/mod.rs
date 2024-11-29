@@ -5,16 +5,22 @@ use cometindex::{
     AppView, PgTransaction,
 };
 use penumbra_asset::asset;
+use penumbra_dex::lp::position::{Id as PositionId, Position};
 use penumbra_dex::{
     event::{
-        EventCandlestickData, EventPositionExecution, EventPositionOpen, EventPositionWithdraw,
+        EventCandlestickData, EventPositionClose, EventPositionExecution, EventPositionOpen,
+        EventPositionWithdraw, EventQueuePositionClose,
     },
     lp::Reserves,
     DirectedTradingPair, TradingPair,
 };
+use penumbra_num::Amount;
 use penumbra_proto::event::EventDomainType;
+use penumbra_proto::DomainType;
 use penumbra_sct::event::EventBlockRoot;
-use std::collections::{HashMap, HashSet};
+use sqlx::types::BigDecimal;
+use sqlx::Row;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
 
@@ -648,16 +654,37 @@ struct PairMetrics {
 #[derive(Debug)]
 struct Events {
     time: Option<DateTime>,
+    height: i32,
     candles: HashMap<DirectedTradingPair, Candle>,
     metrics: HashMap<DirectedTradingPair, PairMetrics>,
+    // Relevant positions.
+    positions: BTreeMap<PositionId, Position>,
+    // Store events
+    position_opens: Vec<EventPositionOpen>,
+    position_executions: Vec<EventPositionExecution>,
+    position_closes: Vec<EventPositionClose>,
+    position_withdrawals: Vec<EventPositionWithdraw>,
+    // Track transaction hashes by position ID
+    position_open_txs: BTreeMap<PositionId, [u8; 32]>,
+    position_close_txs: BTreeMap<PositionId, [u8; 32]>,
+    position_withdrawal_txs: BTreeMap<PositionId, [u8; 32]>,
 }
 
 impl Events {
     fn new() -> Self {
         Self {
             time: None,
+            height: 0,
             candles: HashMap::new(),
             metrics: HashMap::new(),
+            positions: BTreeMap::new(),
+            position_opens: Vec::new(),
+            position_executions: Vec::new(),
+            position_closes: Vec::new(),
+            position_withdrawals: Vec::new(),
+            position_open_txs: BTreeMap::new(),
+            position_close_txs: BTreeMap::new(),
+            position_withdrawal_txs: BTreeMap::new(),
         }
     }
 
@@ -731,6 +758,8 @@ impl Events {
 
     pub fn extract(block: &BlockEvents) -> anyhow::Result<Self> {
         let mut out = Self::new();
+        out.height = block.height as i32;
+
         for event in &block.events {
             if let Ok(e) = EventCandlestickData::try_from_event(&event.event) {
                 let candle = Candle::from_candlestick_data(&e.stick);
@@ -751,6 +780,14 @@ impl Events {
                     },
                     false,
                 );
+                if let Some(tx_hash) = event.tx_hash {
+                    out.position_open_txs.insert(e.position_id, tx_hash);
+                }
+                // A newly opened position might be executed against in this block,
+                // but wouldn't already be in the database. Adding it here ensures
+                // it's available.
+                out.positions.insert(e.position_id, e.position.clone());
+                out.position_opens.push(e);
             } else if let Ok(e) = EventPositionWithdraw::try_from_event(&event.event) {
                 // TODO: use close positions to track liquidity more precisely, in practic I (ck) expect few
                 // positions to close with being withdrawn.
@@ -763,6 +800,10 @@ impl Events {
                     },
                     true,
                 );
+                if let Some(tx_hash) = event.tx_hash {
+                    out.position_withdrawal_txs.insert(e.position_id, tx_hash);
+                }
+                out.position_withdrawals.push(e);
             } else if let Ok(e) = EventPositionExecution::try_from_event(&event.event) {
                 out.with_reserve_change(
                     &e.trading_pair,
@@ -788,9 +829,56 @@ impl Events {
                         end: e.trading_pair.asset_1(),
                     });
                 }
+                out.position_executions.push(e);
+            } else if let Ok(e) = EventPositionClose::try_from_event(&event.event) {
+                out.position_closes.push(e);
+            } else if let Ok(e) = EventQueuePositionClose::try_from_event(&event.event) {
+                // The position close event is emitted by the dex module at EOB,
+                // so we need to track it with the tx hash of the closure tx.
+                if let Some(tx_hash) = event.tx_hash {
+                    out.position_close_txs.insert(e.position_id, tx_hash);
+                }
             }
         }
         Ok(out)
+    }
+
+    async fn load_positions(&mut self, dbtx: &mut PgTransaction<'_>) -> anyhow::Result<()> {
+        // Collect position IDs that we need but don't already have
+        let missing_positions: Vec<_> = self
+            .position_executions
+            .iter()
+            .map(|e| e.position_id)
+            .filter(|id| !self.positions.contains_key(id))
+            .collect();
+
+        if missing_positions.is_empty() {
+            return Ok(());
+        }
+
+        // Load missing positions from database
+        let rows = sqlx::query(
+            "SELECT position_raw 
+             FROM dex_ex_position_state 
+             WHERE position_id = ANY($1)",
+        )
+        .bind(
+            &missing_positions
+                .iter()
+                .map(|id| id.0.as_ref())
+                .collect::<Vec<_>>(),
+        )
+        .fetch_all(dbtx.as_mut())
+        .await?;
+
+        // Decode and store each position
+        for row in rows {
+            let position_raw: Vec<u8> = row.get("position_raw");
+            let position = Position::decode(position_raw.as_slice())?;
+            self.positions.insert(position.id(), position);
+        }
+
+        Ok(())
     }
 }
 
@@ -806,6 +894,248 @@ impl Component {
             denom,
             min_liquidity,
         }
+    }
+
+    async fn record_position_open(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        time: DateTime,
+        height: i32,
+        tx_hash: Option<[u8; 32]>,
+        event: &EventPositionOpen,
+    ) -> anyhow::Result<()> {
+        // Get effective prices by orienting the trading function in each direction
+        let effective_price_1_to_2: f64 = event
+            .position
+            .phi
+            .orient_start(event.trading_pair.asset_1())
+            .expect("position trading pair matches")
+            .effective_price()
+            .into();
+
+        let effective_price_2_to_1: f64 = event
+            .position
+            .phi
+            .orient_start(event.trading_pair.asset_2())
+            .expect("position trading pair matches")
+            .effective_price()
+            .into();
+
+        // First insert initial reserves and get the rowid
+        let opening_reserves_rowid = sqlx::query_scalar::<_, i32>(
+            "INSERT INTO dex_ex_position_reserves (
+                position_id,
+                height,
+                time,
+                reserves_1,
+                reserves_2
+            ) VALUES ($1, $2, $3, $4, $5) RETURNING rowid",
+        )
+        .bind(event.position_id.0)
+        .bind(height)
+        .bind(time)
+        .bind(BigDecimal::from(event.reserves_1.value()))
+        .bind(BigDecimal::from(event.reserves_2.value()))
+        .fetch_one(dbtx.as_mut())
+        .await?;
+
+        // Then insert position state with the opening_reserves_rowid
+        sqlx::query(
+            "INSERT INTO dex_ex_position_state (
+                position_id,
+                asset_1,
+                asset_2,
+                p,
+                q,
+                close_on_fill,
+                fee_bps,
+                effective_price_1_to_2,
+                effective_price_2_to_1,
+                position_raw,
+                opening_time,
+                opening_height,
+                opening_tx,
+                opening_reserves_rowid
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+        )
+        .bind(event.position_id.0)
+        .bind(event.trading_pair.asset_1().to_bytes())
+        .bind(event.trading_pair.asset_2().to_bytes())
+        .bind(BigDecimal::from(event.position.phi.component.p.value()))
+        .bind(BigDecimal::from(event.position.phi.component.q.value()))
+        .bind(event.position.close_on_fill)
+        .bind(event.trading_fee as i32)
+        .bind(effective_price_1_to_2)
+        .bind(effective_price_2_to_1)
+        .bind(event.position.encode_to_vec())
+        .bind(time)
+        .bind(height)
+        .bind(tx_hash.map(|h| h.as_ref().to_vec()))
+        .bind(opening_reserves_rowid)
+        .execute(dbtx.as_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn record_position_execution(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        time: DateTime,
+        height: i32,
+        event: &EventPositionExecution,
+        positions: &BTreeMap<PositionId, Position>,
+    ) -> anyhow::Result<()> {
+        // Get the position that was executed against
+        let position = positions
+            .get(&event.position_id)
+            .expect("position must exist for execution");
+
+        // Determine trade direction and compute deltas
+        let (delta_1, delta_2, lambda_1, lambda_2) = if event.reserves_1 > event.prev_reserves_1 {
+            // Asset 1 was input
+            let delta_1 = event.reserves_1 - event.prev_reserves_1;
+            let lambda_2 = event.prev_reserves_2 - event.reserves_2;
+            (delta_1, Amount::zero(), Amount::zero(), lambda_2)
+        } else {
+            // Asset 2 was input
+            let delta_2 = event.reserves_2 - event.prev_reserves_2;
+            let lambda_1 = event.prev_reserves_1 - event.reserves_1;
+            (Amount::zero(), delta_2, lambda_1, Amount::zero())
+        };
+
+        // Compute fees directly from input amounts using u128 arithmetic
+        let fee_bps = position.phi.component.fee as u128;
+        let fee_1 = (delta_1.value() * fee_bps) / 10_000u128;
+        let fee_2 = (delta_2.value() * fee_bps) / 10_000u128;
+
+        // First insert the reserves and get the rowid
+        let reserves_rowid = sqlx::query_scalar::<_, i32>(
+            "INSERT INTO dex_ex_position_reserves (
+                position_id,
+                height,
+                time,
+                reserves_1,
+                reserves_2
+            ) VALUES ($1, $2, $3, $4, $5) RETURNING rowid",
+        )
+        .bind(event.position_id.0)
+        .bind(height)
+        .bind(time)
+        .bind(BigDecimal::from(event.reserves_1.value()))
+        .bind(BigDecimal::from(event.reserves_2.value()))
+        .fetch_one(dbtx.as_mut())
+        .await?;
+
+        // Then record the execution with the reserves_rowid
+        sqlx::query(
+            "INSERT INTO dex_ex_position_executions (
+                position_id,
+                height,
+                time,
+                reserves_rowid,
+                delta_1,
+                delta_2,
+                lambda_1,
+                lambda_2,
+                fee_1,
+                fee_2,
+                context_asset_start,
+                context_asset_end
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+        )
+        .bind(event.position_id.0)
+        .bind(height)
+        .bind(time)
+        .bind(reserves_rowid)
+        .bind(BigDecimal::from(delta_1.value()))
+        .bind(BigDecimal::from(delta_2.value()))
+        .bind(BigDecimal::from(lambda_1.value()))
+        .bind(BigDecimal::from(lambda_2.value()))
+        .bind(BigDecimal::from(fee_1))
+        .bind(BigDecimal::from(fee_2))
+        .bind(event.context.start.to_bytes())
+        .bind(event.context.end.to_bytes())
+        .execute(dbtx.as_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn record_position_close(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        time: DateTime,
+        height: i32,
+        tx_hash: Option<[u8; 32]>,
+        event: &EventPositionClose,
+    ) -> anyhow::Result<()> {
+        sqlx::query(
+            "UPDATE dex_ex_position_state 
+             SET closing_time = $1,
+                 closing_height = $2,
+                 closing_tx = $3
+             WHERE position_id = $4",
+        )
+        .bind(time)
+        .bind(height)
+        .bind(tx_hash.map(|h| h.as_ref().to_vec()))
+        .bind(event.position_id.0)
+        .execute(dbtx.as_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn record_position_withdraw(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        time: DateTime,
+        height: i32,
+        tx_hash: Option<[u8; 32]>,
+        event: &EventPositionWithdraw,
+    ) -> anyhow::Result<()> {
+        // First insert the final reserves state (zeros after withdrawal)
+        let reserves_rowid = sqlx::query_scalar::<_, i32>(
+            "INSERT INTO dex_ex_position_reserves (
+                position_id,
+                height,
+                time,
+                reserves_1,
+                reserves_2
+            ) VALUES ($1, $2, $3, $4, $4) RETURNING rowid", // Using $4 twice for zero values
+        )
+        .bind(event.position_id.0)
+        .bind(height)
+        .bind(time)
+        .bind(BigDecimal::from(0)) // Both reserves become zero after withdrawal
+        .fetch_one(dbtx.as_mut())
+        .await?;
+
+        sqlx::query(
+            "INSERT INTO dex_ex_position_withdrawals (
+                position_id,
+                height,
+                time,
+                withdrawal_tx,
+                sequence,
+                reserves_1,
+                reserves_2,
+                reserves_rowid
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        )
+        .bind(event.position_id.0)
+        .bind(height)
+        .bind(time)
+        .bind(tx_hash.map(|h| h.as_ref().to_vec()))
+        .bind(event.sequence as i32)
+        .bind(BigDecimal::from(event.reserves_1.value()))
+        .bind(BigDecimal::from(event.reserves_2.value()))
+        .bind(reserves_rowid)
+        .execute(dbtx.as_mut())
+        .await?;
+
+        Ok(())
     }
 }
 
@@ -836,11 +1166,44 @@ impl AppView for Component {
         let mut snapshots = HashMap::new();
         let mut last_time = None;
         for block in batch.by_height.iter() {
-            let events = Events::extract(&block)?;
+            let mut events = Events::extract(&block)?;
             let time = events
                 .time
                 .expect(&format!("no block root event at height {}", block.height));
             last_time = Some(time);
+
+            // Load any missing positions before processing events
+            events.load_positions(dbtx).await?;
+
+            // Record position opens
+            for event in &events.position_opens {
+                let tx_hash = events.position_open_txs.get(&event.position_id).copied();
+                self.record_position_open(dbtx, time, events.height, tx_hash, event)
+                    .await?;
+            }
+
+            // Process position executions
+            for event in &events.position_executions {
+                self.record_position_execution(dbtx, time, events.height, event, &events.positions)
+                    .await?;
+            }
+
+            // Record position closes
+            for event in &events.position_closes {
+                let tx_hash = events.position_close_txs.get(&event.position_id).copied();
+                self.record_position_close(dbtx, time, events.height, tx_hash, event)
+                    .await?;
+            }
+
+            // Record position withdrawals
+            for event in &events.position_withdrawals {
+                let tx_hash = events
+                    .position_withdrawal_txs
+                    .get(&event.position_id)
+                    .copied();
+                self.record_position_withdraw(dbtx, time, events.height, tx_hash, event)
+                    .await?;
+            }
 
             for (pair, candle) in &events.candles {
                 for window in Window::all() {
