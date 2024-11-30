@@ -1,6 +1,7 @@
 use anyhow::Context;
 use decaf377_rdsa::{Binding, Signature};
-use penumbra_asset::Balance;
+use penumbra_asset::{Balance, Value};
+use penumbra_dex::{swap::SwapView, swap_claim::SwapClaimView};
 use penumbra_keys::AddressView;
 use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
 
@@ -105,8 +106,9 @@ impl TransactionView {
             match action_view {
                 ActionView::Spend(spend_view) => match spend_view {
                     SpendView::Visible { spend: _, note } => {
-                        let value = note.value.value();
-                        let balance = Balance::from(value);
+                        // Provided imbalance (+)
+                        let balance = Balance::from(note.value.value());
+
                         let address = AddressView::Opaque {
                             address: note.address(),
                         };
@@ -121,8 +123,9 @@ impl TransactionView {
                         note,
                         payload_key: _,
                     } => {
-                        let value = note.value.value();
-                        let balance = -Balance::from(value);
+                        // Required imbalance (-)
+                        let balance = -Balance::from(note.value.value());
+
                         let address = AddressView::Opaque {
                             address: note.address(),
                         };
@@ -131,9 +134,76 @@ impl TransactionView {
                     }
                     OutputView::Opaque { output: _ } => continue,
                 },
-                ActionView::Swap(_) => todo!(),
-                ActionView::SwapClaim(_) => todo!(),
-                _ => {}
+                ActionView::Swap(swap_view) => match swap_view {
+                    SwapView::Visible {
+                        swap: _,
+                        swap_plaintext,
+                        output_1,
+                        output_2: _,
+                        claim_tx: _,
+                        asset_1_metadata: _,
+                        asset_2_metadata: _,
+                        batch_swap_output_data: _,
+                    } => {
+                        let address = AddressView::Opaque {
+                            address: output_1.clone().expect("sender address").address(),
+                        };
+
+                        let value_fee = Value {
+                            amount: swap_plaintext.claim_fee.amount(),
+                            asset_id: swap_plaintext.claim_fee.asset_id(),
+                        };
+                        let value_1 = Value {
+                            amount: swap_plaintext.delta_1_i,
+                            asset_id: swap_plaintext.trading_pair.asset_1(),
+                        };
+                        let value_2 = Value {
+                            amount: swap_plaintext.delta_2_i,
+                            asset_id: swap_plaintext.trading_pair.asset_2(),
+                        };
+
+                        // Required imbalance (-)
+                        let mut balance = Balance::default();
+                        balance -= value_1;
+                        balance -= value_2;
+                        balance -= value_fee;
+
+                        effects.push(TransactionEffect { address, balance });
+                    }
+                    SwapView::Opaque {
+                        swap: _,
+                        batch_swap_output_data: _,
+                        output_1: _,
+                        output_2: _,
+                        asset_1_metadata: _,
+                        asset_2_metadata: _,
+                    } => continue,
+                },
+                ActionView::SwapClaim(swap_claim_view) => match swap_claim_view {
+                    SwapClaimView::Visible {
+                        swap_claim,
+                        output_1,
+                        output_2: _,
+                        swap_tx: _,
+                    } => {
+                        let address = AddressView::Opaque {
+                            address: output_1.address(),
+                        };
+
+                        let value_fee = Value {
+                            amount: swap_claim.body.fee.amount(),
+                            asset_id: swap_claim.body.fee.asset_id(),
+                        };
+
+                        // Provided imbalance (+)
+                        let mut balance = Balance::default();
+                        balance += value_fee;
+
+                        effects.push(TransactionEffect { address, balance });
+                    }
+                    SwapClaimView::Opaque { swap_claim: _ } => continue,
+                },
+                _ => {} // Fill in other action views as neccessary
             }
         }
 
