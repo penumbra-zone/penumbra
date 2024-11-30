@@ -144,12 +144,27 @@ impl ::prost::Name for Value {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Balance {
-    /// Indicates if the balance is negated.
-    #[prost(bool, tag = "1")]
-    pub negated: bool,
-    /// Represents the vector of 'Values' in the balance.
-    #[prost(message, repeated, tag = "2")]
-    pub balance: ::prost::alloc::vec::Vec<Value>,
+    /// Represents the vector of 'Value's in the balance.
+    #[prost(message, repeated, tag = "1")]
+    pub values: ::prost::alloc::vec::Vec<balance::SignedValue>,
+}
+/// Nested message and enum types in `Balance`.
+pub mod balance {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct SignedValue {
+        #[prost(message, optional, tag = "1")]
+        pub value: ::core::option::Option<super::Value>,
+        #[prost(bool, tag = "2")]
+        pub negated: bool,
+    }
+    impl ::prost::Name for SignedValue {
+        const NAME: &'static str = "SignedValue";
+        const PACKAGE: &'static str = "penumbra.core.asset.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!("penumbra.core.asset.v1.Balance.{}", Self::NAME)
+        }
+    }
 }
 impl ::prost::Name for Balance {
     const NAME: &'static str = "Balance";

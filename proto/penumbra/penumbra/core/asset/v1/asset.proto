@@ -93,11 +93,14 @@ message Value {
 }
 
 message Balance {
-  // Indicates if the balance is negated.
-  bool negated = 1;
-  // Represents the vector of 'Values' in the balance.
-  repeated Value balance = 2;
+  message SignedValue {
+    Value value = 1;
+    bool negated = 2;
+  }
+  // Represents the vector of 'Value's in the balance.
+  repeated SignedValue values = 1;
 }
+
 
 // Represents a value of a known or unknown denomination.
 message ValueView {
