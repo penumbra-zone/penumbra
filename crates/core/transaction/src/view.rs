@@ -16,7 +16,7 @@ pub use transaction_perspective::TransactionPerspective;
 
 use crate::{
     memo::MemoCiphertext,
-    transaction::{Effects, TransactionSummary},
+    transaction::{TransactionEffect, TransactionSummary},
     Action, DetectionData, Transaction, TransactionBody, TransactionParameters,
 };
 
@@ -111,7 +111,7 @@ impl TransactionView {
                             address: note.address(),
                         };
 
-                        effects.push(Effects { address, balance });
+                        effects.push(TransactionEffect { address, balance });
                     }
                     SpendView::Opaque { spend: _ } => continue,
                 },
@@ -127,7 +127,7 @@ impl TransactionView {
                             address: note.address(),
                         };
 
-                        effects.push(Effects { address, balance });
+                        effects.push(TransactionEffect { address, balance });
                     }
                     OutputView::Opaque { output: _ } => continue,
                 },

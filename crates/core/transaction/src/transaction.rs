@@ -49,13 +49,12 @@ pub struct TransactionBody {
 #[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(try_from = "pbt::TransactionSummary", into = "pbt::TransactionSummary")]
 pub struct TransactionSummary {
-    pub effects: Vec<Effects>,
+    pub effects: Vec<TransactionEffect>,
 }
 
 /// Represents an individual effect of a transaction.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "pbt::Effects", into = "pbt::Effects")]
-pub struct Effects {
+pub struct TransactionEffect {
     pub address: AddressView,
     pub balance: Balance,
 }
@@ -612,9 +611,16 @@ impl DomainType for TransactionSummary {
 }
 
 impl From<TransactionSummary> for pbt::TransactionSummary {
-    fn from(pbt: TransactionSummary) -> Self {
+    fn from(summary: TransactionSummary) -> Self {
         pbt::TransactionSummary {
-            effects: pbt.effects.into_iter().map(Into::into).collect(),
+            effects: summary
+                .effects
+                .into_iter()
+                .map(|effect| pbt::transaction_summary::Effects {
+                    address: Some(effect.address.into()),
+                    balance: Some(effect.balance.into()),
+                })
+                .collect(),
         }
     }
 }
@@ -626,40 +632,21 @@ impl TryFrom<pbt::TransactionSummary> for TransactionSummary {
         let effects = pbt
             .effects
             .into_iter()
-            .map(TryInto::try_into)
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(|effect| {
+                Ok(TransactionEffect {
+                    address: effect
+                        .address
+                        .ok_or_else(|| anyhow::anyhow!("missing address field"))?
+                        .try_into()?,
+                    balance: effect
+                        .balance
+                        .ok_or_else(|| anyhow::anyhow!("missing balance field"))?
+                        .try_into()?,
+                })
+            })
+            .collect::<Result<Vec<TransactionEffect>, anyhow::Error>>()?;
 
         Ok(Self { effects })
-    }
-}
-
-impl DomainType for Effects {
-    type Proto = pbt::Effects;
-}
-
-impl From<Effects> for pbt::Effects {
-    fn from(effect: Effects) -> Self {
-        pbt::Effects {
-            address: Some(effect.address.into()),
-            balance: Some(effect.balance.into()),
-        }
-    }
-}
-
-impl TryFrom<pbt::Effects> for Effects {
-    type Error = anyhow::Error;
-
-    fn try_from(pbt: pbt::Effects) -> Result<Self, Self::Error> {
-        Ok(Self {
-            address: pbt
-                .address
-                .ok_or_else(|| anyhow::anyhow!("missing address field"))?
-                .try_into()?,
-            balance: pbt
-                .balance
-                .ok_or_else(|| anyhow::anyhow!("missing balance field"))?
-                .try_into()?,
-        })
     }
 }
 
