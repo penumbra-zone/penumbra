@@ -721,7 +721,12 @@ impl From<Transaction> for pbt::Transaction {
 
 impl From<&Transaction> for pbt::Transaction {
     fn from(msg: &Transaction) -> Self {
-        msg.into()
+        Transaction {
+            transaction_body: msg.transaction_body.clone(),
+            anchor: msg.anchor.clone(),
+            binding_sig: msg.binding_sig.clone(),
+        }
+        .into()
     }
 }
 
