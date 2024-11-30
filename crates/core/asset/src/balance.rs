@@ -39,36 +39,68 @@ pub struct Balance {
     balance: BTreeMap<Id, Imbalance<NonZeroU128>>,
 }
 
-/* Protobuf impls */
 impl DomainType for Balance {
     type Proto = pb::Balance;
 }
 
+/// Serialization should normalize the `Balance`, where the top-level
+/// negated field is exlcuded during serialization. Rather, the
+/// sign information is captured in the `SignedValue` pairs.  
 impl TryFrom<pb::Balance> for Balance {
     type Error = anyhow::Error;
 
     fn try_from(v: pb::Balance) -> Result<Self, Self::Error> {
         let mut balance_map = BTreeMap::new();
 
-        for imbalance_value in v.balance.into_iter().map(TryInto::try_into) {
-            let value: Value = imbalance_value?;
+        for signed_value in v.values {
+            let proto_value = signed_value
+                .value
+                .ok_or_else(|| anyhow::anyhow!("missing value"))?;
+            let value: Value = proto_value.try_into()?;
             let amount = NonZeroU128::new(value.amount.into())
-                .ok_or_else(|| anyhow::anyhow!("amount must be non-zero"))?;
+                .ok_or_else(|| anyhow::anyhow!("amount is zero"))?;
 
-            let imbalance = Imbalance::Provided(amount); // todo: fix this placeholder
+            // Negated flag for `SignedValue` pairs determines the imbalance.
+            let imbalance = if signed_value.negated {
+                Imbalance::Required(amount)
+            } else {
+                Imbalance::Provided(amount)
+            };
+
             balance_map.insert(value.asset_id, imbalance);
         }
 
+        // Normalize the `Balance`.
         Ok(Self {
-            negated: v.negated,
+            negated: false,
             balance: balance_map,
         })
     }
 }
 
 impl From<Balance> for pb::Balance {
-    fn from(_v: Balance) -> Self {
-        todo!() // todo: implement fallible conversion
+    fn from(v: Balance) -> Self {
+        let values = v
+            .balance
+            .into_iter()
+            .map(|(id, imbalance)| {
+                // Decompose imbalance into it sign and magnitude, and convert
+                // magnitude into raw amount and determine negation based on the sign.
+                let (sign, magnitude) = imbalance.into_inner();
+                let amount = u128::from(magnitude);
+                let negated = sign.is_required();
+
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some(id.into()),
+                        amount: Some(Amount::from(amount).into()),
+                    }),
+                    negated,
+                }
+            })
+            .collect();
+
+        pb::Balance { values }
     }
 }
 
