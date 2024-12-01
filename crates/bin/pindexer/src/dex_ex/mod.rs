@@ -530,14 +530,15 @@ mod summary {
                 SELECT
                     asset_start, asset_end,
                     (dex_ex_pairs_summary.price - greatest(price_then, 0.000001)) / greatest(price_then, 0.000001) * 100 AS price_change,
-                    liquidity * eligible_denoms.price AS liquidity,
-                    direct_volume_over_window * eligible_denoms.price as dv,
-                    swap_volume_over_window * eligible_denoms.price as sv,
+                    liquidity * ed_end.price AS liquidity,
+                    direct_volume_over_window * ed_start.price AS dv,
+                    swap_volume_over_window * ed_start.price AS sv,
                     trades_over_window as trades
                 FROM dex_ex_pairs_summary
-                JOIN eligible_denoms
-                ON eligible_denoms.asset = asset_end
-                WHERE the_window = $3
+                JOIN eligible_denoms AS ed_end
+                ON ed_end.asset = asset_end
+                JOIN eligible_denoms AS ed_start
+                ON ed_start.asset = asset_start
             ),
             sums AS (
                 SELECT

@@ -18,7 +18,7 @@ impl IndexerExt for cometindex::Indexer {
                     "passet1w6e7fvgxsy6ccy3m8q0eqcuyw6mh3yzqu3uq9h58nu8m8mku359spvulf6",
                 )
                 .expect("should be able to parse passet"),
-                100.0 * 1000_0000.0,
+                1000.0 * 1_000_000.0,
             )))
             .with_index(Box::new(crate::supply::Component::new()))
             .with_index(Box::new(crate::ibc::Component::new()))
