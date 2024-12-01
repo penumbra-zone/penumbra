@@ -76,3 +76,9 @@ CREATE TABLE IF NOT EXISTS dex_ex_aggregate_summary (
   top_price_mover_end BYTEA NOT NULL,
   top_price_mover_change_percent FLOAT8 NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS dex_ex_metadata (
+  id INT PRIMARY KEY,
+  -- The asset id to use for prices in places such as the aggregate summary.
+  quote_asset_id BYTEA NOT NULL
+);

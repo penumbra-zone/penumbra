@@ -618,6 +618,26 @@ mod summary {
     }
 }
 
+mod metadata {
+    use super::*;
+
+    pub async fn set(dbtx: &mut PgTransaction<'_>, quote_asset: asset::Id) -> anyhow::Result<()> {
+        sqlx::query(
+            "
+        INSERT INTO dex_ex_metadata
+        VALUES (1, $1)
+        ON CONFLICT (id) DO UPDATE 
+        SET id = EXCLUDED.id,
+            quote_asset_id = EXCLUDED.quote_asset_id
+        ",
+        )
+        .bind(quote_asset.to_bytes())
+        .execute(dbtx.as_mut())
+        .await?;
+        Ok(())
+    }
+}
+
 #[derive(Debug, Default, Clone, Copy)]
 struct PairMetrics {
     trades: f64,
@@ -810,6 +830,7 @@ impl AppView for Component {
         dbtx: &mut PgTransaction,
         batch: EventBatch,
     ) -> Result<(), anyhow::Error> {
+        metadata::set(dbtx, self.denom).await?;
         let mut charts = HashMap::new();
         let mut snapshots = HashMap::new();
         let mut last_time = None;
