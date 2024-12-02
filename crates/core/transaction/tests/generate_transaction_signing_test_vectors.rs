@@ -9,6 +9,7 @@ use ibc_types::core::{
 };
 use ibc_types::timestamp::Timestamp;
 use penumbra_asset::asset::{Id, Metadata};
+use penumbra_asset::{asset, Value, ValueView};
 use penumbra_auction::auction::{
     dutch::{
         actions::{
@@ -53,6 +54,7 @@ use proptest::strategy::ValueTree;
 use proptest::test_runner::{Config, TestRunner};
 use rand_core::OsRng;
 use serde_json::json;
+use std::collections::HashMap;
 use std::io::Write;
 use std::str::FromStr;
 use std::{fs, fs::File, io::Read};
@@ -802,15 +804,49 @@ fn address_display(address: &Address, fvk: &FullViewingKey) -> String {
         // In this case it should be rendered as “Main Account” or “Sub-account #N”,
         // depending on the account number.
         AddressView::Decoded {
-            address,
+            address: _,
             index,
-            wallet_id,
+            wallet_id: _,
         } => {
             if index.account == 0 {
                 "Main Account".to_string()
             } else {
                 format!("Sub-account #{}", index.account)
             }
+        }
+    }
+}
+
+fn value_display(
+    value: &Value,
+    chain_id: &str,
+    base_denoms: &HashMap<asset::Id, String>,
+) -> String {
+    let amount = value.amount.value();
+    let asset_id = value.asset_id;
+    let cache = asset::Cache::with_known_assets();
+    let value_view = value.view_with_cache(&cache);
+
+    match value_view {
+        ValueView::KnownAssetId {
+            amount, metadata, ..
+        } => {
+            if chain_id == "penumbra-1" {
+                // 1: Check if we're on penumbra-1 and if the asset is in our known registry
+                let unit = metadata.default_unit();
+                return format!("{} {}", unit.format_value(amount), unit);
+            } else if base_denoms.get(&asset_id).is_some() {
+                // 2: The asset is in the provided base denominations
+                let unit = metadata.default_unit();
+                return format!("{} {}", unit.format_value(amount), unit);
+            } else {
+                // 3: Fallback to bech32 asset ID
+                return format!("{} {}", amount, asset_id.to_string());
+            };
+        }
+        ValueView::UnknownAssetId { .. } => {
+            // 3: Fallback to bech32 asset ID
+            return format!("{} {}", amount, asset_id.to_string());
         }
     }
 }
