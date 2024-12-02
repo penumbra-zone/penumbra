@@ -38,7 +38,7 @@ use penumbra_governance::{
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_keys::test_keys::SEED_PHRASE;
-use penumbra_keys::{Address, FullViewingKey};
+use penumbra_keys::{Address, AddressView, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_sct::epoch::Epoch;
@@ -52,9 +52,10 @@ use proptest::prelude::*;
 use proptest::strategy::ValueTree;
 use proptest::test_runner::{Config, TestRunner};
 use rand_core::OsRng;
+use serde_json::json;
 use std::io::Write;
 use std::str::FromStr;
-use std::{fs::File, io::Read};
+use std::{fs, fs::File, io::Read};
 use tendermint;
 
 fn amount_strategy() -> impl Strategy<Value = Amount> {
@@ -750,4 +751,71 @@ fn effect_hash_test_vectors() {
             .expect("should be able to read expected effect hash");
         assert_eq!(effect_hash_hex, expected_effect_hash);
     }
+}
+
+#[ignore]
+#[test]
+fn generate_hw_display_test_vectors() {
+    let test_vectors_dir = "tests/signing_test_vectors";
+    let mut test_vectors = Vec::new();
+
+    for i in 0..100 {
+        let proto_file_path = format!("{}/transaction_plan_{}.proto", test_vectors_dir, i);
+        let transaction_plan_encoded =
+            fs::read(&proto_file_path).expect("Failed to read Protobuf file");
+
+        let transaction_plan = TransactionPlan::decode(&transaction_plan_encoded[..])
+            .expect("should be able to decode transaction plan");
+
+        let display_vector = json!({
+            "index": i,
+            "blob": hex::encode(&transaction_plan_encoded),
+            "transaction_params": {
+                "chain_id": transaction_plan.transaction_parameters.chain_id,
+                "expiry_height": transaction_plan.transaction_parameters.expiry_height,
+            },
+            "output": generate_normal_output(&transaction_plan),
+            "output_expert": generate_expert_output(&transaction_plan),
+        });
+
+        test_vectors.push(display_vector);
+    }
+
+    // Write the test vectors to a JSON file
+    let output_path = format!("{}/hw_display_vectors.json", test_vectors_dir);
+    fs::write(
+        output_path,
+        serde_json::to_string_pretty(&test_vectors).unwrap(),
+    )
+    .expect("Failed to write display test vectors");
+}
+
+fn generate_normal_output(plan: &TransactionPlan) -> Vec<String> {
+    let mut output = Vec::new();
+
+    // Add chain ID
+    if !plan.transaction_parameters.chain_id.is_empty() {
+        output.push(format!(
+            "0 | Chain ID : {}",
+            plan.transaction_parameters.chain_id
+        ));
+    }
+
+    // Add expiry height if nonzero
+    if plan.transaction_parameters.expiry_height != 0 {
+        output.push(format!(
+            "1 | Expiry Height : {}",
+            plan.transaction_parameters.expiry_height
+        ));
+    }
+
+    // TODO: Rest of the tx
+
+    output
+}
+
+fn generate_expert_output(plan: &TransactionPlan) -> Vec<String> {
+    // For now, expert mode shows the same output
+    // We can customize this later if needed
+    generate_normal_output(plan)
 }
