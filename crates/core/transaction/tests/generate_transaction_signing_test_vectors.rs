@@ -790,6 +790,31 @@ fn generate_hw_display_test_vectors() {
     .expect("Failed to write display test vectors");
 }
 
+fn address_display(address: &Address, fvk: &FullViewingKey) -> String {
+    // Use the existing AddressView to render the address data.
+    let address_view = fvk.view_address(address.clone());
+
+    match address_view {
+        // The address is not controlled by the user’s account.
+        // In this case it should be rendered using the Canonical Short Form.
+        AddressView::Opaque { address } => address.display_short_form(),
+        // The address is controlled by the user’s account.
+        // In this case it should be rendered as “Main Account” or “Sub-account #N”,
+        // depending on the account number.
+        AddressView::Decoded {
+            address,
+            index,
+            wallet_id,
+        } => {
+            if index.account == 0 {
+                "Main Account".to_string()
+            } else {
+                format!("Sub-account #{}", index.account)
+            }
+        }
+    }
+}
+
 fn generate_normal_output(plan: &TransactionPlan) -> Vec<String> {
     let mut output = Vec::new();
 
