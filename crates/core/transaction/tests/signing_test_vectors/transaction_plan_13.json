@@ -1,0 +1,27 @@
+{
+  "actions": [
+    {
+      "positionClose": {
+        "positionId": {
+          "inner": "mSHwo2i5YzvPusdoOrhcYl1stJIFrRR7mOTlufZ9mK0="
+        }
+      }
+    },
+    {
+      "positionClose": {
+        "positionId": {
+          "inner": "KrohYFW3AiAxd3Sdfuydpbp7Lp2G9fNQwra0eFnPQkk="
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "3949352929",
+    "chainId": "qrfschiqxdgzxb-892924459211469308974498987534",
+    "fee": {
+      "amount": {
+        "lo": "769594145860330082"
+      }
+    }
+  }
+}

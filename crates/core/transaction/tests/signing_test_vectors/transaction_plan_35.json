@@ -1,0 +1,74 @@
+{
+  "actions": [
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "880336588245684328"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "eMayb1AMb8x6ULVMR9qFZiSm4qyqpXRcvB2w4APoJDa09eGUJRe4y8IOvf0gujP1HnDwORk+Bo+5iX0PL3XSg/l/irlmeUbJaf+21lealhI="
+        }
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "815719689217486520"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "TmiBtczbGcuN9ga/lX+XQ6XS/ka89UyP5hGbJnrQvFjMSHkNn1Hwvp7TbcXTk4rXYnKsoy1d1oSncj99ROAdkFEah+Fjq9JTDgDSY5DKnWw="
+        }
+      }
+    },
+    {
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "450308455168230732"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "67217833691084182"
+        },
+        "denom": {
+          "denom": "mkahEaFCV6N915yYmMII69yMhup5m3V"
+        },
+        "destinationChainAddress": "penumbra1w0mcvqrwgr7n0ges8lkqvglhrxfyjjl7hkwxcgu7qdrr6x22ksgs0pkpfh40uj2zfptukl6guz433ka7u8l95a698ugek9mz7mntyghrea3lvmnxdztg30qd73urm3587ma7dn",
+        "returnAddress": {
+          "inner": "MocqKdHFP1ovgFMcZorPXHI9WxAISNFgHw7AednENrqvhCgvsjXFbj3xIhPYAV6kH9mL1sqISk/unIoY9s8ofjIdvdmPpYrz0Asiob2Qono="
+        },
+        "timeoutHeight": {
+          "revisionNumber": "516040925",
+          "revisionHeight": "213825661"
+        },
+        "sourceChannel": "channel-0"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "100242853",
+    "chainId": "f-8421725122763533900111664888",
+    "fee": {
+      "amount": {
+        "lo": "155809695238159532"
+      }
+    }
+  }
+}

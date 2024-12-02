@@ -1,0 +1,23 @@
+{
+  "actions": [
+    {
+      "proposalWithdraw": {
+        "proposal": "326690332"
+      }
+    },
+    {
+      "proposalWithdraw": {
+        "proposal": "32683854"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "379781162",
+    "chainId": "vmp-730888803729620",
+    "fee": {
+      "amount": {
+        "lo": "509390978610964123"
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "actions": [
+    {
+      "actionDutchAuctionWithdraw": {
+        "auctionId": {
+          "inner": "tp/ZH5p59aFYfrUCr0W9/th/yCQ5JoJ45WRnscvnsH0="
+        },
+        "seq": "166896910",
+        "reservesInput": {
+          "amount": {
+            "lo": "387576649512742381"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "reservesOutput": {
+          "amount": {
+            "lo": "158751433229900404"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "s2x5E6BoKrLd2FExXtyaRre/CGXdnIf3IgCtFHZ++Ro="
+        },
+        "unbondedAmount": {
+          "lo": "35105153384464635"
+        },
+        "delegationAmount": {
+          "lo": "545185666844018131"
+        },
+        "fromEpoch": {
+          "index": "142",
+          "startHeight": "142"
+        }
+      }
+    },
+    {
+      "proposalWithdraw": {
+        "proposal": "18496651"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "1998613256",
+    "chainId": "cnmkptqvxazriqivquhaazzayjr-618417965884",
+    "fee": {
+      "amount": {
+        "lo": "732461060190540421"
+      }
+    }
+  }
+}

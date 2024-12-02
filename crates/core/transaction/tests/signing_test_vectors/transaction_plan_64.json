@@ -1,0 +1,54 @@
+{
+  "actions": [
+    {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "cixdkboole-89495",
+          "description": "fmczeqtezeshlypcuhni-736861826156013714474096666082",
+          "signaling": {}
+        },
+        "depositAmount": {
+          "lo": "319418957113244997"
+        }
+      }
+    },
+    {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "zzxxfquzjilsstcp-0",
+          "description": "ejnxxjosxyrnnoiwafsnhdtuaov-5573296535092824525992",
+          "signaling": {}
+        },
+        "depositAmount": {
+          "lo": "897611576165551177"
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "XLFLzl54otXVenQipwvNfSORN7xD3ZZU/lPcHMsV140="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP8an752yLQ5WBBiTdLxqfw="
+        },
+        "unbondingAmount": {
+          "lo": "884245862204773054"
+        },
+        "balanceBlinding": "lELf0MSAsV/qudGqi31yK3dHodA9GXTXNgndejNKRQA=",
+        "proofBlindingR": "/Y8CQqNGHGsJaqfLx3kFeJAX0+G574nFepTNiJBmlwA=",
+        "proofBlindingS": "yL4veJFPCLVoPg9XJffl71w+O5WnGjFzWuI0xadFiQg=",
+        "unbondingStartHeight": "50026"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "8399461328",
+    "chainId": "dhonjkixmpwe-9674727512824055616",
+    "fee": {
+      "amount": {
+        "lo": "91677694919425334"
+      }
+    }
+  }
+}

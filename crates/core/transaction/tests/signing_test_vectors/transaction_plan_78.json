@@ -1,0 +1,59 @@
+{
+  "actions": [
+    {
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "2998218174805594"
+          },
+          "r2": {
+            "lo": "845753515854215497"
+          }
+        },
+        "positionId": {
+          "inner": "8SwMXaaQfgZY1TqjWVvmoyiTBf1feslEQnON5w0MXU0="
+        },
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "sequence": "1"
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "Jju1bsKrn1c3KZ5zTDkwVUV3Kv17d38XILrahr96DBE="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP8uSOinHeaa1Cw8nuy/sVw="
+        },
+        "unbondingAmount": {
+          "lo": "759098308161705917"
+        },
+        "balanceBlinding": "QiSS6nxQhaoO/ftU9SGxw8+ayxH4oVmPAXm7Hrm2kgA=",
+        "proofBlindingR": "hqzYh0tnWa2FeKak2C2wLuoLbHpZnAhjSQ8rWeSeSQ4=",
+        "proofBlindingS": "C+Ja+Ck10/HhIonYhk9fQeMp3Fi8XS812VqXMHyDeAI=",
+        "unbondingStartHeight": "96027"
+      }
+    },
+    {
+      "proposalWithdraw": {
+        "proposal": "987713522"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "1539522175",
+    "chainId": "xrzalo-7580521163329717690",
+    "fee": {
+      "amount": {
+        "lo": "4513131285468227"
+      }
+    }
+  }
+}

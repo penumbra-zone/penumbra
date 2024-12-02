@@ -1,0 +1,81 @@
+{
+  "actions": [
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "872353388605936813"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "N7GNC86a6prrIXkn5AlbDKF9zujjlk/tLZRMSwM/KeVOpukSgvZOD4cTsCzDuyqWNyr6DtsjYmOEhfxvQEyaPTQhuohDn0oaVpo2SKCF2R0="
+        },
+        "rseed": "9lsCRdtWMmN+SqxBSsnCeFWZ3l+uUv6MxI2uhLxDx60=",
+        "valueBlinding": "qvTC66uqZnmGi/BdUK7UIVU3Og2Avoz3DX9xpAj/LAA=",
+        "proofBlindingR": "sq5+HW+orNM6UpfYl1dLgSVN4CEyZcLYVQ/j5b2nKgc=",
+        "proofBlindingS": "5BKKn/W42UqnFE6ocG7t16C2qxG+iIek3dl9CaygvAM="
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "9042568700646019"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "50rlXWNqMjjdb5B8YJgEiasgRlQMVVK9JLQNLR1F0ZnC5RUp44LFVIi1lHP5I6keBup/n+KhPuC4xzo+Gu/faF4yJG1DJ/3eMCUd3E3bZe8="
+        }
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "467729617406261529"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "lNj3yZ16Z21Abf2jaLwTBUqfTVc1gxtICYewyUi3CFA=",
+          "address": {
+            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
+          }
+        },
+        "position": "149646304680516",
+        "randomizer": "eLB08pfPU9pekgtj83Jhb5EcoqmDMxWCladOH82fCgE=",
+        "valueBlinding": "j6SWICpcJg9WyODRnVF3kSPhClcWMzafe9jl0HMB8AE=",
+        "proofBlindingR": "RqFNwTNoxM9tZm55DIDYLozBU9djKexySVcKy6cAAQI=",
+        "proofBlindingS": "JhzzraSCeOGfcI/K6wM9Co0SGT+9EbcD6qtWHdRGcQM="
+      }
+    },
+    {
+      "proposalDepositClaim": {
+        "proposal": "135253180",
+        "depositAmount": {
+          "lo": "906710236242005452"
+        },
+        "outcome": {
+          "slashed": {}
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "2630276573",
+    "chainId": "mfhcbnrradbbkmfnvntozpuxjvqyenb-0",
+    "fee": {
+      "amount": {
+        "lo": "301746821577816735"
+      }
+    }
+  }
+}

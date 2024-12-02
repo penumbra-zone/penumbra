@@ -1,0 +1,149 @@
+{
+  "actions": [
+    {
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "762907374183046680"
+          },
+          "r2": {
+            "lo": "857702320436833752"
+          }
+        },
+        "positionId": {
+          "inner": "JmXQVbLL5/rIZdmuTL2Sm35ZE9cka2/6IEVEi4YuyDM="
+        },
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "sequence": "1"
+      }
+    },
+    {
+      "positionOpen": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "27814592735501"
+              },
+              "q": {
+                "lo": "115285439836814651"
+              }
+            },
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
+            }
+          },
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_CLOSED"
+          },
+          "reserves": {
+            "r1": {
+              "lo": "159083462327874188"
+            },
+            "r2": {
+              "lo": "53019172107422243"
+            }
+          },
+          "closeOnFill": true
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "8tbQoH3gl1pvrbNvjT+7bgRaGLCjChVUKCUW1JHn/ZY="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP8G9pRGc4HX2/SH/Lkjop0="
+        },
+        "unbondingAmount": {
+          "lo": "740941795037630000"
+        },
+        "balanceBlinding": "R/VRsWoWaOxx36QenThCEdoXTB78df8+v5T2ns+4egQ=",
+        "proofBlindingR": "6KCDruH51rwOAJ4Fj2QU9zKtiwjWGAH3th8VOWpuxA4=",
+        "proofBlindingS": "VIUVn7jQ2DD0ukAVj5meBiW8dDnmhCF/h57DbfATyQU=",
+        "unbondingStartHeight": "74025"
+      }
+    },
+    {
+      "swapClaim": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "605370148360838263"
+          },
+          "delta2I": {
+            "lo": "416969962695394141"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "mZ8ppy3taHr3RWwBa4plBcyD44mQ/adDvZZ3Y8btD96Iq1Um21e1K+O/jTN+kvJaDOQ1lmbFqhvIN3kFd1o9JmKfU7AL7ma9A2i3NQ5QmSU="
+          },
+          "rseed": "Gq6qXposAl+ylFP0pSTqOtCwesgolFKtvZpAAio5zvo="
+        },
+        "outputData": {
+          "delta1": {
+            "lo": "1142280962"
+          },
+          "delta2": {
+            "lo": "913363600"
+          },
+          "lambda1": {
+            "lo": "758"
+          },
+          "lambda2": {
+            "lo": "299"
+          },
+          "unfilled1": {
+            "lo": "621"
+          },
+          "unfilled2": {
+            "lo": "1106"
+          },
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          }
+        },
+        "epochDuration": "1000",
+        "proofBlindingR": "Mt/Ul9RXZ55rgMA2L2zhZA6M2Iu/6Xytos68b5cokgo=",
+        "proofBlindingS": "WzFw5Lz0GE9am22Xwx7z5Qnmc7YJzc6+VmgkHBz5jhE="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "6512043763",
+    "chainId": "zxpknzcbhubhgkrkxlgggkl-34956985878210629",
+    "fee": {
+      "amount": {
+        "lo": "676378964118199950"
+      }
+    }
+  }
+}

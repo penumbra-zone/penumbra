@@ -1,0 +1,60 @@
+{
+  "actions": [
+    {
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrMBCPuB56AGEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsI8MeX4QIQv57bVkCon5ONpLXqgRgSAgoAGgsI8MeX4QIQv57bViKPAXBlbnVtYnJhMWt0bXM5bmxzMG4yY3J6dHUzMDVqNThyODNnem5lNHp3NHpqdTRndzU5em45bjc5OTBocG10aGRmdjRqaGM2NXRoNWQ4dTNjMDV6Z3J5N3Izbjd0OG4yZDU0c3lqMzdwMjZ5amtsNWV6eTl6bXRtdGRjejNsbTBnbGpmajVnZjJnbDNzN252"
+        }
+      }
+    },
+    {
+      "proposalDepositClaim": {
+        "proposal": "234237802",
+        "depositAmount": {
+          "lo": "170491002808594623"
+        },
+        "outcome": {
+          "slashed": {}
+        }
+      }
+    },
+    {
+      "delegatorVote": {
+        "proposal": "605555901",
+        "vote": {
+          "vote": "VOTE_YES"
+        },
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "254645828586757487"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "RG/zFAZpBIYPm6MyzUhYyfkt62xYaTBOtxQiR9LJwPM=",
+          "address": {
+            "inner": "7WSXX9rjVOh95KTrcckft7xKfeq8uPJHn4TqDNyy8I9kI8bFPkHbHtq9Dhd405JuYkwabZZvxeteiuzwVVhxDP+ijwAi0kDcuUtK2dKFj4E="
+          }
+        },
+        "unbondedAmount": {
+          "lo": "950376150540826541"
+        },
+        "randomizer": "vcZy5DFcj0jiDEGb4AOyRNGrJ9jocbMKU8yi1JIDdAE=",
+        "proofBlindingR": "q8BQWrzYeZ3hVTb0vskjc4db+IRXVLDrOOEe72OEIgA=",
+        "proofBlindingS": "46IkwPN5DDcOjE+byqGNJFqSy8/gmWMl/05befMe3Qk="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "1571335864",
+    "chainId": "atbhvfprzxpmlpyfbguplqwpeoph-210960299201973636300923628",
+    "fee": {
+      "amount": {
+        "lo": "880979735914912086"
+      }
+    }
+  }
+}

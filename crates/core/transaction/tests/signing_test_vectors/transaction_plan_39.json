@@ -1,0 +1,32 @@
+{
+  "actions": [
+    {
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "XTDpe9No0XGJuhIof9R/H0nzlbndN47FcWp19oan5DA="
+        }
+      }
+    },
+    {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "ynnajcmmygjtvzebgdinw-5281",
+          "description": "yakipgupcjcwbzbhcjfh-6887007188777625904",
+          "signaling": {}
+        },
+        "depositAmount": {
+          "lo": "765831618350417324"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "30254982",
+    "chainId": "lmmpzfvkmrjymqhr-821068746509121003911302",
+    "fee": {
+      "amount": {
+        "lo": "887886743953552340"
+      }
+    }
+  }
+}

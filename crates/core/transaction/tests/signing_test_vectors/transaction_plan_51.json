@@ -1,0 +1,83 @@
+{
+  "actions": [
+    {
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "288822294649015597"
+          },
+          "r2": {
+            "lo": "459024833642480735"
+          }
+        },
+        "positionId": {
+          "inner": "GzOmgxCOOcLgFvHD1lsVkEJwTolZhIM9ZXEadOyVHoI="
+        },
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "sequence": "1"
+      }
+    },
+    {
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "PwvrR+xrtZB4Xiro6cTqIRmNXJtydVd3KR7leAJe6Ic="
+        }
+      }
+    },
+    {
+      "delegatorVote": {
+        "proposal": "541740445",
+        "vote": {
+          "vote": "VOTE_ABSTAIN"
+        },
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "572633255744364421"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "lL8LHjUh+k7eg2fW5afrKp8NfkQx2Yi5wBZGn5lD1Pw=",
+          "address": {
+            "inner": "gsWZa3riNJFwUJvS+GuJSO6upsK0nklORGp5Swl/TNny7VDxlxMT5LApQXx2vdXhLCkhJVPWCiANg6IMtCRCRNuGuSS+qQ1grfgUykQFTe0="
+          }
+        },
+        "unbondedAmount": {
+          "lo": "428752071407756273"
+        },
+        "randomizer": "rP1nJQ2vM+S/JdNAQhOyvbfItixiPxhDcuoMoFOt0wI=",
+        "proofBlindingR": "UIN6dSK10tWMPGLGFP2EQnH7RIPxQAXCwBKbRueUzhE=",
+        "proofBlindingS": "BngSyskgmNBrLkcGy/UHYzvPgeIaUwlqXZanHgfd0ws="
+      }
+    },
+    {
+      "proposalDepositClaim": {
+        "proposal": "693570752",
+        "depositAmount": {
+          "lo": "209388441450832082"
+        },
+        "outcome": {
+          "failed": {}
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "5085012632",
+    "chainId": "oryiem-09808985418868",
+    "fee": {
+      "amount": {
+        "lo": "665210448174199572"
+      }
+    }
+  }
+}

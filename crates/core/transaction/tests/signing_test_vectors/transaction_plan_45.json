@@ -1,0 +1,52 @@
+{
+  "actions": [
+    {
+      "actionDutchAuctionSchedule": {
+        "description": {
+          "input": {
+            "amount": {
+              "lo": "822711624718070749"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "outputId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "maxOutput": {
+            "lo": "430750638761446118"
+          },
+          "minOutput": {
+            "lo": "926253026304277144"
+          },
+          "startHeight": "483746522",
+          "endHeight": "483746523",
+          "stepCount": "368806483",
+          "nonce": "Jz+onRaC+XAwkjAlIGF6CFFWRMrKM2nRN3X3vh4Qub8="
+        }
+      }
+    },
+    {
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "980503223363754344"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "9396435381",
+    "chainId": "gbyqccglqydcruoszirlvmuqnt-8244639399167547",
+    "fee": {
+      "amount": {
+        "lo": "983626274279646423"
+      }
+    }
+  }
+}

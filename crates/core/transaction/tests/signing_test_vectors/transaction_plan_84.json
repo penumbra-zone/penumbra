@@ -1,0 +1,83 @@
+{
+  "actions": [
+    {
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "788915016365458466"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "swapClaim": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "689316832891768509"
+          },
+          "delta2I": {
+            "lo": "298290353693146612"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "rvp6vEDH/UdoVo3Ggppav8bRiaAIX8jbHtu2/85xCJR2xb/7dCgVo2jd6p5C71Nj/KENTHvHAr5VqUoImwys4lpSBIpprqvS9ZlRVnAHkq8="
+          },
+          "rseed": "ixyxNXNxCxp2n0QZDjqx4F0vhwOC0n9h3PwWKPftvKQ="
+        },
+        "outputData": {
+          "delta1": {
+            "lo": "240267237"
+          },
+          "delta2": {
+            "lo": "15036557"
+          },
+          "lambda1": {
+            "lo": "444"
+          },
+          "lambda2": {
+            "lo": "1312"
+          },
+          "unfilled1": {
+            "lo": "1382"
+          },
+          "unfilled2": {
+            "lo": "975"
+          },
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          }
+        },
+        "epochDuration": "1000",
+        "proofBlindingR": "/rflD6uOcxc9/ptEHtLPWiN4P61ELQARV707y8eYgwA=",
+        "proofBlindingS": "mn+/taE6nJvfklyymyW314OtVBsGpuEl/neNrAe3VBI="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "6199555422",
+    "chainId": "gsyrhjkttqxltkdtvvin-99841392087313049",
+    "fee": {
+      "amount": {
+        "lo": "639378339909059718"
+      }
+    }
+  }
+}

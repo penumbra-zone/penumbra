@@ -1,0 +1,76 @@
+{
+  "actions": [
+    {
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "EWcp65XW4Rx93StfpdSB4LBn45TBKYB/8pbxpfQQ3h4="
+        }
+      }
+    },
+    {
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "500503486971932926"
+          },
+          "r2": {
+            "lo": "634710064120439757"
+          }
+        },
+        "positionId": {
+          "inner": "Nvg1f57cke3RYmhfZbmYz7COIwnTDwIhUsMoJB587DE="
+        },
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "sequence": "1"
+      }
+    },
+    {
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "246263227545466034"
+          },
+          "r2": {
+            "lo": "197420115383946765"
+          }
+        },
+        "positionId": {
+          "inner": "IISM6OQjcVlC4Keeai9XFdsittJyKxOZnao/9Ne7di4="
+        },
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "sequence": "1"
+      }
+    },
+    {
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrQBCM2Br/wDEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgwI6ZGrnAEQt6uFyQJA4IrVhpy16oEYEgIKABoMCOmRq5wBELerhckCIo8BcGVudW1icmExd3E2eGY1d3ZhdmZtM2drOHN6a2Rwamc5cGF4bmRkNW55Y2VsazlyM25wZmt6NjVkYWNydDJ3czh5N3R0N2NrZHlobXBxODd4czYzdzJrZTA2dXVjNGR6emZ5dGFsOWw1d3d4OHVrOG10cXh5a3A5NGE0dm56a2prNTJ5a256OTdqdG12ZXE="
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "9745145300",
+    "chainId": "k-37091",
+    "fee": {
+      "amount": {
+        "lo": "607990375585879648"
+      }
+    }
+  }
+}

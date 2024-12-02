@@ -1,0 +1,42 @@
+{
+  "actions": [
+    {
+      "communityPoolSpend": {
+        "value": {
+          "amount": {
+            "lo": "182169567793400948"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "5RMUaG3KAiiOS8umSYfdl03Pdfeqq9UGDmOix94j4bc="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP24uscQyylenhsImgJ1JUc="
+        },
+        "unbondingAmount": {
+          "lo": "635862938662374571"
+        },
+        "balanceBlinding": "UKNVDQMH0kkDI8ADq4HxRj7MipTc6mVADYa9tIyGEQA=",
+        "proofBlindingR": "gfHEG5ME6RgHbMBc1XD5XHiJMymqVYN7otT/O9qXyxE=",
+        "proofBlindingS": "qgFAbfZgcOoPfMvg+cn7jis9u3pkzq3zJfZBvWTWGgk=",
+        "unbondingStartHeight": "96365"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "167592944",
+    "chainId": "bnuiqvevjitdaamyzn-2043254365281265516411890",
+    "fee": {
+      "amount": {
+        "lo": "599063820810496597"
+      }
+    }
+  }
+}

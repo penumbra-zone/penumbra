@@ -1,0 +1,50 @@
+{
+  "actions": [
+    {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "rhygnyiczdqcbnda-5050340999020270975392418403",
+          "description": "gklivzakngkcklcppk-310781295561841255380289",
+          "signaling": {}
+        },
+        "depositAmount": {
+          "lo": "663865989312057847"
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "+jV4F2dh+4xOGQJMVvPTP1Ae8TLT9ulG2GVp/eJn6iI="
+        },
+        "epochIndex": "2291",
+        "unbondedAmount": {
+          "lo": "512115687902232302"
+        },
+        "delegationAmount": {
+          "lo": "121829272433526855"
+        }
+      }
+    },
+    {
+      "proposalDepositClaim": {
+        "proposal": "101301980",
+        "depositAmount": {
+          "lo": "290471330133274347"
+        },
+        "outcome": {
+          "passed": {}
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "5120304822",
+    "chainId": "hfjzzucwtsprnz-16320333674509",
+    "fee": {
+      "amount": {
+        "lo": "298679504801144213"
+      }
+    }
+  }
+}

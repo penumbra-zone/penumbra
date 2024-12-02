@@ -1,0 +1,32 @@
+{
+  "actions": [
+    {
+      "communityPoolSpend": {
+        "value": {
+          "amount": {
+            "lo": "917708635555222740"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "szCiZisOXrERqpzOkyvnLAYj1m6nJiuM5gXysKNJWqQ="
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "5861263868",
+    "chainId": "q-921525899986864461645755934",
+    "fee": {
+      "amount": {
+        "lo": "194766905819855844"
+      }
+    }
+  }
+}

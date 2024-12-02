@@ -1,0 +1,51 @@
+{
+  "actions": [
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "/QXLeKKs5nNDGUlootWZo28F38EKtleJ2Dxmz877u5M="
+        },
+        "epochIndex": "3335",
+        "unbondedAmount": {
+          "lo": "268055427198280602"
+        },
+        "delegationAmount": {
+          "lo": "311754073549817714"
+        }
+      }
+    },
+    {
+      "actionDutchAuctionWithdraw": {
+        "auctionId": {
+          "inner": "lBXbj4Fgh8SAUcCnvlW0iL9mC1F+Hjr4h2GmuK7hr4Y="
+        },
+        "seq": "477900847",
+        "reservesInput": {
+          "amount": {
+            "lo": "494921779002903251"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "reservesOutput": {
+          "amount": {
+            "lo": "229786067440132976"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "3655773457",
+    "chainId": "cobadoodnjhaiy-3702176186175231025",
+    "fee": {
+      "amount": {
+        "lo": "398478972940299008"
+      }
+    }
+  }
+}

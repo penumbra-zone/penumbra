@@ -1,0 +1,78 @@
+{
+  "actions": [
+    {
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "PlFFGg79LE+XRXqsQuJzFbdboGgc7DXJaO1jpO3FNEY="
+        }
+      }
+    },
+    {
+      "swapClaim": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "73625975926872997"
+          },
+          "delta2I": {
+            "lo": "759210985137596090"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "RTyoacrh7Bp5aARWqJ2efkDhyRgBuiYlditC1SGR7G1bRTwwqIgNsd4P/BRPDs5IjYlfmUXEVhU/OAD3UXepoak+PEvYK44B1FiMjBXcO80="
+          },
+          "rseed": "owhHAdxie4VP8M/1pPwe1KBoaw0gNnbhxtVQRuf/ARg="
+        },
+        "outputData": {
+          "delta1": {
+            "lo": "257481810"
+          },
+          "delta2": {
+            "lo": "1341365859"
+          },
+          "lambda1": {
+            "lo": "1936"
+          },
+          "lambda2": {
+            "lo": "547"
+          },
+          "unfilled1": {
+            "lo": "44"
+          },
+          "unfilled2": {
+            "lo": "1832"
+          },
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          }
+        },
+        "epochDuration": "1000",
+        "proofBlindingR": "ANEQyCIG4QedFgBIxmTW65wQgcNtmEesejeqdSSfOQ4=",
+        "proofBlindingS": "WdT+jFIwNxBujDpZXLkR72RswB5Qo6H7Lr2DPBE+JAI="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "8455143262",
+    "chainId": "gbsujyvxwq-16419002146961281753456",
+    "fee": {
+      "amount": {
+        "lo": "189595041592541069"
+      }
+    }
+  }
+}

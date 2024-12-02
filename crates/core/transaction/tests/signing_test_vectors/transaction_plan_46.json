@@ -1,0 +1,78 @@
+{
+  "actions": [
+    {
+      "positionClose": {
+        "positionId": {
+          "inner": "3bbkEtSgjhFIBKM177cemJLtXPcFjC189hyp82PQme4="
+        }
+      }
+    },
+    {
+      "swapClaim": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "396407965900561063"
+          },
+          "delta2I": {
+            "lo": "31512525003725287"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "NNtbsuSI/Znlg0w2zKZo6gqkNX/02iLqEQ0blH/17S0/g9ZYxTM3feLvghIhyqqISmOYghzgIh0wZ3NTHHdKjcgogx5M0DBWTN6Mc7zJipg="
+          },
+          "rseed": "jeYrMjQpR7Ky1p/R/3tIsRqh29ceNbLzEjBP/ctjCck="
+        },
+        "outputData": {
+          "delta1": {
+            "lo": "1101423576"
+          },
+          "delta2": {
+            "lo": "1567061194"
+          },
+          "lambda1": {
+            "lo": "1799"
+          },
+          "lambda2": {
+            "lo": "746"
+          },
+          "unfilled1": {
+            "lo": "1097"
+          },
+          "unfilled2": {
+            "lo": "1121"
+          },
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          }
+        },
+        "epochDuration": "1000",
+        "proofBlindingR": "l8LmlnLtcFqlgianoxogzdvDlkScAgUjxACBkM1S7RA=",
+        "proofBlindingS": "Qu6BJ9ZKFmHZY2D23mxQj1vwChQiV1RUKAyuE/AfZhI="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "6509449978",
+    "chainId": "jwfqgaphakccpctwxwsryqvdzbqz-1046450848",
+    "fee": {
+      "amount": {
+        "lo": "753235038814796507"
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "actions": [
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "3CMSBNay466PPsbAMMwVcs8dYlUu7wYFnhQBzytszb8="
+        },
+        "unbondedAmount": {
+          "lo": "445210398279593827"
+        },
+        "delegationAmount": {
+          "lo": "912468609333936955"
+        },
+        "fromEpoch": {
+          "index": "6657",
+          "startHeight": "6657"
+        }
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "404834025931030255"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "nEyqrZ+MzR5PKHA/316PjZMrNSg8dziZBs/YH9gwefGoVEJ9UnfVLPJKiYFCb7t6XNkRKVgTQE49sMVLGSmzjGJiYxd7Fc6oL8l3IdUw3rM="
+        }
+      }
+    },
+    {
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "138343348497016726"
+          },
+          "r2": {
+            "lo": "56932107223773616"
+          }
+        },
+        "positionId": {
+          "inner": "n+5vEEEwJ4Vw6haSoNGSpLWRlemu0wDspESQ0mOZcV0="
+        },
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "sequence": "1"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "8365802583",
+    "chainId": "ofufkknwjpgaqnltcztwnx-645471874540833443741784294",
+    "fee": {
+      "amount": {
+        "lo": "37048063536637300"
+      }
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "actions": [
+    {
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "iLny4M+Mq8sAak5rMdt+lE3oXHGqs33MKXy/jgwg0Ac="
+          },
+          "consensusKey": "NpIKLSY7jK5/iM4NnaIuzfvzBSXJO5t80UmgjobB8ic=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "iLny4M+Mq8sAak5rMdt+lE3oXHGqs33MKXy/jgwg0Ac="
+          }
+        },
+        "authSig": "oJBrdJNwasA17QAP6wn//L5VAnXSNC5LVZKLyxtdHQa5m+SJK6r3QVIgB3tbFlp0ti4BWv8vRrnfRFFTAe2+Ag=="
+      }
+    },
+    {
+      "positionOpen": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "358931458774794304"
+              },
+              "q": {
+                "lo": "458103987296919217"
+              }
+            },
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
+            }
+          },
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_OPENED"
+          },
+          "reserves": {
+            "r1": {
+              "lo": "569052995210047825"
+            },
+            "r2": {
+              "lo": "818343598863903521"
+            }
+          },
+          "closeOnFill": true
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "2877556417",
+    "chainId": "dxjzhoot-7635474495673234927",
+    "fee": {
+      "amount": {
+        "lo": "378296821848840338"
+      }
+    }
+  }
+}

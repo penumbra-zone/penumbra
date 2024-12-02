@@ -1,0 +1,33 @@
+{
+  "actions": [
+    {
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "769772834950605681"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrMBCOG4keUGEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsIrLe+IRCD99jMA0DYrKC9pLXqgRgSAgoAGgsIrLe+IRCD99jMAyKPAXBlbnVtYnJhMTBwNTV1YzV3OWczdzQ5bnZ5djdsdDU3cnR4bjQzNTA0cmx6OXE2Y3cwMGQ4ZWR0ejB2d3c1d3htbDRodWVqOWYzNDZyNDhjNXpteWs5dnF2bXNxaHBtc2ZqZ2ZsM25zMHFweHN3ajBrYXd1NHMyZDVjdGN3MGh1cGdqenV3OHA5N2UwZG1o"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "8915831258",
+    "chainId": "yfzxcvbplxalvxnbncgrzvhji-9609919821469306239566712638",
+    "fee": {
+      "amount": {
+        "lo": "90256352478796140"
+      }
+    }
+  }
+}

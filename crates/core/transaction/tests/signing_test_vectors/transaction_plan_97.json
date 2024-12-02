@@ -1,0 +1,83 @@
+{
+  "actions": [
+    {
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "RmmybFLdLNQCnJUTRgy9oHZD6CSabjmoBtJbd8kP3wA="
+          },
+          "consensusKey": "MBS+YPip3cdoAlPFRoV0RihlOQ2K5i3Z5WgfB2FBotY=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "RmmybFLdLNQCnJUTRgy9oHZD6CSabjmoBtJbd8kP3wA="
+          }
+        },
+        "authSig": "CjrgA05hYJdcLyD/Bge0661XSXE1qL+HxsSxPIbQqwEcdqvNpkTiJ2qGRAhkzw5xMZiHghIMaV+PGEelC60tAA=="
+      }
+    },
+    {
+      "swap": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "284351826197257452"
+          },
+          "delta2I": {
+            "lo": "368111555320746855"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "UCNpJ/w1lD1z6krx2M1No2s624VCf7gXwR13/0pNkWW3EG7vxq66aZefPkIcrAkFAyIbZUn/LHG5BRRGB9nnt7l55fOr7tvijlly89E41FU="
+          },
+          "rseed": "8IdMqC0tTqP6TZk9wFRatMLcTRi5UYmunnMun3XG0z4="
+        },
+        "feeBlinding": "F7NAzXpWSVvq5pzlD78kMD0pUv5eL7KgSQ6y6wRjXwI=",
+        "proofBlindingR": "VSijZl61tBgEzdbchFTwvMymfswiDTDYDKe5W590PQI=",
+        "proofBlindingS": "KmsEyaFjGJKrW0/Vu3xQyT8PA1rnrjxem1iq0xJpyAQ="
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "sSCNA97acoh2uRIeD8MVVP2xR+5BSxTXjumBG7v97uU="
+        },
+        "unbondedAmount": {
+          "lo": "956991271899446516"
+        },
+        "delegationAmount": {
+          "lo": "866562405522086936"
+        },
+        "fromEpoch": {
+          "index": "9935",
+          "startHeight": "9935"
+        }
+      }
+    },
+    {
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "4jEaYNRtiehc4JI4WfEjZWC8DM6OPJoHp7h4m7UG3K8="
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "7406937209",
+    "chainId": "eaylmasdfs-4617005741657671618481017496603",
+    "fee": {
+      "amount": {
+        "lo": "640042224640080417"
+      }
+    }
+  }
+}

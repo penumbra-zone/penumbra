@@ -1,0 +1,69 @@
+{
+  "actions": [
+    {
+      "delegatorVote": {
+        "proposal": "508113385",
+        "vote": {
+          "vote": "VOTE_ABSTAIN"
+        },
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "255829604600641461"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "9PHqXpU5G8Gd8QBm+Hfy9vMulO2xR9/S5yRmHr+uatc=",
+          "address": {
+            "inner": "xxwjBvzOC1NjIM7RRApYHi1LPYWc/PzOypFce/Ywn1M3qlsV0Aa6y6WtS6sgts1UpxkYWmFJhRDxcjpjtV0dj4VgSUfvmLBqymfj/9C5VRQ="
+          }
+        },
+        "unbondedAmount": {
+          "lo": "175125797432164667"
+        },
+        "randomizer": "i3hfMX9pure/V7umelje0JV6Q7JpW/DsgPyNqSOmIgA=",
+        "proofBlindingR": "jq6nBdwT0qovIKZgemzdbAOPaUQ0ZLfS5sezKkRNDQk=",
+        "proofBlindingS": "P+acuayiqcA4cDLsHCiUFGR6hR5z3ntfln3wq3Hh8Qw="
+      }
+    },
+    {
+      "delegatorVote": {
+        "proposal": "559121062",
+        "vote": {
+          "vote": "VOTE_YES"
+        },
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "36379834493930060"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "LY64ht/6TvGEMglvRzPmpv6TZOe1A2hrMX76Xb0oWyk=",
+          "address": {
+            "inner": "zOp7IDj4r96YHFGnPSgZWqoaArrZC30cl61qxr5y4GrlQrRd4lYBcsvyf/8ZL7MJK4euaoWciY2d2SkehbBz6sAIbjAqr5gxVHbG6BWWKgI="
+          }
+        },
+        "unbondedAmount": {
+          "lo": "482355105312495516"
+        },
+        "randomizer": "wragV0zd/1NTLYvYtuPWp5jZJPJjKOTwsJQBXlR3AwM=",
+        "proofBlindingR": "1sfyjxQ4jbJh0XOWPT6nNWL7DmgWoDBrfnCWIjq8cAs=",
+        "proofBlindingS": "hlGBoyASkIjeYVzh0Doyxurryw1jk1H5uVicYZYhyAM="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4009473624",
+    "chainId": "wrjarurvi-16330269366901696947474738",
+    "fee": {
+      "amount": {
+        "lo": "540792711132723769"
+      }
+    }
+  }
+}

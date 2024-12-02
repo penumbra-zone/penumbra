@@ -1,0 +1,50 @@
+{
+  "actions": [
+    {
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "842479024237700718"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrQBCPKY0aUCEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgwI2J/62gIQioDf5wFA+PD3o5216oEYEgIKABoMCNif+toCEIqA3+cBIo8BcGVudW1icmExMGxkamV0MGdrZGxlMjdqenhjcG04ZXIwanFuZXZqdnhseDJqdnBlMzNnM2dzNXBkdWhodjhhd3NmOHp5bXIzODUwNHJuOTlnODNuZXhyY3NjenZuNWhtcm5qc3p5dThoZTByN3ZrNThqMDRodDQ4N2N0eTBkeDM2eDR1OHRwc2VnZ2h5ZnU="
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "t1Oeu+lPkxKLBOapLc4pfn6AFVKYXWZfEUfEg1uaKls="
+        },
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP7FbVz6rNnoPkJa7mMfigo="
+        },
+        "unbondingAmount": {
+          "lo": "801434380644204905"
+        },
+        "balanceBlinding": "kZoXFQc+EG9iJspeEjjurco7HwTtH49pssWng7WktgM=",
+        "proofBlindingR": "T2scn3ZvdkoA07DNLRtT2sR5O3xvhBt8KAWvhJOxNg0=",
+        "proofBlindingS": "z8N4Q7nfBP4mONZviIoU7A7XFNbmZvqA3XJcI4yG/gY=",
+        "unbondingStartHeight": "21401"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4435935439",
+    "chainId": "jtdlkbidulz-665965532517491243",
+    "fee": {
+      "amount": {
+        "lo": "767764384364047948"
+      }
+    }
+  }
+}

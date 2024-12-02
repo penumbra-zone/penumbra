@@ -1,0 +1,87 @@
+{
+  "actions": [
+    {
+      "actionDutchAuctionWithdraw": {
+        "auctionId": {
+          "inner": "TpriKDTpcAgYmMOmmv7tbzZZX3EXQX3UiNC+ZnxrcOk="
+        },
+        "seq": "436040713",
+        "reservesInput": {
+          "amount": {
+            "lo": "387661138015161465"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "reservesOutput": {
+          "amount": {
+            "lo": "419810828963875039"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "communityPoolSpend": {
+        "value": {
+          "amount": {
+            "lo": "377884595747125776"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "swap": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "193802762981415312"
+          },
+          "delta2I": {
+            "lo": "101860170399207144"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "VnwLDdwir/ubCvYSf6JcVGzVXL7DtQMEKTA1tkwPHCiH5qzVyvpLzx4rtgSPAgBsZDP7patYgBMmFXcMDa2o0UIRiEnFgymh0Z7kD9u6zc8="
+          },
+          "rseed": "3AAzjE03ALLXBUKW7bk+tbN+ll7JaM9u0+3ZSA5vmuo="
+        },
+        "feeBlinding": "qhUKZj7TFZInDvUxMHGEPZlOgrWjdOVycs38YngJLwI=",
+        "proofBlindingR": "8XY7e8hdCKdyUh/Cs6jInBPQFTvfdx6s9NqTQYBVxgY=",
+        "proofBlindingS": "cth/1pVG80xLhN5ave19GBZNneZ8f5UQu746ZXGHUAc="
+      }
+    },
+    {
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrQBCOewhdwBEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgwIhOjy7AIQie2R0QFAmJWaiKe16oEYEgIKABoMCITo8uwCEIntkdEBIo8BcGVudW1icmExZXN0Y3owd24wY3p2OGxkYWFqcDhza3F3eHQ1ZnF2bWd0YTM1dGs5YWw5cWU0amVrNjl6c2N6NzMyeXhwbjlqa3M2dXh0bWswNWRobDYwMHFzcWNkN3N0a2s4cXByNzNnNmx2ZXc4c2RkNGtweXQ5NGR2empqa3F1cDA4M2t1eXM3djY3c3M="
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "557938254",
+    "chainId": "wjhrzlljyubzdmxpgmbftrvtztfkkwn-31226743652180448",
+    "fee": {
+      "amount": {
+        "lo": "594355047648525707"
+      }
+    }
+  }
+}

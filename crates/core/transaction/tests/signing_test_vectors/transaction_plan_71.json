@@ -1,0 +1,39 @@
+{
+  "actions": [
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "sKRqjDWadGFO/TIEMtwOmedJkuOxlMQXnoaVtoP+WOM="
+        },
+        "epochIndex": "3572",
+        "unbondedAmount": {
+          "lo": "884813692927508554"
+        },
+        "delegationAmount": {
+          "lo": "973795711680164591"
+        }
+      }
+    },
+    {
+      "communityPoolSpend": {
+        "value": {
+          "amount": {
+            "lo": "35770030447883941"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "9838345454",
+    "chainId": "tiiwrvprdahlmbunkqbywgr-0318729731669205428119",
+    "fee": {
+      "amount": {
+        "lo": "516900881830842854"
+      }
+    }
+  }
+}

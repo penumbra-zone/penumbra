@@ -1,0 +1,33 @@
+{
+  "actions": [
+    {
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrIBCNny78ABEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgoIsaHPLhDVifVjQLiBv8aeteqBGBICCgAaCgixoc8uENWJ9WMijwFwZW51bWJyYTEyOGxyZzBwM2owdWdmazY0OGF4OTQ3emN1c3V0NWx6NGRhc3Izc3VkNzh2YTI0ejM0c2tla2h5YTBjbDl3eXRodG10enBqOXFnNHN3OGxzeDh0Y3NtNHc0eHl0ZHo4aDVzZHBuN2tkc2RlNXE2YXU4OWg0c3FjbHZlemQweHJ5anV6YW1hbg=="
+        }
+      }
+    },
+    {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "ukhtnhaurljoogduvrtu-8886604389569723108242099",
+          "description": "dcfkvrcduxgvpufyfpxvwdis-8399792816821765872420",
+          "signaling": {}
+        },
+        "depositAmount": {
+          "lo": "321526110022575246"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "8869240622",
+    "chainId": "ejncirwpcmcnhwqfbueioddpxl-552696602438162813836332962848",
+    "fee": {
+      "amount": {
+        "lo": "719278308610776819"
+      }
+    }
+  }
+}

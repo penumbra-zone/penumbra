@@ -1,0 +1,71 @@
+{
+  "actions": [
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "249542111138297168"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "af2HMr6hiFiXbXL7hxqASnkIu4v1nWyH091K1IR87CY=",
+          "address": {
+            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
+          }
+        },
+        "position": "200439803088859",
+        "randomizer": "MCGyFbsV3GXSA+WA5Ipt21wV+fJ0Y3TEJWg5/qNjaQQ=",
+        "valueBlinding": "MzF0d53Fx5MjUtLfICPna/fGWcXRzpM5ecGlQhuTSQA=",
+        "proofBlindingR": "VOPP3EWjk0VjNaGU/f66PnyiojOzZCWT7e+FQlFJ1RA=",
+        "proofBlindingS": "dmxCcD7H9/cFaASVo9gI/bux4kLZjZy2qtDI9MWr8QI="
+      }
+    },
+    {
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "335778073335232026"
+        },
+        "denom": {
+          "denom": "a6leIUKF1"
+        },
+        "destinationChainAddress": "penumbra1fzzu6myekvlxnzm4x46wadwc76kl9lkxf2t82ursjvrrdj7mvv8uuhf7a2u5mctfr023gzymv8hdjefwgllzefxcj6v062t6dqsfhvn086lf7dxzfa5dqnmhkz68ejkpgg5ses",
+        "returnAddress": {
+          "inner": "otLSCSQj8/hbrdG9hRRy4ZpdFxNl8tfb4LzYBsW/3joqFEVDUrjiNgIXJBVMkI2dxh7Zsg4L/4dMY5OyBlb1Y4Jt7yvUw2B8ECiEfDng0+8="
+        },
+        "timeoutHeight": {
+          "revisionNumber": "737713399",
+          "revisionHeight": "776870533"
+        },
+        "sourceChannel": "channel-0"
+      }
+    },
+    {
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "0scIlCi+81Xi9nz30a163DEm0weNm+Oov7iYrx+18RE="
+          },
+          "consensusKey": "93yzpXc188/5cD/ZlWUFh6b+iaQYy8Tb1qrDlx7WMXo=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "0scIlCi+81Xi9nz30a163DEm0weNm+Oov7iYrx+18RE="
+          }
+        },
+        "authSig": "MN69gIpNoQoELJ47xVpuP2bHP8oHgB0mZYhPj4y+Jg6/dNPrDaiVmo8v5EBcQORRh/8BzUqgXAriW3RYE5feAg=="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "6438003618",
+    "chainId": "pddecmnehumdhrpq-22107829567509516577",
+    "fee": {
+      "amount": {
+        "lo": "795664371410932296"
+      }
+    }
+  }
+}

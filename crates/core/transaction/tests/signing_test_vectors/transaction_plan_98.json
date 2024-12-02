@@ -1,0 +1,66 @@
+{
+  "actions": [
+    {
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "+olAHcynlkX3v3Q6yhGtDNBs/UOl4pQYXpxe2uVqVAQ="
+          },
+          "consensusKey": "u0iQiSGIiN2imbqiW4ryRNuUS73TnsYBlLF9b4e6bbw=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "+olAHcynlkX3v3Q6yhGtDNBs/UOl4pQYXpxe2uVqVAQ="
+          }
+        },
+        "authSig": "CDhiaPSIK2MDWOE246Ls1dQgRy69fv60r/x6dPi8sAHupT9aIdVTlHQMUF7OPdGbY39MdDNr38KbZN0B5o5fAA=="
+      }
+    },
+    {
+      "proposalWithdraw": {
+        "proposal": "407059286"
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "183483303148941898"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "SXvdibMLjqxm9tri5M0RPNXmse1RviBZW8C+UZDz5K/BKGSireSlAh+7fmI58/RyBgwPTw05Ad/J8wwCFMCfADFKm+9H1aKRR+yBvJe8vuw="
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "dTLKcnzzkVKr4tPYJAKycUWh1/8r9KhJZWLQCpLUCQ8="
+        },
+        "unbondedAmount": {
+          "lo": "285060289107982186"
+        },
+        "delegationAmount": {
+          "lo": "893818470956678012"
+        },
+        "fromEpoch": {
+          "index": "8283",
+          "startHeight": "8283"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "1566745428",
+    "chainId": "cgzaiweksieyipsk-83599040002049045597151361",
+    "fee": {
+      "amount": {
+        "lo": "920577261845310446"
+      }
+    }
+  }
+}

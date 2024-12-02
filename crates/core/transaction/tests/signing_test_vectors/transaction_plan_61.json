@@ -1,0 +1,80 @@
+{
+  "actions": [
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "635313304499185887"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "dXJVVklsP4mQUdam0n87zLwUraIpl8XbQitsmi0CkoMQTLJVJi5hB7Y+vOJVF5UvzPUvLdPHpj8hJz7laJxFo9uBDjSnfJd1HdWAQu/ySTs="
+        }
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "501946879560447759"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "HJsCEqne46sp++pnSfwSo0bP2kGfmq9GF+SDK91ZX1v/R5F/g1B4FTjbP2JKSjKkqXDNhNpYhls11TCgUWJZIl/kELeYX+mCyEwqKhSP5u4="
+        }
+      }
+    },
+    {
+      "positionOpen": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "353425788282793350"
+              },
+              "q": {
+                "lo": "539403610384082689"
+              }
+            },
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
+            }
+          },
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_CLOSED"
+          },
+          "reserves": {
+            "r1": {
+              "lo": "553897337323242306"
+            },
+            "r2": {
+              "lo": "563503820517080411"
+            }
+          },
+          "closeOnFill": true
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "2400123472",
+    "chainId": "akzhyryfl-2132",
+    "fee": {
+      "amount": {
+        "lo": "961655454472638464"
+      }
+    }
+  }
+}

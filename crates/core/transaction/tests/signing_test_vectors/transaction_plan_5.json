@@ -1,0 +1,76 @@
+{
+  "actions": [
+    {
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "1036664154951369"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "638345165489953157"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "qebt8jtWPj9SnHIJR4NL4vLAi1gKWSyR/JElh1XpvylA7mD0RkbVbcJWBD8psVz+K8lN9c5XX5rIDJTrjghsuKfKSxK+WZ1OdLk2C7S/5Ts="
+        },
+        "rseed": "2vbbrSt139YZvpgrkYNYUwJTtSu2VZ6ftACy46aqRnY=",
+        "valueBlinding": "S594QMoEukbNKaSyf5Xe0B9ZszLKDCObk0Uoo45ygwQ=",
+        "proofBlindingR": "WEez4d/FVTkfJjiWKnrt6LDyfo3xxdu8FMEHn5JNEAU=",
+        "proofBlindingS": "/TWjna3Uf53MYM1D0+fDYeKyrPep6DubpnHPm8si7gA="
+      }
+    },
+    {
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "fLdasNhrur8qhk0pqQObPgj9q9zgzWq6p4sYoiP1TwA="
+          },
+          "consensusKey": "QN0BsBuXaJ0QP1JQTZxqxhgehCNR9WmariOOZJTbqp0=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "fLdasNhrur8qhk0pqQObPgj9q9zgzWq6p4sYoiP1TwA="
+          }
+        },
+        "authSig": "Trz+3oLgmDVHoJzW9DNDg8onQjVcVi4NEt5DbfdrsRHT/KRR1/LwQJkrp2POHZqdQV9Cs9zhuKrkT65HKVOuAA=="
+      }
+    },
+    {
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "Evn2fHXuJWH6GzQBEVX2Mjskstrj1hScCzEnVzoyawY="
+          },
+          "consensusKey": "UPLsoOjFgVDESxCpu7NMVmvu23ohO8zvcidh1rVN3s8=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "Evn2fHXuJWH6GzQBEVX2Mjskstrj1hScCzEnVzoyawY="
+          }
+        },
+        "authSig": "Oo/1L+MI5tCGLjQe3OHll8gh7WjSYM7esuNZNfSApAHkhmOG6wPQCoiCPuLRyWFsgmBtVuA1v65PeaI2ClpWAQ=="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "1063165421",
+    "chainId": "zaisqdw-2686846248307740",
+    "fee": {
+      "amount": {
+        "lo": "322426328779457112"
+      }
+    }
+  }
+}

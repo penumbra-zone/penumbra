@@ -1,0 +1,52 @@
+{
+  "actions": [
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "yXRVlQf6bO60Q1DWoZrjBhTE4KU2WdcYXbbQZmcf29c="
+        },
+        "unbondedAmount": {
+          "lo": "434156311610937917"
+        },
+        "delegationAmount": {
+          "lo": "906736185101517951"
+        },
+        "fromEpoch": {
+          "index": "9651",
+          "startHeight": "9651"
+        }
+      }
+    },
+    {
+      "validatorVote": {
+        "body": {
+          "proposal": "311833840",
+          "vote": {
+            "vote": "VOTE_YES"
+          },
+          "identityKey": {
+            "ik": "uGUm3LhW3M8jYT62AuhshlUWsY/mLLAXelHtv6bwwsQ="
+          },
+          "governanceKey": {
+            "gk": "GBdoWyK4s3wqUTcRYdih09IQNjTvVHCGKcHj/AFaOw4="
+          },
+          "reason": {
+            "reason": "2m59060UUbJ686PTRk"
+          }
+        },
+        "authSig": {
+          "inner": "3OpxO7YAUv3S94K/AwjK4rj4m3dGm3Pkt8CItuaKVgnBkcSLMk3TZQx0vH/oLoGJmp1I7c8BAbe50xFIzN6/AA=="
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "2073653224",
+    "chainId": "jwlf-236",
+    "fee": {
+      "amount": {
+        "lo": "548940969473133235"
+      }
+    }
+  }
+}

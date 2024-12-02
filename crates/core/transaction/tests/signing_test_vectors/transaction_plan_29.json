@@ -1,0 +1,54 @@
+{
+  "actions": [
+    {
+      "validatorVote": {
+        "body": {
+          "proposal": "284956779",
+          "vote": {
+            "vote": "VOTE_YES"
+          },
+          "identityKey": {
+            "ik": "zwa90BizdLKHBr7podM1nq1N9nWrmnDPM2vuILNPcSo="
+          },
+          "governanceKey": {
+            "gk": "LlsJYxRy7uSVLWAJ/gU5GCJQV6ErMEGJkDliyCUpsAU="
+          },
+          "reason": {
+            "reason": "gOG78117V3KSEJa9Usetiav5"
+          }
+        },
+        "authSig": {
+          "inner": "wDyN6yGx6Epnv/P7pK/vPG6R+4jjh1i7cpa8cY2dnQHOy/5YBBo34rcqnjMYcIjglWobb3a07u2ke7xdfdLWAg=="
+        }
+      }
+    },
+    {
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "724571558176573681"
+        },
+        "denom": {
+          "denom": "OONIY11e"
+        },
+        "destinationChainAddress": "penumbra1hrgv7fzh0vgq49adz6ydqnqgy23v6n9qhjrze526uuw4g5dfyaz4aqpjl3kyq0qg3dqh43ecpmuea4yk7f5q0sjqy0ew603tklcj7ya0423szgwd8vzxa7x2h35re99zu7qf7l",
+        "returnAddress": {
+          "inner": "F4MDyCqggl2Zynn7rCOdzyeqbBuGObQcGsXvM+KyUsDz7Ku23Pj65ZvN5peYr5xsYTaXnw/asUKrP/HKCrrcw9qkFNIyp2Mh+v7mh1HFAiI="
+        },
+        "timeoutHeight": {
+          "revisionNumber": "412249556",
+          "revisionHeight": "834100005"
+        },
+        "sourceChannel": "channel-0"
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "1145458065",
+    "chainId": "ywhlvhz-2",
+    "fee": {
+      "amount": {
+        "lo": "269386633792776289"
+      }
+    }
+  }
+}

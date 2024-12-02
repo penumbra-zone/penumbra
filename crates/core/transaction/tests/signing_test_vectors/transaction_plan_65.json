@@ -1,0 +1,52 @@
+{
+  "actions": [
+    {
+      "proposalDepositClaim": {
+        "proposal": "290435110",
+        "depositAmount": {
+          "lo": "397061836821711838"
+        },
+        "outcome": {
+          "slashed": {}
+        }
+      }
+    },
+    {
+      "proposalDepositClaim": {
+        "proposal": "925454871",
+        "depositAmount": {
+          "lo": "996803853926948758"
+        },
+        "outcome": {
+          "passed": {}
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "/avzFpkBoNh4BBdAXNWyYJkGJ7oP9fv8yCRM7zbEXOk="
+        },
+        "unbondedAmount": {
+          "lo": "530511781458972404"
+        },
+        "delegationAmount": {
+          "lo": "150481363579985174"
+        },
+        "fromEpoch": {
+          "index": "8627",
+          "startHeight": "8627"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "5830716849",
+    "chainId": "togtwejgefspbzqxkjzx-53973943018851518386",
+    "fee": {
+      "amount": {
+        "lo": "694466351950944283"
+      }
+    }
+  }
+}

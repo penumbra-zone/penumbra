@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "qV4z6oixLlYZIyyyLXdk2vzARpQC54YrPgYRqtfUZ9E="
+        },
+        "unbondedAmount": {
+          "lo": "329370722563604454"
+        },
+        "delegationAmount": {
+          "lo": "541484332641379"
+        },
+        "fromEpoch": {
+          "index": "9051",
+          "startHeight": "9051"
+        }
+      }
+    },
+    {
+      "proposalWithdraw": {
+        "proposal": "220341220"
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "291645124801248238"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "Y1CmSJbTesNObuW4v3C+XwDogc0adTAen04t1D/Etl4=",
+          "address": {
+            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
+          }
+        },
+        "position": "201128423224323",
+        "randomizer": "njfbha0J0jPGpVmbITr/CG7GoTZrufqgZeGP1LNqYAE=",
+        "valueBlinding": "H0f+j8EM8jNkoj9kI8iycWlH3fe+H7rMTi7DItekQwA=",
+        "proofBlindingR": "rSGzyd1qDBxkuHahLmYA3KaOI8+BQyJcGKJpn5ZA8w4=",
+        "proofBlindingS": "8mFlucjgCWT/h2paUlAmvptcFh/vBGsfOCoh2xzr/g4="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "9886863589",
+    "chainId": "hcgvtrwavaqngtdiczkoyjrmlaldw-400676818846886299100933956",
+    "fee": {
+      "amount": {
+        "lo": "561189096306277775"
+      }
+    }
+  }
+}

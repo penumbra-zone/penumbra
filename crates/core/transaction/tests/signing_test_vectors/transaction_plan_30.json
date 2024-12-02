@@ -1,0 +1,42 @@
+{
+  "actions": [
+    {
+      "positionClose": {
+        "positionId": {
+          "inner": "JNlZbQ6eTfCk3ZvKDIGVpJcMFrHy1FuD8jlgcVhntP8="
+        }
+      }
+    },
+    {
+      "validatorVote": {
+        "body": {
+          "proposal": "141432201",
+          "vote": {
+            "vote": "VOTE_YES"
+          },
+          "identityKey": {
+            "ik": "7ZmADeMHe0sv6lyJSyvZGvR53Z84jbO5C7AOFhBcrfU="
+          },
+          "governanceKey": {
+            "gk": "BIHAvjVvjIX5qkvAeH8HhCKP8vn+N3k7R0OL5KI5eAs="
+          },
+          "reason": {
+            "reason": "k"
+          }
+        },
+        "authSig": {
+          "inner": "xOjjUPyioMyIcftsbsE4HJTYHYIAHT5Uy+rQkkTKaQrA2XvB2n2YIBEzJD5aeBQmfdqcoTXX1A28mAqvxdtSAA=="
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4260242574",
+    "chainId": "lnpbgakxdstypxan-148472",
+    "fee": {
+      "amount": {
+        "lo": "726144367654748884"
+      }
+    }
+  }
+}

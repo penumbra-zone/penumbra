@@ -1,0 +1,67 @@
+{
+  "actions": [
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "583421664133655087"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "xvDem21q64twopAVCkLaAi/5Pw72xNKfFo93dpOcADJ5RUJeirWLYVX8dmd8JE0iHK1mynLhYxOqp7WZ/0jJXG8osYrLoVULg8VwhJfNNH8="
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "rTwIr57Z+TzTvbDVJ24HUFcJ7WutMUIp4EUDhwxQt2I="
+        },
+        "unbondedAmount": {
+          "lo": "882852371013310612"
+        },
+        "delegationAmount": {
+          "lo": "80180876037711740"
+        },
+        "fromEpoch": {
+          "index": "3632",
+          "startHeight": "3632"
+        }
+      }
+    },
+    {
+      "validatorVote": {
+        "body": {
+          "proposal": "737482718",
+          "vote": {
+            "vote": "VOTE_YES"
+          },
+          "identityKey": {
+            "ik": "U/Pc1t1cOFmWbMi9X2cUNbY9u7VMwz1ZMiBBG5498aU="
+          },
+          "governanceKey": {
+            "gk": "truCGSfNBu6Yq9pojTHH/PlRb4uML1hF5ejpUZ/fqAc="
+          },
+          "reason": {
+            "reason": "3kiGnfqhr9xVO"
+          }
+        },
+        "authSig": {
+          "inner": "ApVDYCRHX0+YQjA/82y2kzLNdCEgyxsoyoMy3xnHZQhuvmEa01BZwhZbncFYgqCZP0m5yn6jEYQoJqBM3mHtAg=="
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "475967717",
+    "chainId": "huuxdjbhq-3",
+    "fee": {
+      "amount": {
+        "lo": "449393802929298074"
+      }
+    }
+  }
+}

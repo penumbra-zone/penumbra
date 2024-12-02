@@ -1,0 +1,54 @@
+{
+  "actions": [
+    {
+      "proposalDepositClaim": {
+        "proposal": "347679757",
+        "depositAmount": {
+          "lo": "39878010524424389"
+        },
+        "outcome": {
+          "passed": {}
+        }
+      }
+    },
+    {
+      "swap": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "440428726584271908"
+          },
+          "delta2I": {
+            "lo": "429081527681360989"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "btIatxMHVsfJzP8cJlEZhpw7QzCB0kqLa7fhKV9KM7As3xwueWnEjfh9MAv6/6EDQAVJm+x1mq+/dzGi7OIjVxvqJns5hp0h87f96ZzHBTc="
+          },
+          "rseed": "0TJR8ExhmjYVlHjJ+fAdH2SSR50UYS5pDCN3N2pPNQs="
+        },
+        "feeBlinding": "3Qmcx7XB08EfEMpYp/9GcAF7ZTf9Qm9N37uFErdZ2wE=",
+        "proofBlindingR": "jvGIwY/gcXg2G73YnyW6AfeGVCVpCrNY7VcIQsq8DwE=",
+        "proofBlindingS": "F4qHttIr3R/UNFdEm1U805YiRaXcMgIhj5IGpxiFIQc="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4115851543",
+    "chainId": "ibtrcnbbmgtashboaxr-27900",
+    "fee": {
+      "amount": {
+        "lo": "471103972333688096"
+      }
+    }
+  }
+}

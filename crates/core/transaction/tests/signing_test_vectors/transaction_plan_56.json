@@ -1,0 +1,69 @@
+{
+  "actions": [
+    {
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "121181733842508480"
+        },
+        "denom": {
+          "denom": "k83T"
+        },
+        "destinationChainAddress": "penumbra1z40a82m0yawny3gv33pdszpvwjkv5d3f9hmvuun88yl89rdkredynypxl9zq04urny48np2f8c2scerdvufel8kn4eph9uvuwuf9td5cx7899ajcus3vzpxk64uhx5etq083xq",
+        "returnAddress": {
+          "inner": "8I7Udm4faRbDpDknZOuJ8lHqn6/drSqZXLVr85JJVPgMRlj2lPs+XGb3Z+BD8WrqEzI5E5wOrAx0I7bpMDKZGGJai8VvY7LRl9bifEX1beI="
+        },
+        "timeoutHeight": {
+          "revisionNumber": "988635908",
+          "revisionHeight": "360587687"
+        },
+        "sourceChannel": "channel-0"
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "618265017482711596"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "bZ8yazXqJCfvqgJk0l0g+FvRs0G4lbeD1/N3uDeGagexxekHvvb8jW7SvrVdOJT54GmwNPWyo5S8KBunlw4XMyyTnUnBW7gdCeWmQ+UoEC8="
+        }
+      }
+    },
+    {
+      "validatorVote": {
+        "body": {
+          "proposal": "500896994",
+          "vote": {
+            "vote": "VOTE_ABSTAIN"
+          },
+          "identityKey": {
+            "ik": "FW/YF8ry8xO4R1fowfPJRpZpiyp8OAJ1q9OhtYDnI4Y="
+          },
+          "governanceKey": {
+            "gk": "9HysYMEzMkNp2hkmKpJpNHl4DO4JHhR5FS91fuR/hA4="
+          },
+          "reason": {
+            "reason": "53"
+          }
+        },
+        "authSig": {
+          "inner": "ZlE1U3aFj19nLsI5N0kylo6icTzdRMa43Lq763DvHABjPMZZd37gk+tTf/Kq0ppC4TInW54YjxRZw8yTVoQOAA=="
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "3231285081",
+    "chainId": "ltifokhxkrn-0771099036473421120848003367",
+    "fee": {
+      "amount": {
+        "lo": "813796076035463546"
+      }
+    }
+  }
+}

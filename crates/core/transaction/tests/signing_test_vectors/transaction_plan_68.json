@@ -1,0 +1,57 @@
+{
+  "actions": [
+    {
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrQBCLmq95QFEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgwIuuz5kwMQ+KrC1gJAqPaF7ay16oEYEgIKABoMCLrs+ZMDEPiqwtYCIo8BcGVudW1icmExN3JsYzBtOHVtaGY5bnR6Z3ZwbjNmbHFnOXd6cmZ1a3F3ZjBkZjZucXp4cGs2eGY0ODR5amQ2cmR2YzZhMm5sZGg2bGswNHlkeWhoMnhmbm1zNjU5cHRwaHV3cG5qamZyaDZlbDM0eWQ4bmtuMmR4cmd5ZXZxNjhlc3czdjJhdGUzZHF3OXY="
+        }
+      }
+    },
+    {
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrMBCMH82+IGEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsI94zxBBCO47KNAUCI/578rLXqgRgSAgoAGgsI94zxBBCO47KNASKPAXBlbnVtYnJhMWc3NzM3NmdzMHV4bnQ0ZzIwbnl5bGQwYzl0OXEwM2QyaDlmMGQ0OGpsOHo3N3F2bmhwZXh6dGQ0Y3g0cTc3Nzlydnl3azV5OTNqNm10MHc1YWR5ems4MnZham1hc3FsNXZ0NXluMGh2MDVwbXRmZ3lja2Rxc3UwbTc1bXVhdmZqYWQwZnZt"
+        }
+      }
+    },
+    {
+      "delegatorVote": {
+        "proposal": "441483725",
+        "vote": {
+          "vote": "VOTE_ABSTAIN"
+        },
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "211183892868237346"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "pwH8yBv8Ej/k/UtxjxN9ZLhTWXKJo4sDv4qOyQVKOC8=",
+          "address": {
+            "inner": "czr2tS1RGvozaTYfB+m3NvnENNjGIOEUe4nFDg1m/Otw03/kkZt1zEexVklChQ2hTt2SNoDebzs+VROWu9nGpSq+Qj7GKu4l3KTelS4Eyi8="
+          }
+        },
+        "unbondedAmount": {
+          "lo": "476307544147812192"
+        },
+        "randomizer": "J0n7fjYHS+hf42tACWeBU7pi3dMrbk/1Zcqm7eZFLAI=",
+        "proofBlindingR": "Eodqjm5KgfdXfI4O7Rr8se9gWP8bQOf7uNcmIcdbcwI=",
+        "proofBlindingS": "oQtyr8ahQODnC11y4ZL5Myp4SpDA8KbL+H2TpF7MUAg="
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "6781311514",
+    "chainId": "bwvedx-738111593850323834795",
+    "fee": {
+      "amount": {
+        "lo": "214648601475148779"
+      }
+    }
+  }
+}

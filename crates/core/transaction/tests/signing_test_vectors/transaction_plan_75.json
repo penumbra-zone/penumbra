@@ -1,0 +1,49 @@
+{
+  "actions": [
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "367726786513069539"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "S2JUJ7umc/exySvbLgqYSe640AIb2tKgWtEF0+TmbM+pVlmVaDqnLDg6n20j9LrNtq11Q3M1ESnUD8ZYnzsF4j2L2AxZj+MS40DWges+D34="
+        }
+      }
+    },
+    {
+      "positionClose": {
+        "positionId": {
+          "inner": "eBDch1m2dXDvaiXws0690m/ZbCXAq8mNZAAv3frkim8="
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "oVRgKknU8Dw5ZA7Qdlz5vr62EuqCTeLs29g3vMQUMCY="
+        },
+        "epochIndex": "1052",
+        "unbondedAmount": {
+          "lo": "985389063481683216"
+        },
+        "delegationAmount": {
+          "lo": "641165127029311412"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "4059339943",
+    "chainId": "vgsknzsarnlevcgxtex-64999524802311011331218483730",
+    "fee": {
+      "amount": {
+        "lo": "300595445484946658"
+      }
+    }
+  }
+}

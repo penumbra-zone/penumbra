@@ -1,0 +1,38 @@
+{
+  "actions": [
+    {
+      "proposalDepositClaim": {
+        "proposal": "689883150",
+        "depositAmount": {
+          "lo": "169393152499615694"
+        },
+        "outcome": {
+          "failed": {}
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "wqA9fnZGn9YTV8TB7X9XmyYUMdcDvA7aW1KNHGa1TJE="
+        },
+        "epochIndex": "6726",
+        "unbondedAmount": {
+          "lo": "972176713087358483"
+        },
+        "delegationAmount": {
+          "lo": "885414211593882465"
+        }
+      }
+    }
+  ],
+  "transactionParameters": {
+    "expiryHeight": "3715525953",
+    "chainId": "jolxe-84624395377984128911110845038766",
+    "fee": {
+      "amount": {
+        "lo": "646445886750715744"
+      }
+    }
+  }
+}
