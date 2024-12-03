@@ -933,7 +933,35 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
         index += 1;
     }
 
-    // TODO: Rest of the tx
+    for action in &plan.actions {
+        match action {
+            ActionPlan::Spend(spend) => {
+                // Format the value
+                let value_display = value_display(
+                    &spend.note.value(),
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                // Format the address
+                let address_display = address_display(&spend.note.address(), fvk);
+
+                // Combine into "Spend {value} from {address}"
+                let spend_display = format!("Spend {} from {}", value_display, address_display);
+
+                for line in format_for_display("Action", spend_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
+            ActionPlan::Output(output) => {
+                // TODO: populate this
+            }
+            _ => {
+                // TODO: populate this
+            }
+        }
+    }
 
     output
 }
