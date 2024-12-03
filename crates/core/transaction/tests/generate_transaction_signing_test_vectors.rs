@@ -880,6 +880,8 @@ fn value_display(
 fn generate_normal_output(plan: &TransactionPlan) -> Vec<String> {
     let mut output = Vec::new();
     let mut index = 0;
+    // TODO: populate this
+    let base_denoms = HashMap::new();
 
     // Add chain ID
     if !plan.transaction_parameters.chain_id.is_empty() {
@@ -899,6 +901,20 @@ fn generate_normal_output(plan: &TransactionPlan) -> Vec<String> {
         }
         index += 1;
     }
+
+    // Add fee
+    for line in format_for_display(
+        "Fee",
+        value_display(
+            &plan.transaction_parameters.fee.0,
+            &plan.transaction_parameters.chain_id,
+            &base_denoms,
+        ),
+    ) {
+        output.push(format!("{} | {}", index, line));
+    }
+    index += 1;
+
     // TODO: Rest of the tx
 
     output
