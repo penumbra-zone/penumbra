@@ -787,6 +787,10 @@ fn generate_hw_display_test_vectors() {
     let test_vectors_dir = "tests/signing_test_vectors";
     let mut test_vectors = Vec::new();
 
+    let seed_phrase = SeedPhrase::from_str(SEED_PHRASE).expect("test seed phrase is valid");
+    let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+    let fvk = sk.full_viewing_key();
+
     for i in 0..100 {
         let proto_file_path = format!("{}/transaction_plan_{}.proto", test_vectors_dir, i);
         let transaction_plan_encoded =
@@ -798,12 +802,8 @@ fn generate_hw_display_test_vectors() {
         let display_vector = json!({
             "index": i,
             "blob": hex::encode(&transaction_plan_encoded),
-            "transaction_params": {
-                "chain_id": transaction_plan.transaction_parameters.chain_id,
-                "expiry_height": transaction_plan.transaction_parameters.expiry_height,
-            },
-            "output": generate_normal_output(&transaction_plan),
-            "output_expert": generate_expert_output(&transaction_plan),
+            "output": generate_normal_output(&transaction_plan, &fvk),
+            "output_expert": generate_expert_output(&transaction_plan, &fvk),
         });
 
         test_vectors.push(display_vector);
@@ -877,7 +877,7 @@ fn value_display(
     }
 }
 
-fn generate_normal_output(plan: &TransactionPlan) -> Vec<String> {
+fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<String> {
     let mut output = Vec::new();
     let mut index = 0;
     // TODO: populate this
@@ -915,13 +915,31 @@ fn generate_normal_output(plan: &TransactionPlan) -> Vec<String> {
     }
     index += 1;
 
+    // Add memo if present
+    if let Some(memo) = &plan.memo {
+        // Display sender address
+        for line in format_for_display(
+            "Sender Address",
+            address_display(&memo.plaintext.return_address(), &fvk),
+        ) {
+            output.push(format!("{} | {}", index, line));
+        }
+        index += 1;
+
+        // Display memo text
+        for line in format_for_display("Memo Text", memo.plaintext.text().to_string()) {
+            output.push(format!("{} | {}", index, line));
+        }
+        index += 1;
+    }
+
     // TODO: Rest of the tx
 
     output
 }
 
-fn generate_expert_output(plan: &TransactionPlan) -> Vec<String> {
+fn generate_expert_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<String> {
     // For now, expert mode shows the same output
     // We can customize this later if needed
-    generate_normal_output(plan)
+    generate_normal_output(plan, fvk)
 }
