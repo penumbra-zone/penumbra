@@ -882,6 +882,7 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
     let mut index = 0;
     // TODO: populate this
     let base_denoms = HashMap::new();
+    let ivk = fvk.incoming();
 
     // Add chain ID
     if !plan.transaction_parameters.chain_id.is_empty() {
@@ -971,6 +972,42 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 for line in format_for_display("Action", output_display) {
                     output.push(format!("{} | {}", index, line));
                 }
+                index += 1;
+            }
+            ActionPlan::Ics20Withdrawal(withdrawal) => {
+                // First line shows the action type and channel
+                output.push(format!(
+                    "{} | Action [1/3] : ICS20Withdrawal on {}",
+                    index, withdrawal.source_channel
+                ));
+
+                // Format and display the value
+                let value = Value {
+                    amount: withdrawal.amount,
+                    asset_id: withdrawal.denom.id(),
+                };
+                let value_display =
+                    value_display(&value, &plan.transaction_parameters.chain_id, &base_denoms);
+                output.push(format!(
+                    "{} | Action [2/3] : Amount {}",
+                    index, value_display
+                ));
+
+                // Display destination address
+                output.push(format!(
+                    "{} | Action [3/3] : To {}",
+                    index, withdrawal.destination_chain_address
+                ));
+
+                // Verify return address is controlled by user, bail if not
+                if !ivk.views_address(&withdrawal.return_address) {
+                    output.push(format!(
+                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN",
+                        index
+                    ));
+                }
+
+                // TODO: After UIP-5, add ICS-20 memo display here
                 index += 1;
             }
             _ => {
