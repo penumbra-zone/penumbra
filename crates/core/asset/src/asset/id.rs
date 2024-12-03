@@ -172,6 +172,8 @@ impl Id {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use hex;
+    use serde_json;
     use std::str::FromStr;
 
     #[test]
@@ -204,5 +206,40 @@ mod tests {
         assert_eq!(id3, id);
         assert_eq!(id4, id);
         assert_eq!(id5, id);
+    }
+
+    #[test]
+    fn hex_to_bech32() {
+        let hex_strings = [
+            "cc0d3c9eef0c7ff4e225eca85a3094603691d289aeaf428ab0d87319ad93a302", // USDY
+            "a7a339f42e671b2db1de226d4483d3e63036661cad1554d75f5f76fe04ec1e00", // SHITMOS
+            "29ea9c2f3371f6a487e7e95c247041f4a356f983eb064e5d2b3bcf322ca96a10", // UM
+            "76b3e4b10681358c123b381f90638476b7789040e47802de879f0fb3eedc8d0b", // USDC
+            "2923a0a87b3a2421f165cc853dbf73a9bdafb5da0d948564b6059cb0217c4407", // OSMO
+            "07ef660132a4c3235fab272d43d9b9752a8337b2d108597abffaff5f246d0f0f", // ATOM
+            "5314b33eecfd5ca2e99c0b6d1e0ccafe3d2dd581c952d814fb64fdf51f85c411", // TIA
+            "516108d0d0bba3f76e1f982d0a7cde118833307b03c0cd4ccb94e882b53c1f0f", // WBTC
+            "414e723f74bd987c02ccbc997585ed52b196e2ffe75b3793aa68cc2996626910", // allBTC
+            "bf8b035dda339b6cda8f221e79773b0fd871f27a472920f84c4aa2b4f98a700d", // allUSDT
+        ];
+
+        for hex in hex_strings {
+            let bytes = hex::decode(hex).expect("valid hex string");
+            let bytes_array: [u8; 32] = bytes.try_into().expect("hex is 32 bytes");
+
+            let id = Id::try_from(bytes_array).expect("valid asset ID bytes");
+            let bech32_str = id.to_string();
+
+            println!("Asset ID for {}:", hex);
+            println!("  Bech32:     {}", bech32_str);
+
+            // Print Proto JSON encoding
+            let proto: pb::AssetId = id.into();
+            println!("  Proto JSON: {}\n", serde_json::to_string(&proto).unwrap());
+
+            // Convert back to verify roundtrip
+            let id_decoded = Id::from_str(&bech32_str).expect("valid bech32 string");
+            assert_eq!(id, id_decoded);
+        }
     }
 }

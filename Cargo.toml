@@ -206,7 +206,7 @@ proptest-derive                  = { version = "0.3" }
 prost                            = { version = "0.12.3" }
 prost-types                      = { version = "0.12" }
 r2d2                             = { version = "0.8" }
-r2d2_sqlite                      = { version = "0.22" }
+r2d2_sqlite                      = { version = "0.25" }
 rand                             = { version = "0.8.5" }
 rand_chacha                      = { version = "0.3.1" }
 rand_core                        = { version = "0.6.4" }
@@ -217,7 +217,7 @@ serde_json                       = { version = "1.0.96" }
 serde_unit_struct                = { version = "0.1" }
 serde_with                       = { version = "3.5.1" }
 sha2                             = { version = "0.10" }
-sqlx                             = { version = "0.7", features = ["postgres", "runtime-tokio", "tls-rustls"] }
+sqlx                             = { version = "0.8", features = ["bigdecimal", "postgres", "runtime-tokio", "tls-rustls"] }
 tap                              = "1.0.1"
 tempfile                         = { version = "3.3.0" }
 tendermint                       = { default-features = false, version = "0.34.0" }
