@@ -1,4 +1,5 @@
 use ark_ff::{PrimeField, Zero};
+use penumbra_proto::serializers::bech32str;
 use rand_core::{CryptoRng, RngCore};
 
 use ark_r1cs_std::prelude::*;
@@ -42,6 +43,25 @@ impl IncomingViewingKey {
             Address::from_components(d, pk_d, ck_d).expect("pk_d is valid"),
             dtk_d,
         )
+    }
+
+    /// Derive the (encoding of the) truncated address for the given IVK.
+    ///
+    /// This intentionally returns a `String` rather than an `Address`, as it's not
+    /// safe to truncate arbitrary addresses.
+    pub fn truncated_address(&self) -> String {
+        // The truncated address uses an all-zero diversifier.
+        let dzero = Diversifier([0u8; 16]);
+        let g_dzero = dzero.diversified_generator();
+        let pk_dzero = self.ivk.diversified_public(&g_dzero);
+
+        let encoding = bech32str::encode(
+            &pk_dzero.0,
+            crate::address::TRUNCATED_ADDRESS_BECH32_PREFIX,
+            bech32str::Bech32,
+        );
+
+        encoding
     }
 
     /// Derive an ephemeral address for the provided account.
@@ -184,6 +204,41 @@ mod test {
     use proptest::prelude::*;
 
     use super::*;
+
+    #[test]
+    fn truncated_address_generation_and_parsing() {
+        let rng = rand::rngs::OsRng;
+        let spend_key =
+            SpendKey::from_seed_phrase_bip44(SeedPhrase::generate(rng), &Bip44Path::new(0));
+        let ivk = spend_key.full_viewing_key().incoming();
+
+        let truncated_address_str = ivk.truncated_address();
+
+        let reconstructed: Address = truncated_address_str
+            .parse()
+            .expect("can parse truncated address");
+
+        assert!(ivk.views_address(&reconstructed));
+
+        let address_index = ivk.address_index(&reconstructed).expect("views address");
+
+        let actual_address = ivk.payment_address(address_index).0;
+
+        // The diversifiers should match
+        assert_eq!(reconstructed.diversifier(), actual_address.diversifier());
+        // The transmission keys should match
+        assert_eq!(
+            reconstructed.transmission_key(),
+            actual_address.transmission_key()
+        );
+        // The clue keys should not match, as the clue key is zeroed out
+        assert_ne!(reconstructed.clue_key(), actual_address.clue_key());
+
+        println!("Truncated address: {}", truncated_address_str);
+        println!("Reconstructed address: {}", reconstructed);
+        println!("Address index: {:?}", address_index);
+        println!("Actual address for index: {}", actual_address);
+    }
 
     #[test]
     fn views_address_succeeds_on_own_address() {

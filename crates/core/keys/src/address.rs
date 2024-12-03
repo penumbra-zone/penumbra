@@ -23,6 +23,8 @@ pub use view::AddressView;
 
 use crate::{fmd, ka, keys::Diversifier};
 
+pub const TRUNCATED_ADDRESS_BECH32_PREFIX: &str = "ptrunc";
+
 /// The length of an [`Address`] in bytes.
 pub const ADDRESS_LEN_BYTES: usize = 80;
 
@@ -319,7 +321,22 @@ impl std::str::FromStr for Address {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with(bech32str::compat_address::BECH32_PREFIX) {
+        if s.starts_with(TRUNCATED_ADDRESS_BECH32_PREFIX) {
+            let dzero = Diversifier([0u8; 16]);
+
+            let pk_dzero_bytes: [u8; 32] =
+                bech32str::decode(s, TRUNCATED_ADDRESS_BECH32_PREFIX, bech32str::Bech32)?
+                    .try_into()
+                    .map_err(|bytes: Vec<u8>| {
+                        anyhow::anyhow!("wrong length {}, expected 32", bytes.len())
+                    })?;
+            let pk_dzero = ka::Public(pk_dzero_bytes);
+
+            let ck_id = fmd::ClueKey([0u8; 32]);
+
+            Self::from_components(dzero, pk_dzero, ck_id)
+                .ok_or_else(|| anyhow::anyhow!("could not reconstruct truncated address"))
+        } else if s.starts_with(bech32str::compat_address::BECH32_PREFIX) {
             pb::Address {
                 inner: bech32str::decode(
                     s,
