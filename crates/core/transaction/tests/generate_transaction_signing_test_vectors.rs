@@ -1010,6 +1010,95 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 // TODO: After UIP-5, add ICS-20 memo display here
                 index += 1;
             }
+            ActionPlan::Swap(swap) => {
+                // Verify claim address is controlled by user
+                if !ivk.views_address(&swap.swap_plaintext.claim_address) {
+                    output.push(format!(
+                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN",
+                        index
+                    ));
+                }
+
+                // Determine input and output assets based on which delta is nonzero
+                let (input_value, output_asset) = if swap.swap_plaintext.delta_1_i != Amount::zero()
+                    && swap.swap_plaintext.delta_2_i == Amount::zero()
+                {
+                    // Asset 1 is input, Asset 2 is output
+                    let input = Value {
+                        amount: swap.swap_plaintext.delta_1_i,
+                        asset_id: swap.swap_plaintext.trading_pair.asset_1(),
+                    };
+                    (input, swap.swap_plaintext.trading_pair.asset_2())
+                } else if swap.swap_plaintext.delta_2_i != Amount::zero()
+                    && swap.swap_plaintext.delta_1_i == Amount::zero()
+                {
+                    // Asset 2 is input, Asset 1 is output
+                    let input = Value {
+                        amount: swap.swap_plaintext.delta_2_i,
+                        asset_id: swap.swap_plaintext.trading_pair.asset_2(),
+                    };
+                    (input, swap.swap_plaintext.trading_pair.asset_1())
+                } else {
+                    // Invalid swap: exactly one delta must be nonzero
+                    output.push(format!(
+                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN",
+                        index
+                    ));
+                    // Arbitrary choice of asset 2 as input
+                    let input = Value {
+                        amount: swap.swap_plaintext.delta_2_i,
+                        asset_id: swap.swap_plaintext.trading_pair.asset_2(),
+                    };
+                    (input, swap.swap_plaintext.trading_pair.asset_1())
+                };
+
+                // Display swap details
+                output.push(format!("{} | Action [1/4] : Swap", index));
+
+                // Display input value
+                let input_display = value_display(
+                    &input_value,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+                output.push(format!(
+                    "{} | Action [2/4] : Input {}",
+                    index, input_display
+                ));
+
+                // Display output asset by creating a zero-value and extracting just the denomination
+                let output_value = Value {
+                    amount: Amount::from(0u64),
+                    asset_id: output_asset,
+                };
+                let value_view = value_display(
+                    &output_value,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+                // Skip the "0 " prefix to get just the denomination
+                let output_asset_display = value_view
+                    .clone()
+                    .split_once(' ')
+                    .map_or(value_view, |(_amount, denom)| denom.to_string());
+                output.push(format!(
+                    "{} | Action [3/4] : Output Asset {}",
+                    index, output_asset_display
+                ));
+
+                // Display claim fee
+                let claim_fee_display = value_display(
+                    &swap.swap_plaintext.claim_fee.0,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+                output.push(format!(
+                    "{} | Action [4/4] : Claim Fee {}",
+                    index, claim_fee_display
+                ));
+
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
