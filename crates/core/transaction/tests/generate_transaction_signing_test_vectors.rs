@@ -723,6 +723,32 @@ fn generate_transaction_signing_test_vectors() {
     }
 }
 
+/// After the colon, there should be maximum 38 characters.
+const MAX_VALUE_LENGTH: usize = 38;
+
+/// Format a string to fit within display constraints by truncating if needed
+fn format_for_display(label: &str, value: String) -> Vec<String> {
+    if value.len() <= MAX_VALUE_LENGTH {
+        vec![format!("{} : {}", label, value)]
+    } else {
+        // Split into chunks of MAX_VALUE_LENGTH
+        let mut result = Vec::new();
+        let total_chunks = (value.len() + MAX_VALUE_LENGTH - 1) / MAX_VALUE_LENGTH;
+
+        for (i, chunk) in value.as_bytes().chunks(MAX_VALUE_LENGTH).enumerate() {
+            let chunk_str = String::from_utf8_lossy(chunk);
+            result.push(format!(
+                "{} [{}/{}] : {}",
+                label,
+                i + 1,
+                total_chunks,
+                chunk_str
+            ));
+        }
+        result
+    }
+}
+
 #[test]
 fn effect_hash_test_vectors() {
     // This parses the transaction plan, computes the effect hash, and verifies that it
@@ -853,23 +879,26 @@ fn value_display(
 
 fn generate_normal_output(plan: &TransactionPlan) -> Vec<String> {
     let mut output = Vec::new();
+    let mut index = 0;
 
     // Add chain ID
     if !plan.transaction_parameters.chain_id.is_empty() {
-        output.push(format!(
-            "0 | Chain ID : {}",
-            plan.transaction_parameters.chain_id
-        ));
+        for line in format_for_display("Chain ID", plan.transaction_parameters.chain_id.clone()) {
+            output.push(format!("{} | {}", index, line));
+        }
+        index += 1;
     }
 
     // Add expiry height if nonzero
     if plan.transaction_parameters.expiry_height != 0 {
-        output.push(format!(
-            "1 | Expiry Height : {}",
-            plan.transaction_parameters.expiry_height
-        ));
+        for line in format_for_display(
+            "Expiry Height",
+            plan.transaction_parameters.expiry_height.to_string(),
+        ) {
+            output.push(format!("{} | {}", index, line));
+        }
+        index += 1;
     }
-
     // TODO: Rest of the tx
 
     output
