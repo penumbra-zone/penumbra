@@ -954,8 +954,24 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 }
                 index += 1;
             }
-            ActionPlan::Output(output) => {
-                // TODO: populate this
+            ActionPlan::Output(output_action) => {
+                // Format the value
+                let value_display = value_display(
+                    &output_action.value,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                // Format the address
+                let address_display = address_display(&output_action.dest_address, fvk);
+
+                // Combine into "Output {value} to {address}"
+                let output_display = format!("Output {} to {}", value_display, address_display);
+
+                for line in format_for_display("Action", output_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
             }
             _ => {
                 // TODO: populate this
