@@ -222,6 +222,24 @@ fn validator_definition_strategy() -> impl Strategy<Value = Definition> {
     })
 }
 
+#[derive(Debug, Clone)]
+enum SwapAmountType {
+    ZeroFirst,
+    ZeroSecond,
+    BothNonZero,
+}
+
+fn swap_amount_type_strategy() -> impl Strategy<Value = SwapAmountType> {
+    // We want test vectors for cases where the first asset is zero, the second asset is zero,
+    // and both assets are non-zero. In the latter case, hardware custody backends should
+    // refuse to sign the transaction.
+    prop_oneof![
+        Just(SwapAmountType::ZeroFirst),
+        Just(SwapAmountType::ZeroSecond),
+        Just(SwapAmountType::BothNonZero),
+    ]
+}
+
 fn swap_plaintext_strategy() -> impl Strategy<Value = SwapPlaintext> {
     (
         amount_strategy(),
@@ -229,18 +247,26 @@ fn swap_plaintext_strategy() -> impl Strategy<Value = SwapPlaintext> {
         asset_id_strategy(),
         asset_id_strategy(),
         address_strategy(),
+        swap_amount_type_strategy(),
     )
-        .prop_map(|(delta_1_i, delta_2_i, asset_1, asset_2, claim_address)| {
-            let trading_pair = TradingPair::new(asset_1, asset_2);
-            SwapPlaintext::new(
-                &mut OsRng,
-                trading_pair,
-                delta_1_i,
-                delta_2_i,
-                Fee::from_staking_token_amount(0u64.into()),
-                claim_address,
-            )
-        })
+        .prop_map(
+            |(delta_1_i, delta_2_i, asset_1, asset_2, claim_address, amount_type)| {
+                let (delta_1_i, delta_2_i) = match amount_type {
+                    SwapAmountType::ZeroFirst => (0u64.into(), delta_2_i),
+                    SwapAmountType::ZeroSecond => (delta_1_i, 0u64.into()),
+                    SwapAmountType::BothNonZero => (delta_1_i, delta_2_i),
+                };
+                let trading_pair = TradingPair::new(asset_1, asset_2);
+                SwapPlaintext::new(
+                    &mut OsRng,
+                    trading_pair,
+                    delta_1_i,
+                    delta_2_i,
+                    Fee::from_staking_token_amount(0u64.into()),
+                    claim_address,
+                )
+            },
+        )
 }
 
 fn swap_plan_strategy() -> impl Strategy<Value = SwapPlan> {
