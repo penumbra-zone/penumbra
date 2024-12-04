@@ -1,58 +1,41 @@
 {
   "actions": [
     {
-      "positionWithdraw": {
-        "reserves": {
-          "r1": {
-            "lo": "2998218174805594"
-          },
-          "r2": {
-            "lo": "845753515854215497"
-          }
+      "proposalSubmit": {
+        "proposal": {
+          "title": "fkdkbpwg-1025203160564222309",
+          "description": "ozfkvv-52022245173069512",
+          "signaling": {}
         },
-        "positionId": {
-          "inner": "8SwMXaaQfgZY1TqjWVvmoyiTBf1feslEQnON5w0MXU0="
-        },
-        "pair": {
-          "asset1": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          },
-          "asset2": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "sequence": "1"
+        "depositAmount": {
+          "lo": "934094108070915144"
+        }
       }
     },
     {
       "undelegateClaim": {
         "validatorIdentity": {
-          "ik": "Jju1bsKrn1c3KZ5zTDkwVUV3Kv17d38XILrahr96DBE="
+          "ik": "U2a8UbBcwrZ1MzWMW/9V6zgnXByzCJ041/caENEYZTs="
         },
         "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP8uSOinHeaa1Cw8nuy/sVw="
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP+dsi0OVgQYk3S8an752yM="
         },
         "unbondingAmount": {
-          "lo": "759098308161705917"
+          "lo": "125822892923467486"
         },
-        "balanceBlinding": "QiSS6nxQhaoO/ftU9SGxw8+ayxH4oVmPAXm7Hrm2kgA=",
-        "proofBlindingR": "hqzYh0tnWa2FeKak2C2wLuoLbHpZnAhjSQ8rWeSeSQ4=",
-        "proofBlindingS": "C+Ja+Ck10/HhIonYhk9fQeMp3Fi8XS812VqXMHyDeAI=",
-        "unbondingStartHeight": "96027"
-      }
-    },
-    {
-      "proposalWithdraw": {
-        "proposal": "987713522"
+        "balanceBlinding": "EbRYnBHAm0gZbv4ntbPlkAxGKSOrveE9HyUI2I8gGwA=",
+        "proofBlindingR": "26rLagvt4iouZkbVlj2Vnkv7fyMpXb8paA+2FMCj8gY=",
+        "proofBlindingS": "ZQwIn6BXFyTq/VDH7IkWQJkrGU9QvVq2a+Pme0VPRQ0=",
+        "unbondingStartHeight": "51039"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "1539522175",
-    "chainId": "xrzalo-7580521163329717690",
+    "expiryHeight": "47227",
+    "chainId": "penumbra-1",
     "fee": {
       "amount": {
-        "lo": "4513131285468227"
+        "lo": "794350138950992734"
       }
     }
   }

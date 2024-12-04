@@ -1,101 +1,108 @@
 {
   "actions": [
     {
-      "ibcRelayAction": {
-        "rawAction": {
-          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
-          "value": "CrMBCLyz6zQSC2RlZmF1bHRQb3J0GgljaGFubmVsLTAiC2RlZmF1bHRQb3J0KgljaGFubmVsLTAyZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6DAjg27KVARDrgt/YA0Dwx/PeobXqgRgSAgoAGgwI4NuylQEQ64Lf2AMijwFwZW51bWJyYTE3NjM3bWZoaHk5am04OGx6anEyeDY0NzZmamp3azc5ankycTBodnEwOXgwcGxrM2dsbGRreG4yenFranp6a2hwamx1MDJoMGY4YXZ5OTZ2cDVodXNtOXVrcHF5cHJ6OXB4ZW53N2p3Z2Q4c2FwZnpycTR4cWZsc2RrdWNrMmNlZzZzdmNtag=="
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "pD10MytHQpbwvWGdal8TTotbcC5GN9svbyiacWb0ths="
+        },
+        "unbondedAmount": {
+          "lo": "262419004592174630"
+        },
+        "delegationAmount": {
+          "lo": "49887393930784885"
+        },
+        "fromEpoch": {
+          "index": "8602",
+          "startHeight": "8602"
         }
-      }
-    },
-    {
-      "positionOpen": {
-        "position": {
-          "phi": {
-            "component": {
-              "p": {
-                "lo": "774789359106044111"
-              },
-              "q": {
-                "lo": "402420811295523927"
-              }
-            },
-            "pair": {
-              "asset1": {
-                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-              },
-              "asset2": {
-                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-              }
-            }
-          },
-          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-          "state": {
-            "state": "POSITION_STATE_ENUM_OPENED"
-          },
-          "reserves": {
-            "r1": {
-              "lo": "763030398612671458"
-            },
-            "r2": {
-              "lo": "649126515653168617"
-            }
-          },
-          "closeOnFill": true
-        }
-      }
-    },
-    {
-      "positionWithdraw": {
-        "reserves": {
-          "r1": {
-            "lo": "750752079886260961"
-          },
-          "r2": {
-            "lo": "897781783702494740"
-          }
-        },
-        "positionId": {
-          "inner": "y0uPPUR3gz4uFZdtwKALgY3H0lL+8IRMIZTAIPnDxk8="
-        },
-        "pair": {
-          "asset1": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          },
-          "asset2": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "sequence": "1"
       }
     },
     {
       "ics20Withdrawal": {
         "amount": {
-          "lo": "409200163497891676"
+          "lo": "647008669651871623"
         },
         "denom": {
-          "denom": "Mbuwd8yp3q5YAmM1V2hN5885"
+          "denom": "E8P3SLl"
         },
-        "destinationChainAddress": "penumbra17syd3uwnfjdfsvu7k3amnd7n3azg7eqz8p5mpd0k54hn6efgptg5zk69j9hmfzdwcyml9gp37ke3s9qt6j7nsm2d4psqajr8weel2pdv9dj92p4mfksy8y7wu870kwvalyqlq8",
+        "destinationChainAddress": "penumbra1jcu0w3ayemvpw78z0rnz2khm3yg8mqp8jjmsrqajpa535w9xnws8fza0czzazwxscvxxgg08w4t5cnlajuryt5g0qtd8ufas0l8yw5k40l22gjjazs749hx3js5fradf0uzq6p",
         "returnAddress": {
-          "inner": "s0I1iXp2esXR6gQl6NhRHjhHX0ZsStm02CTMO4AugfdFOOmpwkVNr++7M+gasvMXb0Lxu+UCVdlQ+IjvJOxQpnZix8+9v1CxXMD/ah+6zLI="
+          "inner": "8RYg8wToFYNf1q9THJb3bsaDiAiFazFLB+EEkttqgj/4j3A4s/snnM/ObYClh8spO49Q6xKJzQl8xaIgruwN6Twoim5j8Jwcu0Uq7oMX/K8="
         },
         "timeoutHeight": {
-          "revisionNumber": "422915132",
-          "revisionHeight": "258344837"
+          "revisionNumber": "781814237",
+          "revisionHeight": "496519934"
         },
         "sourceChannel": "channel-0"
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "519234741111085644"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "2KbD0WKM6SLCyoC0osbKXkVjKW6MKkOimzEXfSabbic=",
+          "address": {
+            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
+          }
+        },
+        "position": "211758106471074",
+        "randomizer": "ODUgeSf5HfCLs7N6ssqD0HEe1EQg5hv9Dv3hOTRicwE=",
+        "valueBlinding": "b+pQIezST0EQqUcEHxaUf4JINVDFQDprTECe0QmQggI=",
+        "proofBlindingR": "XDxhGWNLqhvjsTEE5TbmCj7l+qM2XTnNUX7b4bwT7Ac=",
+        "proofBlindingS": "fFD7BupEl5IvET4u8YSa944d3V2SUr9WFs3q8Qf+KhI="
+      }
+    },
+    {
+      "actionDutchAuctionSchedule": {
+        "description": {
+          "input": {
+            "amount": {
+              "lo": "342353369970251473"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "outputId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "maxOutput": {
+            "lo": "204479339806219546"
+          },
+          "minOutput": {
+            "lo": "48316935250088062"
+          },
+          "startHeight": "515959140",
+          "endHeight": "515959141",
+          "stepCount": "86237203",
+          "nonce": "SObe5zXd96JS0uOMH78CTrGBmvEwHfbDxIMYYPRGg98="
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "4923194389",
-    "chainId": "ihcgxxqkhbvefbdkdgdnrut-115",
+    "expiryHeight": "582446",
+    "chainId": "penumbra-1",
     "fee": {
       "amount": {
-        "lo": "664252986094135210"
+        "lo": "695185584809215913"
       }
     }
+  },
+  "memo": {
+    "plaintext": {
+      "returnAddress": {
+        "inner": "JTaqVZgf4EjNeuUJmvJqA3AH6ZeCHhragL7iWiW+O9JmGteWAeFNb+JGc5jeg3qTLX+JNA3idWCclDjhKu7FFBgtFCOo9fChWEjGEL4unos="
+      },
+      "text": "wIOM dEJjy89 33P  55CNUlQwG6btZV J5Pj6i H7moQsR Q wPYG5BSZTpW10Nc Ta02 7c ROJ UV JI0  GiRaHx7 0mZI50793KPkgHjYqWKWNs6BgtKMuxMRL03 9PiV 45CanIrz3JIC AiVlMv b8Nk2q6f mHAm0 63n J G fEMjSkRqGzvb5 ec "
+    },
+    "key": "q/890n5/NmMTsMKDNZWG+jti7CXWVvxokmRA9LqAtu4="
   }
 }

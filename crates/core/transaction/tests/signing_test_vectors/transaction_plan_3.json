@@ -1,55 +1,63 @@
 {
   "actions": [
     {
-      "positionClose": {
-        "positionId": {
-          "inner": "MxfYVdViQku0zvQK8xy1i3XOuLfoG/a2E7d2I5cJZL8="
-        }
-      }
-    },
-    {
-      "actionDutchAuctionWithdraw": {
-        "auctionId": {
-          "inner": "1UdBQ7NvuyTDgd7GBZ+XTBjKhJeLJwixq3I24n76DFo="
-        },
-        "seq": "755250957",
-        "reservesInput": {
-          "amount": {
-            "lo": "244631310223081423"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "reservesOutput": {
-          "amount": {
-            "lo": "516329710970286444"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        }
-      }
-    },
-    {
       "proposalSubmit": {
         "proposal": {
-          "title": "mibvwkjciemkcrxgtvyvtxkfzfgoacpa-9",
-          "description": "hgfsyjxyh-5475912394187894970427750187231",
+          "title": "vqdbpeqdplvifwvttujdobmudb-1112237668827187935",
+          "description": "etswussy-89513061594666339655648",
           "signaling": {}
         },
         "depositAmount": {
-          "lo": "593187291875051726"
+          "lo": "858569315349491647"
+        }
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "892840631353099121"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "oVGKFQGLHJYSfgDXE7ixiq0NK9HV84e5q8DOV4O00u5Hi49jfzSGNOsimoITQl6X0vH579RmnveEqIwJ/xnCf6cmYXIosUDse1W+b9YeXOY="
+        }
+      }
+    },
+    {
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "IWEqxHoLNL64fvLzQ28cub39gdvpbvhd7BbsFRHv/Fw="
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "yGO3szpmn6aHajxFUzj6qfCUTz4TM9NfBVha+40c9MM="
+        },
+        "unbondedAmount": {
+          "lo": "745012315494337894"
+        },
+        "delegationAmount": {
+          "lo": "989283979943135496"
+        },
+        "fromEpoch": {
+          "index": "515",
+          "startHeight": "515"
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "5396625052",
-    "chainId": "yljcjoiuafnxvuq-7",
+    "expiryHeight": "768362",
+    "chainId": "mpgvvipjifphaclpdrbybvi-37248859417691795744429913",
     "fee": {
       "amount": {
-        "lo": "22479363999064335"
+        "lo": "680653085337406480"
       }
     }
   }

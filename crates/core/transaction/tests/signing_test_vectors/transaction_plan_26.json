@@ -1,50 +1,46 @@
 {
   "actions": [
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "/QXLeKKs5nNDGUlootWZo28F38EKtleJ2Dxmz877u5M="
-        },
-        "epochIndex": "3335",
-        "unbondedAmount": {
-          "lo": "268055427198280602"
-        },
-        "delegationAmount": {
-          "lo": "311754073549817714"
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "506904508504112616"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         }
       }
     },
     {
-      "actionDutchAuctionWithdraw": {
-        "auctionId": {
-          "inner": "lBXbj4Fgh8SAUcCnvlW0iL9mC1F+Hjr4h2GmuK7hr4Y="
-        },
-        "seq": "477900847",
-        "reservesInput": {
-          "amount": {
-            "lo": "494921779002903251"
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "888670871373814434"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "rseed": "A6vsEAkyDytJcKSj8DOG3V828ptLNHrzbTsekKPCTV8=",
+          "address": {
+            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
           }
         },
-        "reservesOutput": {
-          "amount": {
-            "lo": "229786067440132976"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        }
+        "position": "100172228580753",
+        "randomizer": "1dmM8ppbhuCMz4R91hfgUpNU5LPTjJrJ4R8be21lLgM=",
+        "valueBlinding": "57JMDxQI8Q6PR9uif6LoJgnrVdL/q/iPIWTasLBZQAQ=",
+        "proofBlindingR": "3OYi43winsPqUd53hlPQBOk/wnpZF0p5r4QG61KJMwc=",
+        "proofBlindingS": "DDfIN2Hao/DPq0pAYpDmj2q2Uqk0x4d3H2/tOK631hA="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "3655773457",
-    "chainId": "cobadoodnjhaiy-3702176186175231025",
+    "chainId": "ytdzrlb-786607087246194378494654901815",
     "fee": {
       "amount": {
-        "lo": "398478972940299008"
+        "lo": "762725718869105195"
       }
     }
   }

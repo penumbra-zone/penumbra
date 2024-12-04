@@ -1,47 +1,112 @@
 {
   "actions": [
     {
-      "positionClose": {
-        "positionId": {
-          "inner": "3M43F9k+SwRsWjZIhTdySOp/8R44CEradfEzUYQKrzo="
+      "communityPoolSpend": {
+        "value": {
+          "amount": {
+            "lo": "112786438974671176"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         }
       }
     },
     {
-      "actionDutchAuctionSchedule": {
-        "description": {
-          "input": {
-            "amount": {
-              "lo": "635431313666200624"
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "606590932721333010"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "92OMLaZmdPBZ6muWwyIf3sBGtaLjo3QEkY4ikgManq9s6TO3QX3NMUaQ799xP3StQMU15pmbpTT4hV/04XS0l0rhdrHZqoGkCeYBPkQ9gdk="
+        },
+        "rseed": "LL2ouIad7t84hHod+YP6iPibcvlnv2fc40lwXd0kAsw=",
+        "valueBlinding": "vfsnnvcCZGeMlFRF2hpZE0/iayFrDjuozQ4dSXfblAI=",
+        "proofBlindingR": "jBOsevnTRV7ViCnXTGaPoEuSOWft/GuO1JUemvLqBAk=",
+        "proofBlindingS": "aNtKeBgQoE+gWAKRvirNnnNRuMLpjpFp1rW0cHx3WQw="
+      }
+    },
+    {
+      "validatorVote": {
+        "body": {
+          "proposal": "615456163",
+          "vote": {
+            "vote": "VOTE_ABSTAIN"
+          },
+          "identityKey": {
+            "ik": "TRiBgsqX1u9xQyc557mO5L2WeA54oushqm6m7odl/ws="
+          },
+          "governanceKey": {
+            "gk": "YrLin57xCqbutlU9LgFAoFk3KBq7t6hstlz7UNPMJAI="
+          },
+          "reason": {
+            "reason": "r2JBNZ1ElirvKJm7rRL"
+          }
+        },
+        "authSig": {
+          "inner": "JK32rYlIKbY4F8fRfcXhHq8Ez86YTrQWEQFqYYQKAg8698ArBsjYTjEuIa9EuxEvycD0KA7S8vPc3quJX3QoAA=="
+        }
+      }
+    },
+    {
+      "positionOpen": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "429790348288155476"
+              },
+              "q": {
+                "lo": "969296942673228210"
+              }
             },
-            "assetId": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
             }
           },
-          "outputId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_CLOSED"
           },
-          "maxOutput": {
-            "lo": "968182021175373968"
+          "reserves": {
+            "r1": {
+              "lo": "460536774577321351"
+            },
+            "r2": {
+              "lo": "978410587581492402"
+            }
           },
-          "minOutput": {
-            "lo": "481943553144497287"
-          },
-          "startHeight": "141560138",
-          "endHeight": "141560139",
-          "stepCount": "385732289",
-          "nonce": "zA1u4MqCerHjYwcayHAxPAAl0cWCaUZxlle6tBWbW5Y="
+          "closeOnFill": true
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "4202828864",
-    "chainId": "zwrovhwvux-1555802955862562584415078604787",
+    "expiryHeight": "190339",
+    "chainId": "tlfxqaqlxxrtaiktcqaxvylm-4898764981077936211265",
     "fee": {
       "amount": {
-        "lo": "623834726199234692"
+        "lo": "924275219012721144"
       }
     }
+  },
+  "memo": {
+    "plaintext": {
+      "returnAddress": {
+        "inner": "jeLe/2gi5lzA0OmPueAUQyNXkEecn+hnuqRWh/jtAXRLRfDBh+LDgGoRX8aizJuTFRhcRl/e+Cx+hvg1Y9yvxdldZHVYSoEGOCJJUsI+iYs="
+      },
+      "text": "dp z9C Vy9o R097jE1 Wt5HTcg8015 wCvg29 3RDyBe mUD 7NFbezOA375 JU BBQn2TW sslCCLMY5k0Ly782U crLNc7 iD Z1eEHI AEQD 8 pmAo5"
+    },
+    "key": "IQSerrfMk+xRMCu+7FZuBPJg9V0F3L7f7G67GXgbqR8="
   }
 }
