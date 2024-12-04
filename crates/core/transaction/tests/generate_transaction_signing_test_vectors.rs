@@ -48,7 +48,9 @@ use penumbra_stake::{
     validator, validator::Definition, Delegate, FundingStreams, GovernanceKey, IdentityKey,
     Penalty, Undelegate, UndelegateClaimPlan,
 };
-use penumbra_transaction::{ActionPlan, TransactionParameters, TransactionPlan};
+use penumbra_transaction::{
+    memo::MemoPlaintext, plan::MemoPlan, ActionPlan, TransactionParameters, TransactionPlan,
+};
 use proptest::prelude::*;
 use proptest::strategy::ValueTree;
 use proptest::test_runner::{Config, TestRunner};
@@ -688,15 +690,28 @@ fn transaction_parameters_strategy() -> impl Strategy<Value = TransactionParamet
     })
 }
 
+fn memo_plaintext_strategy() -> impl Strategy<Value = MemoPlaintext> {
+    (address_strategy(), "[a-zA-Z0-9 ]{1,432}").prop_map(|(return_address, text)| {
+        MemoPlaintext::new(return_address, text).expect("memo text should be valid")
+    })
+}
+
+fn memo_plan_strategy() -> impl Strategy<Value = MemoPlan> {
+    memo_plaintext_strategy().prop_map(|plaintext| MemoPlan::new(&mut OsRng, plaintext))
+}
+
 fn transaction_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = TransactionPlan> {
-    (actions_vec_strategy(fvk), transaction_parameters_strategy()).prop_map(|(actions, params)| {
-        TransactionPlan {
+    (
+        actions_vec_strategy(fvk),
+        transaction_parameters_strategy(),
+        prop_oneof![Just(None), memo_plan_strategy().prop_map(Some),],
+    )
+        .prop_map(|(actions, params, memo)| TransactionPlan {
             actions,
             transaction_parameters: params,
             detection_data: None,
-            memo: None,
-        }
-    })
+            memo,
+        })
 }
 
 #[test]
@@ -942,24 +957,6 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
     }
     index += 1;
 
-    // Add memo if present
-    if let Some(memo) = &plan.memo {
-        // Display sender address
-        for line in format_for_display(
-            "Sender Address",
-            address_display(&memo.plaintext.return_address(), &fvk),
-        ) {
-            output.push(format!("{} | {}", index, line));
-        }
-        index += 1;
-
-        // Display memo text
-        for line in format_for_display("Memo Text", memo.plaintext.text().to_string()) {
-            output.push(format!("{} | {}", index, line));
-        }
-        index += 1;
-    }
-
     for action in &plan.actions {
         match action {
             ActionPlan::Spend(spend) => {
@@ -1129,6 +1126,24 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 // TODO: populate this
             }
         }
+    }
+
+    // Add memo if present
+    if let Some(memo) = &plan.memo {
+        // Display sender address
+        for line in format_for_display(
+            "Sender Address",
+            address_display(&memo.plaintext.return_address(), &fvk),
+        ) {
+            output.push(format!("{} | {}", index, line));
+        }
+        index += 1;
+
+        // Display memo text
+        for line in format_for_display("Memo Text", memo.plaintext.text().to_string()) {
+            output.push(format!("{} | {}", index, line));
+        }
+        index += 1;
     }
 
     output
