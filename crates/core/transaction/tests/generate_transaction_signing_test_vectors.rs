@@ -705,17 +705,23 @@ fn chain_id_strategy() -> impl Strategy<Value = String> {
     ]
 }
 
+fn expiry_height_strategy() -> impl Strategy<Value = u64> {
+    prop_oneof![
+        Just(0u64),       // Absent expiry height
+        1u64..1000000u64, // Random non-zero expiry height
+    ]
+}
+
 fn transaction_parameters_strategy() -> impl Strategy<Value = TransactionParameters> {
-    let expiry_height = 0u64..10000000000u64;
     let fee = value_strategy().prop_map(|fee_value| Fee(fee_value));
 
-    (expiry_height, chain_id_strategy(), fee).prop_map(|(expiry_height, chain_id, fee)| {
-        TransactionParameters {
+    (expiry_height_strategy(), chain_id_strategy(), fee).prop_map(
+        |(expiry_height, chain_id, fee)| TransactionParameters {
             expiry_height,
             chain_id,
             fee,
-        }
-    })
+        },
+    )
 }
 
 fn memo_plaintext_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = MemoPlaintext> {
