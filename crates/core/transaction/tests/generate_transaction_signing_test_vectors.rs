@@ -76,16 +76,30 @@ fn value_strategy() -> impl Strategy<Value = penumbra_asset::Value> {
         .prop_map(|(asset_id, amount)| penumbra_asset::Value { amount, asset_id })
 }
 
-fn address_strategy() -> impl Strategy<Value = Address> {
+fn controlled_address_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = Address> {
+    (0u32..100u32).prop_map(move |index| {
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase.clone(), &Bip44Path::new(0));
+        sk.full_viewing_key().payment_address(index.into()).0
+    })
+}
+
+fn uncontrolled_address_strategy() -> impl Strategy<Value = Address> {
     // normally we would use address::dummy, but this seems to not work properly
     // for some reason (invalid key errors on computing effecthash.)
     prop::strategy::LazyJust::new(|| {
         let seed_phrase = SeedPhrase::generate(&mut OsRng);
         let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let addr = sk.full_viewing_key().payment_address(0u32.into()).0;
-
-        addr
+        sk.full_viewing_key().payment_address(0u32.into()).0
     })
+}
+
+fn address_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = Address> {
+    prop_oneof![
+        // 50% chance to generate a controlled address with a random index
+        controlled_address_strategy(seed_phrase),
+        // 50% chance to generate a random address
+        uncontrolled_address_strategy()
+    ]
 }
 
 fn note_strategy(addr: Address) -> impl Strategy<Value = Note> {
@@ -100,8 +114,8 @@ fn spend_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = SpendPlan>
         .prop_map(|(tct_pos, note)| SpendPlan::new(&mut OsRng, note, tct_pos))
 }
 
-fn output_plan_strategy() -> impl Strategy<Value = OutputPlan> {
-    (value_strategy(), address_strategy())
+fn output_plan_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = OutputPlan> {
+    (value_strategy(), address_strategy(seed_phrase.clone()))
         .prop_map(|(value, address)| OutputPlan::new(&mut OsRng, value, address))
 }
 
@@ -242,13 +256,13 @@ fn swap_amount_type_strategy() -> impl Strategy<Value = SwapAmountType> {
     ]
 }
 
-fn swap_plaintext_strategy() -> impl Strategy<Value = SwapPlaintext> {
+fn swap_plaintext_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = SwapPlaintext> {
     (
         amount_strategy(),
         amount_strategy(),
         asset_id_strategy(),
         asset_id_strategy(),
-        address_strategy(),
+        address_strategy(seed_phrase),
         swap_amount_type_strategy(),
     )
         .prop_map(
@@ -271,8 +285,8 @@ fn swap_plaintext_strategy() -> impl Strategy<Value = SwapPlaintext> {
         )
 }
 
-fn swap_plan_strategy() -> impl Strategy<Value = SwapPlan> {
-    (swap_plaintext_strategy()).prop_map(|swap_plaintext| SwapPlan {
+fn swap_plan_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = SwapPlan> {
+    (swap_plaintext_strategy(seed_phrase)).prop_map(|swap_plaintext| SwapPlan {
         proof_blinding_r: Fq::rand(&mut OsRng),
         proof_blinding_s: Fq::rand(&mut OsRng),
         swap_plaintext,
@@ -325,29 +339,31 @@ fn batch_swap_output_data_strategy() -> impl Strategy<Value = BatchSwapOutputDat
         )
 }
 
-fn swap_claim_plan_strategy() -> impl Strategy<Value = SwapClaimPlan> {
-    (swap_plaintext_strategy(), batch_swap_output_data_strategy()).prop_map(
-        |(swap_plaintext, output_data)| SwapClaimPlan {
+fn swap_claim_plan_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = SwapClaimPlan> {
+    (
+        swap_plaintext_strategy(seed_phrase),
+        batch_swap_output_data_strategy(),
+    )
+        .prop_map(|(swap_plaintext, output_data)| SwapClaimPlan {
             swap_plaintext,
             position: penumbra_tct::Position::from(0u64),
             output_data,
             epoch_duration: 1000u64,
             proof_blinding_r: Fq::rand(&mut OsRng),
             proof_blinding_s: Fq::rand(&mut OsRng),
-        },
-    )
+        })
 }
 
 fn sequence_strategy() -> impl Strategy<Value = Sequence> {
     (4001..2000000000u64).prop_map(Sequence)
 }
 
-fn ibc_action_strategy() -> impl Strategy<Value = IbcRelay> {
+fn ibc_action_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = IbcRelay> {
     (
         sequence_strategy(),
         0..1000000000u64,
         0..1000000000u64,
-        address_strategy(),
+        address_strategy(seed_phrase.clone()),
     )
         .prop_map(|(sequence, revision_number, revision_height, src)| {
             IbcRelay::RecvPacket(MsgRecvPacket {
@@ -411,7 +427,7 @@ fn vote_strategy() -> impl Strategy<Value = Vote> {
 
 fn note_strategy_without_address() -> impl Strategy<Value = Note> {
     (
-        address_strategy(),
+        uncontrolled_address_strategy(),
         value_strategy(),
         prop::array::uniform32(any::<u8>()),
     )
@@ -554,7 +570,7 @@ fn community_pool_spend_strategy() -> impl Strategy<Value = CommunityPoolSpend> 
 }
 
 fn community_pool_output_strategy() -> impl Strategy<Value = CommunityPoolOutput> {
-    (value_strategy(), address_strategy())
+    (value_strategy(), uncontrolled_address_strategy())
         .prop_map(|(value, address)| CommunityPoolOutput { value, address })
 }
 
@@ -562,11 +578,11 @@ fn denom_strategy() -> impl Strategy<Value = String> {
     prop::string::string_regex(r"[a-zA-Z0-9]+").unwrap()
 }
 
-fn ics20_withdrawal_strategy() -> impl Strategy<Value = Ics20Withdrawal> {
+fn ics20_withdrawal_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = Ics20Withdrawal> {
     (
         amount_strategy(),
-        address_strategy(),
-        address_strategy(),
+        address_strategy(seed_phrase.clone()),
+        address_strategy(seed_phrase.clone()),
         denom_strategy(),
         0..1000000000u64,
         0..1000000000u64,
@@ -643,19 +659,22 @@ fn auction_dutch_end_strategy() -> impl Strategy<Value = ActionDutchAuctionEnd> 
     })
 }
 
-fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPlan> {
+fn action_plan_strategy(
+    fvk: &FullViewingKey,
+    seed_phrase: SeedPhrase,
+) -> impl Strategy<Value = ActionPlan> {
     prop_oneof![
         spend_plan_strategy(fvk).prop_map(ActionPlan::Spend),
-        output_plan_strategy().prop_map(ActionPlan::Output),
+        output_plan_strategy(seed_phrase.clone()).prop_map(ActionPlan::Output),
         delegate_plan_strategy().prop_map(ActionPlan::Delegate),
         undelegate_plan_strategy().prop_map(ActionPlan::Undelegate),
         undelegate_claim_plan_strategy().prop_map(ActionPlan::UndelegateClaim),
         validator_definition_strategy().prop_map(ActionPlan::ValidatorDefinition),
-        swap_plan_strategy().prop_map(ActionPlan::Swap),
-        swap_claim_plan_strategy().prop_map(ActionPlan::SwapClaim),
+        swap_plan_strategy(seed_phrase.clone()).prop_map(ActionPlan::Swap),
+        swap_claim_plan_strategy(seed_phrase.clone()).prop_map(ActionPlan::SwapClaim),
         proposal_submit_strategy().prop_map(ActionPlan::ProposalSubmit),
         proposal_withdraw_strategy().prop_map(ActionPlan::ProposalWithdraw),
-        ibc_action_strategy().prop_map(ActionPlan::IbcAction),
+        ibc_action_strategy(seed_phrase.clone()).prop_map(ActionPlan::IbcAction),
         delegator_vote_strategy().prop_map(ActionPlan::DelegatorVote),
         validator_vote_strategy().prop_map(ActionPlan::ValidatorVote),
         proposal_deposit_claim_strategy().prop_map(ActionPlan::ProposalDepositClaim),
@@ -665,23 +684,32 @@ fn action_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = ActionPla
         community_pool_deposit_strategy().prop_map(ActionPlan::CommunityPoolDeposit),
         community_pool_spend_strategy().prop_map(ActionPlan::CommunityPoolSpend),
         community_pool_output_strategy().prop_map(ActionPlan::CommunityPoolOutput),
-        ics20_withdrawal_strategy().prop_map(ActionPlan::Ics20Withdrawal),
+        ics20_withdrawal_strategy(seed_phrase.clone()).prop_map(ActionPlan::Ics20Withdrawal),
         auction_dutch_end_strategy().prop_map(ActionPlan::ActionDutchAuctionEnd),
         auction_dutch_withdraw_plan_strategy().prop_map(ActionPlan::ActionDutchAuctionWithdraw),
         auction_dutch_schedule_strategy().prop_map(ActionPlan::ActionDutchAuctionSchedule),
     ]
 }
 
-fn actions_vec_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = Vec<ActionPlan>> {
-    prop::collection::vec(action_plan_strategy(fvk), 2..5)
+fn actions_vec_strategy(
+    fvk: &FullViewingKey,
+    seed_phrase: SeedPhrase,
+) -> impl Strategy<Value = Vec<ActionPlan>> {
+    prop::collection::vec(action_plan_strategy(fvk, seed_phrase), 2..5)
+}
+
+fn chain_id_strategy() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("penumbra-1".to_string()),
+        "[a-z]+-[0-9]+".prop_map(|s| s.to_string()), // Random other chain IDs
+    ]
 }
 
 fn transaction_parameters_strategy() -> impl Strategy<Value = TransactionParameters> {
     let expiry_height = 0u64..10000000000u64;
-    let chain_id = prop::string::string_regex(r"[a-z]+-[0-9]+").unwrap();
     let fee = value_strategy().prop_map(|fee_value| Fee(fee_value));
 
-    (expiry_height, chain_id, fee).prop_map(|(expiry_height, chain_id, fee)| {
+    (expiry_height, chain_id_strategy(), fee).prop_map(|(expiry_height, chain_id, fee)| {
         TransactionParameters {
             expiry_height,
             chain_id,
@@ -690,21 +718,24 @@ fn transaction_parameters_strategy() -> impl Strategy<Value = TransactionParamet
     })
 }
 
-fn memo_plaintext_strategy() -> impl Strategy<Value = MemoPlaintext> {
-    (address_strategy(), "[a-zA-Z0-9 ]{1,432}").prop_map(|(return_address, text)| {
+fn memo_plaintext_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = MemoPlaintext> {
+    (address_strategy(seed_phrase), "[a-zA-Z0-9 ]{1,432}").prop_map(|(return_address, text)| {
         MemoPlaintext::new(return_address, text).expect("memo text should be valid")
     })
 }
 
-fn memo_plan_strategy() -> impl Strategy<Value = MemoPlan> {
-    memo_plaintext_strategy().prop_map(|plaintext| MemoPlan::new(&mut OsRng, plaintext))
+fn memo_plan_strategy(seed_phrase: SeedPhrase) -> impl Strategy<Value = MemoPlan> {
+    memo_plaintext_strategy(seed_phrase).prop_map(|plaintext| MemoPlan::new(&mut OsRng, plaintext))
 }
 
-fn transaction_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = TransactionPlan> {
+fn transaction_plan_strategy(
+    fvk: &FullViewingKey,
+    seed_phrase: SeedPhrase,
+) -> impl Strategy<Value = TransactionPlan> {
     (
-        actions_vec_strategy(fvk),
+        actions_vec_strategy(fvk, seed_phrase.clone()),
         transaction_parameters_strategy(),
-        prop_oneof![Just(None), memo_plan_strategy().prop_map(Some),],
+        prop_oneof![Just(None), memo_plan_strategy(seed_phrase).prop_map(Some),],
     )
         .prop_map(|(actions, params, memo)| TransactionPlan {
             actions,
@@ -724,9 +755,9 @@ fn generate_transaction_signing_test_vectors() {
 
     for i in 0..100 {
         let seed_phrase = SeedPhrase::from_str(SEED_PHRASE).expect("test seed phrase is valid");
-        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase.clone(), &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
-        let value_tree = transaction_plan_strategy(fvk)
+        let value_tree = transaction_plan_strategy(fvk, seed_phrase)
             .new_tree(&mut runner)
             .expect("Failed to create new tree");
         let transaction_plan = value_tree.current();
@@ -1025,7 +1056,7 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 // Verify return address is controlled by user, bail if not
                 if !ivk.views_address(&withdrawal.return_address) {
                     output.push(format!(
-                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN",
+                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN (return address in Ics20Withdrawal not controlled by user)",
                         index
                     ));
                 }
@@ -1037,7 +1068,7 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 // Verify claim address is controlled by user
                 if !ivk.views_address(&swap.swap_plaintext.claim_address) {
                     output.push(format!(
-                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN",
+                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN (claim address in Swap not controlled by user)",
                         index
                     ));
                 }
@@ -1064,7 +1095,7 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 } else {
                     // Invalid swap: exactly one delta must be nonzero
                     output.push(format!(
-                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN",
+                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN (invalid swap: one delta must be nonzero)",
                         index
                     ));
                     // Arbitrary choice of asset 2 as input
@@ -1137,14 +1168,13 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
         ) {
             output.push(format!("{} | {}", index, line));
         }
-        index += 1;
 
         // Display memo text
         for line in format_for_display("Memo Text", memo.plaintext.text().to_string()) {
             output.push(format!("{} | {}", index, line));
         }
-        index += 1;
     }
+    // TODO: If adding more stuff here increment the `index`
 
     output
 }
