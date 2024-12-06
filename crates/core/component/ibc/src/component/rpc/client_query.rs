@@ -31,6 +31,7 @@ use super::IbcQuery;
 
 #[async_trait]
 impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
+    #[tracing::instrument(skip(self, request), err)]
     async fn client_state(
         &self,
         request: tonic::Request<QueryClientStateRequest>,
@@ -40,7 +41,12 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
                 format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
             )),
             Ok(snapshot) => snapshot,
+
         };
+
+        let root_hash = snapshot.root_hash().await?;
+        let version = snapshot.version().await?;
+        tracing::warn!(?root_hash, version, "processing consensus state req");
 
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
@@ -79,6 +85,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
     }
 
     /// ClientStates queries all the IBC light clients of a chain.
+    #[tracing::instrument(skip(self, _request), err)]
     async fn client_states(
         &self,
         _request: tonic::Request<QueryClientStatesRequest>,
@@ -114,6 +121,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
 
     /// ConsensusState queries a consensus state associated with a client state at
     /// a given height.
+    #[tracing::instrument(skip(self, request), err)]
     async fn consensus_state(
         &self,
         request: tonic::Request<QueryConsensusStateRequest>,
@@ -124,6 +132,11 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
             )),
             Ok(snapshot) => snapshot,
         };
+
+        let root_hash = snapshot.root_hash().await?;
+        let version = snapshot.version().await?;
+
+        tracing::warn!(?root_hash, version, "processing consensus state req");
 
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
@@ -170,6 +183,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
 
     /// ConsensusStates queries all the consensus state associated with a given
     /// client.
+    #[tracing::instrument(skip(self, request), err)]
     async fn consensus_states(
         &self,
         request: tonic::Request<QueryConsensusStatesRequest>,
@@ -211,6 +225,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
     }
 
     /// ConsensusStateHeights queries the height of every consensus states associated with a given client.
+    #[tracing::instrument(skip(self, request), err)]
     async fn consensus_state_heights(
         &self,
         request: tonic::Request<QueryConsensusStateHeightsRequest>,
@@ -244,6 +259,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
     }
 
     /// Status queries the status of an IBC client.
+    #[tracing::instrument(skip(self, request), err)]
     async fn client_status(
         &self,
         request: tonic::Request<QueryClientStatusRequest>,
@@ -261,21 +277,26 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
 
         Ok(tonic::Response::new(resp))
     }
-    /// ClientParams queries all parameters of the ibc client.
+    /// ClientParams queriinstrument(skip(self, request), err)]
+    #[tracing::instrument(skip(self, _request), err)]
     async fn client_params(
         &self,
         _request: tonic::Request<QueryClientParamsRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientParamsResponse>, tonic::Status> {
         Err(tonic::Status::unimplemented("not implemented"))
     }
+
     /// UpgradedClientState queries an Upgraded IBC light client.
+    #[tracing::instrument(skip(self, _request), err)]
     async fn upgraded_client_state(
         &self,
         _request: tonic::Request<QueryUpgradedClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryUpgradedClientStateResponse>, tonic::Status> {
         Err(tonic::Status::unimplemented("not implemented"))
     }
+
     /// UpgradedConsensusState queries an Upgraded IBC consensus state.
+    #[tracing::instrument(skip(self, _request), err)]
     async fn upgraded_consensus_state(
         &self,
         _request: tonic::Request<QueryUpgradedConsensusStateRequest>,

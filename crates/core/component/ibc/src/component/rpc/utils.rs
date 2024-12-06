@@ -13,19 +13,22 @@ type Type = tonic::metadata::MetadataMap;
 /// Determines which state snapshot to open given the height header in a [`MetadataMap`].
 ///
 /// Returns the latest snapshot if the height header is 0, 0-0, or absent.
-#[instrument(skip_all, level = "debug")]
+#[instrument(skip_all, level = "debug", err)]
 pub(in crate::component::rpc) fn determine_snapshot_from_metadata(
     storage: Storage,
     metadata: &Type,
 ) -> anyhow::Result<Snapshot> {
     let height = determine_height_from_metadata(metadata)
         .context("failed to determine height from metadata")?;
+    tracing::warn!(?height, "determining snapshot from grpc header");
     if height.revision_height == 0 {
         Ok(storage.latest_snapshot())
     } else {
-        storage
+        let snapshot = storage
             .snapshot(height.revision_height)
-            .context("failed to create state snapshot from IBC height in height header")
+            .context("failed to create state snapshot from IBC height in height header");
+        tracing::warn!(?snapshot, "determined snapshot from grpc header");
+        snapshot
     }
 }
 
