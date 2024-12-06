@@ -44,7 +44,10 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
 
         };
 
-        let root_hash = snapshot.root_hash().await?;
+        let root_hash = snapshot
+            .root_hash()
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get root hash: {e}")))?;
         let version = snapshot.version();
         tracing::warn!(?root_hash, version, "processing consensus state req");
 
@@ -133,7 +136,10 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
             Ok(snapshot) => snapshot,
         };
 
-        let root_hash = snapshot.root_hash().await?;
+        let root_hash = snapshot
+            .root_hash()
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get root hash: {e}")))?;
         let version = snapshot.version();
 
         tracing::warn!(?root_hash, version, "processing consensus state req");
