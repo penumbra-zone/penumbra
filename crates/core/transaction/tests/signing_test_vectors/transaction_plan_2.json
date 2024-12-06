@@ -1,56 +1,37 @@
 {
   "actions": [
     {
-      "positionWithdraw": {
-        "reserves": {
-          "r1": {
-            "lo": "448142028566267796"
-          },
-          "r2": {
-            "lo": "159939578440165984"
-          }
-        },
-        "positionId": {
-          "inner": "BI2WURu9pwvwJKDnC9cwjFSnunkzpqQEo1HhNJ6i2Lc="
-        },
-        "pair": {
-          "asset1": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          },
-          "asset2": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "sequence": "1"
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrMBCO3x6cQEEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsIyo3HvQMQ9oeUfUCA5OKyhuWEhxgSAgoAGgsIyo3HvQMQ9oeUfSKPAXBlbnVtYnJhMWtxamFxMnNxMjJ2Y3JoNTRxeWdqNmtoNWVrNHJsd2R2YWN5eGNhZ3I0ZXZ1NGFycDhncng2c3FkbmFtN3U3Y3FwcnpsemNxOGVndjNjbGFhYTByNm14ZnptbmFjd2x5c3hjZGtqc3N5Nzhmd3R2OXpxYWYyY3FnZ2dzY3d2N2R6Y2tlODY3"
+        }
       }
     },
     {
-      "output": {
-        "value": {
-          "amount": {
-            "lo": "453684090974683838"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "destAddress": {
-          "inner": "dd95Ud+vmNutjKWK+7UJPgtHizVjx45bEokyQtR7oT4/JYCruYZMzhsBvhmqjFA5eXEFhbk4yb66rfWp8ja3KdEo/PksHMdMmOcO2FpBP3w="
-        },
-        "rseed": "Jh0drx757DZE3ndNdnopPf/SuPIIxVrGTujOSvmu3Z0=",
-        "valueBlinding": "lq+gtuIgMgT3n+MbhMmtk7SxGh+QIHZWQmSe3HxC8AM=",
-        "proofBlindingR": "FG0uL0Of+v8LBP82ixIQ24Ljr6fDEjkLP0HVcZqApwY=",
-        "proofBlindingS": "4uaJAArj6b69w+seF29Cv9hRfnWmL9kZT7jsVh+FjwM="
+      "positionClose": {
+        "positionId": {
+          "inner": "BrS4LxNlXvyHpDQE46V46n585uWb9bLrWQOgyJrSBYY="
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "5511246800",
-    "chainId": "fvbnjrbyirmhgsrtpnwtykibntihvt-688696",
+    "expiryHeight": "599103",
+    "chainId": "jerubkwtol-203",
     "fee": {
       "amount": {
-        "lo": "228194173552427870"
+        "lo": "542081428684510802"
       }
     }
+  },
+  "memo": {
+    "plaintext": {
+      "returnAddress": {
+        "inner": "9S3N9IF5A8U51MpuKq+ypOXnwh+B72v0xnT1fwFDcqPOmxoy97aqwAZK4b32kAhpUTNhodlESYuUS8agNdxudOS6+Ktrh1dfg9qaSUs5MDI="
+      },
+      "text": "mmUIuZ1 hdp vd1E B9 dF6U  0wVUm2cWNY8k03nfcFs vh6rKSx uJ2k  K h YYeBvv 960 O NPuKG"
+    },
+    "key": "ru+lhshYadIfn9dTj0QH297SjKWWoPn4bJSdtpAWLuc="
   }
 }

@@ -1,31 +1,81 @@
 {
   "actions": [
     {
-      "actionDutchAuctionEnd": {
-        "auctionId": {
-          "inner": "XTDpe9No0XGJuhIof9R/H0nzlbndN47FcWp19oan5DA="
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "mxRcp0HorQy1xeLwW+Dw21keSZOhKMmLfOFD5Xv3prY="
+        },
+        "epochIndex": "2705",
+        "unbondedAmount": {
+          "lo": "651695229702994986"
+        },
+        "delegationAmount": {
+          "lo": "309928483201224760"
         }
       }
     },
     {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "ynnajcmmygjtvzebgdinw-5281",
-          "description": "yakipgupcjcwbzbhcjfh-6887007188777625904",
-          "signaling": {}
+      "swapClaim": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {},
+          "delta2I": {
+            "lo": "131015607339929953"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "kfi+osHOvW4HPYJU+NiM0IpTlln876Q8Vq9TSZINOQze9mVEM1l156OKUla8HUgjxjRfw12IwQFmN6joYKHT4MRnEZUHlZS2DG4Qy1JeDvg="
+          },
+          "rseed": "QkfhU5ZmvWt4OoBjeK8NBc8iu6L2AE4I8KzJPgWrLr0="
         },
-        "depositAmount": {
-          "lo": "765831618350417324"
-        }
+        "outputData": {
+          "delta1": {
+            "lo": "1578312703"
+          },
+          "delta2": {
+            "lo": "1177179604"
+          },
+          "lambda1": {
+            "lo": "461"
+          },
+          "lambda2": {
+            "lo": "377"
+          },
+          "unfilled1": {
+            "lo": "1633"
+          },
+          "unfilled2": {
+            "lo": "1759"
+          },
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          }
+        },
+        "epochDuration": "1000",
+        "proofBlindingR": "ODBg5Agtl6zqcP/ejgbcdCU2QpCph+fcK0E8iO+yrgU=",
+        "proofBlindingS": "398Y9+BWVPyQgQkAZ7qjJA6NSxFOnC2i5yJFozj+qgY="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "30254982",
-    "chainId": "lmmpzfvkmrjymqhr-821068746509121003911302",
+    "chainId": "penumbra-1",
     "fee": {
       "amount": {
-        "lo": "887886743953552340"
+        "lo": "131820352672605615"
       }
     }
   }

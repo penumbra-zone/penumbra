@@ -1,42 +1,50 @@
 {
   "actions": [
     {
-      "communityPoolSpend": {
-        "value": {
-          "amount": {
-            "lo": "182169567793400948"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "iwJXs51GFMvdPROP4dINnrFLToRrAg17X4rpvY7PEpo="
+        },
+        "epochIndex": "9985",
+        "unbondedAmount": {
+          "lo": "352391331111280213"
+        },
+        "delegationAmount": {
+          "lo": "872258474871641671"
         }
       }
     },
     {
-      "undelegateClaim": {
+      "delegate": {
         "validatorIdentity": {
-          "ik": "5RMUaG3KAiiOS8umSYfdl03Pdfeqq9UGDmOix94j4bc="
+          "ik": "ZPNxC8huydpvRHCIOYA32zHEPcCvc5KkzqSR8XN7ru0="
         },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP24uscQyylenhsImgJ1JUc="
+        "epochIndex": "784",
+        "unbondedAmount": {
+          "lo": "957697627624235065"
         },
-        "unbondingAmount": {
-          "lo": "635862938662374571"
-        },
-        "balanceBlinding": "UKNVDQMH0kkDI8ADq4HxRj7MipTc6mVADYa9tIyGEQA=",
-        "proofBlindingR": "gfHEG5ME6RgHbMBc1XD5XHiJMymqVYN7otT/O9qXyxE=",
-        "proofBlindingS": "qgFAbfZgcOoPfMvg+cn7jis9u3pkzq3zJfZBvWTWGgk=",
-        "unbondingStartHeight": "96365"
+        "delegationAmount": {
+          "lo": "139504173457831131"
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "167592944",
-    "chainId": "bnuiqvevjitdaamyzn-2043254365281265516411890",
+    "expiryHeight": "444097",
+    "chainId": "mebicubz-12875908816854257017620644432160",
     "fee": {
       "amount": {
-        "lo": "599063820810496597"
+        "lo": "47451975761993728"
       }
     }
+  },
+  "memo": {
+    "plaintext": {
+      "returnAddress": {
+        "inner": "3YRUeBxtFphHCMV2/xY9UIkZlTpR+EqgFkjiRO2DnJt4h6amdVDBLJzyhLrS5NBGADuaYyLMPOsCInY00o69WLds7ndXAMnt5Jd97TnjH7c="
+      },
+      "text": "vB bD1R 2zbTLsLg Q peEp mkJrqrDJf7CvteFyellqu7Eu h Pqxr4Cu48fholHv2PaHz3 jxPt0C2DDx9ac  c652ec JUm8U1p 5a w93KL8y4ETy  r4BG3I hYOgV qTOF m"
+    },
+    "key": "Y68BwN3O9Oe1QwHcPsdYGHhJwOvb9Sd+66ZJXzFlG5A="
   }
 }
