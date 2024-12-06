@@ -13,7 +13,7 @@ type Type = tonic::metadata::MetadataMap;
 /// Determines which state snapshot to open given the height header in a [`MetadataMap`].
 ///
 /// Returns the latest snapshot if the height header is 0, 0-0, or absent.
-#[instrument(skip_all, level = "debug", err)]
+#[instrument(skip_all, err)]
 pub(in crate::component::rpc) fn determine_snapshot_from_metadata(
     storage: Storage,
     metadata: &Type,

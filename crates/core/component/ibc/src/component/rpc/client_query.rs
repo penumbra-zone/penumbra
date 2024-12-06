@@ -49,7 +49,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
             .await
             .map_err(|e| tonic::Status::aborted(format!("couldn't get root hash: {e}")))?;
         let version = snapshot.version();
-        tracing::warn!(?root_hash, version, "processing consensus state req");
+        tracing::warn!(?root_hash, version, "processing client state req");
 
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;

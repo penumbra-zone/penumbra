@@ -175,7 +175,13 @@ impl QueryService for Server {
                         .compact_block(height)
                         .await
                         .expect("no error fetching block")
-                        .expect("compact block for in-range height must be present");
+                        .expect(&format!(
+                            "compact block for in-range height must be present \
+                             (h: {height}, range: {start} -> {end})",
+                            height = height,
+                            start = end_height + 1,
+                            end = cur_height
+                        ));
                     tx_blocks.send(block).await?;
                     metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);
                 }
@@ -201,7 +207,9 @@ impl QueryService for Server {
                         .compact_block(height)
                         .await
                         .map_err(|e| tonic::Status::internal(e.to_string()))?
-                        .expect("compact block for in-range height must be present");
+                        .expect(&format!(
+                            "compact block for in-range height ({height}) must be present"
+                        ));
                     tx_blocks.send(block).await?;
                     metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);
                 }
