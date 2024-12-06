@@ -45,7 +45,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
         };
 
         let root_hash = snapshot.root_hash().await?;
-        let version = snapshot.version().await?;
+        let version = snapshot.version();
         tracing::warn!(?root_hash, version, "processing consensus state req");
 
         let client_id = ClientId::from_str(&request.get_ref().client_id)
@@ -134,7 +134,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
         };
 
         let root_hash = snapshot.root_hash().await?;
-        let version = snapshot.version().await?;
+        let version = snapshot.version();
 
         tracing::warn!(?root_hash, version, "processing consensus state req");
 
