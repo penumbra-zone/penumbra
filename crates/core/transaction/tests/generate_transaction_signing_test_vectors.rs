@@ -806,25 +806,44 @@ const MAX_VALUE_LENGTH: usize = 38;
 
 /// Format a string to fit within display constraints by truncating if needed
 fn format_for_display(label: &str, value: String) -> Vec<String> {
-    if value.len() <= MAX_VALUE_LENGTH {
-        vec![format!("{} : {}", label, value)]
-    } else {
-        // Split into chunks of MAX_VALUE_LENGTH
-        let mut result = Vec::new();
-        let total_chunks = (value.len() + MAX_VALUE_LENGTH - 1) / MAX_VALUE_LENGTH;
+    let mut result = Vec::new();
+    let mut total_chunks = 0;
 
-        for (i, chunk) in value.as_bytes().chunks(MAX_VALUE_LENGTH).enumerate() {
-            let chunk_str = String::from_utf8_lossy(chunk);
-            result.push(format!(
-                "{} [{}/{}] : {}",
-                label,
-                i + 1,
-                total_chunks,
-                chunk_str
-            ));
-        }
-        result
+    // First count total chunks needed
+    for line in value.split('\n') {
+        total_chunks += if line.len() <= MAX_VALUE_LENGTH {
+            1
+        } else {
+            (line.len() + MAX_VALUE_LENGTH - 1) / MAX_VALUE_LENGTH
+        };
     }
+
+    // Now generate output with chunk numbers displayed if needed (i.e.
+    // not to display [1/1] if there's only one chunk)
+    let mut current_chunk = 1;
+    for line in value.split('\n') {
+        if line.len() <= MAX_VALUE_LENGTH {
+            if total_chunks == 1 {
+                result.push(format!("{} : {}", label, line));
+            } else {
+                result.push(format!(
+                    "{} [{}/{}] : {}",
+                    label, current_chunk, total_chunks, line
+                ));
+            }
+            current_chunk += 1;
+        } else {
+            for chunk in line.as_bytes().chunks(MAX_VALUE_LENGTH) {
+                let chunk_str = String::from_utf8_lossy(chunk);
+                result.push(format!(
+                    "{} [{}/{}] : {}",
+                    label, current_chunk, total_chunks, chunk_str
+                ));
+                current_chunk += 1;
+            }
+        }
+    }
+    result
 }
 
 #[test]
@@ -1035,11 +1054,7 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 index += 1;
             }
             ActionPlan::Ics20Withdrawal(withdrawal) => {
-                // First line shows the action type and channel
-                output.push(format!(
-                    "{} | Action [1/3] : ICS20Withdrawal on {}",
-                    index, withdrawal.source_channel
-                ));
+                let channel_display = format!("{}", withdrawal.source_channel);
 
                 // Format and display the value
                 let value = Value {
@@ -1048,23 +1063,30 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 };
                 let value_display =
                     value_display(&value, &plan.transaction_parameters.chain_id, &base_denoms);
-                output.push(format!(
-                    "{} | Action [2/3] : Amount {}",
-                    index, value_display
-                ));
 
                 // Display destination address
-                output.push(format!(
-                    "{} | Action [3/3] : To {}",
-                    index, withdrawal.destination_chain_address
-                ));
+                let destination_display = format!("{}", withdrawal.destination_chain_address);
 
                 // Verify return address is controlled by user, bail if not
+                let mut error_display = "".to_string();
                 if !ivk.views_address(&withdrawal.return_address) {
-                    output.push(format!(
-                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN (return address in Ics20Withdrawal not controlled by user)",
-                        index
-                    ));
+                    error_display = format!("PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN (return address in Ics20Withdrawal not controlled by user)");
+                }
+
+                let ics20_display;
+                if error_display != "" {
+                    ics20_display = format!(
+                        "ICS20Withdrawal\nChannel {}\nAmount {}\nTo {}\n{}",
+                        channel_display, value_display, destination_display, error_display
+                    );
+                } else {
+                    ics20_display = format!(
+                        "ICS20Withdrawal\nChannel {}\nAmount {}\nTo {}",
+                        channel_display, value_display, destination_display
+                    );
+                }
+                for line in format_for_display("Action", ics20_display) {
+                    output.push(format!("{} | {}", index, line));
                 }
 
                 // TODO: After UIP-5, add ICS-20 memo display here
@@ -1072,11 +1094,11 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
             }
             ActionPlan::Swap(swap) => {
                 // Verify claim address is controlled by user
+                let mut error_display = "".to_string();
                 if !ivk.views_address(&swap.swap_plaintext.claim_address) {
-                    output.push(format!(
-                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN (claim address in Swap not controlled by user)",
-                        index
-                    ));
+                    error_display = format!(
+                        "PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN (claim address in Swap not controlled by user)",
+                    );
                 }
 
                 // Determine input and output assets based on which delta is nonzero
@@ -1100,10 +1122,18 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                     (input, swap.swap_plaintext.trading_pair.asset_1())
                 } else {
                     // Invalid swap: exactly one delta must be nonzero
-                    output.push(format!(
-                        "{} | PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN (invalid swap: one delta must be nonzero)",
-                        index
-                    ));
+                    if error_display == "" {
+                        error_display = format!(
+                            "PANIC [X/X] : LEDGER SHOULD REFUSE TO SIGN (invalid swap: one delta must be nonzero)",
+                        );
+                    } else {
+                        // Add to existing error
+                        error_display = format!(
+                            "{} (invalid swap: one delta must be nonzero)",
+                            error_display
+                        );
+                    }
+
                     // Arbitrary choice of asset 2 as input
                     let input = Value {
                         amount: swap.swap_plaintext.delta_2_i,
@@ -1112,19 +1142,12 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                     (input, swap.swap_plaintext.trading_pair.asset_1())
                 };
 
-                // Display swap details
-                output.push(format!("{} | Action [1/4] : Swap", index));
-
                 // Display input value
                 let input_display = value_display(
                     &input_value,
                     &plan.transaction_parameters.chain_id,
                     &base_denoms,
                 );
-                output.push(format!(
-                    "{} | Action [2/4] : Input {}",
-                    index, input_display
-                ));
 
                 // Display output asset by creating a zero-value and extracting just the denomination
                 let output_value = Value {
@@ -1141,10 +1164,6 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                     .clone()
                     .split_once(' ')
                     .map_or(value_view, |(_amount, denom)| denom.to_string());
-                output.push(format!(
-                    "{} | Action [3/4] : Output Asset {}",
-                    index, output_asset_display
-                ));
 
                 // Display claim fee
                 let claim_fee_display = value_display(
@@ -1152,10 +1171,23 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                     &plan.transaction_parameters.chain_id,
                     &base_denoms,
                 );
-                output.push(format!(
-                    "{} | Action [4/4] : Claim Fee {}",
-                    index, claim_fee_display
-                ));
+
+                let swap_display;
+                if error_display != "" {
+                    swap_display = format!(
+                        "Swap\nInput {}\nOutput Asset {}\nClaim Fee {}\n{}",
+                        input_display, output_asset_display, claim_fee_display, error_display
+                    );
+                } else {
+                    swap_display = format!(
+                        "Swap\nInput {}\nOutput Asset {}\nClaim Fee {}",
+                        input_display, output_asset_display, claim_fee_display
+                    );
+                }
+
+                for line in format_for_display("Action", swap_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
 
                 index += 1;
             }
