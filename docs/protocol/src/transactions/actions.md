@@ -1,6 +1,6 @@
 # Action Reference
 
-This page is a quick-reference list of transaction actions. Not all actions have proof statements, as only some actions perfom shielded state changes. Actions with proof statements are additionally listed separately for reference.
+This page is a quick-reference list of transaction actions. Not all actions have proof statements, as only some actions perform shielded state changes. Actions with proof statements are additionally listed separately for reference.
 
 ## Actions by Proof Statement
 

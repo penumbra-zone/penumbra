@@ -39,7 +39,7 @@ pub trait Policy {
 /// A set of basic spend authorization policies.
 ///
 /// These policies are intended to be simple enough that they can be written by hand in a config
-/// file.  More complex policy logic than than should be implemented by a custom implementation of
+/// file.  More complex policy logic than should be implemented by a custom implementation of
 /// the [`Policy`] trait.
 ///
 /// These policies do not permit validator votes or validator definition updates, so a custom policy
