@@ -106,7 +106,7 @@ async fn test_simple_migration() -> anyhow::Result<()> {
         .latest_snapshot()
         .root_hash()
         .await
-        .expect("infaillible");
+        .expect("infallible");
 
     for (i, (key, value)) in kvs.clone().into_iter().enumerate() {
         let snapshot = storage.latest_snapshot();
