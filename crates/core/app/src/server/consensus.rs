@@ -219,7 +219,8 @@ impl Consensus {
     }
 
     async fn end_block(&mut self, end_block: request::EndBlock) -> response::EndBlock {
-        tracing::info!(height = ?end_block.height, "ending block");
+        let latest_state_version = self.storage.latest_version();
+        tracing::info!(height = ?end_block.height, ?latest_state_version, "ending block");
         let events = self.app.end_block(&end_block).await;
         trace_events(&events);
 
