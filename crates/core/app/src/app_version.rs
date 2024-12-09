@@ -5,6 +5,6 @@ pub const APP_VERSION: u64 = 8;
 cfg_if::cfg_if! {
     if #[cfg(feature="component")] {
         mod component;
-        pub use component::{assert_latest_app_version, migrate_app_version};
+        pub use component::{check_and_update_app_version, migrate_app_version};
     }
 }

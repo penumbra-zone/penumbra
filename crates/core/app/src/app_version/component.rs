@@ -26,11 +26,14 @@ enum CheckContext {
     Migration,
 }
 
+/// Check that the expected version matches the found version, if it set.
+/// This will return an error if the versions do not match.
 fn check_version(ctx: CheckContext, expected: u64, found: Option<u64>) -> anyhow::Result<()> {
-    let found = match (expected, found) {
-        (x, Some(y)) if x != y => y,
-        _ => return Ok(()),
-    };
+    let found = found.unwrap_or(expected);
+    if found == expected {
+        return Ok(());
+    }
+
     match ctx {
         CheckContext::Running => {
             let expected_name = version_to_software_version(expected);
