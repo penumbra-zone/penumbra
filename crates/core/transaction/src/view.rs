@@ -104,7 +104,7 @@ impl TransactionView {
 
     /// Acts as a higher-order translator that summarizes a TransactionSummary by consolidating
     /// effects for each unique address.
-    pub fn accumulate_effects(summary: &TransactionSummary) -> TransactionSummary {
+    fn accumulate_effects(summary: &TransactionSummary) -> TransactionSummary {
         let mut transaction_summary = TransactionSummary::default();
 
         // Get unique addresses
