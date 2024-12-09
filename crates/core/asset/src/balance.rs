@@ -35,8 +35,8 @@ use penumbra_proto::{penumbra::core::asset::v1 as pb, DomainType};
 #[derive(Clone, Eq, Default, Serialize, Deserialize)]
 #[serde(try_from = "pb::Balance", into = "pb::Balance")]
 pub struct Balance {
-    negated: bool,
-    balance: BTreeMap<Id, Imbalance<NonZeroU128>>,
+    pub negated: bool,
+    pub balance: BTreeMap<Id, Imbalance<NonZeroU128>>,
 }
 
 impl DomainType for Balance {
@@ -161,16 +161,15 @@ impl From<Balance> for pb::Balance {
             .map(|(id, imbalance)| {
                 // Decompose imbalance into it sign and magnitude, and convert
                 // magnitude into raw amount and determine negation based on the sign.
-                let (sign, magnitude) = imbalance.into_inner();
+                let (_sign, magnitude) = imbalance.into_inner();
                 let amount = u128::from(magnitude);
-                let negated = sign.is_required();
 
                 pb::balance::SignedValue {
                     value: Some(pb::Value {
                         asset_id: Some(id.into()),
                         amount: Some(Amount::from(amount).into()),
                     }),
-                    negated,
+                    negated: v.negated,
                 }
             })
             .collect();
@@ -386,7 +385,7 @@ impl SubAssign<Value> for Balance {
 }
 
 impl From<Value> for Balance {
-    fn from(Value { amount, asset_id }: Value) -> Self {
+    fn  from(Value { amount, asset_id }: Value) -> Self {
         let mut balance = BTreeMap::new();
         if let Some(amount) = NonZeroU128::new(amount.into()) {
             balance.insert(asset_id, Imbalance::Provided(amount));
