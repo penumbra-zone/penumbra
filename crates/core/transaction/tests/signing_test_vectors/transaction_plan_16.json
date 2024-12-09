@@ -1,76 +1,71 @@
 {
   "actions": [
     {
-      "output": {
-        "value": {
-          "amount": {
-            "lo": "665243018704234334"
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "252987898512674386"
           },
-          "assetId": {
+          "r2": {
+            "lo": "810761055933082163"
+          }
+        },
+        "positionId": {
+          "inner": "8sz4pnuLB3kefdcN2go0ZSqLG2o/AT3jA9CuTniKsWk="
+        },
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "destAddress": {
-          "inner": "puRp8NgFocLXMDpXf2y63cuji9w3tMH+icEs6KQB7JqYyruGjmUv71JnwR7CmbaB20COEmdvq6cV3TTddICCOdPQkdRwFQe8OtWEI2fRUG8="
-        },
-        "rseed": "UtaNH374qOTRLFP2gClqi8vwqqlM0QU4x0IVzrCPK7Y=",
-        "valueBlinding": "P2/M83YwziB4lZo2M5LAHx133bXHqhGotjU9LA2QeAE=",
-        "proofBlindingR": "WOxubf85he0s/TmzLuevDKznRbdWN6KnlXlmQv3HHQE=",
-        "proofBlindingS": "6cHNZ83GZJH9j5gE/wcgLDvoP4XnaY/nXYfg5es12Ao="
+        "sequence": "1"
       }
     },
     {
-      "output": {
-        "value": {
-          "amount": {
-            "lo": "548954363798842727"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "336327892533590220"
         },
-        "destAddress": {
-          "inner": "nCrK2JVnC+mRPi8CZwJFxsqmvfAT9u2UHDvUW0bgBx+mhXCLMWAThHXOew8LHv2SxkIKFOChd2br0lczfIbQorfe+gzfIKACNvhmu8GQf90="
+        "denom": {
+          "denom": "21LK7N566625yMXk7xfB0QvtfQ9NJD7"
         },
-        "rseed": "34TaN76I7FbIUw1//Ej/maokRw8FMmu1oNVuK5nGgE4=",
-        "valueBlinding": "z7Ozu8zHAJoEHo7ZiSYio/3JcwuJ3baHexE5A4VjtQM=",
-        "proofBlindingR": "w1eBEhcL1NW6yScs314mLnIz6W9EsnAvrRGqqH47/AU=",
-        "proofBlindingS": "VY9lnY7BFZc/NqxmpTcRURObxxAbytnll0TCE52EEwo="
+        "destinationChainAddress": "penumbra1ftf5gnyktsdeamqfxjamvmyhxpn53prqplqkh042ruger8xuj25xy3u4qt4keqyvumzsdppyf9w4esf904jqyru0eqfu68mnj653p4prqlygrqtue36lp38g8hdgsx9td4mhmu",
+        "returnAddress": {
+          "inner": "iXgwAhhLIVh0WDEvUpbpzZ24P2nLim6cYTkjdmmdkNVfAfYQkWz4f5lArtNOmcwcMZSyBpl5HRXagqY2dZZqkApZJjgzh6LlD7J1zTFYNiE="
+        },
+        "timeoutHeight": {
+          "revisionNumber": "753266343",
+          "revisionHeight": "14427492"
+        },
+        "sourceChannel": "channel-0"
       }
     },
     {
-      "ibcRelayAction": {
-        "rawAction": {
-          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
-          "value": "CrMBCJzB/pQCEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsI6PD0yQIQpoXkdECgh6mWnrXqgRgSAgoAGgsI6PD0yQIQpoXkdCKPAXBlbnVtYnJhMWc5eTQzODk5ZXNycXM0ZnVhZmhyOWo1dWUydjl1anRkbHM2eTM5NjVjbnU2cWh3ZHprY2xtejd4bXRwZjhhcnpjcWZqOGg1a3k1cHFodnk3NGtzam5zZTNjMnM4c3BtZzhrcGtzbjZza3k1cXQ5Zjd1cGVjNHV1NGFkYW5xNTZyNTR3NGVs"
-        }
-      }
-    },
-    {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "lORJ0OqoRdtKpIyybfzjmoR/NXffzc3T2AGt++oPUVY="
-        },
-        "unbondedAmount": {
-          "lo": "178683478111234115"
-        },
-        "delegationAmount": {
-          "lo": "570675219026179388"
-        },
-        "fromEpoch": {
-          "index": "7429",
-          "startHeight": "7429"
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "xAZY0DHpOPscP8i5kwnt5vVM4uqRjU772Icq6eXhbr4="
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "9325916248",
-    "chainId": "ghwhyscwxe-1815907713",
+    "chainId": "swyvpiwgekl-840456989885491031230791466218",
     "fee": {
       "amount": {
-        "lo": "677300168596627378"
+        "lo": "508275047644521661"
       }
     }
+  },
+  "memo": {
+    "plaintext": {
+      "returnAddress": {
+        "inner": "9ZsYE7zVg3KsKrkXgtgR1JL8AAtJ1FfPqhJtvlHagQaLaXHLZWo23JtizBHCaGmNFleLBfI5zRQYZvQxnU+XER7oG5howjHSff+ex/3Qt7E="
+      },
+      "text": " YsR6H3D 6s0 wZh ddq0 9iNnhLvw TCk83ZvA8pj74"
+    },
+    "key": "+J7SEtRJb01k8ux1vcU14WCbNj/MfCNXPMNAQVAu9i4="
   }
 }
