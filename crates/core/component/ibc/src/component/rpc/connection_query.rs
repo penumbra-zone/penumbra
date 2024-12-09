@@ -29,12 +29,11 @@ use super::IbcQuery;
 #[async_trait]
 impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI> {
     /// Connection queries an IBC connection end.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn connection(
         &self,
         request: tonic::Request<QueryConnectionRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionResponse>, tonic::Status> {
-        tracing::debug!("querying connection {:?}", request);
-
         let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
             Err(err) => return Err(tonic::Status::aborted(
                 format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
@@ -96,12 +95,15 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
     }
 
     /// Connections queries all the IBC connections of a chain.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn connections(
         &self,
         _request: tonic::Request<QueryConnectionsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionsResponse>, tonic::Status> {
         let snapshot = self.storage.latest_snapshot();
-        let height = snapshot.version() + 1;
+        let height = HI::get_block_height(&snapshot)
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?;
 
         let connection_counter = snapshot
             .get_connection_counter()
@@ -143,11 +145,17 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
     }
     /// ClientConnections queries the connection paths associated with a client
     /// state.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn client_connections(
         &self,
         request: tonic::Request<QueryClientConnectionsRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientConnectionsResponse>, tonic::Status> {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
         let client_id = &ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
 
@@ -187,12 +195,18 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
     }
     /// ConnectionClientState queries the client state associated with the
     /// connection.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn connection_client_state(
         &self,
         request: tonic::Request<QueryConnectionClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionClientStateResponse>, tonic::Status>
     {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
         let connection_id = &ConnectionId::from_str(&request.get_ref().connection_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
 
@@ -240,12 +254,18 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
     }
     /// ConnectionConsensusState queries the consensus state associated with the
     /// connection.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn connection_consensus_state(
         &self,
         request: tonic::Request<QueryConnectionConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionConsensusStateResponse>, tonic::Status>
     {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
         let consensus_state_height = ibc_types::core::client::Height {
             revision_number: request.get_ref().revision_number,
             revision_height: request.get_ref().revision_height,

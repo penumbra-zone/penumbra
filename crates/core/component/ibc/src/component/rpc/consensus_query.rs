@@ -37,11 +37,17 @@ use super::IbcQuery;
 #[async_trait]
 impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> {
     /// Channel queries an IBC Channel.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn channel(
         &self,
         request: tonic::Request<QueryChannelRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelResponse>, tonic::Status> {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
         let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
             .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
         let port_id = PortId::from_str(request.get_ref().port_id.as_str())
@@ -85,14 +91,20 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         Ok(tonic::Response::new(res))
     }
     /// Channels queries all the IBC channels of a chain.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn channels(
         &self,
         _request: tonic::Request<QueryChannelsRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelsResponse>, tonic::Status> {
         let snapshot = self.storage.latest_snapshot();
+
         let height = Height {
-            revision_number: 0,
-            revision_height: snapshot.version(),
+            revision_number: HI::get_revision_number(&snapshot)
+                .await
+                .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
+            revision_height: HI::get_block_height(&snapshot)
+                .await
+                .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
         };
 
         let channel_counter = snapshot
@@ -130,19 +142,24 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
 
         Ok(tonic::Response::new(res))
     }
-    /// ConnectionChannels queries all the channels associated with a connection
-    /// end.
+
+    /// ConnectionChannels queries all the channels associated with a connection end.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn connection_channels(
         &self,
         request: tonic::Request<QueryConnectionChannelsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionChannelsResponse>, tonic::Status> {
         let snapshot = self.storage.latest_snapshot();
         let height = Height {
-            revision_number: 0,
-            revision_height: snapshot.version(),
+            revision_number: HI::get_revision_number(&snapshot)
+                .await
+                .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
+            revision_height: HI::get_block_height(&snapshot)
+                .await
+                .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?,
         };
-        let request = request.get_ref();
 
+        let request = request.get_ref();
         let connection_id: ConnectionId = ConnectionId::from_str(&request.connection)
             .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
 
@@ -183,13 +200,20 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
 
         Ok(tonic::Response::new(res))
     }
+
     /// ChannelClientState queries for the client state for the channel associated
     /// with the provided channel identifiers.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn channel_client_state(
         &self,
         request: tonic::Request<QueryChannelClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelClientStateResponse>, tonic::Status> {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
 
         // 1. get the channel
         let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
@@ -270,12 +294,18 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
     }
     /// ChannelConsensusState queries for the consensus state for the channel
     /// associated with the provided channel identifiers.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn channel_consensus_state(
         &self,
         request: tonic::Request<QueryChannelConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelConsensusStateResponse>, tonic::Status>
     {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
         let consensus_state_height = ibc_types::core::client::Height {
             revision_number: request.get_ref().revision_number,
             revision_height: request.get_ref().revision_height,
@@ -361,6 +391,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         }))
     }
     /// PacketCommitment queries a stored packet commitment hash.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn packet_commitment(
         &self,
         request: tonic::Request<QueryPacketCommitmentRequest>,
@@ -413,6 +444,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
     }
     /// PacketCommitments returns all the packet commitments hashes associated
     /// with a channel.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn packet_commitments(
         &self,
         request: tonic::Request<QueryPacketCommitmentsRequest>,
@@ -475,6 +507,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
     }
     /// PacketReceipt queries if a given packet sequence has been received on the
     /// queried chain
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn packet_receipt(
         &self,
         request: tonic::Request<QueryPacketReceiptRequest>,
@@ -519,6 +552,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         }))
     }
     /// PacketAcknowledgement queries a stored packet acknowledgement hash.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn packet_acknowledgement(
         &self,
         request: tonic::Request<QueryPacketAcknowledgementRequest>,
@@ -570,6 +604,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
     }
     /// PacketAcknowledgements returns all the packet acknowledgements associated
     /// with a channel.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn packet_acknowledgements(
         &self,
         request: tonic::Request<QueryPacketAcknowledgementsRequest>,
@@ -630,6 +665,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
     }
     /// UnreceivedPackets returns all the unreceived IBC packets associated with a
     /// channel and sequences.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn unreceived_packets(
         &self,
         request: tonic::Request<QueryUnreceivedPacketsRequest>,
@@ -679,6 +715,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
     }
     /// UnreceivedAcks returns all the unreceived IBC acknowledgements associated
     /// with a channel and sequences.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn unreceived_acks(
         &self,
         request: tonic::Request<QueryUnreceivedAcksRequest>,
@@ -727,11 +764,17 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
     }
 
     /// NextSequenceReceive returns the next receive sequence for a given channel.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn next_sequence_receive(
         &self,
         request: tonic::Request<QueryNextSequenceReceiveRequest>,
     ) -> std::result::Result<tonic::Response<QueryNextSequenceReceiveResponse>, tonic::Status> {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
 
         let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
             .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
@@ -767,12 +810,18 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         }))
     }
 
-    /// NextSequenceSend returns the next send sequence for a given channel.
+    /// Returns the next send sequence for a given channel.
+    #[tracing::instrument(skip(self), err, level = "debug")]
     async fn next_sequence_send(
         &self,
         request: tonic::Request<QueryNextSequenceSendRequest>,
     ) -> std::result::Result<tonic::Response<QueryNextSequenceSendResponse>, tonic::Status> {
-        let snapshot = self.storage.latest_snapshot();
+        let snapshot = match determine_snapshot_from_metadata(self.storage.clone(), request.metadata()) {
+            Err(err) => return Err(tonic::Status::aborted(
+                format!("could not determine the correct snapshot to open given the `\"height\"` header of the request: {err:#}")
+            )),
+            Ok(snapshot) => snapshot,
+        };
 
         let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
             .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;

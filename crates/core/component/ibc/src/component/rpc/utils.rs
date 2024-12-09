@@ -20,12 +20,15 @@ pub(in crate::component::rpc) fn determine_snapshot_from_metadata(
 ) -> anyhow::Result<Snapshot> {
     let height = determine_height_from_metadata(metadata)
         .context("failed to determine height from metadata")?;
+
+    debug!(?height, "determining snapshot from height header");
+
     if height.revision_height == 0 {
         Ok(storage.latest_snapshot())
     } else {
         storage
             .snapshot(height.revision_height)
-            .context("failed to create state snapshot from IBC height in height header")
+            .context("failed to create state snapshot from IBC height header")
     }
 }
 
