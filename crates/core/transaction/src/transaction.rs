@@ -46,7 +46,7 @@ pub struct TransactionBody {
 }
 
 /// Represents a transaction summary containing multiple effects.
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(try_from = "pbt::TransactionSummary", into = "pbt::TransactionSummary")]
 pub struct TransactionSummary {
     pub effects: Vec<TransactionEffect>,

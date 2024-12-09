@@ -11,7 +11,7 @@ use super::Address;
 ///
 /// This type allows working with addresses and address indexes without knowing
 /// the corresponding FVK.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, PartialOrd, Ord)]
 #[serde(try_from = "pb::AddressView", into = "pb::AddressView")]
 pub enum AddressView {
     Opaque {

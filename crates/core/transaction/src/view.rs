@@ -1,8 +1,11 @@
+use std::collections::BTreeSet;
+
 use anyhow::Context;
 use decaf377_rdsa::{Binding, Signature};
 use penumbra_asset::{Balance, Value};
 use penumbra_dex::{swap::SwapView, swap_claim::SwapClaimView};
 use penumbra_keys::AddressView;
+use penumbra_proto::core::asset::v1::Balance as ProtoBalance;
 use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
 
 use penumbra_shielded_pool::{OutputView, SpendView};
@@ -99,6 +102,61 @@ impl TransactionView {
         self.body_view.action_views.iter()
     }
 
+    /// Acts as a higher-order translator that summarizes a TransactionSummary by consolidating
+    /// effects for each unique address.
+    pub fn accumulate_effects(summary: &TransactionSummary) -> TransactionSummary {
+        let mut transaction_summary = TransactionSummary::default();
+
+        // Get unique addresses
+        let addresses: Vec<_> = summary
+            .effects
+            .iter()
+            .map(|e| &e.address)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
+
+        // For each address, get unique asset IDs and combine the balances for each asset ID
+        for address in addresses {
+            let asset_ids: Vec<_> = summary
+                .effects
+                .iter()
+                .filter(|effect| effect.address == *address)
+                .flat_map(|effect| effect.balance.balance.keys())
+                .collect();
+
+            let mut combined_balances = Balance::default();
+            for asset_id in asset_ids {
+                let grouped_proto = summary
+                    .effects
+                    .iter()
+                    .filter(|effect| effect.address == *address)
+                    .filter(|effect| effect.balance.balance.contains_key(asset_id))
+                    .flat_map(|effect| ProtoBalance::from(effect.balance.clone()).values)
+                    .collect();
+
+                let combined_proto = ProtoBalance {
+                    values: grouped_proto,
+                };
+
+                let combined_balance: Balance = combined_proto
+                    .try_into()
+                    .expect("combined balance should be valid");
+
+                // Combine all asset balances for the address
+                combined_balances.balance.extend(combined_balance.balance);
+            }
+
+            transaction_summary.effects.push(TransactionEffect {
+                address: address.clone(),
+                balance: combined_balances,
+            });
+        }
+
+        transaction_summary
+    }
+
+    /// Produces a TransactionSummary, iterating through each visible action and collecting the effects of the transaction.
     pub fn summary(&self) -> TransactionSummary {
         let mut effects = Vec::new();
 
@@ -207,7 +265,9 @@ impl TransactionView {
             }
         }
 
-        TransactionSummary { effects }
+        let mut summary = TransactionSummary { effects };
+
+        Self::accumulate_effects(&mut summary)
     }
 }
 
@@ -407,5 +467,229 @@ impl TryFrom<pbt::MemoPlaintextView> for MemoPlaintextView {
             return_address: sender,
             text,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use decaf377::{Element, Fq};
+    use decaf377_rdsa::{Domain, VerificationKey};
+    use penumbra_asset::{
+        asset::{Cache, Id},
+        balance::Commitment,
+        STAKING_TOKEN_ASSET_ID,
+    };
+    use penumbra_fee::Fee;
+    use penumbra_keys::{
+        symmetric::{OvkWrappedKey, WrappedMemoKey},
+        test_keys, FullViewingKey, PayloadKey,
+    };
+    use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
+    use penumbra_sct::Nullifier;
+    use penumbra_shielded_pool::{output, spend, Note, NoteView, OutputPlan, SpendPlan};
+    use penumbra_tct::structure::Hash;
+    use rand_core::OsRng;
+    use std::ops::Deref;
+
+    use crate::{
+        plan::{CluePlan, DetectionDataPlan},
+        view, ActionPlan, TransactionPlan,
+    };
+
+    #[cfg(test)]
+    fn dummy_sig<D: Domain>() -> Signature<D> {
+        Signature::from([0u8; 64])
+    }
+
+    #[cfg(test)]
+    fn dummy_pk<D: Domain>() -> VerificationKey<D> {
+        VerificationKey::try_from(Element::default().vartime_compress().0)
+            .expect("creating a dummy verification key should work")
+    }
+
+    #[cfg(test)]
+    fn dummy_commitment() -> Commitment {
+        Commitment(Element::default())
+    }
+
+    #[cfg(test)]
+    fn dummy_proof_spend() -> spend::SpendProof {
+        spend::SpendProof::try_from(
+            penumbra_proto::penumbra::core::component::shielded_pool::v1::ZkSpendProof {
+                inner: vec![0u8; GROTH16_PROOF_LENGTH_BYTES],
+            },
+        )
+        .expect("creating a dummy proof should work")
+    }
+
+    #[cfg(test)]
+    fn dummy_proof_output() -> output::OutputProof {
+        output::OutputProof::try_from(
+            penumbra_proto::penumbra::core::component::shielded_pool::v1::ZkOutputProof {
+                inner: vec![0u8; GROTH16_PROOF_LENGTH_BYTES],
+            },
+        )
+        .expect("creating a dummy proof should work")
+    }
+
+    #[cfg(test)]
+    fn dummy_spend() -> spend::Spend {
+        spend::Spend {
+            body: spend::Body {
+                balance_commitment: dummy_commitment(),
+                nullifier: Nullifier(Fq::default()),
+                rk: dummy_pk(),
+            },
+            auth_sig: dummy_sig(),
+            proof: dummy_proof_spend(),
+        }
+    }
+
+    #[cfg(test)]
+    fn dummy_output() -> output::Output {
+        output::Output {
+            body: output::Body {
+                note_payload: penumbra_shielded_pool::NotePayload {
+                    note_commitment: penumbra_shielded_pool::note::StateCommitment(Fq::default()),
+                    ephemeral_key: [0u8; 32]
+                        .as_slice()
+                        .try_into()
+                        .expect("can create dummy ephemeral key"),
+                    encrypted_note: penumbra_shielded_pool::NoteCiphertext([0u8; 176]),
+                },
+                balance_commitment: dummy_commitment(),
+                ovk_wrapped_key: OvkWrappedKey([0u8; 48]),
+                wrapped_memo_key: WrappedMemoKey([0u8; 48]),
+            },
+            proof: dummy_proof_output(),
+        }
+    }
+
+    #[cfg(test)]
+    fn convert_note(cache: &Cache, fvk: &FullViewingKey, note: &Note) -> NoteView {
+        NoteView {
+            value: note.value().view_with_cache(cache),
+            rseed: note.rseed(),
+            address: fvk.view_address(note.address()),
+        }
+    }
+
+    #[cfg(test)]
+    fn convert_action(
+        cache: &Cache,
+        fvk: &FullViewingKey,
+        action: &ActionPlan,
+    ) -> Option<ActionView> {
+        use view::action_view::SpendView;
+
+        match action {
+            ActionPlan::Output(x) => Some(ActionView::Output(
+                penumbra_shielded_pool::OutputView::Visible {
+                    output: dummy_output(),
+                    note: convert_note(cache, fvk, &x.output_note()),
+                    payload_key: PayloadKey::from([0u8; 32]),
+                },
+            )),
+            ActionPlan::Spend(x) => Some(ActionView::Spend(SpendView::Visible {
+                spend: dummy_spend(),
+                note: convert_note(cache, fvk, &x.note),
+            })),
+            ActionPlan::ValidatorDefinition(_) => None,
+            ActionPlan::Swap(_) => None,
+            ActionPlan::SwapClaim(_) => None,
+            ActionPlan::ProposalSubmit(_) => None,
+            ActionPlan::ProposalWithdraw(_) => None,
+            ActionPlan::DelegatorVote(_) => None,
+            ActionPlan::ValidatorVote(_) => None,
+            ActionPlan::ProposalDepositClaim(_) => None,
+            ActionPlan::PositionOpen(_) => None,
+            ActionPlan::PositionClose(_) => None,
+            ActionPlan::PositionWithdraw(_) => None,
+            ActionPlan::Delegate(_) => None,
+            ActionPlan::Undelegate(_) => None,
+            ActionPlan::UndelegateClaim(_) => None,
+            ActionPlan::Ics20Withdrawal(_) => None,
+            ActionPlan::CommunityPoolSpend(_) => None,
+            ActionPlan::CommunityPoolOutput(_) => None,
+            ActionPlan::CommunityPoolDeposit(_) => None,
+            ActionPlan::ActionDutchAuctionSchedule(_) => None,
+            ActionPlan::ActionDutchAuctionEnd(_) => None,
+            ActionPlan::ActionDutchAuctionWithdraw(_) => None,
+            ActionPlan::IbcAction(_) => todo!(),
+        }
+    }
+
+    #[test]
+    fn test_transaction_summary() {
+        // Generate two notes controlled by the test address.
+        let value = Value {
+            amount: 100u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+        let note = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value);
+        let value2 = Value {
+            amount: 50u64.into(),
+            asset_id: Id(Fq::rand(&mut OsRng)),
+        };
+        let note2 = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value2);
+
+        // Record that note in an SCT, where we can generate an auth path.
+        let mut sct = tct::Tree::new();
+        for _ in 0..5 {
+            let random_note = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value);
+            sct.insert(tct::Witness::Keep, random_note.commit())
+                .unwrap();
+        }
+        sct.insert(tct::Witness::Keep, note.commit()).unwrap();
+        sct.insert(tct::Witness::Keep, note2.commit()).unwrap();
+
+        let auth_path = sct.witness(note.commit()).unwrap();
+        let auth_path2 = sct.witness(note2.commit()).unwrap();
+
+        // Add a single spend and output to the transaction plan such that the
+        // transaction balances.
+        let plan = TransactionPlan {
+            transaction_parameters: TransactionParameters {
+                expiry_height: 0,
+                fee: Fee::default(),
+                chain_id: "".into(),
+            },
+            actions: vec![
+                SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
+                SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
+                OutputPlan::new(&mut OsRng, value, test_keys::ADDRESS_1.deref().clone()).into(),
+            ],
+            detection_data: Some(DetectionDataPlan {
+                clue_plans: vec![CluePlan::new(
+                    &mut OsRng,
+                    test_keys::ADDRESS_1.deref().clone(),
+                    1.try_into().unwrap(),
+                )],
+            }),
+            memo: None,
+        };
+
+        let transaction_view = TransactionView {
+            anchor: penumbra_tct::Root(Hash::zero()),
+            binding_sig: Signature::from([0u8; 64]),
+            body_view: TransactionBodyView {
+                action_views: plan
+                    .actions
+                    .iter()
+                    .filter_map(|x| {
+                        convert_action(&Cache::with_known_assets(), &test_keys::FULL_VIEWING_KEY, x)
+                    })
+                    .collect(),
+                transaction_parameters: plan.transaction_parameters.clone(),
+                detection_data: None,
+                memo_view: None,
+            },
+        };
+
+        let transaction_summary = TransactionView::summary(&transaction_view);
+
+        assert_eq!(transaction_summary.effects.len(), 2);
     }
 }
