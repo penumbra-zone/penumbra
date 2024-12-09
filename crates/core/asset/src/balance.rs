@@ -385,7 +385,7 @@ impl SubAssign<Value> for Balance {
 }
 
 impl From<Value> for Balance {
-    fn  from(Value { amount, asset_id }: Value) -> Self {
+    fn from(Value { amount, asset_id }: Value) -> Self {
         let mut balance = BTreeMap::new();
         if let Some(amount) = NonZeroU128::new(amount.into()) {
             balance.insert(asset_id, Imbalance::Provided(amount));
