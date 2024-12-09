@@ -54,6 +54,16 @@ message TransactionParameters {
   component.fee.v1.Fee fee = 3;
 }
 
+// Represents a transaction summary containing multiple effects.
+message TransactionSummary {
+  // Represents an individual effect of a transaction.
+  message Effects {
+    keys.v1.AddressView address = 1;
+    asset.v1.Balance balance = 2;
+  }
+  repeated Effects effects = 1;
+}
+
 // Detection data used by a detection server performing Fuzzy Message Detection.
 message DetectionData {
   // A list of clues for use with Fuzzy Message Detection.

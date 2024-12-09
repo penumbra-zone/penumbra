@@ -3,7 +3,6 @@ use ark_r1cs_std::uint8::UInt8;
 use ark_relations::r1cs::SynthesisError;
 use penumbra_num::{Amount, AmountVar};
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use std::{
     collections::{btree_map, BTreeMap},
     fmt::{self, Debug, Formatter},
@@ -29,15 +28,154 @@ use decaf377::{r1cs::ElementVar, Fq, Fr};
 use imbalance::Imbalance;
 
 use self::commitment::BalanceCommitmentVar;
+use penumbra_proto::{penumbra::core::asset::v1 as pb, DomainType};
 
 /// A `Balance` is a "vector of [`Value`]s", where some values may be required, while others may be
 /// provided. For a transaction to be valid, its balance must be zero.
-#[serde_as]
 #[derive(Clone, Eq, Default, Serialize, Deserialize)]
+#[serde(try_from = "pb::Balance", into = "pb::Balance")]
 pub struct Balance {
-    negated: bool,
-    #[serde_as(as = "Vec<(_, _)>")]
-    balance: BTreeMap<Id, Imbalance<NonZeroU128>>,
+    pub negated: bool,
+    pub balance: BTreeMap<Id, Imbalance<NonZeroU128>>,
+}
+
+impl DomainType for Balance {
+    type Proto = pb::Balance;
+}
+
+/// Serialization should normalize the `Balance`, where the top-level
+/// negated field is exlcuded during serialization. Rather, the
+/// sign information is captured in the `SignedValue` pairs.  
+///
+/// Since the underlying BTreeMap can't hold multiple imbalances for
+/// the same asset ID, we implement an ordering-agnostic accumulation
+/// scheme that explicitly combines imbalances.
+impl TryFrom<pb::Balance> for Balance {
+    type Error = anyhow::Error;
+
+    fn try_from(v: pb::Balance) -> Result<Self, Self::Error> {
+        let mut balance_map = BTreeMap::new();
+
+        for signed_value in v.values {
+            let proto_value = signed_value
+                .value
+                .ok_or_else(|| anyhow::anyhow!("missing value"))?;
+            let value: Value = proto_value.try_into()?;
+            let amount = NonZeroU128::new(value.amount.into())
+                .ok_or_else(|| anyhow::anyhow!("amount is zero"))?;
+
+            // The 'negated' flag in SignedValue determines the imbalance type:
+            // true = Required, false = Provided
+
+            match balance_map.entry(value.asset_id) {
+                // First entry for this asset ID in BTreeMap
+                std::collections::btree_map::Entry::Vacant(entry) => {
+                    let imbalance = if signed_value.negated {
+                        Imbalance::Required(amount)
+                    } else {
+                        Imbalance::Provided(amount)
+                    };
+                    entry.insert(imbalance);
+                }
+                // Subsequent entries for this asset ID in BTreeMap
+                //
+                //  1. Asset ID has a Required imbalance - accumulate another required amount
+                //  2. Asset ID has a Required imbalance - accumulate another provided amount
+                //  3. Asset ID has a Provided imbalance - accumulate another required amount
+                //  4. Asset ID has a Provided imbalance - accumulate another provided amount
+                std::collections::btree_map::Entry::Occupied(mut entry) => {
+                    let existing = entry.get_mut();
+                    match (existing, signed_value.negated) {
+                        (Imbalance::Required(existing_amount), true) => {
+                            *existing_amount = NonZeroU128::new(
+                                existing_amount
+                                    .get()
+                                    .checked_add(amount.get())
+                                    .ok_or_else(|| anyhow::anyhow!("Combining required amounts"))?,
+                            )
+                            .ok_or_else(|| anyhow::anyhow!("Combining required amounts"))?;
+                        }
+                        (Imbalance::Required(existing_amount), false) => {
+                            match existing_amount.get().checked_sub(amount.get()) {
+                                Some(diff) if diff > 0 => {
+                                    *existing_amount = NonZeroU128::new(diff)
+                                        .ok_or_else(|| anyhow::anyhow!("Reduce required amount"))?;
+                                }
+                                _ => {
+                                    *entry.get_mut() = Imbalance::Provided(
+                                        NonZeroU128::new(amount.get() - existing_amount.get())
+                                            .ok_or_else(|| {
+                                                anyhow::anyhow!(
+                                                    "Convert required amount to provided amount"
+                                                )
+                                            })?,
+                                    );
+                                }
+                            };
+                        }
+                        (Imbalance::Provided(existing_amount), true) => {
+                            match existing_amount.get().checked_sub(amount.get()) {
+                                Some(diff) if diff > 0 => {
+                                    *existing_amount = NonZeroU128::new(diff)
+                                        .ok_or_else(|| anyhow::anyhow!("Reduce provided amount"))?;
+                                }
+                                _ => {
+                                    *entry.get_mut() = Imbalance::Required(
+                                        NonZeroU128::new(amount.get() - existing_amount.get())
+                                            .ok_or_else(|| {
+                                                anyhow::anyhow!(
+                                                    "Convert provided amount to required amount"
+                                                )
+                                            })?,
+                                    );
+                                }
+                            };
+                        }
+                        (Imbalance::Provided(existing_amount), false) => {
+                            *existing_amount = NonZeroU128::new(
+                                existing_amount
+                                    .get()
+                                    .checked_add(amount.get())
+                                    .ok_or_else(|| anyhow::anyhow!("Combining provided amounts"))?,
+                            )
+                            .ok_or_else(|| anyhow::anyhow!("Combining provided amounts"))?;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Normalize the `Balance`.
+        Ok(Self {
+            negated: false,
+            balance: balance_map,
+        })
+    }
+}
+
+impl From<Balance> for pb::Balance {
+    fn from(v: Balance) -> Self {
+        let values = v
+            .balance
+            .into_iter()
+            .map(|(id, imbalance)| {
+                // Decompose imbalance into it sign and magnitude, and convert
+                // magnitude into raw amount and determine negation based on the sign.
+                let (_sign, magnitude) = imbalance.into_inner();
+                let amount = u128::from(magnitude);
+
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some(id.into()),
+                        amount: Some(Amount::from(amount).into()),
+                    }),
+                    negated: v.negated,
+                }
+            })
+            .collect();
+
+        pb::Balance { values }
+    }
 }
 
 impl Debug for Balance {
@@ -399,7 +537,9 @@ mod test {
     use ark_ff::Zero;
     use decaf377::Fr;
     use once_cell::sync::Lazy;
+    use penumbra_proto::core::num::v1::Amount as ProtoAmount;
     use proptest::prelude::*;
+    use rand_core::OsRng;
 
     use super::*;
 
@@ -561,5 +701,271 @@ mod test {
 
             assert_eq!(commitment, balance_commitment);
         }
+    }
+
+    /// Implement fallible conversion (protobuf to domain type) for multiple entries
+    /// with the same asset ID.
+    #[test]
+    fn try_from_fallible_conversion_same_asset_id() {
+        let proto_balance_0 = pb::Balance {
+            values: vec![
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: true,
+                },
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(50u128).into()),
+                    }),
+                    negated: false,
+                },
+            ],
+        };
+
+        let proto_balance_1 = pb::Balance {
+            values: vec![
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: true,
+                },
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(200u128).into()),
+                    }),
+                    negated: false,
+                },
+            ],
+        };
+
+        let proto_balance_2 = pb::Balance {
+            values: vec![
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: true,
+                },
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(200u128).into()),
+                    }),
+                    negated: true,
+                },
+            ],
+        };
+
+        let proto_balance_3 = pb::Balance {
+            values: vec![
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: false,
+                },
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(50u128).into()),
+                    }),
+                    negated: true,
+                },
+            ],
+        };
+
+        let proto_balance_4 = pb::Balance {
+            values: vec![
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: false,
+                },
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(200u128).into()),
+                    }),
+                    negated: true,
+                },
+            ],
+        };
+
+        let proto_balance_5 = pb::Balance {
+            values: vec![
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: false,
+                },
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(200u128).into()),
+                    }),
+                    negated: false,
+                },
+            ],
+        };
+
+        let balance_0 = Balance::try_from(proto_balance_0).expect("fallible conversion");
+        let balance_1 = Balance::try_from(proto_balance_1).expect("fallible conversion");
+        let balance_2 = Balance::try_from(proto_balance_2).expect("fallible conversion");
+        let balance_3 = Balance::try_from(proto_balance_3).expect("fallible conversion");
+        let balance_4 = Balance::try_from(proto_balance_4).expect("fallible conversion");
+        let balance_5 = Balance::try_from(proto_balance_5).expect("fallible conversion");
+
+        assert!(matches!(
+            balance_0.balance.get(&STAKING_TOKEN_ASSET_ID),
+            Some(Imbalance::Required(amount)) if amount == &NonZeroU128::new(50).unwrap()
+        ));
+
+        assert!(matches!(
+            balance_1.balance.get(&STAKING_TOKEN_ASSET_ID),
+            Some(Imbalance::Provided(amount)) if amount == &NonZeroU128::new(100).unwrap()
+        ));
+
+        assert!(matches!(
+            balance_2.balance.get(&STAKING_TOKEN_ASSET_ID),
+            Some(Imbalance::Required(amount)) if amount == &NonZeroU128::new(300).unwrap()
+        ));
+
+        assert!(matches!(
+            balance_3.balance.get(&STAKING_TOKEN_ASSET_ID),
+            Some(Imbalance::Provided(amount)) if amount == &NonZeroU128::new(50).unwrap()
+        ));
+
+        assert!(matches!(
+            balance_4.balance.get(&STAKING_TOKEN_ASSET_ID),
+            Some(Imbalance::Required(amount)) if amount == &NonZeroU128::new(100).unwrap()
+        ));
+
+        assert!(matches!(
+            balance_5.balance.get(&STAKING_TOKEN_ASSET_ID),
+            Some(Imbalance::Provided(amount)) if amount == &NonZeroU128::new(300).unwrap()
+        ));
+    }
+
+    /// Implement fallible conversion (protobuf to domain type) for multiple entries
+    /// with different asset IDs.
+    #[test]
+    fn try_from_fallible_conversion_different_asset_id() {
+        let rand_asset_id = Id(Fq::rand(&mut OsRng));
+
+        let proto_balance = pb::Balance {
+            values: vec![
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: true,
+                },
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some(rand_asset_id.into()),
+                        amount: Some(Amount::from(50u128).into()),
+                    }),
+                    negated: false,
+                },
+            ],
+        };
+
+        let balance = Balance::try_from(proto_balance).expect("fallible conversion");
+
+        assert!(matches!(
+            balance.balance.get(&STAKING_TOKEN_ASSET_ID),
+            Some(Imbalance::Required(amount)) if amount == &NonZeroU128::new(100).unwrap()
+        ));
+
+        assert!(matches!(
+            balance.balance.get(&rand_asset_id),
+            Some(Imbalance::Provided(amount)) if amount == &NonZeroU128::new(50).unwrap()
+        ));
+    }
+
+    /// Implement fallible conversion (protobuf to domain type) with missing fields.
+    #[test]
+    fn try_from_fallible_conversion_failure() {
+        let proto_balance = pb::Balance {
+            values: vec![pb::balance::SignedValue {
+                value: None,
+                negated: false,
+            }],
+        };
+
+        assert!(Balance::try_from(proto_balance).is_err());
+    }
+
+    /// Implement infallible conversion (domain type to protobuf).
+    #[test]
+    fn from_infallible_conversion() {
+        let rand_asset_id = Id(Fq::rand(&mut OsRng));
+
+        let balance = Balance {
+            negated: false,
+            balance: [
+                (
+                    *STAKING_TOKEN_ASSET_ID,
+                    Imbalance::Provided(NonZeroU128::new(100).unwrap()),
+                ),
+                (
+                    rand_asset_id,
+                    Imbalance::Required(NonZeroU128::new(200).unwrap()),
+                ),
+            ]
+            .iter()
+            .cloned()
+            .collect(),
+        };
+
+        let proto_balance: pb::Balance = balance.into();
+
+        let first_value = proto_balance
+            .values
+            .iter()
+            .find(|v| v.value.as_ref().unwrap().asset_id == Some((*STAKING_TOKEN_ASSET_ID).into()))
+            .expect("asset should exist");
+        let second_value = proto_balance
+            .values
+            .iter()
+            .find(|v| v.value.as_ref().unwrap().asset_id == Some(rand_asset_id.into()))
+            .expect("asset should exist");
+
+        assert_eq!(proto_balance.values.len(), 2);
+
+        assert_eq!(
+            first_value.value.as_ref().unwrap().asset_id,
+            Some((*STAKING_TOKEN_ASSET_ID).into())
+        );
+        assert_eq!(
+            second_value.value.as_ref().unwrap().asset_id,
+            Some(rand_asset_id.into())
+        );
+
+        let proto_amount: ProtoAmount = Amount::from(100u128).into();
+        assert_eq!(
+            first_value.value.as_ref().unwrap().amount,
+            Some(proto_amount)
+        );
+
+        let proto_amount: ProtoAmount = Amount::from(200u128).into();
+        assert_eq!(
+            second_value.value.as_ref().unwrap().amount,
+            Some(proto_amount)
+        );
     }
 }
