@@ -333,7 +333,6 @@ impl std::str::FromStr for Address {
             let pk_dzero = ka::Public(pk_dzero_bytes);
 
             let ck_id = fmd::ClueKey([0u8; 32]);
-
             Self::from_components(dzero, pk_dzero, ck_id)
                 .ok_or_else(|| anyhow::anyhow!("could not reconstruct transparent address"))
         } else if s.starts_with(bech32str::compat_address::BECH32_PREFIX) {
