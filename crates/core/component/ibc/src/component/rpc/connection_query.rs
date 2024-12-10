@@ -103,7 +103,8 @@ impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI>
         let snapshot = self.storage.latest_snapshot();
         let height = HI::get_block_height(&snapshot)
             .await
-            .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?;
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode height: {e}")))?
+            + 1;
 
         let connection_counter = snapshot
             .get_connection_counter()
