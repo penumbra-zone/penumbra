@@ -304,4 +304,15 @@ mod tests {
             assert_eq!(index2, index);
         }
     }
+
+    proptest! {
+        #[test]
+        fn diversifier_encryption_null_ciphertext(
+            key in diversifier_key_strategy()
+        ) {
+            let diversifier = Diversifier([0; 16]);
+            let index = key.index_for_diversifier(&diversifier);
+            assert_eq!(index, AddressIndex::new(0));
+        }
+    }
 }
