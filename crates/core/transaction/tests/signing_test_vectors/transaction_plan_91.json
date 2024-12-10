@@ -1,39 +1,89 @@
 {
   "actions": [
     {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "344149540286551252"
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "KvSOw2oTnhgE6uwSfbSpzwZeAmdcuGCSEJRglfJ3wQA="
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "consensusKey": "Nl4rk3/TpzRkGJIt1uVloh1uGYLpZk7UO1uHwB4IIoc=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "KvSOw2oTnhgE6uwSfbSpzwZeAmdcuGCSEJRglfJ3wQA="
           }
         },
-        "address": {
-          "inner": "yiuRnUOYo12VWa07n9TUTadalVq9iksf1+ZRAdl1CwcNxz6L8XBLYEDDrpajNT6soeDvBPdKuBu5k6OHmC/N4bDu5+XGU3fcjnuclKUgh6w="
-        }
+        "authSig": "kGbRDqNYLAalf47ozdAreQvucYJAcOYWc9uwUIPevg/mBID23rED86QhL0p3HNWa1BmOmUNULuuRa1TAS/QSAg=="
       }
     },
     {
-      "communityPoolSpend": {
-        "value": {
-          "amount": {
-            "lo": "573188836335646955"
+      "proposalWithdraw": {
+        "proposal": "475381953"
+      }
+    },
+    {
+      "swapClaim": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "delta1I": {},
+          "delta2I": {
+            "lo": "77455752469976671"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "qEyJ13AN9PUiD4sHXPX2GfjfQQcQcjCMgueQESXa1EFRZSvkeO5BcYNhuMsq5W6mR7nYFIr4PRxrFOE2rRiHNhcDENMZb+LcJhL9xfmgO3U="
+          },
+          "rseed": "K7ZvJacDP+H9P8JOp3qS1mo014JzA80k0nK7PStL19Y="
+        },
+        "outputData": {
+          "delta1": {
+            "lo": "655855702"
+          },
+          "delta2": {
+            "lo": "1419608266"
+          },
+          "lambda1": {
+            "lo": "206"
+          },
+          "lambda2": {
+            "lo": "1355"
+          },
+          "unfilled1": {
+            "lo": "584"
+          },
+          "unfilled2": {
+            "lo": "1505"
+          },
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           }
-        }
+        },
+        "epochDuration": "1000",
+        "proofBlindingR": "uV+bKbMsH+ll/YzD9l6bfD0q7WTVck9KGUInXvOvkQ0=",
+        "proofBlindingS": "bctiOIotJvE8U77iEvfvXFVWGF9d+SfnVc53b4SHXwo="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "3510866232",
-    "chainId": "fqzcqyjouribnsokfj-56868",
+    "expiryHeight": "589766",
+    "chainId": "edoousrhayzyhrnstdhk-3",
     "fee": {
       "amount": {
-        "lo": "372654856776073496"
+        "lo": "997445077280867280"
       }
     }
   }

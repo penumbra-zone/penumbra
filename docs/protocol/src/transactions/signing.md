@@ -142,6 +142,12 @@ Test vectors for the effect hash computation for 100 randomly generated `Transac
 cargo test -- --ignored --test generate_transaction_signing_test_vectors
 ```
 
+For generating expected UI screens for a hardware wallet environment, you can use the `generate_hw_display_test_vectors` test:
+
+```
+cargo test -- --ignored --test generate_hw_display_test_vectors
+```
+
 ## `Binding` Signature
 
 The `Binding` signature is computed once on the transaction level.
