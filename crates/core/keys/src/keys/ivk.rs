@@ -224,10 +224,13 @@ mod test {
 
         let actual_address = ivk.payment_address(address_index).0;
 
-        // The diversifiers should match
-        assert_eq!(reconstructed.diversifier(), actual_address.diversifier());
-        // The transmission keys should match
-        assert_eq!(
+        // The diversifiers will not match, as the encryption of the 0 account `AddressIndex`
+        // is not the null ciphertext, so when deriving `actual_address` from the 0 account
+        // `AddressIndex`, we end up with a different diversifier.
+        assert_ne!(reconstructed.diversifier(), actual_address.diversifier());
+        // The transmission keys also will not match, as the null diversifier is not the
+        // same as the diversifier for the 0 account `AddressIndex`.
+        assert_ne!(
             reconstructed.transmission_key(),
             actual_address.transmission_key()
         );
