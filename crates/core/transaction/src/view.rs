@@ -136,6 +136,8 @@ impl TransactionView {
                 all_proto_values.extend(proto_values);
             }
 
+            println!("all_proto_values: {:?}", all_proto_values);
+
             let combined_proto = ProtoBalance {
                 values: all_proto_values,
             };
@@ -471,22 +473,35 @@ impl TryFrom<pbt::MemoPlaintextView> for MemoPlaintextView {
 mod test {
     use super::*;
 
+    use decaf377::Fr;
     use decaf377::{Element, Fq};
     use decaf377_rdsa::{Domain, VerificationKey};
     use penumbra_asset::{
-        asset::{Cache, Id},
+        asset::{self, Cache, Id},
         balance::Commitment,
         STAKING_TOKEN_ASSET_ID,
     };
+    use penumbra_dex::swap::proof::SwapProof;
+    use penumbra_dex::swap::{SwapCiphertext, SwapPayload};
+    use penumbra_dex::Swap;
+    use penumbra_dex::{
+        swap::{SwapPlaintext, SwapPlan},
+        TradingPair,
+    };
     use penumbra_fee::Fee;
+    use penumbra_keys::keys::Bip44Path;
+    use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_keys::{
         symmetric::{OvkWrappedKey, WrappedMemoKey},
-        test_keys, FullViewingKey, PayloadKey,
+        test_keys, Address, FullViewingKey, PayloadKey,
     };
+    use penumbra_num::Amount;
     use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
     use penumbra_sct::Nullifier;
+    use penumbra_shielded_pool::Rseed;
     use penumbra_shielded_pool::{output, spend, Note, NoteView, OutputPlan, SpendPlan};
     use penumbra_tct::structure::Hash;
+    use penumbra_tct::StateCommitment;
     use rand_core::OsRng;
     use std::ops::Deref;
 
@@ -532,6 +547,16 @@ mod test {
     }
 
     #[cfg(test)]
+    fn dummy_proof_swap() -> SwapProof {
+        SwapProof::try_from(
+            penumbra_proto::penumbra::core::component::dex::v1::ZkSwapProof {
+                inner: vec![0u8; GROTH16_PROOF_LENGTH_BYTES],
+            },
+        )
+        .expect("creating a dummy proof should work")
+    }
+
+    #[cfg(test)]
     fn dummy_spend() -> spend::Spend {
         spend::Spend {
             body: spend::Body {
@@ -565,6 +590,98 @@ mod test {
     }
 
     #[cfg(test)]
+    fn dummy_swap_plaintext() -> SwapPlaintext {
+        let seed_phrase = SeedPhrase::generate(OsRng);
+        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+
+        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+        let trading_pair = TradingPair::new(gm.id(), gn.id());
+
+        let delta_1 = Amount::from(1u64);
+        let delta_2 = Amount::from(0u64);
+        let fee = Fee::default();
+
+        let swap_plaintext = SwapPlaintext::new(
+            &mut OsRng,
+            trading_pair,
+            delta_1,
+            delta_2,
+            fee,
+            claim_address,
+        );
+
+        swap_plaintext
+    }
+
+    #[cfg(test)]
+    fn dummy_swap() -> Swap {
+        use penumbra_dex::swap::Body;
+
+        let seed_phrase = SeedPhrase::generate(OsRng);
+        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+
+        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+        let trading_pair = TradingPair::new(gm.id(), gn.id());
+
+        let delta_1 = Amount::from(1u64);
+        let delta_2 = Amount::from(0u64);
+        let fee = Fee::default();
+
+        let swap_plaintext = SwapPlaintext::new(
+            &mut OsRng,
+            trading_pair,
+            delta_1,
+            delta_2,
+            fee,
+            claim_address,
+        );
+
+        let fee_blinding = Fr::from(0u64);
+        let fee_commitment = swap_plaintext.claim_fee.commit(fee_blinding);
+
+        let swap_payload = SwapPayload {
+            encrypted_swap: SwapCiphertext([0u8; 272]),
+            commitment: StateCommitment::try_from([0; 32]).expect("state commitment"),
+        };
+
+        Swap {
+            body: Body {
+                trading_pair: trading_pair,
+                delta_1_i: delta_1,
+                delta_2_i: delta_2,
+                fee_commitment: fee_commitment,
+                payload: swap_payload,
+            },
+            proof: dummy_proof_swap(),
+        }
+    }
+
+    #[cfg(test)]
+    fn dummy_note_view(
+        address: Address,
+        value: Value,
+        cache: &Cache,
+        fvk: &FullViewingKey,
+    ) -> NoteView {
+        let note = Note::from_parts(address, value, Rseed::generate(&mut OsRng))
+            .expect("generate dummy note");
+
+        NoteView {
+            value: note.value().view_with_cache(cache),
+            rseed: note.rseed(),
+            address: fvk.view_address(note.address()),
+        }
+    }
+
+    #[cfg(test)]
     fn convert_note(cache: &Cache, fvk: &FullViewingKey, note: &Note) -> NoteView {
         NoteView {
             value: note.value().view_with_cache(cache),
@@ -594,7 +711,21 @@ mod test {
                 note: convert_note(cache, fvk, &x.note),
             })),
             ActionPlan::ValidatorDefinition(_) => None,
-            ActionPlan::Swap(_) => None,
+            ActionPlan::Swap(x) => Some(ActionView::Swap(SwapView::Visible {
+                swap: dummy_swap(),
+                swap_plaintext: dummy_swap_plaintext(),
+                output_1: Some(dummy_note_view(
+                    x.swap_plaintext.claim_address.clone(),
+                    x.swap_plaintext.claim_fee.0,
+                    cache,
+                    fvk,
+                )),
+                output_2: None,
+                claim_tx: None,
+                asset_1_metadata: None,
+                asset_2_metadata: None,
+                batch_swap_output_data: None,
+            })),
             ActionPlan::SwapClaim(_) => None,
             ActionPlan::ProposalSubmit(_) => None,
             ActionPlan::ProposalWithdraw(_) => None,
@@ -619,7 +750,7 @@ mod test {
     }
 
     #[test]
-    fn test_transaction_summary() {
+    fn test_internal_transfer_transaction_summary() {
         // Generate two notes controlled by the test address.
         let value = Value {
             amount: 100u64.into(),
@@ -694,5 +825,103 @@ mod test {
         let transaction_summary = TransactionView::summary(&transaction_view);
 
         assert_eq!(transaction_summary.effects.len(), 2);
+    }
+
+    #[test]
+    fn test_swap_transaction_summary() {
+        // Generate two notes controlled by the test address.
+        let value = Value {
+            amount: 100u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+        let note = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value);
+
+        let value2 = Value {
+            amount: 50u64.into(),
+            asset_id: Id(Fq::rand(&mut OsRng)),
+        };
+        let note2 = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value2);
+
+        let value3 = Value {
+            amount: 75u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+
+        // Record that note in an SCT, where we can generate an auth path.
+        let mut sct = tct::Tree::new();
+        for _ in 0..5 {
+            let random_note = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value);
+            sct.insert(tct::Witness::Keep, random_note.commit())
+                .unwrap();
+        }
+        sct.insert(tct::Witness::Keep, note.commit()).unwrap();
+        sct.insert(tct::Witness::Keep, note2.commit()).unwrap();
+
+        let auth_path = sct.witness(note.commit()).unwrap();
+        let auth_path2 = sct.witness(note2.commit()).unwrap();
+
+        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+        let trading_pair = TradingPair::new(gm.id(), gn.id());
+
+        let delta_1 = Amount::from(100_000u64);
+        let delta_2 = Amount::from(0u64);
+        let fee = Fee::default();
+        let claim_address: Address = test_keys::ADDRESS_0.deref().clone();
+        let plaintext = SwapPlaintext::new(
+            &mut OsRng,
+            trading_pair,
+            delta_1,
+            delta_2,
+            fee,
+            claim_address,
+        );
+
+        // Add a single spend and output to the transaction plan such that the
+        // transaction balances.
+        let plan = TransactionPlan {
+            transaction_parameters: TransactionParameters {
+                expiry_height: 0,
+                fee: Fee::default(),
+                chain_id: "".into(),
+            },
+            actions: vec![
+                SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
+                SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
+                OutputPlan::new(&mut OsRng, value3, test_keys::ADDRESS_1.deref().clone()).into(),
+                SwapPlan::new(&mut OsRng, plaintext.clone()).into(),
+            ],
+            detection_data: Some(DetectionDataPlan {
+                clue_plans: vec![CluePlan::new(
+                    &mut OsRng,
+                    test_keys::ADDRESS_1.deref().clone(),
+                    1.try_into().unwrap(),
+                )],
+            }),
+            memo: None,
+        };
+
+        let transaction_view = TransactionView {
+            anchor: penumbra_tct::Root(Hash::zero()),
+            binding_sig: Signature::from([0u8; 64]),
+            body_view: TransactionBodyView {
+                action_views: plan
+                    .actions
+                    .iter()
+                    .filter_map(|x| {
+                        convert_action(&Cache::with_known_assets(), &test_keys::FULL_VIEWING_KEY, x)
+                    })
+                    .collect(),
+                transaction_parameters: plan.transaction_parameters.clone(),
+                detection_data: None,
+                memo_view: None,
+            },
+        };
+
+        let transaction_summary = TransactionView::summary(&transaction_view);
+
+        println!("transaction_summary: {:?}", transaction_summary);
+
+        // assert_eq!(transaction_summary.effects.len(), 2);
     }
 }
