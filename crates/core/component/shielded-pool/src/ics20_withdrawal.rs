@@ -110,6 +110,7 @@ impl DomainType for Ics20Withdrawal {
     type Proto = pb::Ics20Withdrawal;
 }
 
+#[allow(deprecated)]
 impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
     fn from(w: Ics20Withdrawal) -> Self {
         pb::Ics20Withdrawal {
@@ -126,6 +127,7 @@ impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
     }
 }
 
+#[allow(deprecated)]
 impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
     type Error = anyhow::Error;
     fn try_from(s: pb::Ics20Withdrawal) -> Result<Self, Self::Error> {
