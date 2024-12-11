@@ -200,16 +200,20 @@ impl IncomingViewingKeyVar {
 
 #[cfg(test)]
 mod test {
-    use crate::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use crate::{
+        keys::{Bip44Path, SeedPhrase, SpendKey},
+        test_keys,
+    };
     use proptest::prelude::*;
+    use std::str::FromStr;
 
     use super::*;
 
     #[test]
     fn transparent_address_generation_and_parsing() {
-        let rng = rand::rngs::OsRng;
-        let spend_key =
-            SpendKey::from_seed_phrase_bip44(SeedPhrase::generate(rng), &Bip44Path::new(0));
+        // Use test seed phrase for test vector
+        let seed_phrase = SeedPhrase::from_str(test_keys::SEED_PHRASE).expect("valid seed phrase");
+        let spend_key = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let ivk = spend_key.full_viewing_key().incoming();
 
         let transparent_address_str = ivk.transparent_address();
