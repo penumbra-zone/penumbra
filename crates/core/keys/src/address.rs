@@ -226,6 +226,27 @@ impl Address {
             recipient: format!("{}", self),
         }
     }
+
+    /// Encodes the address as a transparent address if it has zero diversifier and clue key.
+    /// Returns `None` if the address doesn't meet the requirements for a transparent address.
+    pub fn encode_as_transparent_address(&self) -> Option<String> {
+        // Check if diversifier is zero
+        if self.diversifier().0 != [0u8; 16] {
+            return None;
+        }
+
+        // Check if clue key is identity
+        if self.clue_key().0 != [0u8; 32] {
+            return None;
+        }
+
+        // If both are zero, encode the transmission key
+        Some(bech32str::encode(
+            &self.transmission_key().0,
+            TRANSPARENT_ADDRESS_BECH32_PREFIX,
+            bech32str::Bech32,
+        ))
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -333,8 +354,16 @@ impl std::str::FromStr for Address {
             let pk_dzero = ka::Public(pk_dzero_bytes);
 
             let ck_id = fmd::ClueKey([0u8; 32]);
-            Self::from_components(dzero, pk_dzero, ck_id)
-                .ok_or_else(|| anyhow::anyhow!("could not reconstruct transparent address"))
+
+            let address = Self::from_components(dzero, pk_dzero, ck_id)
+                .ok_or_else(|| anyhow::anyhow!("could not reconstruct transparent address"))?;
+
+            // Verify this is a valid transparent address, bailing if not
+            if address.encode_as_transparent_address().is_none() {
+                return Err(anyhow::anyhow!("invalid transparent address components"));
+            }
+
+            Ok(address)
         } else if s.starts_with(bech32str::compat_address::BECH32_PREFIX) {
             pb::Address {
                 inner: bech32str::decode(
