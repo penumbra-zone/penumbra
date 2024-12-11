@@ -136,8 +136,6 @@ impl TransactionView {
                 all_proto_values.extend(proto_values);
             }
 
-            println!("all_proto_values: {:?}", all_proto_values);
-
             let combined_proto = ProtoBalance {
                 values: all_proto_values,
             };
@@ -920,8 +918,6 @@ mod test {
 
         let transaction_summary = TransactionView::summary(&transaction_view);
 
-        println!("transaction_summary: {:?}", transaction_summary);
-
-        // assert_eq!(transaction_summary.effects.len(), 2);
+        assert_eq!(transaction_summary.effects.len(), 2);
     }
 }
