@@ -355,15 +355,8 @@ impl std::str::FromStr for Address {
 
             let ck_id = fmd::ClueKey([0u8; 32]);
 
-            let address = Self::from_components(dzero, pk_dzero, ck_id)
-                .ok_or_else(|| anyhow::anyhow!("could not reconstruct transparent address"))?;
-
-            // Verify this is a valid transparent address, bailing if not
-            if address.encode_as_transparent_address().is_none() {
-                return Err(anyhow::anyhow!("invalid transparent address components"));
-            }
-
-            Ok(address)
+            Self::from_components(dzero, pk_dzero, ck_id)
+                .ok_or_else(|| anyhow::anyhow!("could not reconstruct transparent address"))
         } else if s.starts_with(bech32str::compat_address::BECH32_PREFIX) {
             pb::Address {
                 inner: bech32str::decode(
