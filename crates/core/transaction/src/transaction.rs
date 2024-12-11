@@ -7,6 +7,7 @@ use anyhow::{Context, Error};
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes};
+use penumbra_asset::Balance;
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -14,7 +15,7 @@ use penumbra_dex::{
 };
 use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use penumbra_ibc::IbcRelay;
-use penumbra_keys::{FullViewingKey, PayloadKey};
+use penumbra_keys::{AddressView, FullViewingKey, PayloadKey};
 use penumbra_proto::{
     core::transaction::v1::{self as pbt},
     DomainType, Message,
@@ -42,6 +43,20 @@ pub struct TransactionBody {
     pub transaction_parameters: TransactionParameters,
     pub detection_data: Option<DetectionData>,
     pub memo: Option<MemoCiphertext>,
+}
+
+/// Represents a transaction summary containing multiple effects.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(try_from = "pbt::TransactionSummary", into = "pbt::TransactionSummary")]
+pub struct TransactionSummary {
+    pub effects: Vec<TransactionEffect>,
+}
+
+/// Represents an individual effect of a transaction.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TransactionEffect {
+    pub address: AddressView,
+    pub balance: Balance,
 }
 
 impl EffectingData for TransactionBody {
@@ -591,6 +606,50 @@ impl Transaction {
     }
 }
 
+impl DomainType for TransactionSummary {
+    type Proto = pbt::TransactionSummary;
+}
+
+impl From<TransactionSummary> for pbt::TransactionSummary {
+    fn from(summary: TransactionSummary) -> Self {
+        pbt::TransactionSummary {
+            effects: summary
+                .effects
+                .into_iter()
+                .map(|effect| pbt::transaction_summary::Effects {
+                    address: Some(effect.address.into()),
+                    balance: Some(effect.balance.into()),
+                })
+                .collect(),
+        }
+    }
+}
+
+impl TryFrom<pbt::TransactionSummary> for TransactionSummary {
+    type Error = anyhow::Error;
+
+    fn try_from(pbt: pbt::TransactionSummary) -> Result<Self, Self::Error> {
+        let effects = pbt
+            .effects
+            .into_iter()
+            .map(|effect| {
+                Ok(TransactionEffect {
+                    address: effect
+                        .address
+                        .ok_or_else(|| anyhow::anyhow!("missing address field"))?
+                        .try_into()?,
+                    balance: effect
+                        .balance
+                        .ok_or_else(|| anyhow::anyhow!("missing balance field"))?
+                        .try_into()?,
+                })
+            })
+            .collect::<Result<Vec<TransactionEffect>, anyhow::Error>>()?;
+
+        Ok(Self { effects })
+    }
+}
+
 impl DomainType for TransactionBody {
     type Proto = pbt::TransactionBody;
 }
@@ -662,7 +721,12 @@ impl From<Transaction> for pbt::Transaction {
 
 impl From<&Transaction> for pbt::Transaction {
     fn from(msg: &Transaction) -> Self {
-        msg.into()
+        Transaction {
+            transaction_body: msg.transaction_body.clone(),
+            anchor: msg.anchor.clone(),
+            binding_sig: msg.binding_sig.clone(),
+        }
+        .into()
     }
 }
 
