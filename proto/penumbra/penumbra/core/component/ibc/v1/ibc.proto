@@ -59,6 +59,9 @@ message Ics20Withdrawal {
   // of the ICS-20 FungibleTokenPacketData for this withdrawal.
   // Commonly used for packet forwarding support, or other protocols that may support usage of the memo field.
   string ics20_memo = 9;
+
+  // Whether to use a transparent address (bech32, 32-byte) for the return address in the withdrawal.
+  bool use_transparent_address = 10;
 }
 
 message ClientData {

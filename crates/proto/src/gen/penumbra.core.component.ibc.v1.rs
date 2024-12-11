@@ -78,6 +78,9 @@ pub struct Ics20Withdrawal {
     /// Commonly used for packet forwarding support, or other protocols that may support usage of the memo field.
     #[prost(string, tag = "9")]
     pub ics20_memo: ::prost::alloc::string::String,
+    /// Whether to use a transparent address (bech32, 32-byte) for the return address in the withdrawal.
+    #[prost(bool, tag = "10")]
+    pub use_transparent_address: bool,
 }
 impl ::prost::Name for Ics20Withdrawal {
     const NAME: &'static str = "Ics20Withdrawal";
