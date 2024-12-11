@@ -71,6 +71,7 @@ pub struct Ics20Withdrawal {
     pub source_channel: ::prost::alloc::string::String,
     /// Whether to use a "compat" (bech32, non-m) address for the return address in the withdrawal,
     /// for compatability with chains that expect to be able to parse the return address as bech32.
+    #[deprecated]
     #[prost(bool, tag = "8")]
     pub use_compat_address: bool,
     /// Arbitrary string data to be included in the `memo` field

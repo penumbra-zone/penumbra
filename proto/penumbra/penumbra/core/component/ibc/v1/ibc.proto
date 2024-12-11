@@ -53,7 +53,7 @@ message Ics20Withdrawal {
 
   // Whether to use a "compat" (bech32, non-m) address for the return address in the withdrawal,
   // for compatability with chains that expect to be able to parse the return address as bech32.
-  bool use_compat_address = 8;
+  bool use_compat_address = 8 [deprecated = true];
 
   // Arbitrary string data to be included in the `memo` field
   // of the ICS-20 FungibleTokenPacketData for this withdrawal.
