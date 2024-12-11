@@ -107,6 +107,15 @@ impl DiversifierKey {
         let cipher = Aes128::new(&key);
         cipher.decrypt_block(&mut block);
 
+        // Special case for the null ciphertext. This enables transparent addresses (which have
+        // a null diversifier) to use account 0.
+        if diversifier.0 == [0u8; 16] {
+            return AddressIndex {
+                account: 0,
+                randomizer: [0; 12],
+            };
+        }
+
         let mut index_bytes = [0; DIVERSIFIER_LEN_BYTES];
         index_bytes.copy_from_slice(&block);
 
@@ -293,6 +302,17 @@ mod tests {
             let diversifier = key.diversifier_for_index(&index);
             let index2 = key.index_for_diversifier(&diversifier);
             assert_eq!(index2, index);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn diversifier_encryption_null_ciphertext(
+            key in diversifier_key_strategy()
+        ) {
+            let diversifier = Diversifier([0; 16]);
+            let index = key.index_for_diversifier(&diversifier);
+            assert_eq!(index, AddressIndex::new(0));
         }
     }
 }

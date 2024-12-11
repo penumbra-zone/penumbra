@@ -44,6 +44,25 @@ impl IncomingViewingKey {
         )
     }
 
+    /// Derive the (encoding of the) transparent address for the given IVK.
+    ///
+    /// This intentionally returns a `String` rather than an `Address`, as it's not
+    /// safe to truncate arbitrary addresses.
+    pub fn transparent_address(&self) -> String {
+        // The transparent address uses an all-zero diversifier.
+        let dzero = Diversifier([0u8; 16]);
+        let g_dzero = dzero.diversified_generator();
+        let pk_dzero = self.ivk.diversified_public(&g_dzero);
+        let ck_id = fmd::ClueKey([0u8; 32]);
+
+        let address = Address::from_components(dzero, pk_dzero, ck_id).expect("valid address");
+
+        // This should never fail as we just constructed a valid transparent address
+        address
+            .encode_as_transparent_address()
+            .expect("address meets transparent requirements")
+    }
+
     /// Derive an ephemeral address for the provided account.
     pub fn ephemeral_address<R: RngCore + CryptoRng>(
         &self,
@@ -180,10 +199,52 @@ impl IncomingViewingKeyVar {
 
 #[cfg(test)]
 mod test {
-    use crate::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use crate::{
+        keys::{Bip44Path, SeedPhrase, SpendKey},
+        test_keys,
+    };
     use proptest::prelude::*;
+    use std::str::FromStr;
 
     use super::*;
+
+    #[test]
+    fn transparent_address_generation_and_parsing() {
+        // Use test seed phrase for test vector
+        let seed_phrase = SeedPhrase::from_str(test_keys::SEED_PHRASE).expect("valid seed phrase");
+        let spend_key = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let ivk = spend_key.full_viewing_key().incoming();
+
+        let transparent_address_str = ivk.transparent_address();
+
+        let reconstructed: Address = transparent_address_str
+            .parse()
+            .expect("can parse transparent address");
+
+        assert!(ivk.views_address(&reconstructed));
+
+        let address_index = ivk.address_index(&reconstructed).expect("views address");
+
+        let actual_address = ivk.payment_address(address_index).0;
+
+        // The diversifiers will not match, as the encryption of the 0 account `AddressIndex`
+        // is not the null ciphertext, so when deriving `actual_address` from the 0 account
+        // `AddressIndex`, we end up with a different diversifier.
+        assert_ne!(reconstructed.diversifier(), actual_address.diversifier());
+        // The transmission keys also will not match, as the null diversifier is not the
+        // same as the diversifier for the 0 account `AddressIndex`.
+        assert_ne!(
+            reconstructed.transmission_key(),
+            actual_address.transmission_key()
+        );
+        // The clue keys should not match, as the clue key is zeroed out
+        assert_ne!(reconstructed.clue_key(), actual_address.clue_key());
+
+        println!("Transparent address: {}", transparent_address_str);
+        println!("Reconstructed address: {}", reconstructed);
+        println!("Address index: {:?}", address_index);
+        println!("Actual address for index: {}", actual_address);
+    }
 
     #[test]
     fn views_address_succeeds_on_own_address() {
