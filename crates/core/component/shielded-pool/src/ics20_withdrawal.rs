@@ -159,8 +159,13 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
 
 impl From<Ics20Withdrawal> for pb::FungibleTokenPacketData {
     fn from(w: Ics20Withdrawal) -> Self {
-        let return_address = match w.use_compat_address {
-            true => w.return_address.compat_encoding(),
+        // `use_compat_address` is deprecated, now we use Penumbra transparent
+        // addresses, introduced in UIP 7.
+        let return_address = match w.use_transparent_address {
+            true => w
+                .return_address
+                .encode_as_transparent_address()
+                .expect("valid transparent address"),
             false => w.return_address.to_string(),
         };
 
