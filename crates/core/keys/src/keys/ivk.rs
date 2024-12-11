@@ -1,5 +1,4 @@
 use ark_ff::{PrimeField, Zero};
-use penumbra_proto::serializers::bech32str;
 use rand_core::{CryptoRng, RngCore};
 
 use ark_r1cs_std::prelude::*;
@@ -54,14 +53,14 @@ impl IncomingViewingKey {
         let dzero = Diversifier([0u8; 16]);
         let g_dzero = dzero.diversified_generator();
         let pk_dzero = self.ivk.diversified_public(&g_dzero);
+        let ck_id = fmd::ClueKey([0u8; 32]);
 
-        let encoding = bech32str::encode(
-            &pk_dzero.0,
-            crate::address::TRANSPARENT_ADDRESS_BECH32_PREFIX,
-            bech32str::Bech32,
-        );
+        let address = Address::from_components(dzero, pk_dzero, ck_id).expect("valid address");
 
-        encoding
+        // This should never fail as we just constructed a valid transparent address
+        address
+            .encode_as_transparent_address()
+            .expect("address meets transparent requirements")
     }
 
     /// Derive an ephemeral address for the provided account.

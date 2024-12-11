@@ -109,7 +109,7 @@ impl DiversifierKey {
 
         // Special case for the null ciphertext. This enables transparent addresses (which have
         // a null diversifier) to use account 0.
-        if diversifier.0.iter().all(|&b| b == 0) {
+        if diversifier.0 == [0u8; 16] {
             return AddressIndex {
                 account: 0,
                 randomizer: [0; 12],
