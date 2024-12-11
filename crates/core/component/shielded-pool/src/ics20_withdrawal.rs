@@ -41,6 +41,9 @@ pub struct Ics20Withdrawal {
     // Whether to use a "compat" (bech32, non-m) address for the return address in the withdrawal,
     // for compatability with chains that expect to be able to parse the return address as bech32.
     pub use_compat_address: bool,
+
+    // Whether to use a transparent address for the return address in the withdrawal.
+    pub use_transparent_address: bool,
 }
 
 #[cfg(feature = "component")]
@@ -118,6 +121,7 @@ impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
             timeout_time: w.timeout_time,
             source_channel: w.source_channel.to_string(),
             use_compat_address: w.use_compat_address,
+            use_transparent_address: w.use_transparent_address,
         }
     }
 }
@@ -148,6 +152,7 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
             timeout_time: s.timeout_time,
             source_channel: ChannelId::from_str(&s.source_channel)?,
             use_compat_address: s.use_compat_address,
+            use_transparent_address: s.use_transparent_address,
         })
     }
 }

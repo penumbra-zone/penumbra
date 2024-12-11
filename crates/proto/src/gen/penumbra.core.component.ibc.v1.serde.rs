@@ -1057,6 +1057,9 @@ impl serde::Serialize for Ics20Withdrawal {
         if self.use_compat_address {
             len += 1;
         }
+        if self.use_transparent_address {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.ibc.v1.Ics20Withdrawal", len)?;
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
@@ -1083,6 +1086,9 @@ impl serde::Serialize for Ics20Withdrawal {
         if self.use_compat_address {
             struct_ser.serialize_field("useCompatAddress", &self.use_compat_address)?;
         }
+        if self.use_transparent_address {
+            struct_ser.serialize_field("useTransparentAddress", &self.use_transparent_address)?;
+        }
         struct_ser.end()
     }
 }
@@ -1107,6 +1113,8 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
             "sourceChannel",
             "use_compat_address",
             "useCompatAddress",
+            "use_transparent_address",
+            "useTransparentAddress",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1119,6 +1127,7 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
             TimeoutTime,
             SourceChannel,
             UseCompatAddress,
+            UseTransparentAddress,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1149,6 +1158,7 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                             "timeoutTime" | "timeout_time" => Ok(GeneratedField::TimeoutTime),
                             "sourceChannel" | "source_channel" => Ok(GeneratedField::SourceChannel),
                             "useCompatAddress" | "use_compat_address" => Ok(GeneratedField::UseCompatAddress),
+                            "useTransparentAddress" | "use_transparent_address" => Ok(GeneratedField::UseTransparentAddress),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1176,6 +1186,7 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                 let mut timeout_time__ = None;
                 let mut source_channel__ = None;
                 let mut use_compat_address__ = None;
+                let mut use_transparent_address__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Amount => {
@@ -1228,6 +1239,12 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                             }
                             use_compat_address__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::UseTransparentAddress => {
+                            if use_transparent_address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("useTransparentAddress"));
+                            }
+                            use_transparent_address__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1242,6 +1259,7 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                     timeout_time: timeout_time__.unwrap_or_default(),
                     source_channel: source_channel__.unwrap_or_default(),
                     use_compat_address: use_compat_address__.unwrap_or_default(),
+                    use_transparent_address: use_transparent_address__.unwrap_or_default(),
                 })
             }
         }
