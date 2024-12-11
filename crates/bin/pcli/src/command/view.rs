@@ -103,7 +103,7 @@ impl ViewCmd {
                 address_cmd.exec(&full_viewing_key)?;
             }
             ViewCmd::NobleAddress(noble_address_cmd) => {
-                noble_address_cmd.exec(&full_viewing_key)?;
+                noble_address_cmd.exec(&full_viewing_key).await?;
             }
             ViewCmd::Balance(balance_cmd) => {
                 let view_client = app.view();
