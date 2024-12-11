@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use anyhow::Context;
 use decaf377_rdsa::{Binding, Signature};
 use penumbra_asset::{Balance, Value};
@@ -7,9 +5,9 @@ use penumbra_dex::{swap::SwapView, swap_claim::SwapClaimView};
 use penumbra_keys::AddressView;
 use penumbra_proto::core::asset::v1::Balance as ProtoBalance;
 use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
-
 use penumbra_shielded_pool::{OutputView, SpendView};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 pub mod action_view;
 mod transaction_perspective;
@@ -104,52 +102,51 @@ impl TransactionView {
 
     /// Acts as a higher-order translator that summarizes a TransactionSummary by consolidating
     /// effects for each unique address.
-    fn accumulate_effects(summary: &TransactionSummary) -> TransactionSummary {
+    fn accumulate_summary(summary: &TransactionSummary) -> TransactionSummary {
         let mut transaction_summary = TransactionSummary::default();
 
-        // Get unique addresses
-        let addresses: Vec<_> = summary
+        // Get list of unique addresses
+        let addresses = summary
             .effects
             .iter()
             .map(|e| &e.address)
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .collect();
+            .collect::<BTreeSet<_>>();
 
-        // For each address, get unique asset IDs and combine the balances for each asset ID
-        for address in addresses {
-            let asset_ids: Vec<_> = summary
+        for address in &addresses {
+            // Get unique asset IDs for this address
+            let asset_ids = summary
                 .effects
                 .iter()
-                .filter(|effect| effect.address == *address)
+                .filter(|effect| effect.address == **address)
                 .flat_map(|effect| effect.balance.balance.keys())
-                .collect();
+                .collect::<BTreeSet<_>>();
 
-            let mut combined_balances = Balance::default();
+            // For each unique asset, collect all proto values
+            let mut all_proto_values = Vec::new();
+
             for asset_id in asset_ids {
-                let grouped_proto = summary
+                let proto_values = summary
                     .effects
                     .iter()
-                    .filter(|effect| effect.address == *address)
+                    .filter(|effect| effect.address == **address)
                     .filter(|effect| effect.balance.balance.contains_key(asset_id))
                     .flat_map(|effect| ProtoBalance::from(effect.balance.clone()).values)
-                    .collect();
+                    .collect::<Vec<_>>();
 
-                let combined_proto = ProtoBalance {
-                    values: grouped_proto,
-                };
-
-                let combined_balance: Balance = combined_proto
-                    .try_into()
-                    .expect("combined balance should be valid");
-
-                // Combine all asset balances for the address
-                combined_balances.balance.extend(combined_balance.balance);
+                all_proto_values.extend(proto_values);
             }
 
+            let combined_proto = ProtoBalance {
+                values: all_proto_values,
+            };
+
+            // Single conversion to domain type
+            let combined_balance: Balance =
+                combined_proto.try_into().expect("Domain type conversion");
+
             transaction_summary.effects.push(TransactionEffect {
-                address: address.clone(),
-                balance: combined_balances,
+                address: (*address).clone(),
+                balance: combined_balance,
             });
         }
 
@@ -267,7 +264,7 @@ impl TransactionView {
 
         let mut summary = TransactionSummary { effects };
 
-        Self::accumulate_effects(&mut summary)
+        Self::accumulate_summary(&mut summary)
     }
 }
 
@@ -629,11 +626,17 @@ mod test {
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         let note = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value);
+
         let value2 = Value {
             amount: 50u64.into(),
             asset_id: Id(Fq::rand(&mut OsRng)),
         };
         let note2 = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value2);
+
+        let value3 = Value {
+            amount: 75u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
 
         // Record that note in an SCT, where we can generate an auth path.
         let mut sct = tct::Tree::new();
@@ -659,7 +662,7 @@ mod test {
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
                 SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
-                OutputPlan::new(&mut OsRng, value, test_keys::ADDRESS_1.deref().clone()).into(),
+                OutputPlan::new(&mut OsRng, value3, test_keys::ADDRESS_1.deref().clone()).into(),
             ],
             detection_data: Some(DetectionDataPlan {
                 clue_plans: vec![CluePlan::new(
