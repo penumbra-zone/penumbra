@@ -117,7 +117,7 @@ value integrity proceeds in a number of steps:
 1. Application-specific logic proves that each user's contribution value $v_i$ conserves value according to the application rules, by proving statements about the commitment $C_{i}$ to $v_{i}$.
 2. The encryption proof $\pi_{\operatorname{Enc}}$ extends integrity from $C_{i}$ to $E_{i}$.
 3. Integrity extends to the aggregation $E = \sum_i E_i$ automatically, since the aggregation can be publicly recomputed by anyone with access to the ledger.
-4. The decryption share integrity proofs extend integrity from $E$ to $w$.  This requires that, if $w$ is the result of decryption using valid decryption shares, than $E = \operatorname{Enc}(w)$.
+4. The decryption share integrity proofs extend integrity from $E$ to $w$.  This requires that, if $w$ is the result of decryption using valid decryption shares, then $E = \operatorname{Enc}(w)$.
 5. Publication of (any) decryption transcript allows any participant to check the end-to-end property that $w = \sum_i v_i$ for (application-)valid $v_i$.
 
 ###### Decryption Robustness
