@@ -197,7 +197,7 @@ message ActionDutchAuctionScheduleView {
 #### `ActionDutchAuctionEnd`
 
 ```proto
-// Ends a Dutch auction using protocol-controlled liquiidty.
+// Ends a Dutch auction using protocol-controlled liquidity.
 message ActionDutchAuctionEnd {
     // The auction to end.
     AuctionId auction_id = 1;

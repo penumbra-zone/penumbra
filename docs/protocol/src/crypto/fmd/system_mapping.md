@@ -1,6 +1,6 @@
 # S-FMD in Penumbra
 
-In the secions that follow we describe how S-FMD clue keys, detection keys, and
+In the sections that follow we describe how S-FMD clue keys, detection keys, and
 clues are integrated into the Penumbra system.
 
 ## Clue Keys
