@@ -1,51 +1,61 @@
 {
   "actions": [
     {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "yXRVlQf6bO60Q1DWoZrjBhTE4KU2WdcYXbbQZmcf29c="
+      "proposalWithdraw": {
+        "proposal": "843893421"
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "810187426565504444"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         },
-        "unbondedAmount": {
-          "lo": "434156311610937917"
-        },
-        "delegationAmount": {
-          "lo": "906736185101517951"
-        },
-        "fromEpoch": {
-          "index": "9651",
-          "startHeight": "9651"
+        "address": {
+          "inner": "ss+bcEmKMAcFvr3a8nquQgE3bJJ11mJwu4SenHJp6PvooYNrHiq989dK7HXt0G7SABKfgKOosyUHCMfe/dIq7Q3XtJYopBHd3BEZoCKIMng="
         }
       }
     },
     {
-      "validatorVote": {
-        "body": {
-          "proposal": "311833840",
-          "vote": {
-            "vote": "VOTE_YES"
+      "proposalWithdraw": {
+        "proposal": "758716570"
+      }
+    },
+    {
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "980119925094349979"
           },
-          "identityKey": {
-            "ik": "uGUm3LhW3M8jYT62AuhshlUWsY/mLLAXelHtv6bwwsQ="
-          },
-          "governanceKey": {
-            "gk": "GBdoWyK4s3wqUTcRYdih09IQNjTvVHCGKcHj/AFaOw4="
-          },
-          "reason": {
-            "reason": "2m59060UUbJ686PTRk"
+          "r2": {
+            "lo": "400519731478096542"
           }
         },
-        "authSig": {
-          "inner": "3OpxO7YAUv3S94K/AwjK4rj4m3dGm3Pkt8CItuaKVgnBkcSLMk3TZQx0vH/oLoGJmp1I7c8BAbe50xFIzN6/AA=="
-        }
+        "positionId": {
+          "inner": "bsWNutFCNQkURuGkyxmNmwwsP3Jd9XUSCtyabolaYCE="
+        },
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "sequence": "1"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "2073653224",
-    "chainId": "jwlf-236",
+    "expiryHeight": "3101462334",
+    "chainId": "vyklgcjeqbjn-17638596568242081315848442011998",
     "fee": {
       "amount": {
-        "lo": "548940969473133235"
+        "lo": "642867356857420384"
       }
     }
   }
