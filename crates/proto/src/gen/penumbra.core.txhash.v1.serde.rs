@@ -12,6 +12,7 @@ impl serde::Serialize for EffectHash {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.txhash.v1.EffectHash", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -110,6 +111,7 @@ impl serde::Serialize for TransactionId {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.txhash.v1.TransactionId", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()

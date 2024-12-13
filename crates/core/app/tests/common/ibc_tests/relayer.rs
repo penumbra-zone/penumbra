@@ -1562,16 +1562,18 @@ impl MockRelayer {
                 let mut timeout_height_on_b = None;
                 let mut timeout_timestamp_on_b = None;
                 for attr in &event.attributes {
-                    match attr.key.as_str() {
-                        "packet_data_hex" => packet_data_hex = Some(attr.value.clone()),
-                        "packet_sequence" => sequence = Some(attr.value.clone()),
-                        "packet_src_port" => port_on_a = Some(attr.value.clone()),
-                        "packet_src_channel" => chan_on_a = Some(attr.value.clone()),
-                        "packet_dst_port" => port_on_b = Some(attr.value.clone()),
-                        "packet_dst_channel" => chan_on_b = Some(attr.value.clone()),
-                        "packet_timeout_height" => timeout_height_on_b = Some(attr.value.clone()),
+                    match attr.key_str()? {
+                        "packet_data_hex" => packet_data_hex = Some(attr.value_str()?.to_string()),
+                        "packet_sequence" => sequence = Some(attr.value_str()?.to_string()),
+                        "packet_src_port" => port_on_a = Some(attr.value_str()?.to_string()),
+                        "packet_src_channel" => chan_on_a = Some(attr.value_str()?.to_string()),
+                        "packet_dst_port" => port_on_b = Some(attr.value_str()?.to_string()),
+                        "packet_dst_channel" => chan_on_b = Some(attr.value_str()?.to_string()),
+                        "packet_timeout_height" => {
+                            timeout_height_on_b = Some(attr.value_str()?.to_string())
+                        }
                         "packet_timeout_timestamp" => {
-                            timeout_timestamp_on_b = Some(attr.value.clone())
+                            timeout_timestamp_on_b = Some(attr.value_str()?.to_string())
                         }
                         _ => (),
                     }
@@ -1673,18 +1675,20 @@ impl MockRelayer {
                 let mut timeout_timestamp_on_b = None;
                 let mut packet_ack_hex = None;
                 for attr in &event.attributes {
-                    match attr.key.as_str() {
-                        "packet_data_hex" => packet_data_hex = Some(attr.value.clone()),
-                        "packet_sequence" => sequence = Some(attr.value.clone()),
-                        "packet_src_port" => port_on_a = Some(attr.value.clone()),
-                        "packet_src_channel" => chan_on_a = Some(attr.value.clone()),
-                        "packet_dst_port" => port_on_b = Some(attr.value.clone()),
-                        "packet_dst_channel" => chan_on_b = Some(attr.value.clone()),
-                        "packet_timeout_height" => timeout_height_on_b = Some(attr.value.clone()),
-                        "packet_timeout_timestamp" => {
-                            timeout_timestamp_on_b = Some(attr.value.clone())
+                    match attr.key_str()? {
+                        "packet_data_hex" => packet_data_hex = Some(attr.value_str()?.to_string()),
+                        "packet_sequence" => sequence = Some(attr.value_str()?.to_string()),
+                        "packet_src_port" => port_on_a = Some(attr.value_str()?.to_string()),
+                        "packet_src_channel" => chan_on_a = Some(attr.value_str()?.to_string()),
+                        "packet_dst_port" => port_on_b = Some(attr.value_str()?.to_string()),
+                        "packet_dst_channel" => chan_on_b = Some(attr.value_str()?.to_string()),
+                        "packet_timeout_height" => {
+                            timeout_height_on_b = Some(attr.value_str()?.to_string())
                         }
-                        "packet_ack_hex" => packet_ack_hex = Some(attr.value.clone()),
+                        "packet_timeout_timestamp" => {
+                            timeout_timestamp_on_b = Some(attr.value_str()?.to_string())
+                        }
+                        "packet_ack_hex" => packet_ack_hex = Some(attr.value_str()?.to_string()),
                         _ => (),
                     }
                 }

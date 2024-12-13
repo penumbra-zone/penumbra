@@ -8,7 +8,7 @@ anyhow = "1"
 
 [features]
 rpc = ["dep:tonic", "ibc-proto/client"]
-box-grpc = ["dep:http-body", "dep:tonic", "dep:tower"]
+box-grpc = ["dep:http-body", "dep:http-body-util", "dep:tonic", "dep:tower"]
 cnidarium = ["dep:cnidarium"]
 tendermint = [
     "dep:chrono",
@@ -30,6 +30,7 @@ decaf377-rdsa = {workspace = true}
 futures = {workspace = true}
 hex = {workspace = true}
 http-body = {workspace = true, optional = true}
+http-body-util = {workspace = true, optional = true}
 ibc-types = {workspace = true, features = ["std"], default-features = true}
 ics23 = {workspace = true}
 pbjson = {workspace = true}
