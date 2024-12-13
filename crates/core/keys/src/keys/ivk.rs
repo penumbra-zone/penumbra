@@ -44,13 +44,6 @@ impl IncomingViewingKey {
         )
     }
 
-    /// Derive the transmission key of the transparent address for the given IVK.
-    pub fn transparent_transmission_key(&self) -> ka::Public {
-        let dzero: Diversifier = Diversifier([0u8; 16]);
-        let g_dzero = dzero.diversified_generator();
-        self.ivk.diversified_public(&g_dzero)
-    }
-
     /// Derive the (encoding of the) transparent address for the given IVK.
     ///
     /// This intentionally returns a `String` rather than an `Address`, as it's not

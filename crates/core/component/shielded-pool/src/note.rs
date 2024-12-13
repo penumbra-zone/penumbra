@@ -109,8 +109,13 @@ impl Note {
     pub fn controlled_by(&self, fvk: &FullViewingKey) -> bool {
         if let Some(address_index) = fvk.address_index(&self.address()) {
             // Check if this note is associated with the wallet's transparent address.
-            let transparent_transmission_key = fvk.incoming().transparent_transmission_key();
-            if transparent_transmission_key == *self.transmission_key() {
+            if fvk
+                .incoming()
+                .transparent_address()
+                .parse::<Address>()
+                .expect("constructed transparent address is always valid")
+                == self.address()
+            {
                 return true;
             }
 
