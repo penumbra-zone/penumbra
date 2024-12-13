@@ -61,8 +61,10 @@ impl TryFrom<pb::Balance> for Balance {
                 .value
                 .ok_or_else(|| anyhow::anyhow!("missing value"))?;
             let value: Value = proto_value.try_into()?;
-            let amount = NonZeroU128::new(value.amount.into())
-                .ok_or_else(|| anyhow::anyhow!("amount is zero"))?;
+            let amount = match NonZeroU128::new(value.amount.into()) {
+                Some(amount) => amount,
+                None => continue,
+            };
 
             // The 'negated' flag in SignedValue determines the imbalance type:
             // true = Required, false = Provided
@@ -539,7 +541,10 @@ impl std::ops::Add for BalanceVar {
 
 #[cfg(test)]
 mod test {
-    use crate::{asset::Metadata, STAKING_TOKEN_ASSET_ID};
+    use crate::{
+        asset::{self, Metadata},
+        STAKING_TOKEN_ASSET_ID,
+    };
     use ark_ff::Zero;
     use decaf377::Fr;
     use once_cell::sync::Lazy;
@@ -1022,5 +1027,35 @@ mod test {
             second_value.value.as_ref().unwrap().amount,
             Some(proto_amount)
         );
+    }
+
+    fn test_balance_serialization_round_tripping_example(
+        parts: Vec<(u8, i64)>,
+    ) -> anyhow::Result<()> {
+        let proto = pb::Balance {
+            values: parts
+                .into_iter()
+                .map(|(asset, amount)| pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        amount: Some(Amount::from(amount.abs() as u64).into()),
+                        asset_id: Some(asset::Id::try_from([asset; 32]).unwrap().into()),
+                    }),
+                    negated: amount < 0,
+                })
+                .collect(),
+        };
+        let p_to_d = Balance::try_from(proto)?;
+        let p_to_d_to_p = pb::Balance::from(p_to_d.clone());
+        let p_to_d_to_p_to_d = Balance::try_from(p_to_d_to_p)?;
+        assert_eq!(p_to_d, p_to_d_to_p_to_d);
+        Ok(())
+    }
+
+    proptest! {
+        #[test]
+        fn test_balance_serialization_roundtripping(parts in proptest::collection::vec(((0u8..16u8), any::<i64>()), 0..100)) {
+            // To get better errors
+            assert!(matches!(test_balance_serialization_round_tripping_example(parts), Ok(_)));
+        }
     }
 }
