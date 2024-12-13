@@ -62,7 +62,7 @@ impl DomainType for Balance {
 }
 
 /// Serialization should normalize the `Balance`, where the top-level
-/// negated field is exlcuded during serialization. Rather, the
+/// negated field is excluded during serialization. Rather, the
 /// sign information is captured in the `SignedValue` pairs.  
 ///
 /// Since the underlying BTreeMap can't hold multiple imbalances for
