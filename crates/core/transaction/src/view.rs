@@ -3,11 +3,9 @@ use decaf377_rdsa::{Binding, Signature};
 use penumbra_asset::{Balance, Value};
 use penumbra_dex::{swap::SwapView, swap_claim::SwapClaimView};
 use penumbra_keys::AddressView;
-use penumbra_proto::core::asset::v1::Balance as ProtoBalance;
 use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
 use penumbra_shielded_pool::{OutputView, SpendView};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 pub mod action_view;
 mod transaction_perspective;
@@ -102,55 +100,18 @@ impl TransactionView {
 
     /// Acts as a higher-order translator that summarizes a TransactionSummary by consolidating
     /// effects for each unique address.
-    fn accumulate_summary(summary: &TransactionSummary) -> TransactionSummary {
-        let mut transaction_summary = TransactionSummary::default();
-
-        // Get list of unique addresses
-        let addresses = summary
-            .effects
-            .iter()
-            .map(|e| &e.address)
-            .collect::<BTreeSet<_>>();
-
-        for address in &addresses {
-            // Get unique asset IDs for this address
-            let asset_ids = summary
-                .effects
-                .iter()
-                .filter(|effect| effect.address == **address)
-                .flat_map(|effect| effect.balance.balance.keys())
-                .collect::<BTreeSet<_>>();
-
-            // For each unique asset, collect all proto values
-            let mut all_proto_values = Vec::new();
-
-            for asset_id in asset_ids {
-                let proto_values = summary
-                    .effects
-                    .iter()
-                    .filter(|effect| effect.address == **address)
-                    .filter(|effect| effect.balance.balance.contains_key(asset_id))
-                    .flat_map(|effect| ProtoBalance::from(effect.balance.clone()).values)
-                    .collect::<Vec<_>>();
-
-                all_proto_values.extend(proto_values);
-            }
-
-            let combined_proto = ProtoBalance {
-                values: all_proto_values,
-            };
-
-            // Single conversion to domain type
-            let combined_balance: Balance =
-                combined_proto.try_into().expect("Domain type conversion");
-
-            transaction_summary.effects.push(TransactionEffect {
-                address: (*address).clone(),
-                balance: combined_balance,
-            });
+    fn accumulate_effects(summary: TransactionSummary) -> TransactionSummary {
+        use std::collections::BTreeMap;
+        let mut keyed_effects: BTreeMap<AddressView, Balance> = BTreeMap::new();
+        for effect in summary.effects {
+            *keyed_effects.entry(effect.address).or_default() += effect.balance;
         }
-
-        transaction_summary
+        TransactionSummary {
+            effects: keyed_effects
+                .into_iter()
+                .map(|(address, balance)| TransactionEffect { address, balance })
+                .collect(),
+        }
     }
 
     /// Produces a TransactionSummary, iterating through each visible action and collecting the effects of the transaction.
@@ -262,9 +223,9 @@ impl TransactionView {
             }
         }
 
-        let mut summary = TransactionSummary { effects };
+        let summary = TransactionSummary { effects };
 
-        Self::accumulate_summary(&mut summary)
+        Self::accumulate_effects(summary)
     }
 }
 
