@@ -103,46 +103,25 @@ impl TryFrom<pb::AddressView> for AddressView {
 
 // Canonical ordering for serialization
 impl PartialOrd for AddressView {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        use AddressView::*;
         // Opaque < Decoded
         match (self, other) {
-            (AddressView::Opaque { address: a1 }, AddressView::Opaque { address: a2 }) => {
-                a1.partial_cmp(a2)
-            }
+            (Opaque { .. }, Decoded { .. }) => Some(Ordering::Less),
+            (Decoded { .. }, Opaque { .. }) => Some(Ordering::Greater),
+            (Opaque { address: a1 }, Opaque { address: a2 }) => a1.partial_cmp(a2),
             (
-                AddressView::Decoded {
+                Decoded {
                     address: a1,
                     index: i1,
                     wallet_id: w1,
                 },
-                AddressView::Decoded {
+                Decoded {
                     address: a2,
                     index: i2,
                     wallet_id: w2,
                 },
-            ) => match a1.partial_cmp(a2) {
-                Some(Ordering::Equal) => match i1.partial_cmp(i2) {
-                    Some(Ordering::Equal) => w1.partial_cmp(w2),
-                    ord => ord,
-                },
-                ord => ord,
-            },
-            (
-                AddressView::Opaque { address: _ },
-                AddressView::Decoded {
-                    address: _,
-                    index: _,
-                    wallet_id: _,
-                },
-            ) => Some(Ordering::Less),
-            (
-                AddressView::Decoded {
-                    address: _,
-                    index: _,
-                    wallet_id: _,
-                },
-                AddressView::Opaque { address: _ },
-            ) => Some(Ordering::Greater),
+            ) => (a1, i1, w1).partial_cmp(&(a2, i2, w2)),
         }
     }
 }
