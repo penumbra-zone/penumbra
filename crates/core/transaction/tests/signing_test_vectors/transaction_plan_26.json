@@ -1,50 +1,48 @@
 {
   "actions": [
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "/QXLeKKs5nNDGUlootWZo28F38EKtleJ2Dxmz877u5M="
+      "proposalSubmit": {
+        "proposal": {
+          "title": "zeywfcdsvjgzksgbtututtjefa-28853910783667841305365644150",
+          "description": "lipqxjmosregeftvjdtdigm-62",
+          "signaling": {}
         },
-        "epochIndex": "3335",
-        "unbondedAmount": {
-          "lo": "268055427198280602"
-        },
-        "delegationAmount": {
-          "lo": "311754073549817714"
+        "depositAmount": {
+          "lo": "28331719177698758"
         }
       }
     },
     {
-      "actionDutchAuctionWithdraw": {
-        "auctionId": {
-          "inner": "lBXbj4Fgh8SAUcCnvlW0iL9mC1F+Hjr4h2GmuK7hr4Y="
-        },
-        "seq": "477900847",
-        "reservesInput": {
-          "amount": {
-            "lo": "494921779002903251"
+      "positionWithdraw": {
+        "reserves": {
+          "r1": {
+            "lo": "880990439135497488"
           },
-          "assetId": {
+          "r2": {
+            "lo": "169746615128594561"
+          }
+        },
+        "positionId": {
+          "inner": "8ILW1neZZGlzNWVNICKdjwQNsvmfHXCe+rt83WWYOPs="
+        },
+        "pair": {
+          "asset1": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "asset2": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "reservesOutput": {
-          "amount": {
-            "lo": "229786067440132976"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        }
+        "sequence": "1"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "3655773457",
-    "chainId": "cobadoodnjhaiy-3702176186175231025",
+    "expiryHeight": "2498312553",
+    "chainId": "gnamgtbskhkrwtcjzqll-533676462220084624189983359806",
     "fee": {
       "amount": {
-        "lo": "398478972940299008"
+        "lo": "199236916972045568"
       }
     }
   }

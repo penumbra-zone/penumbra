@@ -1,34 +1,66 @@
 {
   "actions": [
     {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "17038923852064189"
+      "actionDutchAuctionSchedule": {
+        "description": {
+          "input": {
+            "amount": {
+              "lo": "181451187935194818"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "assetId": {
+          "outputId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "address": {
-          "inner": "RrYHHRhmkL6YB4s+DSyENibtC1VW/EA1N5RoDM0c7wjiozkzDA5cfRaPYuqJhfehwEJ8ZzpN/5QccSTcYzZ35pJy6/AuGL/aWops6nKbKGo="
+          },
+          "maxOutput": {
+            "lo": "981467343483746236"
+          },
+          "minOutput": {
+            "lo": "816154240701797997"
+          },
+          "startHeight": "838332756",
+          "endHeight": "838332757",
+          "stepCount": "79700368",
+          "nonce": "LxX4R1QJUcAL64eNQVtNu2mmCnm2bnzuBdVPV6UieBY="
         }
       }
     },
     {
-      "actionDutchAuctionEnd": {
-        "auctionId": {
-          "inner": "pJIFlMRi6JtlE5D1sIy287juwgB1fjq4CtLj46lgkDM="
+      "actionDutchAuctionSchedule": {
+        "description": {
+          "input": {
+            "amount": {
+              "lo": "17016452041769541"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "outputId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "maxOutput": {
+            "lo": "364101025380650949"
+          },
+          "minOutput": {
+            "lo": "926771860551171596"
+          },
+          "startHeight": "27854867",
+          "endHeight": "27854868",
+          "stepCount": "516191274",
+          "nonce": "UZpstblKi4261jzwv7WKD6GJk6W3ee92X24S2iqSEyE="
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "3735574029",
-    "chainId": "tasxpmloagnmbfxkeehe-77091684871730211047",
+    "expiryHeight": "6710415564",
+    "chainId": "ebrul-565648844622071770384975869",
     "fee": {
       "amount": {
-        "lo": "16809050601060191"
+        "lo": "896098301936349283"
       }
     }
   }

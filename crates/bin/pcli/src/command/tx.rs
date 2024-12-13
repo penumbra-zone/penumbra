@@ -264,10 +264,11 @@ pub enum TxCmd {
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
-        /// Whether to use a Bech32(non-m) address for the withdrawal.
+        /// Whether to use a transparent address (bech32, 32-byte) for
+        /// the return address in the withdrawal.
         /// Required for some chains for a successful acknowledgement.
         #[clap(long)]
-        use_compat_address: bool,
+        use_transparent_address: bool,
     },
     #[clap(display_order = 970)]
     /// Register a Noble forwarding account.
@@ -1018,7 +1019,7 @@ impl TxCmd {
                 channel,
                 source,
                 fee_tier,
-                use_compat_address,
+                use_transparent_address,
             } => {
                 let destination_chain_address = to;
 
@@ -1132,8 +1133,9 @@ impl TxCmd {
                     return_address: ephemeral_return_address,
                     // TODO: impl From<u64> for ChannelId
                     source_channel: ChannelId::from_str(format!("channel-{}", channel).as_ref())?,
-                    use_compat_address: *use_compat_address,
+                    use_compat_address: false,
                     ics20_memo: "".to_string(),
+                    use_transparent_address: *use_transparent_address,
                 };
 
                 let plan = Planner::new(OsRng)

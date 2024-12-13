@@ -1,77 +1,78 @@
 {
   "actions": [
     {
-      "validatorVote": {
-        "body": {
-          "proposal": "499559962",
-          "vote": {
-            "vote": "VOTE_NO"
-          },
-          "identityKey": {
-            "ik": "nFiW6rkeMgQiKHqZ0AfEZK/AzsKDb1NoXTdSgMO58uo="
-          },
-          "governanceKey": {
-            "gk": "1u9xVoClu+OLEgGCyd+TzqJCUTs+u70A9RROo/kj4AE="
-          },
-          "reason": {
-            "reason": "0Wivwap5nmQTkgMm9eMYv"
-          }
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "L0Y7D5yA65pvty/fncAMn+wa3RnXPw+Bnhi1//8Fzt4="
         },
-        "authSig": {
-          "inner": "LtvVp7EJF+htX+W64LV0Y1LubN5yWanY3b0KesF3gwmfFnNs4/b+NWMxIko4rzPHVXkEf5D/mBmk4RjTgzuGAA=="
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP+XJHRTjvNNahYeT3Zf2K4="
+        },
+        "unbondingAmount": {
+          "lo": "368735418534892302"
+        },
+        "balanceBlinding": "1fmKTx3U8+q/8qGz/LEf1g+aBHcGuO4mopFBWZlfjgI=",
+        "proofBlindingR": "G5gmLQa/kugffbA63b6tSohvX8GVyZC9uCdvJpPrpQg=",
+        "proofBlindingS": "2OQqq9BOsyDTL2Ry+7qChKgJcr2Dc7I1gAqtafMAAQ4=",
+        "unbondingStartHeight": "13162"
+      }
+    },
+    {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "hrqkmbfggbgrl-7614",
+          "description": "oyb-7108209791",
+          "signaling": {}
+        },
+        "depositAmount": {
+          "lo": "96792643880719544"
         }
       }
     },
     {
-      "actionDutchAuctionWithdraw": {
-        "auctionId": {
-          "inner": "m/zdbJC1ASwwv1z/yz+fyr9lUtaXXwfptWjub9I+dN4="
-        },
-        "seq": "642126660",
-        "reservesInput": {
-          "amount": {
-            "lo": "790696754725628587"
+      "positionOpen": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "752490546840670506"
+              },
+              "q": {
+                "lo": "685652472648998305"
+              }
+            },
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
+            }
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "reservesOutput": {
-          "amount": {
-            "lo": "22174763363613413"
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_OPENED"
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+          "reserves": {
+            "r1": {
+              "lo": "576677425087379471"
+            },
+            "r2": {
+              "lo": "821935855867602153"
+            }
+          },
+          "closeOnFill": true
         }
-      }
-    },
-    {
-      "ics20Withdrawal": {
-        "amount": {
-          "lo": "355752587401124815"
-        },
-        "denom": {
-          "denom": "0oVyqrc9d057e2"
-        },
-        "destinationChainAddress": "penumbra1vvyfptyh4s4w4caja607g5wwpk737lwr0arglnpnzzg400neezmvpluqgc9nceh29d6pwwqftldqd6mhwhdzexkhex92v75wwqnk455lhhyf80mf9tw8cunvxxver8p9gq3tad",
-        "returnAddress": {
-          "inner": "9zBzyC8N5prqd79bkfr3LQjyNCBJhouqfqOhJoQy9Hy9bZOcLiftvrwk1Z5JbjwxE+pmjNG0VDeGv5Bl2vdD1SaqVlvX0F7LT281AeuCLxs="
-        },
-        "timeoutHeight": {
-          "revisionNumber": "951475047",
-          "revisionHeight": "597738032"
-        },
-        "sourceChannel": "channel-0"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "7365106243",
-    "chainId": "mvjaulrrlqlpgxusmiymlourvvc-8306",
+    "expiryHeight": "16490740",
+    "chainId": "zhaqbslvzfqvhzrhvnyoih-843575411607877852659022682",
     "fee": {
       "amount": {
-        "lo": "414174351199549054"
+        "lo": "3498326502753566"
       }
     }
   }

@@ -1,11 +1,25 @@
 {
   "actions": [
     {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "5d+n5re432w595HMnHMWNIeiqBG7koxRWz+z/OAcdvo="
+        },
+        "epochIndex": "7758",
+        "unbondedAmount": {
+          "lo": "254573988376150326"
+        },
+        "delegationAmount": {
+          "lo": "654990827166732001"
+        }
+      }
+    },
+    {
       "actionDutchAuctionSchedule": {
         "description": {
           "input": {
             "amount": {
-              "lo": "822711624718070749"
+              "lo": "110793240593760250"
             },
             "assetId": {
               "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
@@ -15,37 +29,25 @@
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           },
           "maxOutput": {
-            "lo": "430750638761446118"
+            "lo": "638989916025602774"
           },
           "minOutput": {
-            "lo": "926253026304277144"
+            "lo": "203912627439460772"
           },
-          "startHeight": "483746522",
-          "endHeight": "483746523",
-          "stepCount": "368806483",
-          "nonce": "Jz+onRaC+XAwkjAlIGF6CFFWRMrKM2nRN3X3vh4Qub8="
-        }
-      }
-    },
-    {
-      "communityPoolDeposit": {
-        "value": {
-          "amount": {
-            "lo": "980503223363754344"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+          "startHeight": "747076843",
+          "endHeight": "747076844",
+          "stepCount": "269699674",
+          "nonce": "+axlhX1m8hOAaaXAcxlGp+yTRNHZJtVEvVQF/XzRFKI="
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "9396435381",
-    "chainId": "gbyqccglqydcruoszirlvmuqnt-8244639399167547",
+    "expiryHeight": "9795867227",
+    "chainId": "jtmkkgfpmpxgdgzkb-56292869373067953542534",
     "fee": {
       "amount": {
-        "lo": "983626274279646423"
+        "lo": "426559720761419916"
       }
     }
   }

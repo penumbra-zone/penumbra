@@ -1,14 +1,7 @@
 {
   "actions": [
     {
-      "positionClose": {
-        "positionId": {
-          "inner": "3bbkEtSgjhFIBKM177cemJLtXPcFjC189hyp82PQme4="
-        }
-      }
-    },
-    {
-      "swapClaim": {
+      "swap": {
         "swapPlaintext": {
           "tradingPair": {
             "asset1": {
@@ -19,59 +12,43 @@
             }
           },
           "delta1I": {
-            "lo": "396407965900561063"
+            "lo": "72887687410642095"
           },
           "delta2I": {
-            "lo": "31512525003725287"
+            "lo": "547635641772447099"
           },
           "claimFee": {
             "amount": {}
           },
           "claimAddress": {
-            "inner": "NNtbsuSI/Znlg0w2zKZo6gqkNX/02iLqEQ0blH/17S0/g9ZYxTM3feLvghIhyqqISmOYghzgIh0wZ3NTHHdKjcgogx5M0DBWTN6Mc7zJipg="
+            "inner": "0bniv4eu9150x4dvwnqGvQTwyaAd8h8hBi9jfjPE6vXSklK7Q10uIeaHzf5mMQVIBEPf8hUuDHGBCUdPgcS71KESXOGKpymM4N4tAaW8oYU="
           },
-          "rseed": "jeYrMjQpR7Ky1p/R/3tIsRqh29ceNbLzEjBP/ctjCck="
+          "rseed": "KeOJXP1AP7JzZYpFhct3JdrVkiHPs9qiCU/+FRJ5g1Q="
         },
-        "outputData": {
-          "delta1": {
-            "lo": "1101423576"
-          },
-          "delta2": {
-            "lo": "1567061194"
-          },
-          "lambda1": {
-            "lo": "1799"
-          },
-          "lambda2": {
-            "lo": "746"
-          },
-          "unfilled1": {
-            "lo": "1097"
-          },
-          "unfilled2": {
-            "lo": "1121"
-          },
-          "tradingPair": {
-            "asset1": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            },
-            "asset2": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
-          }
+        "feeBlinding": "QosWaO7xqNjGM/8R/D5su71Kzakyyka+0diHIQbVCQQ=",
+        "proofBlindingR": "aL14qFSs2Ann3ONjBFYy5V5y+hsv1tsXLgHoy9U/VxE=",
+        "proofBlindingS": "K/EoLZ6PgiJSlfGIcwM8fszcp+yq+qJT4/eZX7hILAk="
+      }
+    },
+    {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "rxrthzxztjzqytgjtijrhi-6529552803510343709013",
+          "description": "snisohocwfgeviddxdvlwbo-33080487998",
+          "signaling": {}
         },
-        "epochDuration": "1000",
-        "proofBlindingR": "l8LmlnLtcFqlgianoxogzdvDlkScAgUjxACBkM1S7RA=",
-        "proofBlindingS": "Qu6BJ9ZKFmHZY2D23mxQj1vwChQiV1RUKAyuE/AfZhI="
+        "depositAmount": {
+          "lo": "61121106144839310"
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6509449978",
-    "chainId": "jwfqgaphakccpctwxwsryqvdzbqz-1046450848",
+    "expiryHeight": "7163888795",
+    "chainId": "txeyufhwmxngiob-316114451531670780",
     "fee": {
       "amount": {
-        "lo": "753235038814796507"
+        "lo": "666412132367616610"
       }
     }
   }

@@ -1,41 +1,40 @@
 {
   "actions": [
     {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "WcacEUYpT62Ori8ZXsoTfzt1bjpezIPTKjqxq9lrJXU="
+      "proposalSubmit": {
+        "proposal": {
+          "title": "zrfrwigpehbjckzw-0613652929229646",
+          "description": "mxovalcqch-50367770",
+          "signaling": {}
         },
-        "unbondedAmount": {
-          "lo": "752512952870004296"
-        },
-        "delegationAmount": {
-          "lo": "180482167411233740"
-        },
-        "fromEpoch": {
-          "index": "9834",
-          "startHeight": "9834"
+        "depositAmount": {
+          "lo": "766889808489133079"
         }
       }
     },
     {
-      "communityPoolSpend": {
-        "value": {
-          "amount": {
-            "lo": "666998942173848532"
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "LgkDJ3KQE5WaYZj231yZiGwJACXWjbcifxuu5h+/fwQ="
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "consensusKey": "u1DbmaIk2J6fAr493M/Yckk1vLw8SurbmoHbqdwVvXg=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "LgkDJ3KQE5WaYZj231yZiGwJACXWjbcifxuu5h+/fwQ="
           }
-        }
+        },
+        "authSig": "/OdeoxySg7t7Excqef5Vx7NE4SeSA5rWoUfsrlbnFgK78BkUWZKPmvPvIXGkihUqHl2TBAY3XsmajBAhKxjaAQ=="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "7185052916",
-    "chainId": "vhxkadteun-01798796925197635",
+    "expiryHeight": "6627548769",
+    "chainId": "ukeftelbjnntmusj-343757451",
     "fee": {
       "amount": {
-        "lo": "275343058795158683"
+        "lo": "20865560422820502"
       }
     }
   }
