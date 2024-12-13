@@ -1,41 +1,70 @@
 {
   "actions": [
     {
-      "communityPoolSpend": {
-        "value": {
-          "amount": {
-            "lo": "182169567793400948"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+      "positionClose": {
+        "positionId": {
+          "inner": "ZaXVx44Ksl8LB84e1YlEoRyeoW7LAn3xPE5B8ECxz0c="
         }
       }
     },
     {
-      "undelegateClaim": {
+      "positionOpen": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "633458098361194110"
+              },
+              "q": {
+                "lo": "283318158393225329"
+              }
+            },
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
+            }
+          },
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_OPENED"
+          },
+          "reserves": {
+            "r1": {
+              "lo": "227531294295513491"
+            },
+            "r2": {
+              "lo": "133548629561605043"
+            }
+          },
+          "closeOnFill": true
+        }
+      }
+    },
+    {
+      "delegate": {
         "validatorIdentity": {
-          "ik": "5RMUaG3KAiiOS8umSYfdl03Pdfeqq9UGDmOix94j4bc="
+          "ik": "1n1wKRwyp0hKMNlHCydIBixHxan2/NIHSfDLMSeNevo="
         },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP24uscQyylenhsImgJ1JUc="
+        "epochIndex": "1552",
+        "unbondedAmount": {
+          "lo": "988630199176420697"
         },
-        "unbondingAmount": {
-          "lo": "635862938662374571"
-        },
-        "balanceBlinding": "UKNVDQMH0kkDI8ADq4HxRj7MipTc6mVADYa9tIyGEQA=",
-        "proofBlindingR": "gfHEG5ME6RgHbMBc1XD5XHiJMymqVYN7otT/O9qXyxE=",
-        "proofBlindingS": "qgFAbfZgcOoPfMvg+cn7jis9u3pkzq3zJfZBvWTWGgk=",
-        "unbondingStartHeight": "96365"
+        "delegationAmount": {
+          "lo": "153702134284315649"
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "167592944",
-    "chainId": "bnuiqvevjitdaamyzn-2043254365281265516411890",
+    "expiryHeight": "208365756",
+    "chainId": "utekqgwijzn-597",
     "fee": {
       "amount": {
-        "lo": "599063820810496597"
+        "lo": "389032767397373614"
       }
     }
   }

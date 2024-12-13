@@ -1,3 +1,32 @@
+/// There's only one transparent address per wallet, so this request has no parameters;
+/// the message exists to satisfy forward-compatibility properties.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransparentAddressRequest {}
+impl ::prost::Name for TransparentAddressRequest {
+    const NAME: &'static str = "TransparentAddressRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransparentAddressResponse {
+    /// The raw (binary) transparent address
+    #[prost(message, optional, tag = "1")]
+    pub address: ::core::option::Option<super::super::core::keys::v1::Address>,
+    /// The t-address encoding of the transparent address
+    #[prost(string, tag = "2")]
+    pub encoding: ::prost::alloc::string::String,
+}
+impl ::prost::Name for TransparentAddressResponse {
+    const NAME: &'static str = "TransparentAddressResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
 /// Filters in an `AuctionsRequest` will be combined using `AND` logic -- that
 /// is, the more filters you add, the fewer responses you're likely to get.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -2117,6 +2146,34 @@ pub mod view_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// Returns the transparent address for the user's wallet.
+        pub async fn transparent_address(
+            &mut self,
+            request: impl tonic::IntoRequest<super::TransparentAddressRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::TransparentAddressResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/TransparentAddress",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "TransparentAddress"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
         /// Query for wallet id
         pub async fn wallet_id(
             &mut self,
@@ -2798,6 +2855,14 @@ pub mod view_service_server {
             request: tonic::Request<super::AddressByIndexRequest>,
         ) -> std::result::Result<
             tonic::Response<super::AddressByIndexResponse>,
+            tonic::Status,
+        >;
+        /// Returns the transparent address for the user's wallet.
+        async fn transparent_address(
+            &self,
+            request: tonic::Request<super::TransparentAddressRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::TransparentAddressResponse>,
             tonic::Status,
         >;
         /// Query for wallet id
@@ -3581,6 +3646,53 @@ pub mod view_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = AddressByIndexSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/TransparentAddress" => {
+                    #[allow(non_camel_case_types)]
+                    struct TransparentAddressSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::TransparentAddressRequest>
+                    for TransparentAddressSvc<T> {
+                        type Response = super::TransparentAddressResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::TransparentAddressRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::transparent_address(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = TransparentAddressSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

@@ -3,29 +3,32 @@
     {
       "actionDutchAuctionEnd": {
         "auctionId": {
-          "inner": "XTDpe9No0XGJuhIof9R/H0nzlbndN47FcWp19oan5DA="
+          "inner": "c0FVvT19ufQMNoZkw4KE4iOWdnMwkedavwgeysjoPWo="
         }
       }
     },
     {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "ynnajcmmygjtvzebgdinw-5281",
-          "description": "yakipgupcjcwbzbhcjfh-6887007188777625904",
-          "signaling": {}
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "846711980480633701"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         },
-        "depositAmount": {
-          "lo": "765831618350417324"
+        "address": {
+          "inner": "/5VVlhnPz2rN3eOjE8R+aD17ie1u7hqm75JOeHIhEGSFcSTAGnQLPS2eGZEa3Bn9flIgapaiKThFkSEeYMEaccv9m4rgaqaV5sKkiyAz1Mg="
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "30254982",
-    "chainId": "lmmpzfvkmrjymqhr-821068746509121003911302",
+    "expiryHeight": "3827603787",
+    "chainId": "htxqbyniabeljdzvkagj-12379991737703822",
     "fee": {
       "amount": {
-        "lo": "887886743953552340"
+        "lo": "253952826649855945"
       }
     }
   }

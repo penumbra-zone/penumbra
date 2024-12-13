@@ -1,64 +1,60 @@
 {
   "actions": [
     {
-      "communityPoolOutput": {
-        "value": {
+      "actionDutchAuctionWithdraw": {
+        "auctionId": {
+          "inner": "tYen9vdCq6ujbL216qi7ocFMD0wE07BgmY1WKDxSsZ0="
+        },
+        "seq": "618503155",
+        "reservesInput": {
           "amount": {
-            "lo": "240451278658506679"
+            "lo": "84852211894696562"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "address": {
-          "inner": "XYzPD9JIGirLSm2WQkkkdfT04NeIVklkHIfheRkeQnjnoERF/iR2XCHD0axHQFQAfH/x3YWubcaG2jN2BQTvNm5DIOoQm6g1REsWYpx3Ikc="
-        }
-      }
-    },
-    {
-      "positionClose": {
-        "positionId": {
-          "inner": "z4A/5pWH7fMa+aNUram3n4gPDAavJ+7rrTfOLqrGVd0="
-        }
-      }
-    },
-    {
-      "validatorDefinition": {
-        "validator": {
-          "identityKey": {
-            "ik": "eHURaNCDZQ0nIq+Z2ICt4goHmJz+pqGwzh1Z6Vk3Xgo="
+        "reservesOutput": {
+          "amount": {
+            "lo": "949839836777165243"
           },
-          "consensusKey": "NUz+oFzWNut9RkQSONI5G250S8JkZlkbyvjfQW1NhJM=",
-          "name": "test validator",
-          "enabled": true,
-          "governanceKey": {
-            "gk": "eHURaNCDZQ0nIq+Z2ICt4goHmJz+pqGwzh1Z6Vk3Xgo="
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
-        },
-        "authSig": "GuAHDPSWydG/kdgjsCcw5hJo+9Mf0mARFwPTxw/dzAkoWqP/o31usbbR0E4kH4t7amc5BapBqTEL/AWpn9SmAw=="
+        }
       }
     },
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "3HO/680oYPfR/oxFu9c85ASbXfU/IbuVbtiBpVwc2DA="
+      "proposalSubmit": {
+        "proposal": {
+          "title": "seefqmo-750448",
+          "description": "iuf-844",
+          "signaling": {}
         },
-        "epochIndex": "5314",
-        "unbondedAmount": {
-          "lo": "140229987020723004"
+        "depositAmount": {
+          "lo": "774139197522646266"
+        }
+      }
+    },
+    {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "sefijeqm-92688048104843706673977014363430",
+          "description": "cbpkaruv-593976592810878117828",
+          "signaling": {}
         },
-        "delegationAmount": {
-          "lo": "545618568346872141"
+        "depositAmount": {
+          "lo": "978143614202696154"
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "1669319987",
-    "chainId": "pyvtwysgympchvcsuoqryjtjj-60635851526",
+    "expiryHeight": "7229120705",
+    "chainId": "etu-2",
     "fee": {
       "amount": {
-        "lo": "19543685207478289"
+        "lo": "859783043176233021"
       }
     }
   }

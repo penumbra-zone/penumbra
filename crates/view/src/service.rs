@@ -815,6 +815,25 @@ impl ViewService for ViewServer {
             address_index: fvk.address_index(&address).map(Into::into),
         }))
     }
+    async fn transparent_address(
+        &self,
+        _request: tonic::Request<pb::TransparentAddressRequest>,
+    ) -> Result<tonic::Response<pb::TransparentAddressResponse>, tonic::Status> {
+        let fvk =
+            self.storage.full_viewing_key().await.map_err(|_| {
+                tonic::Status::failed_precondition("Error retrieving full viewing key")
+            })?;
+
+        let encoding = fvk.incoming().transparent_address();
+        let address: Address = encoding
+            .parse()
+            .map_err(|_| tonic::Status::internal("could not parse newly generated address"))?;
+
+        Ok(tonic::Response::new(pb::TransparentAddressResponse {
+            address: Some(address.into()),
+            encoding,
+        }))
+    }
 
     #[instrument(skip_all, level = "trace")]
     async fn ephemeral_address(

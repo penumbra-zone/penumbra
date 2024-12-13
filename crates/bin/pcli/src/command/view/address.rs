@@ -16,9 +16,9 @@ pub struct AddressCmd {
     /// Output in base64 format, instead of the default bech32.
     #[clap(long)]
     base64: bool,
-    /// Use compat (bech32, not bech32m) address encoding, for compatibility with some IBC chains.
+    /// Use transparent (bech32, 32-byte) address encoding, for compatibility with some IBC chains.
     #[clap(long)]
-    compat: bool,
+    transparent: bool,
     /// Print the current FVK
     #[clap(long)]
     fvk: bool,
@@ -49,8 +49,13 @@ impl AddressCmd {
                     "{}",
                     base64::engine::general_purpose::STANDARD.encode(address.to_vec()),
                 );
-            } else if self.compat {
-                println!("{}", address.compat_encoding());
+            } else if self.transparent {
+                if index != 0 {
+                    return Err(anyhow::anyhow!(
+                        "warning: index must be 0 to use transparent address encoding"
+                    ));
+                }
+                println!("{}", fvk.incoming().transparent_address());
             } else {
                 if self.fvk {
                     eprintln!("🔥 CAUTION: POSSESSION OF THE FOLLOWING FULL VIEWING KEY WILL");
