@@ -101,17 +101,20 @@ impl TryFrom<pb::Balance> for Balance {
                                     *existing_amount = NonZeroU128::new(diff)
                                         .ok_or_else(|| anyhow::anyhow!("Reduce required amount"))?;
                                 }
+                                Some(0) => {
+                                    entry.remove();
+                                }
                                 _ => {
                                     *entry.get_mut() = Imbalance::Provided(
                                         NonZeroU128::new(amount.get() - existing_amount.get())
                                             .ok_or_else(|| {
                                                 anyhow::anyhow!(
-                                                    "Convert required amount to provided amount"
+                                                    "Convert required to provided amount"
                                                 )
                                             })?,
                                     );
                                 }
-                            };
+                            }
                         }
                         (Imbalance::Provided(existing_amount), true) => {
                             match existing_amount.get().checked_sub(amount.get()) {
@@ -119,12 +122,15 @@ impl TryFrom<pb::Balance> for Balance {
                                     *existing_amount = NonZeroU128::new(diff)
                                         .ok_or_else(|| anyhow::anyhow!("Reduce provided amount"))?;
                                 }
+                                Some(0) => {
+                                    entry.remove();
+                                }
                                 _ => {
                                     *entry.get_mut() = Imbalance::Required(
                                         NonZeroU128::new(amount.get() - existing_amount.get())
                                             .ok_or_else(|| {
                                                 anyhow::anyhow!(
-                                                    "Convert provided amount to required amount"
+                                                    "Convert provided to required amount"
                                                 )
                                             })?,
                                     );
@@ -908,6 +914,55 @@ mod test {
         };
 
         assert!(Balance::try_from(proto_balance).is_err());
+    }
+
+    /// Implement fallible conversion (protobuf to domain type) for cases where [-x UM, +x UM]
+    /// [+x UM, -x UM].
+    #[test]
+    fn try_from_fallible_conversion_failure_zero_invariant() {
+        let proto_balance_0 = pb::Balance {
+            values: vec![
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: true,
+                },
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: false,
+                },
+            ],
+        };
+
+        let proto_balance_1 = pb::Balance {
+            values: vec![
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: false,
+                },
+                pb::balance::SignedValue {
+                    value: Some(pb::Value {
+                        asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                        amount: Some(Amount::from(100u128).into()),
+                    }),
+                    negated: true,
+                },
+            ],
+        };
+
+        let balance_0 = Balance::try_from(proto_balance_0).expect("fallible conversion");
+        let balance_1 = Balance::try_from(proto_balance_1).expect("fallible conversion");
+
+        assert!(balance_0.balance.get(&STAKING_TOKEN_ASSET_ID).is_none());
+        assert!(balance_1.balance.get(&STAKING_TOKEN_ASSET_ID).is_none());
     }
 
     /// Implement infallible conversion (domain type to protobuf).
