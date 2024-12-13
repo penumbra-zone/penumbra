@@ -1485,6 +1485,7 @@ impl MockRelayer {
             source_channel: ChannelId::from_str("channel-0")?,
             // Penumbra <-> Penumbra so false
             use_compat_address: false,
+            use_transparent_address: false,
             ics20_memo: "".to_string(),
         };
         // There will need to be `Spend` and `Output` actions

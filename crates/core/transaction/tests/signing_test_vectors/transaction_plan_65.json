@@ -1,51 +1,59 @@
 {
   "actions": [
     {
-      "proposalDepositClaim": {
-        "proposal": "290435110",
-        "depositAmount": {
-          "lo": "397061836821711838"
+      "swap": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "859324251814478644"
+          },
+          "delta2I": {
+            "lo": "901695431274064419"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "18qvM89j9zTrUEeG013xYfWE6vZNrj6UQUDbkkKFKfUf8oQ3eedBdnyeaLSrRSrMB5PyNI5rov0qB3gjba8KAeh21MUXzBiggkIyM4BrjGI="
+          },
+          "rseed": "RJQU8db1qR/SbuzdQmwQKrwfLqqWp87N8fQO43ctJj8="
         },
-        "outcome": {
-          "slashed": {}
-        }
-      }
-    },
-    {
-      "proposalDepositClaim": {
-        "proposal": "925454871",
-        "depositAmount": {
-          "lo": "996803853926948758"
-        },
-        "outcome": {
-          "passed": {}
-        }
+        "feeBlinding": "tQMT+J2T0jAhPwcUM1LW/UhDpzByu3RsJMlzjbqy6AI=",
+        "proofBlindingR": "MgHNwa4ZfXbtkR95imQJkvDr2blnLmv7vwCZ3eUIzhA=",
+        "proofBlindingS": "+Lz4LK5tqO6su4IntCDPDjfhTBkbjAPGhiCZezROwwE="
       }
     },
     {
       "undelegate": {
         "validatorIdentity": {
-          "ik": "/avzFpkBoNh4BBdAXNWyYJkGJ7oP9fv8yCRM7zbEXOk="
+          "ik": "kbptXf02GZuE7BCv2dVislWHdltLTfVdnIVNEvkQ6GI="
         },
         "unbondedAmount": {
-          "lo": "530511781458972404"
+          "lo": "728020950189583856"
         },
         "delegationAmount": {
-          "lo": "150481363579985174"
+          "lo": "75847630668554661"
         },
         "fromEpoch": {
-          "index": "8627",
-          "startHeight": "8627"
+          "index": "8393",
+          "startHeight": "8393"
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "5830716849",
-    "chainId": "togtwejgefspbzqxkjzx-53973943018851518386",
+    "expiryHeight": "6136234607",
+    "chainId": "ovlgrpgazomnivwxm-0129181629217031183777320",
     "fee": {
       "amount": {
-        "lo": "694466351950944283"
+        "lo": "593416948151669404"
       }
     }
   }

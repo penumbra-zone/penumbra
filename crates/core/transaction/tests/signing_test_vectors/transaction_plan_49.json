@@ -1,55 +1,39 @@
 {
   "actions": [
     {
-      "positionWithdraw": {
-        "reserves": {
-          "r1": {
-            "lo": "156835881934192213"
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "105487505849066331"
           },
-          "r2": {
-            "lo": "115627167388872578"
-          }
-        },
-        "positionId": {
-          "inner": "engl3YUUdi9iiRLrjh01gUIC49fuDfhSl4hgG0s8Yp8="
-        },
-        "pair": {
-          "asset1": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          },
-          "asset2": {
+          "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
-        },
-        "sequence": "1"
+        }
       }
     },
     {
-      "output": {
+      "communityPoolOutput": {
         "value": {
           "amount": {
-            "lo": "553286105063296986"
+            "lo": "223823246583562188"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "destAddress": {
-          "inner": "QP0Bom3TH3ENHgZk5FWeoEKfF5KA1OqKM0m2CfKFYqNDM4Vkb4/M4nHz9eexsEJNvPnH+hos9kN0anmLCXRsphl0gbsCsjShwbJkEiyhUDI="
-        },
-        "rseed": "QuawixFRGn9GZrfF0p/3dYLhLakOdecj0XW12bD6AnI=",
-        "valueBlinding": "ogNf8Bxh+ZvpwB+oVJvXEgjjdQFXwG9eRdQjY5fplAA=",
-        "proofBlindingR": "U5Z2xxHUXTwscy0V6TRlI5jWmfwwYtaYhezzbmHDZRA=",
-        "proofBlindingS": "+TxTE8eMKqNVU7tW4cROU7ZOGQPd3m22H/zTVidekhA="
+        "address": {
+          "inner": "0nu/JCr7CH2ujOOSE5V30n8Np4JgnVXlacjBbPS/1Id1ADNEdqcu+wSnQ3SwIZZieMDVigyw8R25TI6hQ1W6jnJBiCiKtMt23hRO3Vzg/5M="
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "1062325585",
-    "chainId": "qibevlnmicqcvt-49581935210272",
+    "expiryHeight": "6517265301",
+    "chainId": "zzkidrpoeyjqa-309",
     "fee": {
       "amount": {
-        "lo": "279865984164232043"
+        "lo": "370447175926720781"
       }
     }
   }

@@ -46,6 +46,8 @@ pub struct Ics20Withdrawal {
     // of the ICS-20 FungibleTokenPacketData for this withdrawal.
     // Commonly used for packet forwarding support, or other protocols that may support usage of the memo field.
     pub ics20_memo: String,
+    // Whether to use a transparent address for the return address in the withdrawal.
+    pub use_transparent_address: bool,
 }
 
 #[cfg(feature = "component")]
@@ -112,6 +114,7 @@ impl DomainType for Ics20Withdrawal {
     type Proto = pb::Ics20Withdrawal;
 }
 
+#[allow(deprecated)]
 impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
     fn from(w: Ics20Withdrawal) -> Self {
         pb::Ics20Withdrawal {
@@ -124,10 +127,12 @@ impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
             source_channel: w.source_channel.to_string(),
             use_compat_address: w.use_compat_address,
             ics20_memo: w.ics20_memo.to_string(),
+            use_transparent_address: w.use_transparent_address,
         }
     }
 }
 
+#[allow(deprecated)]
 impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
     type Error = anyhow::Error;
     fn try_from(s: pb::Ics20Withdrawal) -> Result<Self, Self::Error> {
@@ -155,6 +160,7 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
             source_channel: ChannelId::from_str(&s.source_channel)?,
             use_compat_address: s.use_compat_address,
             ics20_memo: s.ics20_memo,
+            use_transparent_address: s.use_transparent_address,
         })
     }
 }

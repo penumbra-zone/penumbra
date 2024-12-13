@@ -1,45 +1,43 @@
 {
   "actions": [
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "ueLG2LHLS2GZyPeo/UkATJkEuggas+KdnLmiAs1BWko="
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "3373881155391355"
         },
-        "epochIndex": "7583",
-        "unbondedAmount": {
-          "lo": "15793144669807645"
+        "denom": {
+          "denom": "0uC"
         },
-        "delegationAmount": {
-          "lo": "334282447469022874"
-        }
+        "destinationChainAddress": "penumbra1xm0z5x3n7gm5fwpg5szzrp5rh9lkhw4krp5sdyau0m583xlresj04m28tgluxlz2wlp48cfw4x5ayxgehq8pdkwmkatmfxmhy5zlrazl2hc8a02dsf4w2ex0xsv9c0hwectyrs",
+        "returnAddress": {
+          "inner": "9bYmDKXUX0u0R4ktQQy6j0ysqLM3adW2VI02twIetL9b488iRLJ6HIggCKijCD7kLadsiRZkQuso8wVf2C1YT4roBJu0qH+/2yYK/Z/snQ8="
+        },
+        "timeoutHeight": {
+          "revisionNumber": "838289593",
+          "revisionHeight": "507170589"
+        },
+        "sourceChannel": "channel-0"
       }
     },
     {
-      "communityPoolDeposit": {
+      "communityPoolSpend": {
         "value": {
           "amount": {
-            "lo": "723749552762830993"
+            "lo": "228861155409067192"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         }
       }
-    },
-    {
-      "positionClose": {
-        "positionId": {
-          "inner": "D7uR3PXUhytuF/wIfwgsG7BOPRTb8bJPUJqE5d6zA18="
-        }
-      }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "1442141052",
-    "chainId": "wptbrepftqnteycltrh-5668754710518",
+    "expiryHeight": "9733323270",
+    "chainId": "boztic-225159793053704637422672",
     "fee": {
       "amount": {
-        "lo": "593192677678758686"
+        "lo": "535445417177531765"
       }
     }
   }
