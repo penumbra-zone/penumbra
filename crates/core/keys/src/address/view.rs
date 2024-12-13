@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use serde::{Deserialize, Serialize};
 
 use penumbra_proto::{penumbra::core::keys::v1 as pb, DomainType};
@@ -95,6 +97,76 @@ impl TryFrom<pb::AddressView> for AddressView {
                 })
             }
             None => Err(anyhow::anyhow!("AddressView missing address_view field")),
+        }
+    }
+}
+
+// Canonical ordering for serialization
+impl PartialOrd for AddressView {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        use AddressView::*;
+        // Opaque < Decoded
+        match (self, other) {
+            (Opaque { .. }, Decoded { .. }) => Some(Ordering::Less),
+            (Decoded { .. }, Opaque { .. }) => Some(Ordering::Greater),
+            (Opaque { address: a1 }, Opaque { address: a2 }) => a1.partial_cmp(a2),
+            (
+                Decoded {
+                    address: a1,
+                    index: i1,
+                    wallet_id: w1,
+                },
+                Decoded {
+                    address: a2,
+                    index: i2,
+                    wallet_id: w2,
+                },
+            ) => (a1, i1, w1).partial_cmp(&(a2, i2, w2)),
+        }
+    }
+}
+
+impl Ord for AddressView {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Opaque < Decoded
+        match (self, other) {
+            (AddressView::Opaque { address: a1 }, AddressView::Opaque { address: a2 }) => {
+                a1.cmp(a2)
+            }
+            (
+                AddressView::Decoded {
+                    address: a1,
+                    index: i1,
+                    wallet_id: w1,
+                },
+                AddressView::Decoded {
+                    address: a2,
+                    index: i2,
+                    wallet_id: w2,
+                },
+            ) => match a1.cmp(a2) {
+                Ordering::Equal => match i1.cmp(i2) {
+                    Ordering::Equal => w1.cmp(w2),
+                    ord => ord,
+                },
+                ord => ord,
+            },
+            (
+                AddressView::Opaque { address: _ },
+                AddressView::Decoded {
+                    address: _,
+                    index: _,
+                    wallet_id: _,
+                },
+            ) => Ordering::Less,
+            (
+                AddressView::Decoded {
+                    address: _,
+                    index: _,
+                    wallet_id: _,
+                },
+                AddressView::Opaque { address: _ },
+            ) => Ordering::Greater,
         }
     }
 }
