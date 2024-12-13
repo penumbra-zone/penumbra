@@ -1,31 +1,61 @@
 {
   "actions": [
     {
-      "communityPoolSpend": {
-        "value": {
-          "amount": {
-            "lo": "917708635555222740"
+      "actionDutchAuctionSchedule": {
+        "description": {
+          "input": {
+            "amount": {
+              "lo": "852903475409611982"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "assetId": {
+          "outputId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+          },
+          "maxOutput": {
+            "lo": "106360354624939678"
+          },
+          "minOutput": {
+            "lo": "729172063334541035"
+          },
+          "startHeight": "464161322",
+          "endHeight": "464161323",
+          "stepCount": "996995986",
+          "nonce": "Tlmo86ylsGCMpVscVBPXQixErC+XNy/9eTbfKvuoO2A="
         }
       }
     },
     {
-      "actionDutchAuctionEnd": {
-        "auctionId": {
-          "inner": "szCiZisOXrERqpzOkyvnLAYj1m6nJiuM5gXysKNJWqQ="
+      "validatorVote": {
+        "body": {
+          "proposal": "491603755",
+          "vote": {
+            "vote": "VOTE_YES"
+          },
+          "identityKey": {
+            "ik": "mvbp79FxNcwJDRNz533JdrwGSpCduI7KYOpwLNorOz4="
+          },
+          "governanceKey": {
+            "gk": "mFBPjK0cZjm6tnSblfbvxA28DjHoYtxfPKvYPwzNMhE="
+          },
+          "reason": {
+            "reason": "U9584s0"
+          }
+        },
+        "authSig": {
+          "inner": "5EuZSh0QqnLMsMJzY93mSFmBxzk4arCfb55iJqzi7QGXJIhwcfI9NbZohFf5eQu5GjINNmh+HccR/rdyYmVlAQ=="
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "5861263868",
-    "chainId": "q-921525899986864461645755934",
+    "expiryHeight": "6430231960",
+    "chainId": "uzovlndphgwcmxrqavmbmfx-72884303434896050268298352",
     "fee": {
       "amount": {
-        "lo": "194766905819855844"
+        "lo": "427556939212154174"
       }
     }
   }

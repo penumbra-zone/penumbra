@@ -1,39 +1,51 @@
 {
   "actions": [
     {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "344149540286551252"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "uk1EubuiVO8HErcV9Cwx1NIJoNDKykDcDp1h9rKTvyQ="
         },
-        "address": {
-          "inner": "yiuRnUOYo12VWa07n9TUTadalVq9iksf1+ZRAdl1CwcNxz6L8XBLYEDDrpajNT6soeDvBPdKuBu5k6OHmC/N4bDu5+XGU3fcjnuclKUgh6w="
-        }
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP3tKIznA6+36Q/5ckdFOPA="
+        },
+        "unbondingAmount": {
+          "lo": "566130237451411183"
+        },
+        "balanceBlinding": "7EjDdDuVksC36yOn496WhkKU6uUphW0uWovhQxU60wE=",
+        "proofBlindingR": "Sn7xoQ/S6r5w+OgT9cCUp9yA8uixuArfqwIfwoIrzwM=",
+        "proofBlindingS": "UrSt+S/GDqLLi+x3EYCGUZlR6OdfelfDmV7LvZ8EFw8=",
+        "unbondingStartHeight": "44906"
       }
     },
     {
-      "communityPoolSpend": {
-        "value": {
-          "amount": {
-            "lo": "573188836335646955"
+      "validatorVote": {
+        "body": {
+          "proposal": "932822108",
+          "vote": {
+            "vote": "VOTE_NO"
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "identityKey": {
+            "ik": "hbRZ7/dh2ysPtVWgJAKjBE6t2GkYYkup7nq2w6o2pxk="
+          },
+          "governanceKey": {
+            "gk": "3oAg9HlS9OVBjhalc7sW3ConWcGOUNSnjpBY4jth2xA="
+          },
+          "reason": {
+            "reason": "n1mwbHttLwjh7"
           }
+        },
+        "authSig": {
+          "inner": "1qcWLaa5EgGKAbozXsbhpnxGNAwdvQ7JtoF/dtiOdQz2U6DhAGX9AIKep6G8I8h9joA+e7p54Vy5eQTs2Yk7AQ=="
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "3510866232",
-    "chainId": "fqzcqyjouribnsokfj-56868",
+    "expiryHeight": "9667223034",
+    "chainId": "zmhaofblvkwdszzeuxinx-3315295692925964928907401",
     "fee": {
       "amount": {
-        "lo": "372654856776073496"
+        "lo": "177412773365136471"
       }
     }
   }

@@ -1,58 +1,51 @@
 {
   "actions": [
     {
-      "actionDutchAuctionWithdraw": {
-        "auctionId": {
-          "inner": "tp/ZH5p59aFYfrUCr0W9/th/yCQ5JoJ45WRnscvnsH0="
+      "delegatorVote": {
+        "proposal": "600307667",
+        "vote": {
+          "vote": "VOTE_ABSTAIN"
         },
-        "seq": "166896910",
-        "reservesInput": {
-          "amount": {
-            "lo": "387576649512742381"
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "850848196871490857"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "rseed": "r8TyElHz0H3lGKxIKaD+IynWwTpyNF0A1BGi1+zzJrE=",
+          "address": {
+            "inner": "m/4ko6fjOrVs7LwmKzUQgB2p0R7lKwUkJZFppOTBM+p92pnWXN5aZWbKDy9fU7D/fSpQu12giwdjZ6H1UGuWWecj+wumQoknmOWy+P2dETo="
           }
-        },
-        "reservesOutput": {
-          "amount": {
-            "lo": "158751433229900404"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        }
-      }
-    },
-    {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "s2x5E6BoKrLd2FExXtyaRre/CGXdnIf3IgCtFHZ++Ro="
         },
         "unbondedAmount": {
-          "lo": "35105153384464635"
+          "lo": "273459012886727127"
         },
-        "delegationAmount": {
-          "lo": "545185666844018131"
-        },
-        "fromEpoch": {
-          "index": "142",
-          "startHeight": "142"
-        }
+        "randomizer": "Aomx564R104JYbIeop7LsO/M5gV99B2yRTxilsKHBAM=",
+        "proofBlindingR": "r1yCA/E2sQXFlcb72uSlP7zPdPUNLwiC6JhsARjdxgY=",
+        "proofBlindingS": "ZSXDlHX1JVYSsKsC6mdFmNk7CWaIwWdGk1dMJaBfYAg="
       }
     },
     {
-      "proposalWithdraw": {
-        "proposal": "18496651"
+      "proposalDepositClaim": {
+        "proposal": "859580653",
+        "depositAmount": {
+          "lo": "102575997101149630"
+        },
+        "outcome": {
+          "slashed": {}
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "1998613256",
-    "chainId": "cnmkptqvxazriqivquhaazzayjr-618417965884",
+    "expiryHeight": "9161049251",
+    "chainId": "nxhqrylxvbgye-80938980112884",
     "fee": {
       "amount": {
-        "lo": "732461060190540421"
+        "lo": "811644454110626324"
       }
     }
   }
