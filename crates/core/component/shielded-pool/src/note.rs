@@ -108,6 +108,12 @@ pub enum Error {
 impl Note {
     pub fn controlled_by(&self, fvk: &FullViewingKey) -> bool {
         if let Some(address_index) = fvk.address_index(&self.address()) {
+            // Check if this note is associated with the wallet's transparent address.
+            let transparent_transmission_key = fvk.incoming().transparent_transmission_key();
+            if transparent_transmission_key == *self.transmission_key() {
+                return true;
+            }
+
             // Get the expected clue key and check it matches what is on the provided note address.
             let (expected_address, _) = fvk.incoming().payment_address(address_index);
             let expected_ck_d = expected_address.clue_key();
