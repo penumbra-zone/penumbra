@@ -135,7 +135,6 @@ impl TryFrom<&[u8]> for PayloadKey {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         let bytes: [u8; PAYLOAD_KEY_LEN_BYTES] = slice
-            .as_ref()
             .try_into()
             .map_err(|_| anyhow::anyhow!("PayloadKey incorrect len"))?;
         Ok(Self(*Key::from_slice(&bytes)))

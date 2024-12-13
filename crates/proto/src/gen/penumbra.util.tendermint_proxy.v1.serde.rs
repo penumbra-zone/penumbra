@@ -21,6 +21,7 @@ impl serde::Serialize for AbciQueryRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.util.tendermint_proxy.v1.ABCIQueryRequest", len)?;
         if !self.data.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("data", pbjson::private::base64::encode(&self.data).as_str())?;
         }
         if !self.path.is_empty() {
@@ -28,6 +29,7 @@ impl serde::Serialize for AbciQueryRequest {
         }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if self.prove {
@@ -167,10 +169,12 @@ impl serde::Serialize for BroadcastTxAsyncRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.util.tendermint_proxy.v1.BroadcastTxAsyncRequest", len)?;
         if !self.params.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("params", pbjson::private::base64::encode(&self.params).as_str())?;
         }
         if self.req_id != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("reqId", ToString::to_string(&self.req_id).as_str())?;
         }
         struct_ser.end()
@@ -292,10 +296,12 @@ impl serde::Serialize for BroadcastTxAsyncResponse {
         let mut struct_ser = serializer.serialize_struct("penumbra.util.tendermint_proxy.v1.BroadcastTxAsyncResponse", len)?;
         if self.code != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("code", ToString::to_string(&self.code).as_str())?;
         }
         if !self.data.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("data", pbjson::private::base64::encode(&self.data).as_str())?;
         }
         if !self.log.is_empty() {
@@ -303,6 +309,7 @@ impl serde::Serialize for BroadcastTxAsyncResponse {
         }
         if !self.hash.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("hash", pbjson::private::base64::encode(&self.hash).as_str())?;
         }
         struct_ser.end()
@@ -441,10 +448,12 @@ impl serde::Serialize for BroadcastTxSyncRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.util.tendermint_proxy.v1.BroadcastTxSyncRequest", len)?;
         if !self.params.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("params", pbjson::private::base64::encode(&self.params).as_str())?;
         }
         if self.req_id != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("reqId", ToString::to_string(&self.req_id).as_str())?;
         }
         struct_ser.end()
@@ -566,10 +575,12 @@ impl serde::Serialize for BroadcastTxSyncResponse {
         let mut struct_ser = serializer.serialize_struct("penumbra.util.tendermint_proxy.v1.BroadcastTxSyncResponse", len)?;
         if self.code != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("code", ToString::to_string(&self.code).as_str())?;
         }
         if !self.data.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("data", pbjson::private::base64::encode(&self.data).as_str())?;
         }
         if !self.log.is_empty() {
@@ -577,6 +588,7 @@ impl serde::Serialize for BroadcastTxSyncResponse {
         }
         if !self.hash.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("hash", pbjson::private::base64::encode(&self.hash).as_str())?;
         }
         struct_ser.end()
@@ -712,6 +724,7 @@ impl serde::Serialize for GetBlockByHeightRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.util.tendermint_proxy.v1.GetBlockByHeightRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()
@@ -885,6 +898,7 @@ impl serde::Serialize for GetTxRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.util.tendermint_proxy.v1.GetTxRequest", len)?;
         if !self.hash.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("hash", pbjson::private::base64::encode(&self.hash).as_str())?;
         }
         if self.prove {
@@ -1009,14 +1023,17 @@ impl serde::Serialize for GetTxResponse {
         let mut struct_ser = serializer.serialize_struct("penumbra.util.tendermint_proxy.v1.GetTxResponse", len)?;
         if !self.hash.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("hash", pbjson::private::base64::encode(&self.hash).as_str())?;
         }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if self.index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("index", ToString::to_string(&self.index).as_str())?;
         }
         if let Some(v) = self.tx_result.as_ref() {
@@ -1024,6 +1041,7 @@ impl serde::Serialize for GetTxResponse {
         }
         if !self.tx.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("tx", pbjson::private::base64::encode(&self.tx).as_str())?;
         }
         struct_ser.end()
@@ -1185,14 +1203,17 @@ impl serde::Serialize for SyncInfo {
         let mut struct_ser = serializer.serialize_struct("penumbra.util.tendermint_proxy.v1.SyncInfo", len)?;
         if !self.latest_block_hash.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("latestBlockHash", pbjson::private::base64::encode(&self.latest_block_hash).as_str())?;
         }
         if !self.latest_app_hash.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("latestAppHash", pbjson::private::base64::encode(&self.latest_app_hash).as_str())?;
         }
         if self.latest_block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("latestBlockHeight", ToString::to_string(&self.latest_block_height).as_str())?;
         }
         if let Some(v) = self.latest_block_time.as_ref() {
@@ -1356,10 +1377,12 @@ impl serde::Serialize for Tag {
         let mut struct_ser = serializer.serialize_struct("penumbra.util.tendermint_proxy.v1.Tag", len)?;
         if !self.key.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("key", pbjson::private::base64::encode(&self.key).as_str())?;
         }
         if !self.value.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("value", pbjson::private::base64::encode(&self.value).as_str())?;
         }
         if self.index {
@@ -1497,10 +1520,12 @@ impl serde::Serialize for TxResult {
         }
         if self.gas_wanted != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("gasWanted", ToString::to_string(&self.gas_wanted).as_str())?;
         }
         if self.gas_used != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("gasUsed", ToString::to_string(&self.gas_used).as_str())?;
         }
         if !self.tags.is_empty() {

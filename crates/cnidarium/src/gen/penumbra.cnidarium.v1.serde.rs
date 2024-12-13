@@ -236,6 +236,7 @@ impl serde::Serialize for key_value_response::Value {
         let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1.KeyValueResponse.Value", len)?;
         if !self.value.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("value", pbjson::private::base64::encode(&self.value).as_str())?;
         }
         struct_ser.end()
@@ -429,6 +430,7 @@ impl serde::Serialize for non_verifiable_key_value_request::Key {
         let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1.NonVerifiableKeyValueRequest.Key", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -622,6 +624,7 @@ impl serde::Serialize for non_verifiable_key_value_response::Value {
         let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1.NonVerifiableKeyValueResponse.Value", len)?;
         if !self.value.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("value", pbjson::private::base64::encode(&self.value).as_str())?;
         }
         struct_ser.end()
@@ -821,6 +824,7 @@ impl serde::Serialize for PrefixValueResponse {
         }
         if !self.value.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("value", pbjson::private::base64::encode(&self.value).as_str())?;
         }
         struct_ser.end()
@@ -1047,6 +1051,7 @@ impl serde::Serialize for WatchResponse {
         let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1.WatchResponse", len)?;
         if self.version != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("version", ToString::to_string(&self.version).as_str())?;
         }
         if let Some(v) = self.entry.as_ref() {
@@ -1187,6 +1192,7 @@ impl serde::Serialize for watch_response::KeyValue {
         }
         if !self.value.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("value", pbjson::private::base64::encode(&self.value).as_str())?;
         }
         if self.deleted {
@@ -1316,10 +1322,12 @@ impl serde::Serialize for watch_response::NvKeyValue {
         let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1.WatchResponse.NvKeyValue", len)?;
         if !self.key.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("key", pbjson::private::base64::encode(&self.key).as_str())?;
         }
         if !self.value.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("value", pbjson::private::base64::encode(&self.value).as_str())?;
         }
         if self.deleted {

@@ -30,7 +30,7 @@ async fn serve_summoning_jpg() -> impl IntoResponse {
         .status(StatusCode::OK)
         .header("Content-Type", "image/jpeg")
         .header("Cache-Control", "public, max-age=3600") // Cache for 1 hour
-        .body(axum::body::Full::from(jpg))
+        .body(axum::body::Body::from(jpg))
         .unwrap()
 }
 
@@ -40,7 +40,7 @@ async fn serve_css() -> impl IntoResponse {
         .status(StatusCode::OK)
         .header("Content-Type", "text/css")
         .header("Cache-Control", "public, max-age=3600") // Cache for 1 hour
-        .body(axum::body::Full::from(css))
+        .body(axum::body::Body::from(css))
         .unwrap()
 }
 
@@ -62,7 +62,7 @@ async fn serve_woff2(filename: &str) -> impl IntoResponse {
         .status(StatusCode::OK)
         .header("Content-Type", "font/woff2")
         .header("Cache-Control", "public, max-age=3600") // Cache for 1 hour
-        .body(axum::body::Full::from(data))
+        .body(axum::body::Body::from(data))
         .unwrap()
 }
 

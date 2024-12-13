@@ -288,7 +288,7 @@ where
             "made block"
         );
         // pass the current value of last_commit with this header
-        let block = Block::new(header.clone(), data, evidence, last_commit)?;
+        let block = Block::new(header.clone(), data, evidence, last_commit);
 
         // Now that the block is finalized, we can transition to the next block.
         // Generate a commit for the header we just made, that will be

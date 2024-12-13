@@ -8,6 +8,7 @@ mod server;
 mod storage;
 mod web;
 
+use anyhow::Context as _;
 use anyhow::Result;
 use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
@@ -33,7 +34,7 @@ use std::io::IsTerminal as _;
 use std::io::Read;
 use std::net::SocketAddr;
 use storage::Storage;
-use tonic::transport::Server;
+use tonic::service::Routes;
 use tracing::Instrument;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
@@ -206,11 +207,13 @@ impl Opt {
                 };
                 let service =
                     CoordinatorService::new(knower, storage.clone(), queue.clone(), marker);
-                let grpc_server = Server::builder().add_service(
+
+                let routes = Routes::new(
                     CeremonyCoordinatorServiceServer::new(service)
                         .max_encoding_message_size(max_message_size(marker))
                         .max_decoding_message_size(max_message_size(marker)),
-                );
+                )
+                .prepare();
 
                 let web_app = web_app(
                     fvk.payment_address(0u32.into()).0,
@@ -220,11 +223,13 @@ impl Opt {
                     storage,
                 );
 
-                let router = grpc_server.into_router().merge(web_app);
+                let router = routes.into_axum_router().merge(web_app);
 
                 tracing::info!(?bind_addr, "starting grpc and web server");
-                let server_handle =
-                    axum::Server::bind(&bind_addr).serve(router.into_make_service());
+                let listener = tokio::net::TcpListener::bind(&bind_addr)
+                    .await
+                    .with_context(|| format!("failed to bind TCP socket addr `{bind_addr}`"))?;
+                let server_handle = axum::serve(listener, router);
 
                 // TODO: better error reporting
                 // We error out if a service errors, rather than keep running

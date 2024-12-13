@@ -1,20 +1,20 @@
 use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use axum::{
-    body::StreamBody,
+    body::Body,
     extract::{OriginalUri, Path, Query},
-    headers::ContentType,
     http::StatusCode,
     response::{
         sse::{self, KeepAlive},
         Sse,
     },
     routing::{get, MethodRouter},
-    Router, TypedHeader,
+    Router,
 };
+use axum_extra::{headers::ContentType, TypedHeader};
 
 use bytes::Bytes;
-use futures::stream;
+use futures::{future, stream};
 use serde_json::json;
 use tokio::sync::{mpsc, watch};
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
@@ -262,15 +262,14 @@ fn render_dot(mut tree: watch::Receiver<Tree>) -> MethodRouter {
         if !query.graph {
             return Ok::<_, (StatusCode, String)>((
                 TypedHeader(ContentType::json()),
-                StreamBody::new(
-                    stream::iter(vec![json!({
+                Body::from_stream(stream::once(future::ok::<_, Infallible>(
+                    json!({
                         "position": tree.borrow().position(),
                         "forgotten": tree.borrow().forgotten(),
                     })
                     .to_string()
-                    .into()])
-                    .map(Ok),
-                ),
+                    .into_bytes(),
+                ))),
             ));
         }
 
@@ -334,7 +333,7 @@ fn render_dot(mut tree: watch::Receiver<Tree>) -> MethodRouter {
             // Manually construct a streaming response to avoid allocating a copy of the large
             // rendered bytes: the graph is already rendered as a JSON-escaped string, so we include
             // it literally in this output
-            StreamBody::new(
+            Body::from_stream(
                 stream::iter(vec![
                     "{".into(),
                     "\"position\":".into(),

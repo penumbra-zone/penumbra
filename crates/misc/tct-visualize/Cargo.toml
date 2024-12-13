@@ -21,7 +21,9 @@ tokio-util = {workspace = true, features = ["full"]}
 tonic = {workspace = true}
 prost = {workspace = true}
 tokio-stream = {workspace = true}
-axum = {workspace = true, features = ["headers", "query"]}
+axum = {workspace = true }
+# TODO: consider using the Query extractor provided by axum-extra
+axum-extra = {workspace = true, features = ["typed-header"] }
 axum-server = {workspace = true, features = ["tls-rustls"]}
 serde_json = {workspace = true, features = ["preserve_order"]}
 include-flate = { version = "0.1", features = ["stable"] }

@@ -71,12 +71,12 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
 
     // Spawn the server-side view server.
     {
-        let make_svc = penumbra_app::rpc::router(
+        let make_svc = penumbra_app::rpc::routes(
             storage.as_ref(),
             proxy,
             false, /*enable_expensive_rpc*/
         )?
-        .into_router()
+        .into_axum_router()
         .layer(tower_http::cors::CorsLayer::permissive())
         .into_make_service()
         .tap(|_| tracing::debug!("initialized rpc service"));

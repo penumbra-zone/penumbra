@@ -191,8 +191,8 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
     // Spawn the node's RPC server.
     let _rpc_server = {
         let make_svc =
-            penumbra_app::rpc::router(&storage, proxy, false /*enable_expensive_rpc*/)?
-                .into_router()
+            penumbra_app::rpc::routes(&storage, proxy, false /*enable_expensive_rpc*/)?
+                .into_axum_router()
                 .layer(tower_http::cors::CorsLayer::permissive())
                 .into_make_service()
                 .tap(|_| println!("initialized rpc service"));

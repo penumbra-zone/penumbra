@@ -129,15 +129,17 @@ async fn main() -> anyhow::Result<()> {
             );
 
             let tm_proxy = penumbra_tendermint_proxy::TendermintProxy::new(cometbft_addr);
-            let grpc_server = penumbra_app::rpc::router(&storage, tm_proxy, enable_expensive_rpc)?;
+
+            let grpc_routes = penumbra_app::rpc::routes(&storage, tm_proxy, enable_expensive_rpc)?;
+            // let grpc_server = penumbra_app::rpc::router(&storage, tm_proxy, enable_expensive_rpc)?;
 
             // Create Axum routes for the frontend app.
             let frontend = pd::zipserve::router("/app/", pd::MINIFRONT_ARCHIVE_BYTES);
             let node_status = pd::zipserve::router("/", pd::NODE_STATUS_ARCHIVE_BYTES);
 
             // Now we drop down a layer of abstraction, from tonic to axum, and merge handlers.
-            let router = grpc_server
-                .into_router()
+            let router = grpc_routes
+                .into_axum_router()
                 .merge(frontend)
                 .merge(node_status)
                 // Set rather permissive CORS headers for pd's gRPC: the service
