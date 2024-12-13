@@ -61,6 +61,9 @@ service ViewService {
   // Query for an address given an address index
   rpc AddressByIndex(AddressByIndexRequest) returns (AddressByIndexResponse);
 
+  // Returns the transparent address for the user's wallet.
+  rpc TransparentAddress(TransparentAddressRequest) returns (TransparentAddressResponse);
+
   // Query for wallet id
   rpc WalletId(WalletIdRequest) returns (WalletIdResponse);
 
@@ -146,6 +149,18 @@ service ViewService {
 
   // Gets the auctions controlled by the user's wallet.
   rpc Auctions(AuctionsRequest) returns (stream AuctionsResponse);
+}
+
+// There's only one transparent address per wallet, so this request has no parameters;
+// the message exists to satisfy forward-compatibility properties.
+message TransparentAddressRequest {
+}
+
+message TransparentAddressResponse {
+  // The raw (binary) transparent address
+  core.keys.v1.Address address = 1;
+  // The t-address encoding of the transparent address
+  string encoding = 2;
 }
 
 // Filters in an `AuctionsRequest` will be combined using `AND` logic -- that

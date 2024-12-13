@@ -1,91 +1,46 @@
 {
   "actions": [
     {
-      "spend": {
-        "note": {
-          "value": {
-            "amount": {
-              "lo": "203301810526886454"
-            },
-            "assetId": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrMBCMLhwcICEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsIivjdMBCjuKysAUCwrdWHy7u2iBgSAgoAGgsIivjdMBCjuKysASKPAXBlbnVtYnJhMTVkM2Nxc2toenFobHN2c2wyNHhjdGQwZm5yZzhud2NqY3k3dmt4N2plcXM0MGx0bXYzNzhoN2xudDR5d2U5cG5xbXp6aHZxdDh5MDN0ajN5djh3N213MGFmN244Y3Y1Mjd1NHAycnJrdXc0NWcwbmU4bjBoZ2E5OHA1M2x0ZTVrdWF0ZjJh"
+        }
+      }
+    },
+    {
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "OpAFH87m9VIRibODOoCnWC6KbofaAYUHTmMq6VuGFUo="
+        }
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "969023059420658370"
           },
-          "rseed": "3BWggX7qSmlBVBYK8+nlsRKU7G2tE0aPkhGelDMM9Sk=",
-          "address": {
-            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "position": "72255383410988",
-        "randomizer": "bUZ9uB6tW1z08EFheIHB0PSNPydWR8VopA/K/j3ILgA=",
-        "valueBlinding": "ZzBa2nPi1fiPoJ37X4QR3eieFVJ0sZm/ki8zIEZ6qwE=",
-        "proofBlindingR": "pyr+IoLU7zT6QN3lMsi58xncRIgEviLCpcM0UAdfggE=",
-        "proofBlindingS": "eQcuOPjAzk1dkHIfTDdRDbl1n26S/sJoMfQYZ0dTuwo="
-      }
-    },
-    {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "hjbjqygjl-98",
-          "description": "juz-348394101143295059179118292876",
-          "signaling": {}
+        "destAddress": {
+          "inner": "sFqHrX+p3N1Qwuwx9Gq1RZCTRNvzOFWkV7FZqUTJBPFnhc11WosUpgbSDflNDID9HbJ3OayE/4Z52TolHjQMUA6yZPdxRCyV0NYDEjH/mhc="
         },
-        "depositAmount": {
-          "lo": "152837047373892485"
-        }
-      }
-    },
-    {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "EX8kLxnOoTFua2tHaqS6uRhQJrTAmdNHsmzXmSpNDU4="
-        },
-        "unbondedAmount": {
-          "lo": "113615227989028917"
-        },
-        "delegationAmount": {
-          "lo": "250470485827666799"
-        },
-        "fromEpoch": {
-          "index": "5805",
-          "startHeight": "5805"
-        }
-      }
-    },
-    {
-      "actionDutchAuctionSchedule": {
-        "description": {
-          "input": {
-            "amount": {
-              "lo": "997497672153199471"
-            },
-            "assetId": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
-          },
-          "outputId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          },
-          "maxOutput": {
-            "lo": "320075980528598439"
-          },
-          "minOutput": {
-            "lo": "98952377966514135"
-          },
-          "startHeight": "211106421",
-          "endHeight": "211106422",
-          "stepCount": "68937565",
-          "nonce": "GurFWrwGlCy9F7h82bg7ruRNjtkopbAeL4d8AqVDW4M="
-        }
+        "rseed": "s46YSg3lc3tNbuafFtHcoJgXW6Uq2sGbWichcckAOtY=",
+        "valueBlinding": "v1bIvkRVTvJ5FaH9awKp7qdxlcUTFGmcOI8eYchZygA=",
+        "proofBlindingR": "aC66pyLilol0rHc0utaE0C8nfoVYRngysVoGTVgWQQg=",
+        "proofBlindingS": "ZWjC/hKxCIQ76q0QRo9OG6BRHK9jJNB4IBXjZDTP6Ac="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "1301656374",
-    "chainId": "eliijarvcfsfndzu-642649239388125561860212450",
+    "expiryHeight": "3199813193",
+    "chainId": "ypuzsskkznnqurexllxyjidx-90788967119211388776565688439415",
     "fee": {
       "amount": {
-        "lo": "387335725222733790"
+        "lo": "702179720312966580"
       }
     }
   }

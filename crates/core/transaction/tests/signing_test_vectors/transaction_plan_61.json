@@ -1,79 +1,89 @@
 {
   "actions": [
     {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "635313304499185887"
+      "actionDutchAuctionSchedule": {
+        "description": {
+          "input": {
+            "amount": {
+              "lo": "300153853829895979"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "assetId": {
+          "outputId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "address": {
-          "inner": "dXJVVklsP4mQUdam0n87zLwUraIpl8XbQitsmi0CkoMQTLJVJi5hB7Y+vOJVF5UvzPUvLdPHpj8hJz7laJxFo9uBDjSnfJd1HdWAQu/ySTs="
+          },
+          "maxOutput": {
+            "lo": "860913514515460497"
+          },
+          "minOutput": {
+            "lo": "185870413524230563"
+          },
+          "startHeight": "618624263",
+          "endHeight": "618624264",
+          "stepCount": "294135031",
+          "nonce": "eiTE7CH2wbnYdJuwTWoMwVx6glzmD1/6KK9GgIr6zh8="
         }
       }
     },
     {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "501946879560447759"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "address": {
-          "inner": "HJsCEqne46sp++pnSfwSo0bP2kGfmq9GF+SDK91ZX1v/R5F/g1B4FTjbP2JKSjKkqXDNhNpYhls11TCgUWJZIl/kELeYX+mCyEwqKhSP5u4="
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrMBCNmS7AQSC2RlZmF1bHRQb3J0GgljaGFubmVsLTAiC2RlZmF1bHRQb3J0KgljaGFubmVsLTAyZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6DAjVs9OLAxDZl5GyAkDwhbyDxbu2iBgSAgoAGgwI1bPTiwMQ2ZeRsgIijwFwZW51bWJyYTE1cGVuenJzNnd5dHNja2pqdmd2YTJyam1rdWFxdjRmbHV0Y2h5Nnk5M3QyMnM5NWNhOTQ3c3J0ZGt3cWNha3B2eGR4ODNtcHEyMmFtbGNrd3N5Nzh5OW5hdTlteWg1Znk1M2dlamdwaHlhd3htbmFmazNlMDdlaHBsdTdyaHp5ZzR0eHQ5Mg=="
         }
       }
     },
     {
-      "positionOpen": {
-        "position": {
-          "phi": {
-            "component": {
-              "p": {
-                "lo": "353425788282793350"
-              },
-              "q": {
-                "lo": "539403610384082689"
-              }
-            },
-            "pair": {
-              "asset1": {
-                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-              },
-              "asset2": {
-                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-              }
-            }
+      "communityPoolSpend": {
+        "value": {
+          "amount": {
+            "lo": "323571363887294187"
           },
-          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-          "state": {
-            "state": "POSITION_STATE_ENUM_CLOSED"
-          },
-          "reserves": {
-            "r1": {
-              "lo": "553897337323242306"
-            },
-            "r2": {
-              "lo": "563503820517080411"
-            }
-          },
-          "closeOnFill": true
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         }
+      }
+    },
+    {
+      "swap": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "394892372392195253"
+          },
+          "delta2I": {
+            "lo": "599981972112015708"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "Pz36KO8OHiwRzcT8nt5vivHG8Lfcx/uRK5ZPrJ7PXEB3309hqb7iVKRP8VPLiXNMzRNhMj9SZxTZ/QJzm52tX98gBFkA1xi44Nc8oScl8PA="
+          },
+          "rseed": "+wsLm9Y4MIq4JtWAg6VLAsdQi8gqc66hVzBhhqf+ghs="
+        },
+        "feeBlinding": "20zcErCGM2wqpgGnEequ2ucs8pQtcooYw1FsXWohpQE=",
+        "proofBlindingR": "1gpAZ12J4fF28MQGwkxPFo9tBZLqJNAR8jBZZ0UIqAw=",
+        "proofBlindingS": "aD2wE3kbEvfWBk3trnOlOvwFuKg9PJ/WTjXZqKFW0wU="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "2400123472",
-    "chainId": "akzhyryfl-2132",
+    "expiryHeight": "9813319055",
+    "chainId": "lazpo-94358",
     "fee": {
       "amount": {
-        "lo": "961655454472638464"
+        "lo": "607636800537549935"
       }
     }
   }

@@ -1,48 +1,67 @@
 {
   "actions": [
     {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "367726786513069539"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "address": {
-          "inner": "S2JUJ7umc/exySvbLgqYSe640AIb2tKgWtEF0+TmbM+pVlmVaDqnLDg6n20j9LrNtq11Q3M1ESnUD8ZYnzsF4j2L2AxZj+MS40DWges+D34="
-        }
-      }
-    },
-    {
-      "positionClose": {
-        "positionId": {
-          "inner": "eBDch1m2dXDvaiXws0690m/ZbCXAq8mNZAAv3frkim8="
-        }
-      }
-    },
-    {
-      "delegate": {
+      "undelegate": {
         "validatorIdentity": {
-          "ik": "oVRgKknU8Dw5ZA7Qdlz5vr62EuqCTeLs29g3vMQUMCY="
+          "ik": "wuwgWygLl4axtVEDtwuTWj2v+1giGPJuH98L42iE9Rg="
         },
-        "epochIndex": "1052",
         "unbondedAmount": {
-          "lo": "985389063481683216"
+          "lo": "534934644143406260"
         },
         "delegationAmount": {
-          "lo": "641165127029311412"
+          "lo": "692960866983432388"
+        },
+        "fromEpoch": {
+          "index": "7015",
+          "startHeight": "7015"
+        }
+      }
+    },
+    {
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "WiWhWYLuX9T/RBMkes/V8ynqqR7R3Q4/PUhEQkFPpQU="
+          },
+          "consensusKey": "YhNRal7+EhH1OVroPFV5KdAoaL05nlcNFWyHdv3cEWA=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "WiWhWYLuX9T/RBMkes/V8ynqqR7R3Q4/PUhEQkFPpQU="
+          }
+        },
+        "authSig": "KkZff9vJ7Ln+HgmkQY6wvKImvxspEg7bsV/dzB9DSAJgQqc/FUytawVA9cT65Vig8npDuwq47rOQRKA5JHCEAw=="
+      }
+    },
+    {
+      "validatorVote": {
+        "body": {
+          "proposal": "586452870",
+          "vote": {
+            "vote": "VOTE_NO"
+          },
+          "identityKey": {
+            "ik": "ZoGPqyX2doMZwcuCWdwGz+EPijjKMqRUdWsr8UqM+qA="
+          },
+          "governanceKey": {
+            "gk": "3rvvwzQY3gGcMycFRk4QPv+T+mGvEFgTmSpoGEpJVhI="
+          },
+          "reason": {
+            "reason": "h4IssRgUR9uQfd"
+          }
+        },
+        "authSig": {
+          "inner": "DI+xBuD+9cLcJE59Y0uFczvyC1VckxH83SqsSFndaQEJm/zlqNJB7CnJecyrWQJAuJ0uks5v3TWrYWArjsk1BA=="
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "4059339943",
-    "chainId": "vgsknzsarnlevcgxtex-64999524802311011331218483730",
+    "expiryHeight": "4104268457",
+    "chainId": "u-498220601506581193183974361326",
     "fee": {
       "amount": {
-        "lo": "300595445484946658"
+        "lo": "150551619517905195"
       }
     }
   }

@@ -1,21 +1,14 @@
 {
   "actions": [
     {
-      "positionClose": {
-        "positionId": {
-          "inner": "MxfYVdViQku0zvQK8xy1i3XOuLfoG/a2E7d2I5cJZL8="
-        }
-      }
-    },
-    {
       "actionDutchAuctionWithdraw": {
         "auctionId": {
-          "inner": "1UdBQ7NvuyTDgd7GBZ+XTBjKhJeLJwixq3I24n76DFo="
+          "inner": "GIeMr7DFhS+ZHk0kW8xcoGQ9xqoHayyuZxk6jjePjsc="
         },
-        "seq": "755250957",
+        "seq": "109381838",
         "reservesInput": {
           "amount": {
-            "lo": "244631310223081423"
+            "lo": "690045170569843391"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
@@ -23,7 +16,7 @@
         },
         "reservesOutput": {
           "amount": {
-            "lo": "516329710970286444"
+            "lo": "594818984540846586"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
@@ -32,24 +25,17 @@
       }
     },
     {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "mibvwkjciemkcrxgtvyvtxkfzfgoacpa-9",
-          "description": "hgfsyjxyh-5475912394187894970427750187231",
-          "signaling": {}
-        },
-        "depositAmount": {
-          "lo": "593187291875051726"
-        }
+      "proposalWithdraw": {
+        "proposal": "487435772"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "5396625052",
-    "chainId": "yljcjoiuafnxvuq-7",
+    "expiryHeight": "3447268373",
+    "chainId": "boewmqmxnszyzs-418522021941263194854639",
     "fee": {
       "amount": {
-        "lo": "22479363999064335"
+        "lo": "920856250494544725"
       }
     }
   }

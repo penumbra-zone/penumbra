@@ -1,22 +1,36 @@
 {
   "actions": [
     {
-      "proposalWithdraw": {
-        "proposal": "326690332"
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "oJxjTrOBvgM3n2xUo3gII6NJfmjeMA6ciPAAyYKzqLU="
+        }
       }
     },
     {
-      "proposalWithdraw": {
-        "proposal": "32683854"
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "hjd7IQ6pMmfhPLDEi/NrhH42C1efZ+TaMWT12Hf2EGM="
+        },
+        "unbondedAmount": {
+          "lo": "948735157995383286"
+        },
+        "delegationAmount": {
+          "lo": "590180895818609087"
+        },
+        "fromEpoch": {
+          "index": "274",
+          "startHeight": "274"
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "379781162",
-    "chainId": "vmp-730888803729620",
+    "expiryHeight": "9972610432",
+    "chainId": "wmsisavjuqozrioxdvxrbhdg-31708058506325193159590",
     "fee": {
       "amount": {
-        "lo": "509390978610964123"
+        "lo": "689945274860011745"
       }
     }
   }

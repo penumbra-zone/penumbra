@@ -557,6 +557,8 @@ fn ics20_withdrawal_strategy() -> impl Strategy<Value = Ics20Withdrawal> {
                 timeout_time: 0u64,
                 source_channel: ChannelId::default(),
                 use_compat_address: false,
+                use_transparent_address: false,
+                ics20_memo: String::default(),
             },
         )
 }

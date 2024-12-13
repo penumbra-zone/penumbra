@@ -1,68 +1,99 @@
 {
   "actions": [
     {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "3CMSBNay466PPsbAMMwVcs8dYlUu7wYFnhQBzytszb8="
+      "positionOpen": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "831481293624391719"
+              },
+              "q": {
+                "lo": "497613288717095785"
+              }
+            },
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
+            }
+          },
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_OPENED"
+          },
+          "reserves": {
+            "r1": {
+              "lo": "55053215004382995"
+            },
+            "r2": {
+              "lo": "704585790519560694"
+            }
+          },
+          "closeOnFill": true
+        }
+      }
+    },
+    {
+      "delegatorVote": {
+        "proposal": "166458126",
+        "vote": {
+          "vote": "VOTE_ABSTAIN"
+        },
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "60362707822475621"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "Gk4J0Jtgi2KFqODwkzGXWgrGsZXAmr2DftoEJlaTvYo=",
+          "address": {
+            "inner": "qDw9kEJdMuxmbovfNCuYB2B7ZZAKtajjtG0bqzc/rO5PBCEXH0A55S7PWIEU5adJFd0+tNXsd+L0kmZIHG+CwXH+A7/dJP00jZs7w3RuQ7c="
+          }
         },
         "unbondedAmount": {
-          "lo": "445210398279593827"
+          "lo": "236917491659762722"
         },
-        "delegationAmount": {
-          "lo": "912468609333936955"
-        },
-        "fromEpoch": {
-          "index": "6657",
-          "startHeight": "6657"
-        }
+        "randomizer": "whps6RtTFQNAmf2j6C+xC7XstMHqobg1IevJPe+BugE=",
+        "proofBlindingR": "buzAORo6tjnuprptyCJ+RbXKj6Cm7+dhnUbV2FkXGAo=",
+        "proofBlindingS": "1q+mHygvvlOisl78KeAeAgJoKGLr2ZxLZ+DnsT4P5Q0="
       }
     },
     {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "404834025931030255"
+      "validatorVote": {
+        "body": {
+          "proposal": "86308775",
+          "vote": {
+            "vote": "VOTE_ABSTAIN"
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "identityKey": {
+            "ik": "2ywt/sfb3YSDpWR3eFC90+BIinPq7J2ejQLiUkHAY00="
+          },
+          "governanceKey": {
+            "gk": "pKqqX6jdlyeV5m69IahBD5ZCFnkIPSpaTrhIOA/fOQg="
+          },
+          "reason": {
+            "reason": "RdA6m6L11BkQj7Ren91"
           }
         },
-        "address": {
-          "inner": "nEyqrZ+MzR5PKHA/316PjZMrNSg8dziZBs/YH9gwefGoVEJ9UnfVLPJKiYFCb7t6XNkRKVgTQE49sMVLGSmzjGJiYxd7Fc6oL8l3IdUw3rM="
+        "authSig": {
+          "inner": "Xn7T4j+Z0vOmL2w1Mmy7muOF6XjIMbGOVTCa2qtgHwi0jOCvk9SO2c3+TUErDaxIjfLBBkWyoshqn3NvZsaDAg=="
         }
-      }
-    },
-    {
-      "positionWithdraw": {
-        "reserves": {
-          "r1": {
-            "lo": "138343348497016726"
-          },
-          "r2": {
-            "lo": "56932107223773616"
-          }
-        },
-        "positionId": {
-          "inner": "n+5vEEEwJ4Vw6haSoNGSpLWRlemu0wDspESQ0mOZcV0="
-        },
-        "pair": {
-          "asset1": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          },
-          "asset2": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "sequence": "1"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "8365802583",
-    "chainId": "ofufkknwjpgaqnltcztwnx-645471874540833443741784294",
+    "expiryHeight": "9698697243",
+    "chainId": "hvjwdhgeljwajgudx-4120",
     "fee": {
       "amount": {
-        "lo": "37048063536637300"
+        "lo": "615310894601069498"
       }
     }
   }
