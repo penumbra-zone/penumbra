@@ -171,7 +171,7 @@ Very often, we need to check equations of the form:
 $$
 \forall i.\ A_i \odot B = C \odot D_i
 $$
-(this would also work if the right hand side is of the form $D_i \odot C$, and vice versa).
+(this would also work if the right-hand side is of the form $D_i \odot C$, and vice versa).
 
 This equation is equivalent to checking:
 $$
