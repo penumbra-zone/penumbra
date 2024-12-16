@@ -522,6 +522,7 @@ mod test {
                 balance_commitment: dummy_commitment(),
                 nullifier: Nullifier(Fq::default()),
                 rk: dummy_pk(),
+                encrypted_backref: EncryptedBackref::dummy(),
             },
             auth_sig: dummy_sig(),
             proof: dummy_proof_spend(),
