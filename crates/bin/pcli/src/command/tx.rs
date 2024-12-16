@@ -30,7 +30,10 @@ use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::FeeTier;
 use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
-use penumbra_keys::{keys::AddressIndex, Address};
+use penumbra_keys::{
+    keys::{AddressIndex, Diversifier},
+    Address,
+};
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::component::{
@@ -1023,10 +1026,22 @@ impl TxCmd {
             } => {
                 let destination_chain_address = to;
 
-                let (ephemeral_return_address, _) = app
-                    .config
-                    .full_viewing_key
-                    .ephemeral_address(OsRng, AddressIndex::from(*source));
+                let ephemeral_return_address = if *use_transparent_address {
+                    let ivk = app.config.full_viewing_key.incoming();
+
+                    // Handcraft a transparent address for the return address
+                    // `Address` does not expose this API for a reason, so thread carefully
+                    let dzero = Diversifier([0u8; 16]);
+                    let g_dzero = dzero.diversified_generator();
+                    let pk_dzero = ivk.diversified_public(&g_dzero);
+                    let ck_id = ::decaf377_fmd::ClueKey([0u8; 32]);
+                    Address::from_components(dzero, pk_dzero, ck_id).expect("valid address")
+                } else {
+                    app.config
+                        .full_viewing_key
+                        .ephemeral_address(OsRng, AddressIndex::from(*source))
+                        .0
+                };
 
                 let timeout_height = match timeout_height {
                     Some(h) => h.clone(),
