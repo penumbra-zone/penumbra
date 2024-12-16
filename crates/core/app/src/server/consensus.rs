@@ -221,6 +221,13 @@ impl Consensus {
     async fn end_block(&mut self, end_block: request::EndBlock) -> response::EndBlock {
         let latest_state_version = self.storage.latest_version();
         tracing::info!(height = ?end_block.height, ?latest_state_version, "ending block");
+        if latest_state_version >= end_block.height as u64 {
+            tracing::warn!(
+                %latest_state_version,
+                %end_block.height,
+                "chain state version is ahead of the block height, this is an unexpected corruption of chain state"
+            );
+        }
         let events = self.app.end_block(&end_block).await;
         trace_events(&events);
 
