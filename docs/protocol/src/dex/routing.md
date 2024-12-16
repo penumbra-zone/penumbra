@@ -182,7 +182,7 @@ $\Lambda_2 = \Delta_1 \frac {p} {q \gamma}$
 
 Filling backward is more complicated because we need to ensure every position preceding the constraining hop is zeroed out. This is because the DEX engine only has access to a finite amount of precision and as a result perform division can be lossy by some $\epsilon$, perpetually preventing a position to be deindexed.
 
-Suppose that the limiting constraint is a index $j$, we compute $\Delta_1^* = \frac {p_2 \gamma} {p_1} R_2$
+Suppose that the limiting constraint is an index $j$, we compute $\Delta_1^* = \frac {p_2 \gamma} {p_1} R_2$
 
 The goal is to propagate rounding loss backwards to the input and forwards the output. That means that for a constraint at index $j$, we fill backward from $j$ to the first position, and forward from $j$ to the last position. For backward fills, we compute $\Delta_1^* = \Lambda_2 \frac {p_2 \gamma} {p_1}$ and manually zero-out the $R_2$ of each position. The forward fill part works as described previously. There is no extra work to do because that segment of the path contains no constraints as we have reduced the flow to match the exact capacity of the frontier.
 

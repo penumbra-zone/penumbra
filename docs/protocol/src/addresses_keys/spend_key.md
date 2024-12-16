@@ -16,7 +16,7 @@ spend authority was derived using the salt `mnemonic0`.
 ## Default BIP44 Derivation
 
 Beginning in Testnet 62, from the mnemonic seed phrase, spend `seeds` were derived
-as described in [BIP44]. The BIP44 specification describes a organizational
+as described in [BIP44]. The BIP44 specification describes an organizational
 hierarchy allowing a user to remember a single seed phrase for multiple
 cryptocurrencies. 
 

@@ -1,6 +1,6 @@
 # pindexer
 
-A indexer that ingests ABCI events emitted by pd and transforms them into useful data.
+An indexer that ingests ABCI events emitted by pd and transforms them into useful data.
 
 ## Usage
 
