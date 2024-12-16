@@ -517,11 +517,14 @@ mod test {
 
     #[cfg(test)]
     fn dummy_spend() -> spend::Spend {
+        use penumbra_shielded_pool::EncryptedBackref;
+
         spend::Spend {
             body: spend::Body {
                 balance_commitment: dummy_commitment(),
                 nullifier: Nullifier(Fq::default()),
                 rk: dummy_pk(),
+                encrypted_backref: EncryptedBackref::dummy(),
             },
             auth_sig: dummy_sig(),
             proof: dummy_proof_spend(),
