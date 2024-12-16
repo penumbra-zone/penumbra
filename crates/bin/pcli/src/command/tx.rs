@@ -30,10 +30,7 @@ use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::FeeTier;
 use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
-use penumbra_keys::{
-    keys::{AddressIndex},
-    Address,
-};
+use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::component::{
