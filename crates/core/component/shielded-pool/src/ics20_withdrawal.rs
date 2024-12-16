@@ -167,10 +167,17 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
 
 impl From<Ics20Withdrawal> for pb::FungibleTokenPacketData {
     fn from(w: Ics20Withdrawal) -> Self {
-        let return_address = match w.use_compat_address {
-            true => w.return_address.compat_encoding(),
-            false => w.return_address.to_string(),
+        let ordinary_return_address = w.return_address.to_string();
+
+        let return_address = if w.use_transparent_address {
+            w.return_address
+                .encode_as_transparent_address()
+                .unwrap_or_else(|| ordinary_return_address)
+        } else {
+            ordinary_return_address
         };
+
+        tracing::warn!(?return_address, w.use_transparent_address, "return address");
 
         pb::FungibleTokenPacketData {
             amount: w.value().amount.to_string(),
