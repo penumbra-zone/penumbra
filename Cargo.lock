@@ -4239,6 +4239,7 @@ dependencies = [
  "colored_json",
  "comfy-table",
  "decaf377",
+ "decaf377-fmd",
  "decaf377-rdsa",
  "dialoguer",
  "directories",
