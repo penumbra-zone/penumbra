@@ -83,6 +83,17 @@ impl Migration {
             storage.latest_snapshot().is_chain_halted().await || force,
             "to run a migration, the chain halt bit must be set to `true` or use the `--force` cli flag"
         );
+
+        // Assert that the local chain state version is not corrupted, see `v0.80.10` release notes.
+        let latest_version = storage.latest_version();
+        let block_height = storage.latest_snapshot().get_block_height().await?;
+        ensure!(
+            latest_version == block_height || force,
+            "local chain state version is corrupted: {} != {}",
+            latest_version,
+            block_height
+        );
+
         tracing::info!("started migration");
 
         // If this is `ReadyToStart`, we need to reset the halt bit and return early.
