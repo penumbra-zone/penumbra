@@ -1023,10 +1023,18 @@ impl TxCmd {
             } => {
                 let destination_chain_address = to;
 
-                let (ephemeral_return_address, _) = app
-                    .config
-                    .full_viewing_key
-                    .ephemeral_address(OsRng, AddressIndex::from(*source));
+                let ephemeral_return_address = if *use_transparent_address {
+                    let ivk = app.config.full_viewing_key.incoming();
+
+                    ivk.transparent_address()
+                        .parse::<Address>()
+                        .expect("we round-trip from a valid transparent address")
+                } else {
+                    app.config
+                        .full_viewing_key
+                        .ephemeral_address(OsRng, AddressIndex::from(*source))
+                        .0
+                };
 
                 let timeout_height = match timeout_height {
                     Some(h) => h.clone(),
