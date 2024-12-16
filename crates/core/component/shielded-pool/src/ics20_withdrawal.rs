@@ -177,8 +177,6 @@ impl From<Ics20Withdrawal> for pb::FungibleTokenPacketData {
             ordinary_return_address
         };
 
-        tracing::warn!(?return_address, w.use_transparent_address, "return address");
-
         pb::FungibleTokenPacketData {
             amount: w.value().amount.to_string(),
             denom: w.denom.to_string(),
