@@ -3,26 +3,18 @@ use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_app::params::AppParameters;
 use penumbra_proto::{
-    core::{
-        app::v1::{
-            query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
-        },
-        component::{
-            sct::v1::{
-                query_service_client::QueryServiceClient as SctQueryServiceClient,
-                EpochByHeightRequest,
-            },
-            stake::v1::{
-                query_service_client::QueryServiceClient as StakeQueryServiceClient,
-                ValidatorInfoRequest,
-            },
-        },
+    core::app::v1::{
+        query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
+    },
+    core::component::sct::v1::{
+        query_service_client::QueryServiceClient as SctQueryServiceClient, EpochByHeightRequest,
+    },
+    core::component::stake::v1::{
+        query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
     },
     util::tendermint_proxy::v1::{
-        tendermint_proxy_service_client::TendermintProxyServiceClient, AbciQueryRequest,
-        GetStatusRequest,
+        tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
     },
-    Message,
 };
 use penumbra_stake::validator;
 
@@ -38,7 +30,6 @@ pub enum ChainCmd {
         #[clap(short, long)]
         verbose: bool,
     },
-    DetectDesync,
 }
 
 pub struct Stats {
@@ -143,51 +134,6 @@ impl ChainCmd {
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
-            ChainCmd::DetectDesync => {
-                let mut client = TendermintProxyServiceClient::new(app.pd_channel().await?);
-                let status = client
-                    .get_status(GetStatusRequest::default())
-                    .await?
-                    .into_inner()
-                    .sync_info
-                    .ok_or_else(|| anyhow!("missing sync_info"))?;
-
-                let mut app_client = AppQueryServiceClient::new(app.pd_channel().await?);
-                let params = app_client
-                    .app_parameters(AppParametersRequest {})
-                    .await?
-                    .into_inner()
-                    .app_parameters
-                    .unwrap();
-                let chain_id = params.chain_id;
-
-                let height = status.latest_block_height as i64;
-
-                let response = client
-                    .abci_query(AbciQueryRequest {
-                        data: b"sct/block_manager/block_height".to_vec(),
-                        path: "state/key".to_string(),
-                        height,
-                        prove: false,
-                    })
-                    .await?
-                    .into_inner();
-
-                let raw_height_response = response.value;
-                let height_response: u64 = Message::decode(&raw_height_response[..])
-                    .map_err(|e| anyhow!("failed to decode height response: {}", e))?;
-
-                println!("chain_id: {}", chain_id);
-                println!("queried height: {}", height);
-                println!("height response: {}", height_response);
-                if height == height_response as i64 {
-                    println!(
-                        "Unaffected. No action item. The full node internal state version tracks the block height."
-                    );
-                } else {
-                    println!("Affected. The full node chain state is corrupted, please resync your node.");
-                }
-            }
             ChainCmd::Params => {
                 self.print_app_params(app).await?;
             }
