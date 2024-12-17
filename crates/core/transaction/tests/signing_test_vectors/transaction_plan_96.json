@@ -3,71 +3,67 @@
     {
       "delegate": {
         "validatorIdentity": {
-          "ik": "jzrCl0UMjbiFaQ2rv0A7kGIM/I3eGn8TLz+3YuL1BLs="
+          "ik": "D4RPF01oVEvu4lYvH0CNDT75RC23Ki05es4ZLfHsbeo="
         },
-        "epochIndex": "8151",
+        "epochIndex": "3186",
         "unbondedAmount": {
-          "lo": "864682147450177591"
+          "lo": "568457332747081169"
         },
         "delegationAmount": {
-          "lo": "326833752259186567"
+          "lo": "775120812152965187"
         }
-      }
-    },
-    {
-      "delegatorVote": {
-        "proposal": "313081682",
-        "vote": {
-          "vote": "VOTE_ABSTAIN"
-        },
-        "stakedNote": {
-          "value": {
-            "amount": {
-              "lo": "814032502443382975"
-            },
-            "assetId": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
-          },
-          "rseed": "agwVxvFbxa/kYfn1cZzrkO+BK+XsBYj6R2Mf3P5iiZE=",
-          "address": {
-            "inner": "9dFPlUBFnXw9PRN9CUmvfw/OTgRdhwrnz84uSW88mI8C0963CVa1VC5yqnDHAcSaLJADHP7W8Z1SmLCDyozyhyEuGfNxbV2/gkjp/CyuNt8="
-          }
-        },
-        "unbondedAmount": {
-          "lo": "65012729502538182"
-        },
-        "randomizer": "JEhULXyp9tPUW5vc5vegEjm6IdlzzUJFMQbkDQuOCwA=",
-        "proofBlindingR": "mO02PPy4B/nqOpLk0NvxAWw/0yVU1GJtZPt03p/mGwU=",
-        "proofBlindingS": "HLptWJR/YXKiNUUDWwivDAAZGyOsvr0Y5A+joPnkdRI="
       }
     },
     {
       "output": {
         "value": {
           "amount": {
-            "lo": "506559940712297023"
+            "lo": "983172257950112144"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
         "destAddress": {
-          "inner": "GdmgwXY7KcDvkjZoJEpOk48bTP3J+WMhpTg6ElgEoJ+IvGsEydySYzqrC60ZHUehY/vhPRCWH9TiLHxWpP5Jk0JoVs0p/Y1A6S7gvAtH1QY="
+          "inner": "VH6DAb4Dh4bF44Nwpah4wr+r5pHirR6k9bDeHHd+RqyNfNYX3oSPQKTWCXlIphQ1g+CoY3MxBBJTipi9XdQAtwXuakxweW6gshT9Q/ktHWU="
         },
-        "rseed": "czQrZfDtFVI9tJKJ9ccSkPbdaK14LYEoOcppmd5R6Bo=",
-        "valueBlinding": "oN1Hj+6i2PccWKvkuGv4YImW5WUFSlSCUijdYAsg8QM=",
-        "proofBlindingR": "xDwAFQhuqYIoVYS2pemWfVIO8QBtee0sahvSoEObrQ0=",
-        "proofBlindingS": "6YUpkqBO0obU7xn9XC0ktUXm5P3izVzzb7BtwQLZkAg="
+        "rseed": "/S+hsOc6TT9WisNzh72jPPOHTSUlGdIAR1LGMVOIOUo=",
+        "valueBlinding": "9pthgzF1qjSvqRnLyNTsbiXT9VXAyFzmnBnKLdKLEwE=",
+        "proofBlindingR": "MACoJ7HqTD1e9VXmhp9BG6twvYErT+aWDfn74O5R4Ak=",
+        "proofBlindingS": "i/QqXuE+cdlfNhZJUw6syIkRjzFpf2a0RmuLJRG8OQc="
+      }
+    },
+    {
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "510766385004012384"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "heoweed-84726621273736892131989",
+          "description": "fmfbdrsecxqigrjzh-17037741052543549785930935759",
+          "signaling": {}
+        },
+        "depositAmount": {
+          "lo": "377768623742455083"
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6858984278",
-    "chainId": "lquzghuvfjy-185036916095830232703681131466",
+    "expiryHeight": "570119",
+    "chainId": "penumbra-1",
     "fee": {
       "amount": {
-        "lo": "348178734158911993"
+        "lo": "760601915911959800"
       }
     }
   }

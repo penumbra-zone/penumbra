@@ -1,78 +1,70 @@
 {
   "actions": [
     {
-      "ibcRelayAction": {
-        "rawAction": {
-          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
-          "value": "CrMBCPP8zbICEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsIxvbjSxCL0fqiA0DAmL7QoLXqgRgSAgoAGgsIxvbjSxCL0fqiAyKPAXBlbnVtYnJhMXJ3bmo2Y3k5Nm42NXhodjhkZW1hNG02MGZnOWdxamd2aDA3bnA4ODNlY3dxdHJlMGY5NnR2MDRyeDU3dXlwa2YydDQ5YXVlZjM4a2h2d2tmNWprc3hzOXl3Njl3cDh0emo3NTB4MjBlbHRlcDdzdHRjbXZjd241aDRhMHNsNGs5eTlzaDcy"
-        }
+      "proposalWithdraw": {
+        "proposal": "849172967"
       }
     },
     {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "kcrksmeyxustsnjbr-60",
-          "description": "krcxzlpefqzl-75956368",
-          "signaling": {}
-        },
-        "depositAmount": {
-          "lo": "38351685330180206"
-        }
-      }
-    },
-    {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "415888003349099833"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "address": {
-          "inner": "zK3UmgXb59dD/4C9/L7P4htU0Ee1rPiWWdUU5AoyqgkW4nLr3VF6ORk2JhOyQlZKIvievUOuytmQvtylncSglmyC0qDP8zz+DWw+/FYHFCo="
-        }
-      }
-    },
-    {
-      "swap": {
-        "swapPlaintext": {
-          "tradingPair": {
-            "asset1": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+      "actionDutchAuctionSchedule": {
+        "description": {
+          "input": {
+            "amount": {
+              "lo": "109397479692560573"
             },
-            "asset2": {
+            "assetId": {
               "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
             }
           },
-          "delta1I": {
-            "lo": "920853597152247593"
+          "outputId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           },
-          "delta2I": {
-            "lo": "677865656587699464"
+          "maxOutput": {
+            "lo": "120724015254597903"
           },
-          "claimFee": {
-            "amount": {}
+          "minOutput": {
+            "lo": "868757827477768235"
           },
-          "claimAddress": {
-            "inner": "i9huSFlTnxHEv1AumWjld1PfJ9s63YrojO92xAVyzfIcVG0Z3SCKJQOFUDc0GbzEqz9IWdvFshvu5KQ0T8djRxauxxR1w3RiD0oMuYoRMCM="
-          },
-          "rseed": "++fkdOajvAONYLoezkuIU6nXn/mC+2ndEgwdHS4FMcg="
+          "startHeight": "449995961",
+          "endHeight": "449995962",
+          "stepCount": "236698755",
+          "nonce": "kVr17T+EaKD3ZQQAnPb/aGGqZHhPap653HdfFculEaU="
+        }
+      }
+    },
+    {
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "sOSe02K1ZgHFHRxhXZf3YH647p9EMmYYNoxVe3aJVbQ="
         },
-        "feeBlinding": "Q0DcLLLIqaOvq7gv2Y1rZ7/w29SF94i8cR5VQxly7QE=",
-        "proofBlindingR": "2NRy+/3HlDXi9fCZaKrlJQ7IN5T6yaep4lKDe2t7zQo=",
-        "proofBlindingS": "3WBWe6fyQgkjStsyOQjW/n1y/prYDzB2Gr7f4PCfsws="
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAP/SH/Lkjopx3mmtQsPJ7sw="
+        },
+        "unbondingAmount": {
+          "lo": "992608670465340337"
+        },
+        "balanceBlinding": "kGkT69pVbI4pnCLIuHeyDcL7468XShNEggAL1EV4DAM=",
+        "proofBlindingR": "WQlEmXhxAPIYdmY4rZopg7Ejesv5jv0lXk7s/SCfFgU=",
+        "proofBlindingS": "/eCBaDHr8kMr/9G9Usi+W3gch5c0DqjWPjYEKrtE5AI=",
+        "unbondingStartHeight": "93297"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "8982080025",
-    "chainId": "hwbwaix-06083225540254",
+    "chainId": "ymgjmuzdjqcy-728841970545290",
     "fee": {
       "amount": {
-        "lo": "516487876813519810"
+        "lo": "425720506294444717"
       }
     }
+  },
+  "memo": {
+    "plaintext": {
+      "returnAddress": {
+        "inner": "viMnfFhi60+Jtv00DzP3+gfeLHOgzENwt7cU18WCkP3BMycu1kctfORHAKIIljUZkbDPB09iNfCwPMzrNkzw5xFNl4cxMfQlP5wGOtCBDYc="
+      },
+      "text": "Yk 8OP1 f0qUZ8GzSY  94cJ  b 5t15 QGl31N5w6c 9I0 Vcf5m2e2 MV 0orxu ps27 h2Jb5 x1t    VHMD9RcW1iOXE3K hqn0RC T EjD16fT6T RixFIAteo CO5CAlr "
+    },
+    "key": "HVjc7mWMbe6FVTdqXfub9AGEUslYCQ1PkcEcCcEr1f4="
   }
 }

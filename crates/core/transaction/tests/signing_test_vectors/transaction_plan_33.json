@@ -1,22 +1,42 @@
 {
   "actions": [
     {
-      "proposalWithdraw": {
-        "proposal": "326690332"
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "339375808736046686"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "destAddress": {
+          "inner": "PeynbkB3t8jbPr4sIS62/iS681TZTyOuplB/3iENonJwEm4J/VCP+j/4VF7bOX9uILbMMLT6Bm/pHD1/12GhwjMslguaC+mOXWrwOr1BC+Y="
+        },
+        "rseed": "hh7rYv1xEfivn8M+QeTfYQeCiFw5dSPegVyD/lyHOuk=",
+        "valueBlinding": "PGZsdYeYc3XdLLi3vp5NlYWMpsdKCOe8bm4BP+/vLAI=",
+        "proofBlindingR": "FfTf2JvE357w/iSrmPM4i85T0Wq1k2QMp08NUNgkCAg=",
+        "proofBlindingS": "C0L34DFX3pLe9FcVYNISNKrQYvq9fWo9Vt0TS764hQY="
       }
     },
     {
-      "proposalWithdraw": {
-        "proposal": "32683854"
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "316363875486185869"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "379781162",
-    "chainId": "vmp-730888803729620",
+    "chainId": "ekkqxliwoiyedhvvacssmldfswex-8798",
     "fee": {
       "amount": {
-        "lo": "509390978610964123"
+        "lo": "643850007120936503"
       }
     }
   }

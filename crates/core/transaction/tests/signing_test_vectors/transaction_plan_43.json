@@ -1,46 +1,91 @@
 {
   "actions": [
     {
-      "validatorDefinition": {
-        "validator": {
-          "identityKey": {
-            "ik": "yiuUZVLr9cfb87F2ZU4xrYHTKGSXE5PKQh+LdsqLjQ8="
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "244126891245213790"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "consensusKey": "VdzKD+11KBFZfd5IL60NIaiSBli5u3vm30o56RWCis0=",
-          "name": "test validator",
-          "enabled": true,
-          "governanceKey": {
-            "gk": "yiuUZVLr9cfb87F2ZU4xrYHTKGSXE5PKQh+LdsqLjQ8="
+          "rseed": "4c4xEmBqG8z278A+x5VkCEWiCh+7JYAxU6VFw5mGJtg=",
+          "address": {
+            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
           }
         },
-        "authSig": "Uv0dQtEL2asaOcQu5KKu/FxSohORpFWlDh/OqY2/OAWy8zn5GrK+VzM8BRPF1OQf+WxTD1XWUOMv/+TiAcdeAA=="
+        "position": "68952927671251",
+        "randomizer": "ZbwjCIE4AQVxkJhvWqtrhlvi0VQ3GxZzf6k3GM5RQwM=",
+        "valueBlinding": "dmtv3bnPh1h+1X9KspSX+n5MxBP5gdm5oA/oFLc8xwE=",
+        "proofBlindingR": "3QDHBFnrEwMSfLj3x0twcCZ7HJ8GvihGrRY4yzAeEgM=",
+        "proofBlindingS": "5Yn4nZGQ87elHjNFkA901JXQAcXJzd5VI/W2fqErwwk="
       }
     },
     {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "pvhhZ9ltQSb+l28gZqBZ0YFy8qq9VD2uoofnxwIRdNY="
+      "delegatorVote": {
+        "proposal": "645747174",
+        "vote": {
+          "vote": "VOTE_YES"
+        },
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "906892180559695516"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "szDa4Za+/Ck18RaUC1LBBHHc1SgY2eYKjGbiFwBaccc=",
+          "address": {
+            "inner": "biLaXzKsoPfvXsnNmGlruiuLW6ZImpibCy/KvGZYmSlYTN5jr7ES/6N+q+dHhQHHiWG1JdGeF7UM6npOiuYOEKQuGekKIkfAaxIC1q9AW2s="
+          }
         },
         "unbondedAmount": {
-          "lo": "633987113281668403"
+          "lo": "86444247408766199"
         },
-        "delegationAmount": {
-          "lo": "514614043497885855"
+        "randomizer": "GZ/ZVNP9nPee/4EaGVEMgSxttC8cB6pin9PXvJJnmQI=",
+        "proofBlindingR": "tHpHa24DW9dTAmXrwqdakBsFAzvF2Rq48sM6C6tEbgc=",
+        "proofBlindingS": "NF1cKMqPEG+9sQDo08z8Xv/NxfPnpj2vDM5ryQTSRw0="
+      }
+    },
+    {
+      "output": {
+        "value": {
+          "amount": {
+            "lo": "700041784739567149"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         },
-        "fromEpoch": {
-          "index": "1382",
-          "startHeight": "1382"
-        }
+        "destAddress": {
+          "inner": "E+6JoUbx9tF55Fx2qP1xwmUIkhYcczs9eOLv//oUvvXlSfWKVgE36Bs1dFxra8YfSA5CtyG3YS8ndRz6Nu/YckY/7HC4pFfF9xUus+6rvUQ="
+        },
+        "rseed": "0pdUnut2yfkYtSq3lq8dD6i5dRbJrFutiQJ8rf9Awts=",
+        "valueBlinding": "wiT6zpHIEZ4k94JgNAMI5SWKApv4iGZwUYt9KDfjMAI=",
+        "proofBlindingR": "XMPXVVlb0eB/Jvb6V6Orp0inhVFE9VpGY1cX4ejoKgo=",
+        "proofBlindingS": "IU0KHcsG7uSIHu86/7/RiuOhCWvJguIAA7QgmhmG8A0="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6914108482",
-    "chainId": "fzqytrdlmgqmenndrwblmec-05346451865",
+    "chainId": "penumbra-1",
     "fee": {
       "amount": {
-        "lo": "580640120266145402"
+        "lo": "257823899991800408"
       }
     }
+  },
+  "memo": {
+    "plaintext": {
+      "returnAddress": {
+        "inner": "JULXMGwtqkzV5EcLGvIs4FM0IWv2sAQ4rZ7Nz2uZNel2Bw55hsBDqeIpVbI0gvb8FnmodhrSXQM3p5+hFcxWEdBx8sjL0pp4Y00ux8tkkwo="
+      },
+      "text": "5 6iD15C51 b6 I pegDjsufH E E4  O59tY4x jnokyQnh5a IBZy7F 3970L89 GO rzom3G mahqVpkp42Oz txJ8kV37rijFB8fqD170kr1dfwHEs0  8 FwqXo zC4lO89w7tRrhMeX0N z T 77394 iY97yH2  k zIspe2rgm 7aC7z7GIZr Q50I  62137pA5k547 f9NF IUa    2 t5A 1kujxC0arU36 5c3FF99 1Spo QrT 3dV y3a PKqX   ud9P oWWP BFwF 4begp pS5 3Vhv5  TzY0  4y ePthJs4FGx 2 Wr 1YPp 6XrAald20Fogw VaY1H4 Q8 3MTn mOjg eu4McajxirJIa4inPL t"
+    },
+    "key": "25cXzL3xfG8S3smPAjyFhnuBNzl7mrQ2s7+TMStDph4="
   }
 }

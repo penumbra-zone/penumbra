@@ -1,27 +1,72 @@
 {
   "actions": [
     {
-      "positionClose": {
-        "positionId": {
-          "inner": "mSHwo2i5YzvPusdoOrhcYl1stJIFrRR7mOTlufZ9mK0="
+      "communityPoolSpend": {
+        "value": {
+          "amount": {
+            "lo": "537655406618368418"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         }
       }
     },
     {
-      "positionClose": {
-        "positionId": {
-          "inner": "KrohYFW3AiAxd3Sdfuydpbp7Lp2G9fNQwra0eFnPQkk="
-        }
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "497585297784736158"
+        },
+        "denom": {
+          "denom": "VLC5wbH"
+        },
+        "destinationChainAddress": "penumbra19eldtwwqsz7sc3kyx48hpxqm80pt69cr7szcynfkf6qt9srfl7cms7akdfkqay9d2j8a7j6tgdw5kf5lv8ff0acgm8vwh73f3h9l6md6q64v4uumwk4kfs4a640faqlfwu7n6x",
+        "returnAddress": {
+          "inner": "TpboGvhRz3C6ilXyFDrod5JEbGiRYq3yHBCyp56W+ykrZbeCAAS4Df3aVMjvzr+cPOe8+8yQYbEmGBqD8PxA2CUjRLQhk4EHp9CciOyVlBI="
+        },
+        "timeoutHeight": {
+          "revisionNumber": "29322802",
+          "revisionHeight": "666051503"
+        },
+        "sourceChannel": "channel-0"
+      }
+    },
+    {
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "984986416064174702"
+        },
+        "denom": {
+          "denom": "RO7QO550Lt2D2Q3T1wU9HvLvOMQRzJD"
+        },
+        "destinationChainAddress": "penumbra1r55xve73pmqtvg6t03439wq6pwnhqrvxwcqqr9ulrlfjp48crxwwkf6t8w20z34qvctsrjm2z2n6ulvypqmrhjfagmu2y8kuxp2rq47my25w8dmwgsw6xq76nc00fqhz09xfes",
+        "returnAddress": {
+          "inner": "MZ3c9cooqOLdtJ25+QOSeIy4wvC2h/RIfd38JwYCw6of9C7pXSpQC2rWJQuwZTAVazrGF05CNTu9pnb18HMx5li6Z8ENVxlVE5ZcuCms4Ls="
+        },
+        "timeoutHeight": {
+          "revisionNumber": "753301247",
+          "revisionHeight": "233732556"
+        },
+        "sourceChannel": "channel-0"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "3949352929",
-    "chainId": "qrfschiqxdgzxb-892924459211469308974498987534",
+    "expiryHeight": "229631",
+    "chainId": "ietabnrliz-1452561949851277",
     "fee": {
       "amount": {
-        "lo": "769594145860330082"
+        "lo": "209360847549446994"
       }
     }
+  },
+  "memo": {
+    "plaintext": {
+      "returnAddress": {
+        "inner": "s/7Cr5FUlvDdEveO80xkAC18MTGjIR1EIZRIToR2/Vk4BvfrFoRLCrRg6wDmc18duNwo9IpGoF+vfNXi45dsaRDtn2HSb/Y+nidIMaYWw+M="
+      },
+      "text": "d1kDbw dXB1N Vg 2zdbGFf32dz1WW7 5p X  D 6dBd TmE rp3pq1hmDxQgGJP1lf wxM  nI Ne1VJ96hjST r e2 Kp2j4v8 x8r1vH8y SHi6bWKnI9Bf MVQ   Y1M92k   a8 9 OH7nqngU2EQhl4  86EO4u"
+    },
+    "key": "xdchUpKe/YO4fgTgFMDqP/YP+bFirmoXfauIzGUk75g="
   }
 }

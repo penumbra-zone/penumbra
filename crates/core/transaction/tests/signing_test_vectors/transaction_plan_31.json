@@ -1,45 +1,47 @@
 {
   "actions": [
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "ueLG2LHLS2GZyPeo/UkATJkEuggas+KdnLmiAs1BWko="
-        },
-        "epochIndex": "7583",
-        "unbondedAmount": {
-          "lo": "15793144669807645"
-        },
-        "delegationAmount": {
-          "lo": "334282447469022874"
-        }
-      }
-    },
-    {
-      "communityPoolDeposit": {
-        "value": {
-          "amount": {
-            "lo": "723749552762830993"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        }
-      }
-    },
-    {
       "positionClose": {
         "positionId": {
-          "inner": "D7uR3PXUhytuF/wIfwgsG7BOPRTb8bJPUJqE5d6zA18="
+          "inner": "CL3aOtPMvlVgXDreJXBJB9ztr7m/pYlDTtdc5UI4MvI="
         }
+      }
+    },
+    {
+      "delegatorVote": {
+        "proposal": "630928382",
+        "vote": {
+          "vote": "VOTE_ABSTAIN"
+        },
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "847651157324771973"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "N0eB3WEaTPSxWCTBX7zW6KDJp4BtYPNKFzQqtpBg6FQ=",
+          "address": {
+            "inner": "PU2T+6OEt+2b4zh9alNN348hw9kQFbb3qiuMhGj1ybmyTf7xn64HJUmkBhETwrULjOtsWTsp4TbVHN03ezjvSXY3cctI9TAKf6muW9gQGbs="
+          }
+        },
+        "unbondedAmount": {
+          "lo": "23014312230682228"
+        },
+        "randomizer": "jun/FRfYJrKDMT4rxAAbRmP5zCXF3C2gW3zrHOE7rwA=",
+        "proofBlindingR": "vshTGOrTxHi9OxQ83uXvPZpTVrZlosEnnfsdl8fyZAU=",
+        "proofBlindingS": "bQ+gjtOBRv/SJYiZPb6a8BQivTAIWIA20WpCJC+0oQw="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "1442141052",
-    "chainId": "wptbrepftqnteycltrh-5668754710518",
+    "expiryHeight": "641326",
+    "chainId": "penumbra-1",
     "fee": {
       "amount": {
-        "lo": "593192677678758686"
+        "lo": "644153882513138783"
       }
     }
   }

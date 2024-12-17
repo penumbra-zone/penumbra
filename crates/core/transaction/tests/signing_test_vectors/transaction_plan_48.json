@@ -1,52 +1,45 @@
 {
   "actions": [
     {
-      "undelegate": {
-        "validatorIdentity": {
-          "ik": "yXRVlQf6bO60Q1DWoZrjBhTE4KU2WdcYXbbQZmcf29c="
-        },
-        "unbondedAmount": {
-          "lo": "434156311610937917"
-        },
-        "delegationAmount": {
-          "lo": "906736185101517951"
-        },
-        "fromEpoch": {
-          "index": "9651",
-          "startHeight": "9651"
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrQBCNL5hIMEEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgwIq7LymQMQpo72hQJAiMPohZflhIcYEgIKABoMCKuy8pkDEKaO9oUCIo8BcGVudW1icmExeThydzJraGM4NmF3ajZrc3FzajUyajdwazR2NjN2cjR5aDJudnY0NDN6MjB1Mno5Zzk1MnZnMGtocHV4M3IyMnllcm0yMnpuN2NneHRydzY5dWV4ODB6YWR6YWxrenJ2bTByZ3NrNG01OHB5cmp0Njg1ZDVxZDhseWo4bnB3OWpuNjlhMGQ="
         }
       }
     },
     {
-      "validatorVote": {
-        "body": {
-          "proposal": "311833840",
-          "vote": {
-            "vote": "VOTE_YES"
-          },
+      "validatorDefinition": {
+        "validator": {
           "identityKey": {
-            "ik": "uGUm3LhW3M8jYT62AuhshlUWsY/mLLAXelHtv6bwwsQ="
+            "ik": "rIZRTmUngUQy430riqyqNiqnRaWJW1fpvgwmR5CSoQU="
           },
+          "consensusKey": "52zeqpcM/WH/+so/PWzIrYDgcoQdM1xn9P0Z5+tdhHc=",
+          "name": "test validator",
+          "enabled": true,
           "governanceKey": {
-            "gk": "GBdoWyK4s3wqUTcRYdih09IQNjTvVHCGKcHj/AFaOw4="
-          },
-          "reason": {
-            "reason": "2m59060UUbJ686PTRk"
+            "gk": "rIZRTmUngUQy430riqyqNiqnRaWJW1fpvgwmR5CSoQU="
           }
         },
-        "authSig": {
-          "inner": "3OpxO7YAUv3S94K/AwjK4rj4m3dGm3Pkt8CItuaKVgnBkcSLMk3TZQx0vH/oLoGJmp1I7c8BAbe50xFIzN6/AA=="
-        }
+        "authSig": "rujEKNG0NAWpz2MxCwIipII0iHTELnOWUZ+Xbbn/oApi4NsSl5ADZdkv7m6JziPd2LvLxLcnaLt+EIn73xFoBA=="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "2073653224",
-    "chainId": "jwlf-236",
+    "chainId": "penumbra-1",
     "fee": {
       "amount": {
-        "lo": "548940969473133235"
+        "lo": "951929725357322405"
       }
     }
+  },
+  "memo": {
+    "plaintext": {
+      "returnAddress": {
+        "inner": "SaufhKLsYBqL6wBnFO4mGRD27y3mnoWsv8WbCYZhJV9D1OE7Dsm3kScOt+OlLHxMqlevhy7TJu2DNdPvpYrNm4HrHWALyO9rvu//YeLFUBo="
+      },
+      "text": "A0uh 4 c5xzpPO3X NPRvt 7kzmqAXn5wWJBW5t1rrtgP38T7W LTiiAO 8 J OK3 4Luxa8PS3P6oGDx2za3trxLeZ 0qO V XVbhAly y 6hd 8t hnX4 W13 j1 Pvw 5C 0FYnb 9 D 5Nho5g2E8 z3yOPDB  vd9g IwvbJq uVEy 37a xPCz B I bm DHbKI cY  aQtF c12e t 2 k21d M 7x7kV N    2yBI0 URdNnx  2dNB9  LOvydvG3gytca u595n26  oW5Lw7r 589cn050xqoKy N x8 0S 7JMWg23mrl  6GJB2raeo M98EDw9o  3 WY 40B  Pq7 S Gzo0h  9HVGm0Z6s4Q y6lSY 4Yq8I0 0 j3Oiy5S P74NuNI lt0u5  BxVBr"
+    },
+    "key": "u0WMSa1HvH6B8L5X8g9a/y8UpWCbmJxA+h5yfw0WqSE="
   }
 }

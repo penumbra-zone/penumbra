@@ -1,77 +1,59 @@
 {
   "actions": [
     {
-      "positionClose": {
-        "positionId": {
-          "inner": "3bbkEtSgjhFIBKM177cemJLtXPcFjC189hyp82PQme4="
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "501891760246078786"
+        },
+        "denom": {
+          "denom": "4Cs77v6a80Ubwi80dYqC"
+        },
+        "destinationChainAddress": "penumbra1ejgwykppswh8edgnnpfc9rz0e3m6d9g27pkhhkyt72g560vwgtq42yl7k5ecudyrge2h7lu8y7gagakdtcxjnqdzn8nzvvseac907zu6647s8g3efgta7naktj7vvd9n4gstjc",
+        "returnAddress": {
+          "inner": "+tkuzcC4m56zt3V9JBOjn8r4icAo97LTInKsnkSbCO8MgcvwAYipxGI6FSbWZ7cbhetl55gSDRsDWsJT+vVtcHCXoX93+OsAMiw1Y2sgwBo="
+        },
+        "timeoutHeight": {
+          "revisionNumber": "376417382",
+          "revisionHeight": "917998214"
+        },
+        "sourceChannel": "channel-0"
+      }
+    },
+    {
+      "actionDutchAuctionWithdraw": {
+        "auctionId": {
+          "inner": "/hM55fxlNk+IzlMIsZxsIKvYAevfzE9iYzK9uaC1Rb4="
+        },
+        "seq": "33585226",
+        "reservesInput": {
+          "amount": {
+            "lo": "586680816478041526"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "reservesOutput": {
+          "amount": {
+            "lo": "176525138642587828"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         }
       }
     },
     {
-      "swapClaim": {
-        "swapPlaintext": {
-          "tradingPair": {
-            "asset1": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            },
-            "asset2": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
-          },
-          "delta1I": {
-            "lo": "396407965900561063"
-          },
-          "delta2I": {
-            "lo": "31512525003725287"
-          },
-          "claimFee": {
-            "amount": {}
-          },
-          "claimAddress": {
-            "inner": "NNtbsuSI/Znlg0w2zKZo6gqkNX/02iLqEQ0blH/17S0/g9ZYxTM3feLvghIhyqqISmOYghzgIh0wZ3NTHHdKjcgogx5M0DBWTN6Mc7zJipg="
-          },
-          "rseed": "jeYrMjQpR7Ky1p/R/3tIsRqh29ceNbLzEjBP/ctjCck="
-        },
-        "outputData": {
-          "delta1": {
-            "lo": "1101423576"
-          },
-          "delta2": {
-            "lo": "1567061194"
-          },
-          "lambda1": {
-            "lo": "1799"
-          },
-          "lambda2": {
-            "lo": "746"
-          },
-          "unfilled1": {
-            "lo": "1097"
-          },
-          "unfilled2": {
-            "lo": "1121"
-          },
-          "tradingPair": {
-            "asset1": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            },
-            "asset2": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
-          }
-        },
-        "epochDuration": "1000",
-        "proofBlindingR": "l8LmlnLtcFqlgianoxogzdvDlkScAgUjxACBkM1S7RA=",
-        "proofBlindingS": "Qu6BJ9ZKFmHZY2D23mxQj1vwChQiV1RUKAyuE/AfZhI="
+      "proposalWithdraw": {
+        "proposal": "413464974"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6509449978",
-    "chainId": "jwfqgaphakccpctwxwsryqvdzbqz-1046450848",
+    "chainId": "penumbra-1",
     "fee": {
       "amount": {
-        "lo": "753235038814796507"
+        "lo": "757161184024247894"
       }
     }
   }
