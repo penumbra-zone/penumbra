@@ -65,29 +65,6 @@ pub fn routes(
 ) -> anyhow::Result<tonic::service::Routes> {
     let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
 
-    // TODO(janis): upgrading to tonic 0.12 meant that the batteries included server could no
-    // longer be used. So we now need to configure this on the axum/hyper server directly.
-    // What can be done? Instead of `trace_fn` one could make use of tower-http's
-    // TraceLayer.
-    //
-    // HTTP1 and HTTP2 now need to be configured at a higher level - but if we make use
-    // of `axum::serve`, then they seem to both be activated?
-    // See also this:
-    // https://github.com/tokio-rs/axum/blob/c596deafe48ed608775e312eef7d12ddbb0fd424/examples/websockets-http2/src/main.rs#L57-L59
-
-    // let grpc_server = tonic::transport::server::Server::builder()
-    //     .trace_fn(|req| match remote_addr(req) {
-    //         Some(remote_addr) => {
-    //             tracing::error_span!("grpc", ?remote_addr)
-    //         }
-    //         None => tracing::error_span!("grpc"),
-    //     })
-    //     // Allow HTTP/1, which will be used by grpc-web connections.
-    //     // This is particularly important when running locally, as gRPC
-    //     // typically uses HTTP/2, which requires HTTPS. Accepting HTTP/2
-    //     // allows local applications such as web browsers to talk to pd.
-    //     .accept_http1(true)
-
     let mut builder = Routes::builder();
     builder
         // As part of #2932, we are disabling all timeouts until we circle back to our

@@ -110,7 +110,7 @@ tonic-web = { workspace = true }
 tower = { workspace = true, features = ["full"] }
 tower-abci = "0.18"
 tower-actor = "0.1.0"
-tower-http = { workspace = true, features = ["cors"] }
+tower-http = { workspace = true, features = ["cors", "trace"] }
 tower-service = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "ansi"] }
