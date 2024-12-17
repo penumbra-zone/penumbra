@@ -1262,6 +1262,35 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 }
                 index += 1;
             }
+            ActionPlan::DelegatorVote(vote) => {
+                // Format the voting power as a value
+                let power_value = Value {
+                    amount: vote.unbonded_amount,
+                    asset_id: *penumbra_asset::STAKING_TOKEN_ASSET_ID,
+                };
+                let power_display = value_display(
+                    &power_value,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                // Convert vote to Yes/No/Abstain string
+                let vote_choice = match vote.vote {
+                    penumbra_governance::Vote::Yes => "Yes",
+                    penumbra_governance::Vote::No => "No",
+                    penumbra_governance::Vote::Abstain => "Abstain",
+                };
+
+                let vote_display = format!(
+                    "DelegatorVote on Proposal {}\nVote {}\nVoting Power: {}",
+                    vote.proposal, vote_choice, power_display
+                );
+
+                for line in format_for_display("Action", vote_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
