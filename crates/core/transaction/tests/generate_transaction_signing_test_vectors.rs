@@ -1427,6 +1427,15 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 }
                 index += 1;
             }
+            ActionPlan::ActionDutchAuctionEnd(auction_end) => {
+                let auction_display =
+                    format!("DutchAuctionEnd\nAuction ID: {}", auction_end.auction_id);
+
+                for line in format_for_display("Action", auction_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
