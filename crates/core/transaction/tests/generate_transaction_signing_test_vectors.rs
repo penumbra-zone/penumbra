@@ -1349,6 +1349,17 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 }
                 index += 1;
             }
+            ActionPlan::PositionWithdraw(position_withdraw) => {
+                let position_display = format!(
+                    "PositionWithdraw\nPosition ID {}\nSequence number {}",
+                    position_withdraw.position_id, position_withdraw.sequence
+                );
+
+                for line in format_for_display("Action", position_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
