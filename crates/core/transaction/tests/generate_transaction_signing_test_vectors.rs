@@ -1191,6 +1191,31 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
 
                 index += 1;
             }
+            ActionPlan::Delegate(delegate) => {
+                // Format the unbonded amount (input)
+                let input_value = Value {
+                    amount: delegate.unbonded_amount,
+                    asset_id: *penumbra_asset::STAKING_TOKEN_ASSET_ID,
+                };
+                let input_display = value_display(
+                    &input_value,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                // Format validator identity
+                let validator_display = format!("{}", delegate.validator_identity);
+
+                let delegate_display = format!(
+                    "Delegate\nTo {}\nInput {}",
+                    validator_display, input_display
+                );
+
+                for line in format_for_display("Action", delegate_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
