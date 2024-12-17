@@ -1436,6 +1436,34 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 }
                 index += 1;
             }
+            ActionPlan::ActionDutchAuctionWithdraw(withdraw) => {
+                // Format the unsold amount
+                let unsold_display = value_display(
+                    &withdraw.reserves_input,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                // Format the proceeds amount
+                let proceeds_display = value_display(
+                    &withdraw.reserves_output,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                let withdraw_display = format!(
+                    "DutchAuctionWithdraw\nAuction ID: {}\nUnsold: {}\nProceeds: {}\nSequence number: {}",
+                    withdraw.auction_id,
+                    unsold_display,
+                    proceeds_display,
+                    withdraw.seq
+                );
+
+                for line in format_for_display("Action", withdraw_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
