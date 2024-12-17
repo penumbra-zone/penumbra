@@ -1216,6 +1216,36 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 }
                 index += 1;
             }
+            ActionPlan::Undelegate(undelegate) => {
+                // Format the delegation amount (input)
+                let input_value = undelegate.delegation_value();
+                let input_display = value_display(
+                    &input_value,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                // Format the unbonding amount (output)
+                let output_value = undelegate.unbonded_value();
+                let output_display = value_display(
+                    &output_value,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                // Format validator identity
+                let validator_display = format!("{}", undelegate.validator_identity);
+
+                let undelegate_display = format!(
+                    "Undelegate\nFrom {}\nInput {}\nOutput {}",
+                    validator_display, input_display, output_display
+                );
+
+                for line in format_for_display("Action", undelegate_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
