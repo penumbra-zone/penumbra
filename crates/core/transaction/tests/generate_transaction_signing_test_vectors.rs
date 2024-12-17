@@ -1246,6 +1246,22 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 }
                 index += 1;
             }
+            ActionPlan::UndelegateClaim(claim) => {
+                // Format the unbonding tokens value
+                let value = Value {
+                    amount: claim.unbonding_amount,
+                    asset_id: claim.unbonding_id(),
+                };
+                let value_display =
+                    value_display(&value, &plan.transaction_parameters.chain_id, &base_denoms);
+
+                let claim_display = format!("UndelegateClaim\nValue {}", value_display,);
+
+                for line in format_for_display("Action", claim_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
