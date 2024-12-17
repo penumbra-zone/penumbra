@@ -1340,6 +1340,15 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 }
                 index += 1;
             }
+            ActionPlan::PositionClose(position_close) => {
+                let position_display =
+                    format!("PositionClose\nPosition ID {}", position_close.position_id);
+
+                for line in format_for_display("Action", position_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
