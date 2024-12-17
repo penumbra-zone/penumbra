@@ -1291,6 +1291,55 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 }
                 index += 1;
             }
+            ActionPlan::PositionOpen(position_open) => {
+                // Format the first reserve amount
+                let reserves_1 = Value {
+                    amount: position_open.position.reserves.r1,
+                    asset_id: position_open.position.phi.pair.asset_1(),
+                };
+                let reserves_1_display = value_display(
+                    &reserves_1,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                // Format the second reserve amount
+                let reserves_2 = Value {
+                    amount: position_open.position.reserves.r2,
+                    asset_id: position_open.position.phi.pair.asset_2(),
+                };
+                let reserves_2_display = value_display(
+                    &reserves_2,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                // Build display string conditionally including close_on_fill
+                let position_display = if position_open.position.close_on_fill {
+                    format!(
+                "PositionOpen\nReserves 1: {}\nReserves 2: {}\nTrading Function p: {}\nTrading Function q: {}\nFee: {}\nClose on fill: true",
+                        reserves_1_display,
+                        reserves_2_display,
+                        position_open.position.phi.component.p,
+                        position_open.position.phi.component.q,
+                        position_open.position.phi.component.fee,
+            )
+                } else {
+                    format!(
+                        "PositionOpen\nReserves 1: {}\nReserves 2: {}\nTrading Function p: {}\nTrading Function q: {}\nFee: {}",
+                        reserves_1_display,
+                        reserves_2_display,
+                        position_open.position.phi.component.p,
+                        position_open.position.phi.component.q,
+                        position_open.position.phi.component.fee,
+                    )
+                };
+
+                for line in format_for_display("Action", position_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
