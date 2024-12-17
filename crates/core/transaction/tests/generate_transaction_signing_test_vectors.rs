@@ -1360,6 +1360,73 @@ fn generate_normal_output(plan: &TransactionPlan, fvk: &FullViewingKey) -> Vec<S
                 }
                 index += 1;
             }
+            ActionPlan::ActionDutchAuctionSchedule(auction) => {
+                // Format the selling amount
+                let selling = Value {
+                    amount: auction.description.input.amount,
+                    asset_id: auction.description.input.asset_id,
+                };
+                let selling_display = value_display(
+                    &selling,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                );
+
+                // Format the "for" asset (just the asset ID since it's the target)
+                let for_asset = Value {
+                    amount: 0u64.into(), // Amount not relevant for display
+                    asset_id: auction.description.output_id,
+                };
+                let for_asset_display = value_display(
+                    &for_asset,
+                    &plan.transaction_parameters.chain_id,
+                    &base_denoms,
+                )
+                .split_whitespace()
+                .last()
+                .unwrap_or("unknown")
+                .to_string();
+
+                // Format starting price
+                let start_price = format!(
+                    "{} {} for {} {}",
+                    auction.description.max_output,
+                    for_asset_display,
+                    auction.description.input.amount,
+                    selling_display
+                        .split_whitespace()
+                        .last()
+                        .unwrap_or("unknown")
+                );
+
+                // Format ending price
+                let end_price = format!(
+                    "{} {} for {} {}",
+                    auction.description.min_output,
+                    for_asset_display,
+                    auction.description.input.amount,
+                    selling_display
+                        .split_whitespace()
+                        .last()
+                        .unwrap_or("unknown")
+                );
+
+                let auction_display: String = format!(
+                    "DutchAuctionSchedule\nSelling: {}\nFor: {}\nStarting price: {}\nEnding price: {}\nStart block height: {}\nEnd block height: {}\nSteps: {}",
+                    selling_display,
+                    for_asset_display,
+                    start_price,
+                    end_price,
+                    auction.description.start_height,
+                    auction.description.end_height,
+                    auction.description.step_count,
+                );
+
+                for line in format_for_display("Action", auction_display) {
+                    output.push(format!("{} | {}", index, line));
+                }
+                index += 1;
+            }
             _ => {
                 // TODO: populate this
             }
