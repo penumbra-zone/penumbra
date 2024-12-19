@@ -103,6 +103,14 @@ async fn main() -> anyhow::Result<()> {
                 .context(
                     "Unable to initialize RocksDB storage - is there another `pd` process running?",
                 )?;
+
+            if penumbra_app::app::App::is_ready(storage.latest_snapshot()).await {
+                tracing::info!("application ready to start");
+            } else {
+                tracing::warn!("application is halted, refusing to start");
+                exit(0)
+            }
+
             check_and_update_app_version(storage.clone()).await?;
 
             tracing::info!(
@@ -116,13 +124,6 @@ async fn main() -> anyhow::Result<()> {
                 ?enable_expensive_rpc,
                 "starting pd"
             );
-
-            if penumbra_app::app::App::is_ready(storage.latest_snapshot()).await {
-                tracing::info!("application ready to start");
-            } else {
-                tracing::warn!("application is halted, refusing to start");
-                exit(0)
-            }
 
             let abci_server = tokio::task::spawn(
                 penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind),
