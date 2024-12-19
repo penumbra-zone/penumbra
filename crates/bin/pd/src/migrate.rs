@@ -110,7 +110,7 @@ impl Migration {
                 mainnet1::migrate(storage, pd_home.clone(), genesis_start).await?;
             }
             Migration::Mainnet2 => {
-                mainnet2::migrate(storage, pd_home.clone(), genesis_start).await?;
+                mainnet2::migrate(storage, pd_home.clone(), genesis_start, force).await?;
             }
             // We keep historical migrations around for now, this will help inform an abstracted
             // design. Feel free to remove it if it's causing you trouble.

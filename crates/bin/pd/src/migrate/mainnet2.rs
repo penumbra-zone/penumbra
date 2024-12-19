@@ -22,6 +22,7 @@ pub async fn migrate(
     storage: Storage,
     pd_home: PathBuf,
     genesis_start: Option<tendermint::time::Time>,
+    force: bool,
 ) -> anyhow::Result<()> {
     // Setup:
     let initial_state = storage.latest_snapshot();
@@ -42,7 +43,15 @@ pub async fn migrate(
     let (migration_duration, post_upgrade_root_hash) = {
         let start_time = std::time::SystemTime::now();
 
-        migrate_app_version(&mut delta, 9).await?;
+        if let Err(e) = migrate_app_version(&mut delta, 9).await {
+            if !force {
+                return Err(e);
+            }
+            tracing::warn!(
+                ?e,
+                "failed to migrate app version, continuing anyway due to --force"
+            );
+        }
 
         // Reset the application height and halt flag.
         delta.ready_to_start();
