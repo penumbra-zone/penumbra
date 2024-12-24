@@ -303,7 +303,7 @@ pub async fn unpack_state_archive(
 
     // If the archive we consumed was generated via `pd migrate`, then it will contain
     // a new genesis file and priv_validator_state.json, both of which should be applied
-    // over the generted cometbft config files. If the archive was generated via `pd export`,
+    // over the generated cometbft config files. If the archive was generated via `pd export`,
     // then those extra files will be missing, and only rocksdb data will be present.
     let new_genesis = pd_home.join("genesis.json");
     let new_val_state = pd_home.join("priv_validator_state.json");
