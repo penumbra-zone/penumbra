@@ -1288,42 +1288,6 @@ dependencies = [
 [[package]]
 name = "cnidarium"
 version = "0.81.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.21.7",
- "borsh",
- "futures",
- "hex",
- "ibc-proto",
- "ibc-types",
- "ics23",
- "jmt",
- "metrics 0.24.1",
- "once_cell",
- "parking_lot",
- "pbjson",
- "pin-project",
- "proptest",
- "prost",
- "regex",
- "rocksdb",
- "serde",
- "sha2 0.10.8",
- "smallvec",
- "tempfile",
- "tendermint",
- "test-strategy",
- "tokio",
- "tokio-stream",
- "tonic",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "cnidarium"
-version = "0.81.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f77ae2f37b1ca16db2524f7d1f1a14416372dc2594635d18a6357b609c4164c8"
 dependencies = [
@@ -1362,7 +1326,7 @@ version = "0.81.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "hex",
  "tendermint",
 ]
@@ -4544,7 +4508,7 @@ dependencies = [
  "bytes",
  "chrono",
  "clap",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "csv",
  "decaf377",
  "decaf377-rdsa",
@@ -4696,7 +4660,7 @@ dependencies = [
  "blake2b_simd 1.0.2",
  "camino",
  "cfg-if",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "decaf377",
  "decaf377-fmd",
@@ -4827,7 +4791,7 @@ dependencies = [
  "bech32",
  "bitvec",
  "blake2b_simd 1.0.2",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "decaf377",
  "decaf377-rdsa",
@@ -4930,7 +4894,7 @@ dependencies = [
  "async-trait",
  "base64 0.21.7",
  "blake2b_simd 1.0.2",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "futures",
  "hex",
@@ -4962,7 +4926,7 @@ dependencies = [
  "async-trait",
  "blake2b_simd 1.0.2",
  "bytes",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "decaf377-rdsa",
  "futures",
@@ -5040,7 +5004,7 @@ dependencies = [
  "base64 0.21.7",
  "bincode",
  "blake2b_simd 1.0.2",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "decaf377",
  "decaf377-fmd",
@@ -5092,7 +5056,7 @@ version = "0.81.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "getrandom",
  "penumbra-asset",
@@ -5131,7 +5095,7 @@ dependencies = [
  "async-trait",
  "blake2b_simd 1.0.2",
  "bytes",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "decaf377",
  "decaf377-rdsa",
@@ -5155,7 +5119,7 @@ version = "0.81.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "futures",
  "metrics 0.24.1",
@@ -5188,7 +5152,7 @@ dependencies = [
  "base64 0.21.7",
  "blake2b_simd 1.0.2",
  "bytes",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "decaf377",
  "decaf377-rdsa",
@@ -5235,7 +5199,7 @@ dependencies = [
  "async-trait",
  "base64 0.21.7",
  "blake2b_simd 1.0.2",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "futures",
  "hex",
  "ibc-proto",
@@ -5333,7 +5297,7 @@ name = "penumbra-mock-client"
 version = "0.81.0"
 dependencies = [
  "anyhow",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "penumbra-asset",
  "penumbra-compact-block",
  "penumbra-dex",
@@ -5498,7 +5462,7 @@ dependencies = [
  "bech32",
  "bytes",
  "chrono",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "decaf377-fmd",
  "decaf377-rdsa",
  "futures",
@@ -5538,7 +5502,7 @@ dependencies = [
  "blake2b_simd 1.0.2",
  "bytes",
  "chrono",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "decaf377",
  "decaf377-rdsa",
@@ -5577,7 +5541,7 @@ dependencies = [
  "blake2b_simd 1.0.2",
  "bytes",
  "chacha20poly1305",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "decaf377",
  "decaf377-fmd",
@@ -5630,7 +5594,7 @@ dependencies = [
  "base64 0.21.7",
  "bech32",
  "bitvec",
- "cnidarium 0.81.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cnidarium",
  "cnidarium-component",
  "decaf377",
  "decaf377-rdsa",
@@ -7881,29 +7845,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
-name = "structmeta"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78ad9e09554f0456d67a69c1584c9798ba733a5b50349a6c0d0948710523922d"
-dependencies = [
- "proc-macro2 1.0.92",
- "quote 1.0.36",
- "structmeta-derive",
- "syn 2.0.90",
-]
-
-[[package]]
-name = "structmeta-derive"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a60bcaff7397072dca0017d1db428e30d5002e00b6847703e2e42005c95fbe00"
-dependencies = [
- "proc-macro2 1.0.92",
- "quote 1.0.36",
- "syn 2.0.90",
-]
-
-[[package]]
 name = "strum"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8259,18 +8200,6 @@ name = "termtree"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
-
-[[package]]
-name = "test-strategy"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8361c808554228ad09bfed70f5c823caf8a3450b6881cc3a38eb57e8c08c1d9"
-dependencies = [
- "proc-macro2 1.0.92",
- "quote 1.0.36",
- "structmeta",
- "syn 2.0.90",
-]
 
 [[package]]
 name = "textwrap"

@@ -12,7 +12,6 @@ members = [
   "crates/bin/pd",
   "crates/bin/pindexer",
   "crates/bin/pmonitor",
-  "crates/cnidarium",
   "crates/cnidarium-component",
   "crates/core/app",
   "crates/core/asset",
@@ -136,7 +135,7 @@ camino                           = { version = "1" }
 chacha20poly1305                 = { version = "0.9.0" }
 chrono                           = { default-features = false, version = "0.4" }
 clap                             = { version = "3.2" }
-cnidarium                        = { default-features = false, version = "0.81.0" }
+cnidarium                        = { version = "0.81", default-features = false}
 cnidarium-component              = { default-features = false, path = "crates/cnidarium-component" }
 cometindex                       = { path = "crates/util/cometindex" }
 criterion                        = { version = "0.4" }
