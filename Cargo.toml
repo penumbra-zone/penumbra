@@ -243,23 +243,10 @@ tracing-subscriber               = { version = "0.3.17", features = ["env-filter
 url                              = { version = "2.2" }
 getrandom                        = { version = "0.2", default-features = false }
 
-# TODO: Don't use main; very bad bad. Use a rev.
-# TODO: wait for informalsystems to release a patch; see https://github.com/informalsystems/tendermint-rs/pull/1479.
+# TODO: cut 41 in trs
 [patch.crates-io]
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs/", rev = "refs/pull/1480/head" }
 tendermint-config = { git = "https://github.com/informalsystems/tendermint-rs/", rev = "refs/pull/1480/head" }
 tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs/", rev = "refs/pull/1480/head" }
 tendermint-proto = { git = "https://github.com/informalsystems/tendermint-rs/", rev = "refs/pull/1480/head" }
 tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs/", rev = "refs/pull/1480/head" }
-# tendermint = { path = "../tendermint-rs/tendermint" }
-# tendermint-config = { path = "../tendermint-rs/config" }
-# tendermint-light-client-verifier = { path = "../tendermint-rs/light-client-verifier" }
-# tendermint-proto = { path = "../tendermint-rs/proto" }
-# tendermint-rpc = { path = "../tendermint-rs/rpc" }
-# # TODO(kate):
-# # temporarily point these dependencies to a tag in the penumbra-zone fork.
-# # see #4392, #4400, and hyperium/tonic#1701 for more information.
-# [patch.crates-io]
-# tonic                            = { git = "https://github.com/penumbra-zone/tonic.git", tag = "v0.10.3-penumbra" }
-# tonic-reflection                 = { git = "https://github.com/penumbra-zone/tonic.git", tag = "v0.10.3-penumbra" }
-# tonic-web                        = { git = "https://github.com/penumbra-zone/tonic.git", tag = "v0.10.3-penumbra" }
