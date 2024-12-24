@@ -121,7 +121,7 @@ rand_core                        = { workspace = true }
 tap                              = { workspace = true }
 tempfile                         = { workspace = true }
 tendermint-config                = { workspace = true }
-tower-http                       = { workspace = true }
+tower-http                       = { workspace = true, features = ["cors"] }
 tracing-subscriber               = { workspace = true }
 url                              = { workspace = true }
 
