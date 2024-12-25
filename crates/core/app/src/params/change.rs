@@ -2,18 +2,18 @@ use std::fmt::Display;
 
 use anyhow::Context;
 use anyhow::Result;
-use penumbra_auction::params::AuctionParameters;
-use penumbra_community_pool::params::CommunityPoolParameters;
-use penumbra_dex::DexParameters;
-use penumbra_distributions::params::DistributionsParameters;
-use penumbra_fee::FeeParameters;
-use penumbra_funding::params::FundingParameters;
-use penumbra_governance::change::ParameterChange;
-use penumbra_governance::{params::GovernanceParameters, tally::Ratio};
-use penumbra_ibc::params::IBCParameters;
-use penumbra_sct::params::SctParameters;
-use penumbra_shielded_pool::params::ShieldedPoolParameters;
-use penumbra_stake::params::StakeParameters;
+use penumbra_sdk_auction::params::AuctionParameters;
+use penumbra_sdk_community_pool::params::CommunityPoolParameters;
+use penumbra_sdk_dex::DexParameters;
+use penumbra_sdk_distributions::params::DistributionsParameters;
+use penumbra_sdk_fee::FeeParameters;
+use penumbra_sdk_funding::params::FundingParameters;
+use penumbra_sdk_governance::change::ParameterChange;
+use penumbra_sdk_governance::{params::GovernanceParameters, tally::Ratio};
+use penumbra_sdk_ibc::params::IBCParameters;
+use penumbra_sdk_sct::params::SctParameters;
+use penumbra_sdk_shielded_pool::params::ShieldedPoolParameters;
+use penumbra_sdk_stake::params::StakeParameters;
 
 use super::AppParameters;
 

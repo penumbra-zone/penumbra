@@ -1,14 +1,14 @@
 use ark_ff::Zero;
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_asset::{Balance, Value};
-use penumbra_keys::FullViewingKey;
-use penumbra_num::Amount;
-use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
-use penumbra_proto::{core::component::governance::v1 as pb, DomainType};
-use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::Note;
-use penumbra_tct as tct;
+use penumbra_sdk_asset::{Balance, Value};
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
+use penumbra_sdk_proto::{core::component::governance::v1 as pb, DomainType};
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_shielded_pool::Note;
+use penumbra_sdk_tct as tct;
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 

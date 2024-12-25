@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
-use penumbra_asset::{asset, Value};
-use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_num::{fixpoint::U128x128, Amount};
+use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
@@ -488,7 +488,7 @@ impl From<BareTradingFunction> for pb::BareTradingFunction {
 mod tests {
     use ark_ff::Zero;
     use decaf377::Fq;
-    use penumbra_asset::asset::Id;
+    use penumbra_sdk_asset::asset::Id;
 
     use super::*;
 

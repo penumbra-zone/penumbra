@@ -1,24 +1,25 @@
 [package]
-name = "penumbra-mock-client"
-authors.workspace = true
+name = "penumbra-sdk-mock-client"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Mock a client to build end-to-end tests"
 edition.workspace = true
 version.workspace = true
-repository.workspace = true
 homepage.workspace = true
 license.workspace = true
 
 [dependencies]
 anyhow = {workspace = true}
 cnidarium = {workspace = true, default-features = true}
-penumbra-asset = {workspace = true}
-penumbra-compact-block = {workspace = true, default-features = true}
-penumbra-dex = {workspace = true, default-features = true}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-sct = {workspace = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, features = [
+penumbra-sdk-asset = {workspace = true}
+penumbra-sdk-compact-block = {workspace = true, default-features = true}
+penumbra-sdk-dex = {workspace = true, default-features = true}
+penumbra-sdk-keys = {workspace = true, default-features = true}
+penumbra-sdk-sct = {workspace = true, default-features = true}
+penumbra-sdk-shielded-pool = {workspace = true, features = [
     "component",
 ], default-features = true}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-transaction = {workspace = true, default-features = true}
+penumbra-sdk-tct = {workspace = true, default-features = true}
+penumbra-sdk-transaction = {workspace = true, default-features = true}
 rand_core = {workspace = true}
 

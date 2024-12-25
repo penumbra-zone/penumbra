@@ -1,8 +1,8 @@
 use anyhow::Result;
 use cometindex::{async_trait, index::EventBatch, sqlx, AppView, PgTransaction};
 
-use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
-use penumbra_stake::IdentityKey;
+use penumbra_sdk_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
+use penumbra_sdk_stake::IdentityKey;
 
 #[derive(Debug)]
 pub struct MissedBlocks {}

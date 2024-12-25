@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context};
-use penumbra_asset::{asset, Value};
-use penumbra_num::Amount;
-use penumbra_proto::{
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{
     penumbra::core::component::dex::v1 as pb, serializers::bech32str, DomainType,
 };
 use rand_core::CryptoRngCore;
@@ -433,7 +433,7 @@ mod test {
     use super::*;
     use ark_ff::Zero;
     use decaf377::Fq;
-    use penumbra_asset::asset;
+    use penumbra_sdk_asset::asset;
     use rand_core::OsRng;
 
     #[test]

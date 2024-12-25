@@ -3,14 +3,14 @@ use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::{AllocVar, EqGadget};
 use ark_relations::r1cs::SynthesisError;
 use decaf377::Fq;
-use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display, Formatter},
     str::FromStr,
 };
 
-use penumbra_asset::asset::{self, AssetIdVar, Unit, REGISTRY};
+use penumbra_sdk_asset::asset::{self, AssetIdVar, Unit, REGISTRY};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(try_from = "pb::DirectedTradingPair", into = "pb::DirectedTradingPair")]

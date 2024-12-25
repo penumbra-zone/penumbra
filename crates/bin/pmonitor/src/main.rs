@@ -19,7 +19,7 @@ use camino::Utf8PathBuf;
 use clap::{self, Parser};
 use directories::ProjectDirs;
 use futures::StreamExt;
-use penumbra_asset::STAKING_TOKEN_ASSET_ID;
+use penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID;
 use rustls::crypto::aws_lc_rs;
 use std::fs;
 use std::io::IsTerminal as _;
@@ -32,21 +32,21 @@ use uuid::Uuid;
 use colored::Colorize;
 
 use pcli::config::PcliConfig;
-use penumbra_compact_block::CompactBlock;
-use penumbra_keys::FullViewingKey;
-use penumbra_num::Amount;
-use penumbra_proto::box_grpc_svc;
-use penumbra_proto::view::v1::{
+use penumbra_sdk_compact_block::CompactBlock;
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::box_grpc_svc;
+use penumbra_sdk_proto::view::v1::{
     view_service_client::ViewServiceClient, view_service_server::ViewServiceServer,
 };
-use penumbra_proto::{
+use penumbra_sdk_proto::{
     core::component::compact_block::v1::CompactBlockRequest,
     core::component::stake::v1::query_service_client::QueryServiceClient as StakeQueryServiceClient,
     penumbra::core::component::compact_block::v1::query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
 };
-use penumbra_stake::rate::RateData;
-use penumbra_stake::DelegationToken;
-use penumbra_view::{Storage, ViewClient, ViewServer};
+use penumbra_sdk_stake::rate::RateData;
+use penumbra_sdk_stake::DelegationToken;
+use penumbra_sdk_view::{Storage, ViewClient, ViewServer};
 
 mod config;
 mod genesis;
@@ -73,7 +73,7 @@ fn init_tracing() -> anyhow::Result<()> {
         .with_target(true);
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
     let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info,penumbra_view=off"))?;
+        .or_else(|_| EnvFilter::try_new("info,penumbra_sdk_view=off"))?;
 
     // Register the tracing subscribers.
     let registry = tracing_subscriber::registry()

@@ -11,25 +11,25 @@ use decaf377::Bls12_377;
 use decaf377::{Fq, Fr};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
-use penumbra_fee::Fee;
-use penumbra_proto::{core::component::dex::v1 as pb, DomainType};
-use penumbra_tct as tct;
-use penumbra_tct::r1cs::StateCommitmentVar;
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_proto::{core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_tct as tct;
+use penumbra_sdk_tct::r1cs::StateCommitmentVar;
 
-use penumbra_asset::{
+use penumbra_sdk_asset::{
     asset,
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
     Value,
 };
-use penumbra_keys::{keys::Diversifier, Address};
-use penumbra_shielded_pool::Rseed;
+use penumbra_sdk_keys::{keys::Diversifier, Address};
+use penumbra_sdk_shielded_pool::Rseed;
 
 use crate::{
     swap::{SwapPlaintext, SwapPlaintextVar},
     TradingPair,
 };
 
-use penumbra_proof_params::{DummyWitness, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_sdk_proof_params::{DummyWitness, GROTH16_PROOF_LENGTH_BYTES};
 
 /// The public inputs to a [`SwapProof`].
 #[derive(Clone, Debug)]
@@ -53,7 +53,7 @@ pub struct SwapProofPrivate {
 
 #[cfg(test)]
 fn check_satisfaction(public: &SwapProofPublic, private: &SwapProofPrivate) -> Result<()> {
-    use penumbra_asset::Balance;
+    use penumbra_sdk_asset::Balance;
 
     let swap_commitment = private.swap_plaintext.swap_commitment();
     if swap_commitment != public.swap_commitment {
@@ -293,9 +293,9 @@ impl TryFrom<pb::ZkSwapProof> for SwapProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use penumbra_asset::{Balance, Value};
-    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-    use penumbra_num::Amount;
+    use penumbra_sdk_asset::{Balance, Value};
+    use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use penumbra_sdk_num::Amount;
     use proptest::prelude::*;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {

@@ -1,12 +1,12 @@
 use crate::App;
 use anyhow::{Context, Result};
 use futures::TryStreamExt;
-use penumbra_asset::Value;
-use penumbra_proto::{
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_proto::{
     core::component::community_pool::v1::CommunityPoolAssetBalancesRequest,
     penumbra::core::component::community_pool::v1::query_service_client::QueryServiceClient as CommunityPoolQueryServiceClient,
 };
-use penumbra_view::ViewClient;
+use penumbra_sdk_view::ViewClient;
 use std::io::{stdout, Write};
 
 #[derive(Debug, clap::Subcommand)]
@@ -31,7 +31,7 @@ impl CommunityPoolCmd {
             if let Ok(asset_id) = asset.parse() {
                 asset_id
             } else {
-                penumbra_asset::asset::REGISTRY
+                penumbra_sdk_asset::asset::REGISTRY
                     .parse_unit(asset.as_str())
                     .id()
             }

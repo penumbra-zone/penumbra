@@ -6,14 +6,14 @@ use cnidarium::{Snapshot, StateDelta, Storage};
 use futures::TryStreamExt;
 use jmt::RootHash;
 use pbjson_types::Any;
-use penumbra_app::app::StateReadExt as _;
-use penumbra_asset::Balance;
-use penumbra_auction::auction::dutch::DutchAuction;
-use penumbra_governance::StateWriteExt;
-use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
-use penumbra_sct::component::clock::{EpochManager, EpochRead};
-use penumbra_shielded_pool::params::ShieldedPoolParameters;
-use penumbra_shielded_pool::{component::StateWriteExt as _, fmd::Parameters as FmdParameters};
+use penumbra_sdk_app::app::StateReadExt as _;
+use penumbra_sdk_asset::Balance;
+use penumbra_sdk_auction::auction::dutch::DutchAuction;
+use penumbra_sdk_governance::StateWriteExt;
+use penumbra_sdk_proto::{DomainType, StateReadProto, StateWriteProto};
+use penumbra_sdk_sct::component::clock::{EpochManager, EpochRead};
+use penumbra_sdk_shielded_pool::params::ShieldedPoolParameters;
+use penumbra_sdk_shielded_pool::{component::StateWriteExt as _, fmd::Parameters as FmdParameters};
 use std::path::PathBuf;
 use tracing::instrument;
 
@@ -28,7 +28,7 @@ use crate::network::generate::NetworkConfig;
 /// //     *outside* of the auction component, and recorded in the DEX VCB instead.
 /// 3. Writing the aggregate VCB balance for each asset to the chain state.
 async fn heal_auction_vcb(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
-    let key_prefix_auctions = penumbra_auction::state_key::auction_store::prefix();
+    let key_prefix_auctions = penumbra_sdk_auction::state_key::auction_store::prefix();
     let all_auctions = delta
         .prefix_proto::<Any>(&key_prefix_auctions)
         .map_ok(|(_, v)| DutchAuction::decode(v.value).expect("only dutch auctions"))
@@ -39,12 +39,12 @@ async fn heal_auction_vcb(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()
         .into_iter()
         .filter(|auction| auction.state.sequence <= 1)
         .fold(Balance::zero(), |acc, auction| {
-            let input_reserves = penumbra_asset::Value {
+            let input_reserves = penumbra_sdk_asset::Value {
                 asset_id: auction.description.input.asset_id,
                 amount: auction.state.input_reserves,
             };
 
-            let output_reserves = penumbra_asset::Value {
+            let output_reserves = penumbra_sdk_asset::Value {
                 asset_id: auction.description.output_id,
                 amount: auction.state.output_reserves,
             };
@@ -57,7 +57,7 @@ async fn heal_auction_vcb(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()
     for value in total_vcb.provided() {
         tracing::debug!(?value, "writing aggregate VCB balance for asset");
         let key_vcb_balance =
-            penumbra_auction::state_key::value_balance::for_asset(&value.asset_id);
+            penumbra_sdk_auction::state_key::value_balance::for_asset(&value.asset_id);
         delta.put(key_vcb_balance, value.amount);
     }
 
@@ -127,7 +127,7 @@ pub async fn migrate(
     // The migration is complete, now we need to generate a genesis file. To do this, we need
     // to lookup a validator view from the chain, and specify the post-upgrade app hash and
     // initial height.
-    let app_state = penumbra_app::genesis::Content {
+    let app_state = penumbra_sdk_app::genesis::Content {
         chain_id,
         ..Default::default()
     };

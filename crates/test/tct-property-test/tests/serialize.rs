@@ -5,7 +5,7 @@ use std::fmt::{Debug, Display};
 
 use proptest::{arbitrary::*, prelude::*};
 
-use penumbra_tct::{storage::InMemory, validate, StateCommitment, Tree, Witness};
+use penumbra_sdk_tct::{storage::InMemory, validate, StateCommitment, Tree, Witness};
 
 const MAX_USED_COMMITMENTS: usize = 3;
 const MAX_TIER_ACTIONS: usize = 10;

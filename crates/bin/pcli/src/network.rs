@@ -1,16 +1,16 @@
 use anyhow::Context;
 use decaf377_rdsa::{Signature, SpendAuth};
 use futures::{FutureExt, TryStreamExt};
-use penumbra_governance::ValidatorVoteBody;
-use penumbra_proto::{
+use penumbra_sdk_governance::ValidatorVoteBody;
+use penumbra_sdk_proto::{
     custody::v1::{AuthorizeValidatorDefinitionRequest, AuthorizeValidatorVoteRequest},
     util::tendermint_proxy::v1::tendermint_proxy_service_client::TendermintProxyServiceClient,
     view::v1::broadcast_transaction_response::Status as BroadcastStatus,
     DomainType,
 };
-use penumbra_stake::validator::Validator;
-use penumbra_transaction::{txhash::TransactionId, Transaction, TransactionPlan};
-use penumbra_view::{ViewClient, ViewServer};
+use penumbra_sdk_stake::validator::Validator;
+use penumbra_sdk_transaction::{txhash::TransactionId, Transaction, TransactionPlan};
+use penumbra_sdk_view::{ViewClient, ViewServer};
 use std::{fs, future::Future};
 use tonic::transport::Channel;
 use tracing::instrument;
@@ -42,7 +42,7 @@ impl App {
             plan.num_proofs(),
         );
         let start = std::time::Instant::now();
-        let tx = penumbra_wallet::build_transaction(
+        let tx = penumbra_sdk_wallet::build_transaction(
             &self.config.full_viewing_key,
             self.view.as_mut().expect("view service initialized"),
             &mut self.custody,

@@ -1,11 +1,11 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_keys::Address;
-use penumbra_proof_setup::all::{
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_proof_setup::all::{
     Phase1CeremonyCRS, Phase1CeremonyContribution, Phase1RawCeremonyContribution,
     Phase2CeremonyCRS, Phase2CeremonyContribution, Phase2RawCeremonyContribution,
 };
-use penumbra_proto::tools::summoning::v1::{
+use penumbra_sdk_proto::tools::summoning::v1::{
     participate_request::Contribution as PBContribution, CeremonyCrs,
 };
 

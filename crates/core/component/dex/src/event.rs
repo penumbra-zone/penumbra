@@ -5,11 +5,11 @@ use crate::{
     BatchSwapOutputData, CandlestickData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 use anyhow::{anyhow, Context};
-use penumbra_asset::asset;
-use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
-use penumbra_sct::Nullifier;
-use penumbra_tct::StateCommitment;
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_tct::StateCommitment;
 use prost::Name as _;
 
 #[derive(Clone, Debug)]

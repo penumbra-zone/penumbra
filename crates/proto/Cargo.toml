@@ -1,6 +1,10 @@
 [package]
-name = "penumbra-proto"
+name = "penumbra-sdk-proto"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Bindings and extension traits for Penumbra protobufs"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [build-dependencies]
@@ -24,7 +28,7 @@ async-trait = {workspace = true}
 bech32 = {workspace = true}
 bytes = {workspace = true, features = ["serde"]}
 chrono = {workspace = true, optional = true, default-features = false, features = ["serde"]}
-cnidarium = {workspace = true, optional = true, default-features = true}
+cnidarium = {workspace = true, optional = true, default-features = true, features = ["rpc"]}
 decaf377-fmd = {workspace = true}
 decaf377-rdsa = {workspace = true}
 futures = {workspace = true}

@@ -3,10 +3,10 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_fee::component::FeePay as _;
-use penumbra_sct::{component::source::SourceContext, CommitmentSource};
-use penumbra_shielded_pool::component::ClueManager;
-use penumbra_transaction::{gas::GasCost as _, Transaction};
+use penumbra_sdk_fee::component::FeePay as _;
+use penumbra_sdk_sct::{component::source::SourceContext, CommitmentSource};
+use penumbra_sdk_shielded_pool::component::ClueManager;
+use penumbra_sdk_transaction::{gas::GasCost as _, Transaction};
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
@@ -150,12 +150,12 @@ mod tests {
     use std::ops::Deref;
 
     use anyhow::Result;
-    use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
-    use penumbra_fee::Fee;
-    use penumbra_keys::test_keys;
-    use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
-    use penumbra_tct as tct;
-    use penumbra_transaction::{
+    use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
+    use penumbra_sdk_fee::Fee;
+    use penumbra_sdk_keys::test_keys;
+    use penumbra_sdk_shielded_pool::{Note, OutputPlan, SpendPlan};
+    use penumbra_sdk_tct as tct;
+    use penumbra_sdk_transaction::{
         plan::{CluePlan, DetectionDataPlan, TransactionPlan},
         TransactionParameters, WitnessData,
     };

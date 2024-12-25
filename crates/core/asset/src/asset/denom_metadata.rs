@@ -7,8 +7,8 @@ use std::{
 
 use anyhow::{ensure, Context};
 use decaf377::Fq;
-use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::asset::v1 as pb, view::v1::AssetsResponse, DomainType};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{penumbra::core::asset::v1 as pb, view::v1::AssetsResponse, DomainType};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 

@@ -3,7 +3,7 @@ use base64::Engine;
 use rand_core::OsRng;
 use std::str::FromStr;
 
-use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
+use penumbra_sdk_keys::{keys::AddressIndex, Address, FullViewingKey};
 
 #[derive(Debug, clap::Parser)]
 pub struct AddressCmd {

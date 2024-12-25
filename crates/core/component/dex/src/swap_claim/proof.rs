@@ -9,22 +9,22 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_fee::Fee;
-use penumbra_proto::{core::component::dex::v1 as pb, DomainType};
-use penumbra_tct as tct;
-use penumbra_tct::r1cs::StateCommitmentVar;
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_proto::{core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_tct as tct;
+use penumbra_sdk_tct::r1cs::StateCommitmentVar;
 
-use penumbra_asset::{
+use penumbra_sdk_asset::{
     asset::{self, Id},
     Value, ValueVar,
 };
-use penumbra_keys::keys::{
+use penumbra_sdk_keys::keys::{
     AuthorizationKeyVar, Bip44Path, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     SeedPhrase, SpendKey,
 };
-use penumbra_num::{Amount, AmountVar};
-use penumbra_sct::{Nullifier, NullifierVar};
-use penumbra_shielded_pool::{
+use penumbra_sdk_num::{Amount, AmountVar};
+use penumbra_sdk_sct::{Nullifier, NullifierVar};
+use penumbra_sdk_shielded_pool::{
     note::{self, NoteVar},
     Rseed,
 };
@@ -37,7 +37,7 @@ use crate::{
     BatchSwapOutputData, TradingPair,
 };
 
-use penumbra_proof_params::{DummyWitness, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_sdk_proof_params::{DummyWitness, GROTH16_PROOF_LENGTH_BYTES};
 
 /// The public inputs to a [`SwapProofPublic`].
 #[derive(Clone, Debug)]
@@ -82,7 +82,7 @@ fn check_satisfaction(
     public: &SwapClaimProofPublic,
     private: &SwapClaimProofPrivate,
 ) -> Result<()> {
-    use penumbra_keys::FullViewingKey;
+    use penumbra_sdk_keys::FullViewingKey;
 
     let swap_commitment = private.swap_plaintext.swap_commitment();
     if swap_commitment != private.state_commitment_proof.commitment() {
@@ -537,8 +537,8 @@ impl TryFrom<pb::ZkSwapClaimProof> for SwapClaimProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use penumbra_keys::keys::{SeedPhrase, SpendKey};
-    use penumbra_num::Amount;
+    use penumbra_sdk_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_sdk_num::Amount;
     use proptest::prelude::*;
 
     #[derive(Debug)]

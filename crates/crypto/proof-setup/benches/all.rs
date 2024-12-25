@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use penumbra_proof_setup::all::{
+use penumbra_sdk_proof_setup::all::{
     transition, AllExtraTransitionInformation, Phase1CeremonyCRS, Phase1CeremonyContribution,
     Phase1RawCeremonyContribution, Phase2CeremonyCRS, Phase2CeremonyContribution,
     Phase2RawCeremonyContribution,

@@ -10,19 +10,19 @@ use ark_snark::SNARK;
 use base64::{engine::general_purpose, Engine as _};
 use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_asset::{
+use penumbra_sdk_asset::{
     balance::{self, commitment::BalanceCommitmentVar, Commitment},
     Value,
 };
-use penumbra_keys::keys::{
+use penumbra_sdk_keys::keys::{
     AuthorizationKeyVar, Bip44Path, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
-use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
-use penumbra_proto::{core::component::governance::v1 as pb, DomainType};
-use penumbra_sct::{Nullifier, NullifierVar};
-use penumbra_shielded_pool::{note, Note, Rseed};
-use penumbra_tct::{
+use penumbra_sdk_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_sdk_proto::{core::component::governance::v1 as pb, DomainType};
+use penumbra_sdk_sct::{Nullifier, NullifierVar};
+use penumbra_sdk_shielded_pool::{note, Note, Rseed};
+use penumbra_sdk_tct::{
     self as tct,
     r1cs::{PositionVar, StateCommitmentVar},
     Root,
@@ -67,7 +67,7 @@ fn check_satisfaction(
     public: &DelegatorVoteProofPublic,
     private: &DelegatorVoteProofPrivate,
 ) -> Result<()> {
-    use penumbra_keys::keys::FullViewingKey;
+    use penumbra_sdk_keys::keys::FullViewingKey;
 
     let note_commitment = private.note.commit();
     if note_commitment != private.state_commitment_proof.commitment() {
@@ -421,10 +421,10 @@ mod tests {
 
     use super::*;
     use decaf377::{Fq, Fr};
-    use penumbra_asset::{asset, Value};
-    use penumbra_keys::keys::{SeedPhrase, SpendKey};
-    use penumbra_num::Amount;
-    use penumbra_sct::Nullifier;
+    use penumbra_sdk_asset::{asset, Value};
+    use penumbra_sdk_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_sdk_num::Amount;
+    use penumbra_sdk_sct::Nullifier;
     use proptest::prelude::*;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {

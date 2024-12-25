@@ -19,9 +19,9 @@ use pd::{
         join::network_join,
     },
 };
-use penumbra_app::app_version::check_and_update_app_version;
-use penumbra_app::{APP_VERSION, SUBSTORE_PREFIXES};
-use penumbra_tower_trace::remote_addr;
+use penumbra_sdk_app::app_version::check_and_update_app_version;
+use penumbra_sdk_app::{APP_VERSION, SUBSTORE_PREFIXES};
+use penumbra_sdk_tower_trace::remote_addr;
 use rand::Rng;
 use rand_core::OsRng;
 use rustls::crypto::aws_lc_rs;
@@ -127,7 +127,7 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
 
-            if penumbra_app::app::App::is_ready(storage.latest_snapshot()).await {
+            if penumbra_sdk_app::app::App::is_ready(storage.latest_snapshot()).await {
                 tracing::info!("application ready to start");
             } else {
                 tracing::warn!("application is halted, refusing to start");
@@ -135,23 +135,24 @@ async fn main() -> anyhow::Result<()> {
             }
 
             let abci_server = tokio::task::spawn(
-                penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind),
+                penumbra_sdk_app::server::new(storage.clone()).listen_tcp(abci_bind),
             );
 
-            let tm_proxy = penumbra_tendermint_proxy::TendermintProxy::new(cometbft_addr);
+            let tm_proxy = penumbra_sdk_tendermint_proxy::TendermintProxy::new(cometbft_addr);
 
-            let grpc_routes = penumbra_app::rpc::routes(&storage, tm_proxy, enable_expensive_rpc)?
-                .into_axum_router()
-                .layer(
-                    ServiceBuilder::new().layer(TraceLayer::new_for_grpc().make_span_with(
-                        |req: &http::Request<_>| match remote_addr(req) {
-                            Some(remote_addr) => {
-                                tracing::error_span!("grpc", ?remote_addr)
-                            }
-                            None => tracing::error_span!("grpc"),
-                        },
-                    )),
-                );
+            let grpc_routes =
+                penumbra_sdk_app::rpc::routes(&storage, tm_proxy, enable_expensive_rpc)?
+                    .into_axum_router()
+                    .layer(
+                        ServiceBuilder::new().layer(TraceLayer::new_for_grpc().make_span_with(
+                            |req: &http::Request<_>| match remote_addr(req) {
+                                Some(remote_addr) => {
+                                    tracing::error_span!("grpc", ?remote_addr)
+                                }
+                                None => tracing::error_span!("grpc"),
+                            },
+                        )),
+                    );
 
             // Create Axum routes for the frontend app.
             let frontend = pd::zipserve::router("/app/", pd::MINIFRONT_ARCHIVE_BYTES);
@@ -182,7 +183,7 @@ async fn main() -> anyhow::Result<()> {
             let (grpc_server, acme_worker) = match grpc_auto_https {
                 Some(domain) => {
                     let (acceptor, acme_worker) =
-                        penumbra_auto_https::axum_acceptor(pd_home, domain, !acme_staging);
+                        penumbra_sdk_auto_https::axum_acceptor(pd_home, domain, !acme_staging);
                     let acme_worker = tokio::spawn(acme_worker);
                     let grpc_server =
                         tokio::task::spawn(grpc_server.acceptor(acceptor).serve(make_svc));
@@ -196,7 +197,7 @@ async fn main() -> anyhow::Result<()> {
             };
 
             // Configure a Prometheus recorder and exporter.
-            use penumbra_dex::component::metrics::PrometheusBuilderExt;
+            use penumbra_sdk_dex::component::metrics::PrometheusBuilderExt;
             let (recorder, exporter) = PrometheusBuilder::new()
                 .with_http_listener(metrics_bind)
                 // Set explicit buckets so that Prometheus endpoint emits true histograms, rather

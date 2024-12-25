@@ -1,11 +1,15 @@
 [package]
-name = "penumbra-keys"
+name = "penumbra-sdk-keys"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Key data structures and core utilities for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
 default = []
-parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
+parallel = ["penumbra-sdk-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
 
 [dependencies]
 aes = "0.8.1"
@@ -34,9 +38,9 @@ ibig = {workspace = true}
 num-bigint = {workspace = true}
 once_cell = {workspace = true}
 pbkdf2 = "0.12.0"
-penumbra-asset = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = true}
-penumbra-tct = {workspace = true, features = ["r1cs"], default-features = true}
+penumbra-sdk-asset = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = true}
+penumbra-sdk-tct = {workspace = true, features = ["r1cs"], default-features = true}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}

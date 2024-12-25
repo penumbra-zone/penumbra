@@ -3,30 +3,30 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
 use pbjson_types::Any;
-use penumbra_auction::auction::AuctionId;
+use penumbra_sdk_auction::auction::AuctionId;
 use tonic::{codegen::Bytes, Streaming};
 use tracing::instrument;
 
-use penumbra_app::params::AppParameters;
-use penumbra_asset::{
+use penumbra_sdk_app::params::AppParameters;
+use penumbra_sdk_asset::{
     asset::{self, Id, Metadata},
     ValueView,
 };
-use penumbra_dex::{
+use penumbra_sdk_dex::{
     lp::position::{self, Position},
     TradingPair,
 };
-use penumbra_fee::GasPrices;
-use penumbra_keys::{keys::AddressIndex, Address};
-use penumbra_num::Amount;
-use penumbra_proto::view::v1::{
+use penumbra_sdk_fee::GasPrices;
+use penumbra_sdk_keys::{keys::AddressIndex, Address};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::view::v1::{
     self as pb, view_service_client::ViewServiceClient, BalancesResponse,
     BroadcastTransactionResponse, WitnessRequest,
 };
-use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{fmd, note};
-use penumbra_stake::IdentityKey;
-use penumbra_transaction::{
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_shielded_pool::{fmd, note};
+use penumbra_sdk_stake::IdentityKey;
+use penumbra_sdk_transaction::{
     txhash::TransactionId, AuthorizationData, Transaction, TransactionPlan, WitnessData,
 };
 
@@ -135,7 +135,7 @@ pub trait ViewClient {
     /// Queries for a specific swap by commitment, returning immediately if it is not found.
     fn swap_by_commitment(
         &mut self,
-        swap_commitment: penumbra_tct::StateCommitment,
+        swap_commitment: penumbra_sdk_tct::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SwapRecord>> + Send + 'static>>;
 
     /// Queries for a specific nullifier's status, returning immediately if it is not found.
@@ -559,7 +559,7 @@ where
 
     fn swap_by_commitment(
         &mut self,
-        swap_commitment: penumbra_tct::StateCommitment,
+        swap_commitment: penumbra_sdk_tct::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SwapRecord>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {

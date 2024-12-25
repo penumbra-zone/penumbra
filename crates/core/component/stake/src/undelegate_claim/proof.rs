@@ -2,13 +2,13 @@ use decaf377::Bls12_377;
 
 use ark_groth16::{PreparedVerifyingKey, ProvingKey};
 use base64::prelude::*;
-use penumbra_proto::{core::component::stake::v1 as pb, DomainType};
+use penumbra_sdk_proto::{core::component::stake::v1 as pb, DomainType};
 
 use decaf377::{Fq, Fr};
-use penumbra_asset::{asset, balance, STAKING_TOKEN_ASSET_ID};
-use penumbra_num::Amount;
-use penumbra_proof_params::VerifyingKeyExt;
-use penumbra_shielded_pool::{ConvertProof, ConvertProofPrivate, ConvertProofPublic};
+use penumbra_sdk_asset::{asset, balance, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proof_params::VerifyingKeyExt;
+use penumbra_sdk_shielded_pool::{ConvertProof, ConvertProofPrivate, ConvertProofPublic};
 
 use crate::Penalty;
 
@@ -101,14 +101,14 @@ mod tests {
     use super::*;
     use decaf377::{Fq, Fr};
     use decaf377_rdsa as rdsa;
-    use penumbra_num::Amount;
-    use penumbra_proof_params::generate_prepared_test_parameters;
+    use penumbra_sdk_num::Amount;
+    use penumbra_sdk_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
     use rand_core::OsRng;
     use rdsa::VerificationKey;
 
     use crate::{IdentityKey, Penalty, UnbondingToken};
-    use penumbra_shielded_pool::ConvertCircuit;
+    use penumbra_sdk_shielded_pool::ConvertCircuit;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()

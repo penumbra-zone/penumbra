@@ -1,6 +1,10 @@
 [package]
-name = "penumbra-tct-visualize"
+name = "penumbra-sdk-tct-visualize"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Visualize a TCT in action"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [package.metadata.dist]
@@ -12,9 +16,8 @@ name = "tct-visualize"
 [[bin]]
 name = "tct-live-edit"
 
-
 [dependencies]
-penumbra-tct = {workspace = true, features = ["arbitrary"], default-features = true}
+penumbra-sdk-tct = {workspace = true, features = ["arbitrary"], default-features = true}
 decaf377 = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 tokio-util = {workspace = true, features = ["full"]}

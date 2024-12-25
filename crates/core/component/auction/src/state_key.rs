@@ -9,7 +9,7 @@ pub mod parameters {
 }
 
 pub mod value_balance {
-    use penumbra_asset::asset;
+    use penumbra_sdk_asset::asset;
 
     #[allow(dead_code)] // For some reason, this shows up as unused
     pub fn prefix() -> &'static str {

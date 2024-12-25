@@ -1,11 +1,11 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_asset::Value;
-use penumbra_keys::Address;
-use penumbra_sct::component::tree::{SctManager, SctRead};
-use penumbra_sct::CommitmentSource;
-use penumbra_tct as tct;
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_sct::component::tree::{SctManager, SctRead};
+use penumbra_sdk_sct::CommitmentSource;
+use penumbra_sdk_tct as tct;
 use tct::StateCommitment;
 use tracing::instrument;
 

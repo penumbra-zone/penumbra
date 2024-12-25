@@ -1,9 +1,10 @@
 [package]
-name = "penumbra-mock-consensus"
-authors.workspace = true
+name = "penumbra-sdk-mock-consensus"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Mock consensus to build application tests"
 edition.workspace = true
 version.workspace = true
-repository.workspace = true
 homepage.workspace = true
 license.workspace = true
 

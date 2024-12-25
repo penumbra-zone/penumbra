@@ -3,11 +3,11 @@ use std::pin::Pin;
 use anyhow::bail;
 use cnidarium::Storage;
 use futures::{StreamExt, TryFutureExt, TryStreamExt};
-use penumbra_proto::core::component::compact_block::v1::{
+use penumbra_sdk_proto::core::component::compact_block::v1::{
     query_service_server::QueryService, CompactBlock, CompactBlockRangeRequest,
     CompactBlockRangeResponse, CompactBlockRequest, CompactBlockResponse,
 };
-use penumbra_sct::component::clock::EpochRead;
+use penumbra_sdk_sct::component::clock::EpochRead;
 use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::{instrument, Instrument};

@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use proptest_derive::Arbitrary;
 
-use penumbra_tct::{self as real, spec, Commitment, Witness};
+use penumbra_sdk_tct::{self as real, spec, Commitment, Witness};
 
 /// Simulate an action being run on both a specification and a real implementation simultaneously.
 pub trait Simulate {

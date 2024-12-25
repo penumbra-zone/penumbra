@@ -9,7 +9,7 @@ use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;
 use futures::stream::{self, StreamExt, TryStreamExt};
-use penumbra_auction::auction::dutch::actions::view::{
+use penumbra_sdk_auction::auction::dutch::actions::view::{
     ActionDutchAuctionScheduleView, ActionDutchAuctionWithdrawView,
 };
 use rand::Rng;
@@ -23,8 +23,8 @@ use tonic::{async_trait, transport::Channel, Request, Response, Status};
 use tracing::{instrument, Instrument};
 use url::Url;
 
-use penumbra_asset::{asset, asset::Metadata, Value};
-use penumbra_dex::{
+use penumbra_sdk_asset::{asset, asset::Metadata, Value};
+use penumbra_sdk_dex::{
     lp::{
         position::{self, Position},
         Reserves,
@@ -32,14 +32,14 @@ use penumbra_dex::{
     swap_claim::SwapClaimPlan,
     TradingPair,
 };
-use penumbra_fee::Fee;
-use penumbra_keys::{
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_keys::{
     keys::WalletId,
     keys::{AddressIndex, FullViewingKey},
     Address, AddressView,
 };
-use penumbra_num::Amount;
-use penumbra_proto::{
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{
     util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
         GetStatusRequest, GetStatusResponse, SyncInfo,
@@ -56,9 +56,9 @@ use penumbra_proto::{
     },
     DomainType,
 };
-use penumbra_stake::rate::RateData;
-use penumbra_tct::{Proof, StateCommitment};
-use penumbra_transaction::{
+use penumbra_sdk_stake::rate::RateData;
+use penumbra_sdk_tct::{Proof, StateCommitment};
+use penumbra_sdk_transaction::{
     AuthorizationData, Transaction, TransactionPerspective, TransactionPlan, WitnessData,
 };
 
@@ -86,7 +86,7 @@ pub struct ViewServer {
     // rather than a Tokio Mutex because it should be uncontended.
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     // A copy of the SCT used by the worker task.
-    state_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
+    state_commitment_tree: Arc<RwLock<penumbra_sdk_tct::Tree>>,
     // The Url for the pd gRPC endpoint on remote node.
     node: Url,
     /// Used to watch for changes to the sync height.
@@ -251,9 +251,9 @@ impl ViewServer {
                     transaction
                         .actions()
                         .filter_map(|action| match action {
-                            penumbra_transaction::Action::Spend(spend) => Some(spend.body.nullifier),
+                            penumbra_sdk_transaction::Action::Spend(spend) => Some(spend.body.nullifier),
                             /*
-                            penumbra_transaction::Action::SwapClaim(swap_claim) => {
+                            penumbra_sdk_transaction::Action::SwapClaim(swap_claim) => {
                                 Some(swap_claim.body.nullifier)
                             }
                              */
@@ -423,8 +423,8 @@ impl ViewService for ViewServer {
         &self,
         request: tonic::Request<pb::AuctionsRequest>,
     ) -> Result<tonic::Response<Self::AuctionsStream>, tonic::Status> {
-        use penumbra_proto::core::component::auction::v1 as pb_auction;
-        use penumbra_proto::core::component::auction::v1::query_service_client::QueryServiceClient as AuctionQueryServiceClient;
+        use penumbra_sdk_proto::core::component::auction::v1 as pb_auction;
+        use penumbra_sdk_proto::core::component::auction::v1::query_service_client::QueryServiceClient as AuctionQueryServiceClient;
 
         let parameters = request.into_inner();
         let query_latest_state = parameters.query_latest_state;
@@ -925,7 +925,7 @@ impl ViewService for ViewServer {
         // Next, extend the TxP with the openings of commitments known to our view server
         // but not included in the transaction body, for instance spent notes or swap claim outputs.
         for action in tx.actions() {
-            use penumbra_transaction::Action;
+            use penumbra_sdk_transaction::Action;
             match action {
                 Action::Spend(spend) => {
                     let nullifier = spend.body.nullifier;
@@ -975,8 +975,8 @@ impl ViewService for ViewServer {
         let mut address_views = BTreeMap::new();
         let mut asset_ids = BTreeSet::new();
         for action_view in min_view.action_views() {
-            use penumbra_dex::{swap::SwapView, swap_claim::SwapClaimView};
-            use penumbra_transaction::view::action_view::{
+            use penumbra_sdk_dex::{swap::SwapView, swap_claim::SwapClaimView};
+            use penumbra_sdk_transaction::view::action_view::{
                 ActionView, DelegatorVoteView, OutputView, SpendView,
             };
             match action_view {

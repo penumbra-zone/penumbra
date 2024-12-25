@@ -1,10 +1,10 @@
 use ark_ff::ToConstraintField;
 use decaf377::Fq;
-use penumbra_proto::{penumbra::core::component::stake::v1 as pbs, DomainType};
+use penumbra_sdk_proto::{penumbra::core::component::stake::v1 as pbs, DomainType};
 use serde::{Deserialize, Serialize};
 
-use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_num::{fixpoint::U128x128, Amount};
+use penumbra_sdk_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_num::{fixpoint::U128x128, Amount};
 
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///

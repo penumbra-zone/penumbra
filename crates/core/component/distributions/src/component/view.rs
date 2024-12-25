@@ -3,8 +3,8 @@ use async_trait::async_trait;
 use crate::{component::state_key, params::DistributionsParameters};
 use anyhow::Result;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_num::Amount;
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 
 #[async_trait]
 pub trait StateReadExt: StateRead {

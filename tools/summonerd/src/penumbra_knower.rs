@@ -1,9 +1,9 @@
 use anyhow::Result;
 use camino::Utf8Path;
-use penumbra_asset::STAKING_TOKEN_ASSET_ID;
-use penumbra_keys::{Address, FullViewingKey};
-use penumbra_num::Amount;
-use penumbra_view::{Storage, ViewServer};
+use penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID;
+use penumbra_sdk_keys::{Address, FullViewingKey};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_view::{Storage, ViewServer};
 use url::Url;
 
 /// Knows things about a running penumbra system, requires internet connectivity

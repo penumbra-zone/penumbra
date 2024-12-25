@@ -2,9 +2,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use camino::Utf8Path;
-use penumbra_keys::Address;
-use penumbra_num::Amount;
-use penumbra_proof_setup::{
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proof_setup::{
     all::{
         AllExtraTransitionInformation, Phase1CeremonyCRS, Phase1CeremonyContribution,
         Phase1RawCeremonyCRS, Phase1RawCeremonyContribution, Phase2CeremonyCRS,
@@ -12,7 +12,7 @@ use penumbra_proof_setup::{
     },
     single::log::Hashable,
 };
-use penumbra_proto::{
+use penumbra_sdk_proto::{
     penumbra::tools::summoning::v1::{
         self as pb, participate_request::Contribution as PBContribution,
     },

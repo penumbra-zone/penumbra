@@ -8,8 +8,8 @@ use ibc_types::core::{
     commitment::MerkleProof,
 };
 use ibc_types::timestamp::Timestamp;
-use penumbra_asset::asset::{Id, Metadata};
-use penumbra_auction::auction::{
+use penumbra_sdk_asset::asset::{Id, Metadata};
+use penumbra_sdk_auction::auction::{
     dutch::{
         actions::{
             ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdrawPlan,
@@ -18,8 +18,8 @@ use penumbra_auction::auction::{
     },
     AuctionId,
 };
-use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_dex::{
+use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_dex::{
     lp::{
         plan::PositionWithdrawPlan,
         position::{Position, State as PositionState},
@@ -29,25 +29,25 @@ use penumbra_dex::{
     swap_claim::SwapClaimPlan,
     BatchSwapOutputData, PositionClose, PositionOpen, TradingPair,
 };
-use penumbra_fee::Fee;
-use penumbra_governance::{
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_governance::{
     proposal_state::{Outcome as ProposalOutcome, Withdrawn},
     DelegatorVotePlan, Proposal, ProposalDepositClaim, ProposalPayload, ProposalSubmit,
     ProposalWithdraw, ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, Vote,
 };
-use penumbra_ibc::IbcRelay;
-use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-use penumbra_keys::test_keys::SEED_PHRASE;
-use penumbra_keys::{Address, FullViewingKey};
-use penumbra_num::Amount;
-use penumbra_proto::DomainType;
-use penumbra_sct::epoch::Epoch;
-use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, Rseed, SpendPlan};
-use penumbra_stake::{
+use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_sdk_keys::test_keys::SEED_PHRASE;
+use penumbra_sdk_keys::{Address, FullViewingKey};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::DomainType;
+use penumbra_sdk_sct::epoch::Epoch;
+use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, Rseed, SpendPlan};
+use penumbra_sdk_stake::{
     validator, validator::Definition, Delegate, FundingStreams, GovernanceKey, IdentityKey,
     Penalty, Undelegate, UndelegateClaimPlan,
 };
-use penumbra_transaction::{ActionPlan, TransactionParameters, TransactionPlan};
+use penumbra_sdk_transaction::{ActionPlan, TransactionParameters, TransactionPlan};
 use proptest::prelude::*;
 use proptest::strategy::ValueTree;
 use proptest::test_runner::{Config, TestRunner};
@@ -63,12 +63,12 @@ fn amount_strategy() -> impl Strategy<Value = Amount> {
 }
 
 fn asset_id_strategy() -> impl Strategy<Value = Id> {
-    Just(*penumbra_asset::STAKING_TOKEN_ASSET_ID)
+    Just(*penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID)
 }
 
-fn value_strategy() -> impl Strategy<Value = penumbra_asset::Value> {
+fn value_strategy() -> impl Strategy<Value = penumbra_sdk_asset::Value> {
     (asset_id_strategy(), amount_strategy())
-        .prop_map(|(asset_id, amount)| penumbra_asset::Value { amount, asset_id })
+        .prop_map(|(asset_id, amount)| penumbra_sdk_asset::Value { amount, asset_id })
 }
 
 fn address_strategy() -> impl Strategy<Value = Address> {
@@ -88,7 +88,7 @@ fn note_strategy(addr: Address) -> impl Strategy<Value = Note> {
 }
 
 fn spend_plan_strategy(fvk: &FullViewingKey) -> impl Strategy<Value = SpendPlan> {
-    let tct_strategy = any::<penumbra_tct::Position>();
+    let tct_strategy = any::<penumbra_sdk_tct::Position>();
     let note_strategy = note_strategy(fvk.incoming().payment_address(0u32.into()).0);
 
     (tct_strategy, note_strategy)
@@ -298,7 +298,7 @@ fn swap_claim_plan_strategy() -> impl Strategy<Value = SwapClaimPlan> {
     (swap_plaintext_strategy(), batch_swap_output_data_strategy()).prop_map(
         |(swap_plaintext, output_data)| SwapClaimPlan {
             swap_plaintext,
-            position: penumbra_tct::Position::from(0u64),
+            position: penumbra_sdk_tct::Position::from(0u64),
             output_data,
             epoch_duration: 1000u64,
             proof_blinding_r: Fq::rand(&mut OsRng),
@@ -401,10 +401,10 @@ fn delegator_vote_strategy() -> impl Strategy<Value = DelegatorVotePlan> {
             |(proposal, vote, unbonded_amount, staked_note)| DelegatorVotePlan {
                 proposal,
                 vote,
-                start_position: penumbra_tct::Position::from(0u64),
+                start_position: penumbra_sdk_tct::Position::from(0u64),
                 staked_note,
                 unbonded_amount,
-                position: penumbra_tct::Position::from(0u64),
+                position: penumbra_sdk_tct::Position::from(0u64),
                 randomizer: Fr::rand(&mut OsRng),
                 proof_blinding_r: Fq::rand(&mut OsRng),
                 proof_blinding_s: Fq::rand(&mut OsRng),

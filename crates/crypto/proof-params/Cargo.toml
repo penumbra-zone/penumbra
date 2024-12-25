@@ -1,7 +1,12 @@
 [package]
-name = "penumbra-proof-params"
+name = "penumbra-sdk-proof-params"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Penumbra Proof parameters"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
+exclude = ["src/gen/*.bin"]
 
 [build-dependencies]
 regex = { version = "1", optional = true }
@@ -15,6 +20,7 @@ hex = { version = "0.4.3", optional = true }
 anyhow = "1"
 
 [features]
+default = []
 bundled-proving-keys = []
 download-proving-keys = [
     "regex",
@@ -51,3 +57,6 @@ rand_core = {workspace = true, features = ["getrandom"]}
 serde = {workspace = true, features = ["derive"]}
 sha2 = {workspace = true}
 tracing = {workspace = true}
+
+[package.metadata.docs.rs]
+features = ["bundled-proving-keys"] # docs.rs

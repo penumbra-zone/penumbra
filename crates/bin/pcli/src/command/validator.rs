@@ -6,15 +6,15 @@ use std::{
 use anyhow::{Context, Result};
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_view::Planner;
+use penumbra_sdk_view::Planner;
 use rand_core::OsRng;
 use serde_json::Value;
 
-use penumbra_governance::{
+use penumbra_sdk_governance::{
     ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, Vote, MAX_VALIDATOR_VOTE_REASON_LENGTH,
 };
-use penumbra_proto::{view::v1::GasPricesRequest, DomainType};
-use penumbra_stake::{
+use penumbra_sdk_proto::{view::v1::GasPricesRequest, DomainType};
+use penumbra_sdk_stake::{
     validator,
     validator::{Validator, ValidatorToml},
     FundingStream, FundingStreams, IdentityKey,
@@ -22,7 +22,7 @@ use penumbra_stake::{
 
 use crate::App;
 
-use penumbra_fee::FeeTier;
+use penumbra_sdk_fee::FeeTier;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
@@ -262,7 +262,7 @@ impl ValidatorCmd {
                         std::io::stdin().read_to_string(&mut buf)?;
                         signature = buf;
                     }
-                    <Signature<SpendAuth> as penumbra_proto::DomainType>::decode(
+                    <Signature<SpendAuth> as penumbra_sdk_proto::DomainType>::decode(
                         &URL_SAFE
                             .decode(signature)
                             .context("unable to decode signature as base64")?[..],
@@ -385,7 +385,7 @@ impl ValidatorCmd {
                         std::io::stdin().read_to_string(&mut buf)?;
                         signature = buf;
                     }
-                    <Signature<SpendAuth> as penumbra_proto::DomainType>::decode(
+                    <Signature<SpendAuth> as penumbra_sdk_proto::DomainType>::decode(
                         &URL_SAFE
                             .decode(signature)
                             .context("unable to decode signature as base64")?[..],

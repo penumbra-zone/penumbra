@@ -1,13 +1,17 @@
 [package]
-name = "penumbra-ibc"
+name = "penumbra-sdk-ibc"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "A production implementation of the IBC protocol"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
 component = [
     "cnidarium",
-    "penumbra-proto/cnidarium",
-    "penumbra-sct/component",
+    "penumbra-sdk-proto/cnidarium",
+    "penumbra-sdk-sct/component",
 ]
 default = ["component", "std"]
 std = ["ibc-types/std"]
@@ -30,11 +34,11 @@ metrics = {workspace = true}
 num-traits = {workspace = true, default-features = false}
 once_cell = {workspace = true}
 pbjson-types = {workspace = true}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-txhash = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-txhash = {workspace = true, default-features = false}
 prost = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}

@@ -7,25 +7,25 @@ use anyhow::{Context, Error};
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes};
-use penumbra_asset::Balance;
-use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_dex::{
+use penumbra_sdk_asset::Balance;
+use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_dex::{
     lp::action::{PositionClose, PositionOpen},
     swap::Swap,
 };
-use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote};
-use penumbra_ibc::IbcRelay;
-use penumbra_keys::{AddressView, FullViewingKey, PayloadKey};
-use penumbra_proto::{
+use penumbra_sdk_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote};
+use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_keys::{AddressView, FullViewingKey, PayloadKey};
+use penumbra_sdk_proto::{
     core::transaction::v1::{self as pbt},
     DomainType, Message,
 };
-use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{Note, Output, Spend};
-use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
-use penumbra_tct as tct;
-use penumbra_tct::StateCommitment;
-use penumbra_txhash::{
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_shielded_pool::{Note, Output, Spend};
+use penumbra_sdk_stake::{Delegate, Undelegate, UndelegateClaim};
+use penumbra_sdk_tct as tct;
+use penumbra_sdk_tct::StateCommitment;
+use penumbra_sdk_txhash::{
     AuthHash, AuthorizingData, EffectHash, EffectingData, TransactionContext, TransactionId,
 };
 use serde::{Deserialize, Serialize};
@@ -437,7 +437,7 @@ impl Transaction {
 
     pub fn validator_definitions(
         &self,
-    ) -> impl Iterator<Item = &penumbra_stake::validator::Definition> {
+    ) -> impl Iterator<Item = &penumbra_sdk_stake::validator::Definition> {
         self.actions().filter_map(|action| {
             if let Action::ValidatorDefinition(d) = action {
                 Some(d)

@@ -8,30 +8,30 @@ use cnidarium::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, S
 use cnidarium_component::Component;
 use ibc_types::core::connection::ChainId;
 use jmt::RootHash;
-use penumbra_auction::component::{Auction, StateReadExt as _, StateWriteExt as _};
-use penumbra_community_pool::component::{CommunityPool, StateWriteExt as _};
-use penumbra_community_pool::StateReadExt as _;
-use penumbra_compact_block::component::CompactBlockManager;
-use penumbra_dex::component::StateReadExt as _;
-use penumbra_dex::component::{Dex, StateWriteExt as _};
-use penumbra_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
-use penumbra_fee::component::{FeeComponent, StateReadExt as _, StateWriteExt as _};
-use penumbra_funding::component::Funding;
-use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
-use penumbra_governance::component::{Governance, StateReadExt as _, StateWriteExt as _};
-use penumbra_ibc::component::{Ibc, StateWriteExt as _};
-use penumbra_ibc::StateReadExt as _;
-use penumbra_proto::core::app::v1::TransactionsByHeightResponse;
-use penumbra_proto::DomainType;
-use penumbra_sct::component::clock::EpochRead;
-use penumbra_sct::component::sct::Sct;
-use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
-use penumbra_sct::epoch::Epoch;
-use penumbra_shielded_pool::component::{ShieldedPool, StateReadExt as _, StateWriteExt as _};
-use penumbra_stake::component::{
+use penumbra_sdk_auction::component::{Auction, StateReadExt as _, StateWriteExt as _};
+use penumbra_sdk_community_pool::component::{CommunityPool, StateWriteExt as _};
+use penumbra_sdk_community_pool::StateReadExt as _;
+use penumbra_sdk_compact_block::component::CompactBlockManager;
+use penumbra_sdk_dex::component::StateReadExt as _;
+use penumbra_sdk_dex::component::{Dex, StateWriteExt as _};
+use penumbra_sdk_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
+use penumbra_sdk_fee::component::{FeeComponent, StateReadExt as _, StateWriteExt as _};
+use penumbra_sdk_funding::component::Funding;
+use penumbra_sdk_funding::component::{StateReadExt as _, StateWriteExt as _};
+use penumbra_sdk_governance::component::{Governance, StateReadExt as _, StateWriteExt as _};
+use penumbra_sdk_ibc::component::{Ibc, StateWriteExt as _};
+use penumbra_sdk_ibc::StateReadExt as _;
+use penumbra_sdk_proto::core::app::v1::TransactionsByHeightResponse;
+use penumbra_sdk_proto::DomainType;
+use penumbra_sdk_sct::component::clock::EpochRead;
+use penumbra_sdk_sct::component::sct::Sct;
+use penumbra_sdk_sct::component::{StateReadExt as _, StateWriteExt as _};
+use penumbra_sdk_sct::epoch::Epoch;
+use penumbra_sdk_shielded_pool::component::{ShieldedPool, StateReadExt as _, StateWriteExt as _};
+use penumbra_sdk_stake::component::{
     stake::ConsensusUpdateRead, Staking, StateReadExt as _, StateWriteExt as _,
 };
-use penumbra_transaction::Transaction;
+use penumbra_sdk_transaction::Transaction;
 use prost::Message as _;
 use tendermint::abci::{self, Event};
 
@@ -555,7 +555,7 @@ impl App {
                 .expect("must be able to finish compact block");
 
             // set the epoch for the next block
-            penumbra_sct::component::clock::EpochManager::put_epoch_by_height(
+            penumbra_sdk_sct::component::clock::EpochManager::put_epoch_by_height(
                 &mut state_tx,
                 current_height + 1,
                 Epoch {
@@ -567,7 +567,7 @@ impl App {
             self.apply(state_tx)
         } else {
             // set the epoch for the next block
-            penumbra_sct::component::clock::EpochManager::put_epoch_by_height(
+            penumbra_sdk_sct::component::clock::EpochManager::put_epoch_by_height(
                 &mut state_tx,
                 current_height + 1,
                 current_epoch,
@@ -685,7 +685,7 @@ pub trait StateReadExt: StateRead {
     /// Returns the set of app parameters
     async fn get_app_params(&self) -> Result<AppParameters> {
         let chain_id = self.get_chain_id().await?;
-        let community_pool_params: penumbra_community_pool::params::CommunityPoolParameters =
+        let community_pool_params: penumbra_sdk_community_pool::params::CommunityPoolParameters =
             self.get_community_pool_params().await?;
         let distributions_params = self.get_distributions_params().await?;
         let ibc_params = self.get_ibc_params().await?;
@@ -738,13 +738,13 @@ pub trait StateReadExt: StateRead {
 
 impl<
         T: StateRead
-            + penumbra_stake::StateReadExt
-            + penumbra_governance::component::StateReadExt
-            + penumbra_fee::component::StateReadExt
-            + penumbra_community_pool::component::StateReadExt
-            + penumbra_sct::component::clock::EpochRead
-            + penumbra_ibc::component::StateReadExt
-            + penumbra_distributions::component::StateReadExt
+            + penumbra_sdk_stake::StateReadExt
+            + penumbra_sdk_governance::component::StateReadExt
+            + penumbra_sdk_fee::component::StateReadExt
+            + penumbra_sdk_community_pool::component::StateReadExt
+            + penumbra_sdk_sct::component::clock::EpochRead
+            + penumbra_sdk_ibc::component::StateReadExt
+            + penumbra_sdk_distributions::component::StateReadExt
             + ?Sized,
     > StateReadExt for T
 {
@@ -764,7 +764,7 @@ pub trait StateWriteExt: StateWrite {
     async fn put_block_transaction(
         &mut self,
         height: u64,
-        transaction: penumbra_proto::core::transaction::v1::Transaction,
+        transaction: penumbra_sdk_proto::core::transaction::v1::Transaction,
     ) -> Result<()> {
         // Extend the existing transactions with the new one.
         let mut transactions_response = self.transactions_by_height(height).await?;

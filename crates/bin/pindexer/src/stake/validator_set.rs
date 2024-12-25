@@ -5,11 +5,11 @@ use cometindex::{
     async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
 };
 
-use penumbra_app::genesis::Content;
-use penumbra_asset::asset;
-use penumbra_num::Amount;
-use penumbra_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
-use penumbra_stake::{
+use penumbra_sdk_app::genesis::Content;
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
+use penumbra_sdk_stake::{
     validator::{self, Validator},
     IdentityKey,
 };

@@ -1,18 +1,22 @@
 [package]
-name = "penumbra-funding"
+name = "penumbra-sdk-funding"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Funding component implementation for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
 component = [
     "cnidarium-component",
     "cnidarium",
-    "penumbra-proto/cnidarium",
-    "penumbra-community-pool/component",
-    "penumbra-distributions/component",
-    "penumbra-sct/component",
-    "penumbra-shielded-pool/component",
-    "penumbra-stake/component",
+    "penumbra-sdk-proto/cnidarium",
+    "penumbra-sdk-community-pool/component",
+    "penumbra-sdk-distributions/component",
+    "penumbra-sdk-sct/component",
+    "penumbra-sdk-shielded-pool/component",
+    "penumbra-sdk-stake/component",
     "metrics",
     "futures"
 ]
@@ -26,14 +30,14 @@ cnidarium = {workspace = true, optional = true, default-features = true}
 cnidarium-component = {workspace = true, optional = true, default-features = true}
 futures = {workspace = true, optional = true}
 metrics = {workspace = true, optional = true}
-penumbra-asset = {workspace = true, default-features = true}
-penumbra-community-pool = {workspace = true, default-features = false}
-penumbra-distributions = {workspace = true, default-features = false}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = true}
+penumbra-sdk-community-pool = {workspace = true, default-features = false}
+penumbra-sdk-distributions = {workspace = true, default-features = false}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
+penumbra-sdk-stake = {workspace = true, default-features = false}
 serde = {workspace = true, features = ["derive"]}
 tendermint = {workspace = true}
 tracing = {workspace = true}

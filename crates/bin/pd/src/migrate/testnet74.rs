@@ -5,12 +5,12 @@ use anyhow;
 use cnidarium::{EscapedByteSlice, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use futures::StreamExt as _;
 use jmt::RootHash;
-use penumbra_app::{app::StateReadExt as _, SUBSTORE_PREFIXES};
-use penumbra_auction::{params::AuctionParameters, StateWriteExt};
-use penumbra_dex::SwapExecution;
-use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component as pb, StateReadProto, StateWriteProto};
-use penumbra_sct::component::clock::{EpochManager, EpochRead};
+use penumbra_sdk_app::{app::StateReadExt as _, SUBSTORE_PREFIXES};
+use penumbra_sdk_auction::{params::AuctionParameters, StateWriteExt};
+use penumbra_sdk_dex::SwapExecution;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{penumbra::core::component as pb, StateReadProto, StateWriteProto};
+use penumbra_sdk_sct::component::clock::{EpochManager, EpochRead};
 use std::path::PathBuf;
 
 use crate::network::generate::NetworkConfig;
@@ -173,7 +173,7 @@ pub async fn migrate(
     // to lookup a validator view from the chain, and specify the post-upgrade app hash and
     // initial height.
     let chain_id = migrated_state.get_chain_id().await?;
-    let app_state = penumbra_app::genesis::Content {
+    let app_state = penumbra_sdk_app::genesis::Content {
         chain_id,
         ..Default::default()
     };

@@ -1,8 +1,8 @@
 use anyhow::Result;
-use penumbra_governance::ValidatorVoteBody;
-use penumbra_proto::DomainType;
-use penumbra_stake::validator::Validator;
-use penumbra_transaction::TransactionPlan;
+use penumbra_sdk_governance::ValidatorVoteBody;
+use penumbra_sdk_proto::DomainType;
+use penumbra_sdk_stake::validator::Validator;
+use penumbra_sdk_transaction::TransactionPlan;
 use serde::de::DeserializeOwned;
 use tonic::async_trait;
 

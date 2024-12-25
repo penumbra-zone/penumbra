@@ -4,8 +4,8 @@ use ark_serialize::CanonicalDeserialize;
 use base64::Engine;
 use decaf377::Fq;
 use once_cell::sync::Lazy;
-use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::asset::v1 as pb, serializers::bech32str, DomainType};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{penumbra::core::asset::v1 as pb, serializers::bech32str, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// An identifier for an IBC asset type.
@@ -184,7 +184,7 @@ mod tests {
 
         let id2 = Id::from_str(&bech32m_id).expect("can decode valid asset id");
 
-        use penumbra_proto::Message;
+        use penumbra_sdk_proto::Message;
 
         let proto = id.encode_to_vec();
         let proto2 = pb::AssetId {

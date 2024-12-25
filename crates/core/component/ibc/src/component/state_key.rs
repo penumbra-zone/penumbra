@@ -20,7 +20,7 @@ pub fn counter() -> &'static str {
 
 pub mod ics20_value_balance {
     use ibc_types::core::channel::ChannelId;
-    use penumbra_asset::asset;
+    use penumbra_sdk_asset::asset;
 
     pub fn prefix() -> &'static str {
         "ibc/ics20-value-balance/"

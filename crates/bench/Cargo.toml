@@ -1,6 +1,10 @@
 [package]
-name = "penumbra-bench"
+name = "penumbra-sdk-bench"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Benchmarks for Penumbra crates"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [build-dependencies]
@@ -74,9 +78,9 @@ bech32 = {workspace = true}
 decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
 num-bigint = {workspace = true}
 once_cell = {workspace = true}
-penumbra-asset = {workspace = true, default-features = true}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-num = {workspace = true, default-features = true}
+penumbra-sdk-asset = {workspace = true, default-features = true}
+penumbra-sdk-keys = {workspace = true, default-features = true}
+penumbra-sdk-num = {workspace = true, default-features = true}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 serde = {workspace = true, features = ["derive"]}
@@ -88,15 +92,15 @@ criterion = {workspace = true, features = ["html_reports"]}
 decaf377-fmd = {workspace = true}
 decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
-penumbra-dex = {workspace = true, default-features = true}
-penumbra-fee = {workspace = true, default-features = true}
-penumbra-governance = {workspace = true, default-features = true}
-penumbra-sct = {workspace = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, default-features = true}
-penumbra-stake = {workspace = true, default-features = true}
-penumbra-tct = {workspace = true, features = ["r1cs"], default-features = true}
+penumbra-sdk-dex = {workspace = true, default-features = true}
+penumbra-sdk-fee = {workspace = true, default-features = true}
+penumbra-sdk-governance = {workspace = true, default-features = true}
+penumbra-sdk-sct = {workspace = true, default-features = true}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = true}
+penumbra-sdk-stake = {workspace = true, default-features = true}
+penumbra-sdk-tct = {workspace = true, features = ["r1cs"], default-features = true}
 
-[dev-dependencies.penumbra-proof-params]
+[dev-dependencies.penumbra-sdk-proof-params]
 workspace = true
 default-features = true
 features = [

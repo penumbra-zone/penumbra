@@ -1,12 +1,12 @@
 use anyhow::anyhow;
-use penumbra_auction::auction::dutch::actions::{
+use penumbra_sdk_auction::auction::dutch::actions::{
     ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
 };
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
 
-use penumbra_asset::balance;
-use penumbra_proto::{core::transaction::v1 as pb, DomainType};
+use penumbra_sdk_asset::balance;
+use penumbra_sdk_proto::{core::transaction::v1 as pb, DomainType};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
 use serde::{Deserialize, Serialize};
@@ -16,31 +16,31 @@ use serde::{Deserialize, Serialize};
 #[serde(try_from = "pb::Action", into = "pb::Action")]
 #[allow(clippy::large_enum_variant)]
 pub enum Action {
-    Output(penumbra_shielded_pool::Output),
-    Spend(penumbra_shielded_pool::Spend),
-    ValidatorDefinition(penumbra_stake::validator::Definition),
-    IbcRelay(penumbra_ibc::IbcRelay),
-    Swap(penumbra_dex::swap::Swap),
-    SwapClaim(penumbra_dex::swap_claim::SwapClaim),
-    ProposalSubmit(penumbra_governance::ProposalSubmit),
-    ProposalWithdraw(penumbra_governance::ProposalWithdraw),
-    DelegatorVote(penumbra_governance::DelegatorVote),
-    ValidatorVote(penumbra_governance::ValidatorVote),
-    ProposalDepositClaim(penumbra_governance::ProposalDepositClaim),
+    Output(penumbra_sdk_shielded_pool::Output),
+    Spend(penumbra_sdk_shielded_pool::Spend),
+    ValidatorDefinition(penumbra_sdk_stake::validator::Definition),
+    IbcRelay(penumbra_sdk_ibc::IbcRelay),
+    Swap(penumbra_sdk_dex::swap::Swap),
+    SwapClaim(penumbra_sdk_dex::swap_claim::SwapClaim),
+    ProposalSubmit(penumbra_sdk_governance::ProposalSubmit),
+    ProposalWithdraw(penumbra_sdk_governance::ProposalWithdraw),
+    DelegatorVote(penumbra_sdk_governance::DelegatorVote),
+    ValidatorVote(penumbra_sdk_governance::ValidatorVote),
+    ProposalDepositClaim(penumbra_sdk_governance::ProposalDepositClaim),
 
-    PositionOpen(penumbra_dex::lp::action::PositionOpen),
-    PositionClose(penumbra_dex::lp::action::PositionClose),
-    PositionWithdraw(penumbra_dex::lp::action::PositionWithdraw),
+    PositionOpen(penumbra_sdk_dex::lp::action::PositionOpen),
+    PositionClose(penumbra_sdk_dex::lp::action::PositionClose),
+    PositionWithdraw(penumbra_sdk_dex::lp::action::PositionWithdraw),
 
-    Delegate(penumbra_stake::Delegate),
-    Undelegate(penumbra_stake::Undelegate),
-    UndelegateClaim(penumbra_stake::UndelegateClaim),
+    Delegate(penumbra_sdk_stake::Delegate),
+    Undelegate(penumbra_sdk_stake::Undelegate),
+    UndelegateClaim(penumbra_sdk_stake::UndelegateClaim),
 
-    Ics20Withdrawal(penumbra_shielded_pool::Ics20Withdrawal),
+    Ics20Withdrawal(penumbra_sdk_shielded_pool::Ics20Withdrawal),
 
-    CommunityPoolSpend(penumbra_community_pool::CommunityPoolSpend),
-    CommunityPoolOutput(penumbra_community_pool::CommunityPoolOutput),
-    CommunityPoolDeposit(penumbra_community_pool::CommunityPoolDeposit),
+    CommunityPoolSpend(penumbra_sdk_community_pool::CommunityPoolSpend),
+    CommunityPoolOutput(penumbra_sdk_community_pool::CommunityPoolOutput),
+    CommunityPoolDeposit(penumbra_sdk_community_pool::CommunityPoolDeposit),
 
     ActionDutchAuctionSchedule(ActionDutchAuctionSchedule),
     ActionDutchAuctionEnd(ActionDutchAuctionEnd),

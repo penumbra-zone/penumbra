@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use penumbra_num::Amount;
+use penumbra_sdk_num::Amount;
 
 // Tuple represents:
 // ((amount of asset 1 being exchanged for asset 2),

@@ -5,13 +5,13 @@ use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use tonic::transport::Channel;
 
-use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_keys::FullViewingKey;
-use penumbra_proto::core::component::stake::v1::{
+use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_proto::core::component::stake::v1::{
     query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
 };
-use penumbra_stake::{validator, DelegationToken};
-use penumbra_view::ViewClient;
+use penumbra_sdk_stake::{validator, DelegationToken};
+use penumbra_sdk_view::ViewClient;
 
 #[derive(Debug, clap::Parser)]
 pub struct StakedCmd {}

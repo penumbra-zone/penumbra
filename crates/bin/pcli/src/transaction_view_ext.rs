@@ -1,17 +1,17 @@
 use comfy_table::presets;
 use comfy_table::Table;
-use penumbra_asset::asset::Id;
-use penumbra_asset::asset::Metadata;
-use penumbra_asset::Value;
-use penumbra_asset::ValueView;
-use penumbra_dex::swap::SwapView;
-use penumbra_dex::swap_claim::SwapClaimView;
-use penumbra_fee::Fee;
-use penumbra_keys::AddressView;
-use penumbra_num::Amount;
-use penumbra_shielded_pool::SpendView;
-use penumbra_transaction::view::action_view::OutputView;
-use penumbra_transaction::TransactionView;
+use penumbra_sdk_asset::asset::Id;
+use penumbra_sdk_asset::asset::Metadata;
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_asset::ValueView;
+use penumbra_sdk_dex::swap::SwapView;
+use penumbra_sdk_dex::swap_claim::SwapClaimView;
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_keys::AddressView;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_shielded_pool::SpendView;
+use penumbra_sdk_transaction::view::action_view::OutputView;
+use penumbra_sdk_transaction::TransactionView;
 
 // Issues identified:
 // TODO: FeeView
@@ -196,14 +196,14 @@ impl TransactionViewExt for TransactionView {
 
         if let Some(memo_view) = &self.body_view.memo_view {
             match memo_view {
-                penumbra_transaction::MemoView::Visible {
+                penumbra_sdk_transaction::MemoView::Visible {
                     plaintext,
                     ciphertext: _,
                 } => {
                     println!("Memo Sender: {}", &plaintext.return_address.address());
                     println!("Memo Text: \n{}\n", &plaintext.text);
                 }
-                penumbra_transaction::MemoView::Opaque { ciphertext } => {
+                penumbra_sdk_transaction::MemoView::Opaque { ciphertext } => {
                     println!("Encrypted Memo: \n{}\n", format_opaque_bytes(&ciphertext.0));
                 }
             }
@@ -218,7 +218,7 @@ impl TransactionViewExt for TransactionView {
             let action: String;
 
             let row = match action_view {
-                penumbra_transaction::ActionView::Spend(spend) => {
+                penumbra_sdk_transaction::ActionView::Spend(spend) => {
                     match spend {
                         SpendView::Visible { spend: _, note } => {
                             action = format!(
@@ -235,7 +235,7 @@ impl TransactionViewExt for TransactionView {
                         }
                     }
                 }
-                penumbra_transaction::ActionView::Output(output) => {
+                penumbra_sdk_transaction::ActionView::Output(output) => {
                     match output {
                         OutputView::Visible {
                             output: _,
@@ -256,7 +256,7 @@ impl TransactionViewExt for TransactionView {
                         }
                     }
                 }
-                penumbra_transaction::ActionView::Swap(swap) => {
+                penumbra_sdk_transaction::ActionView::Swap(swap) => {
                     // Typical swaps are one asset for another, but we can't know that for sure.
                     match swap {
                         SwapView::Visible { swap_plaintext, .. } => {
@@ -302,7 +302,7 @@ impl TransactionViewExt for TransactionView {
                         }
                     }
                 }
-                penumbra_transaction::ActionView::SwapClaim(swap_claim) => {
+                penumbra_sdk_transaction::ActionView::SwapClaim(swap_claim) => {
                     match swap_claim {
                         SwapClaimView::Visible {
                             swap_claim,
@@ -340,7 +340,7 @@ impl TransactionViewExt for TransactionView {
                         }
                     }
                 }
-                penumbra_transaction::ActionView::Ics20Withdrawal(withdrawal) => {
+                penumbra_sdk_transaction::ActionView::Ics20Withdrawal(withdrawal) => {
                     let unit = withdrawal.denom.best_unit_for(withdrawal.amount);
                     action = format!(
                         "{}{} via {} to {}",
@@ -351,7 +351,7 @@ impl TransactionViewExt for TransactionView {
                     );
                     ["Ics20 Withdrawal", &action]
                 }
-                penumbra_transaction::ActionView::PositionOpen(position_open) => {
+                penumbra_sdk_transaction::ActionView::PositionOpen(position_open) => {
                     let position = &position_open.position;
                     /* TODO: leaving this around since we may want it to render prices
                     let _unit_pair = DirectedUnitPair {
@@ -371,52 +371,56 @@ impl TransactionViewExt for TransactionView {
                     );
                     ["Open Liquidity Position", &action]
                 }
-                penumbra_transaction::ActionView::PositionClose(_) => {
+                penumbra_sdk_transaction::ActionView::PositionClose(_) => {
                     ["Close Liquitity Position", ""]
                 }
-                penumbra_transaction::ActionView::PositionWithdraw(_) => {
+                penumbra_sdk_transaction::ActionView::PositionWithdraw(_) => {
                     ["Withdraw Liquitity Position", ""]
                 }
-                penumbra_transaction::ActionView::ProposalDepositClaim(proposal_deposit_claim) => {
+                penumbra_sdk_transaction::ActionView::ProposalDepositClaim(
+                    proposal_deposit_claim,
+                ) => {
                     action = format!(
                         "Claim Deposit for Governance Proposal #{}",
                         proposal_deposit_claim.proposal
                     );
                     [&action, ""]
                 }
-                penumbra_transaction::ActionView::ProposalSubmit(proposal_submit) => {
+                penumbra_sdk_transaction::ActionView::ProposalSubmit(proposal_submit) => {
                     action = format!(
                         "Submit Governance Proposal #{}",
                         proposal_submit.proposal.id
                     );
                     [&action, ""]
                 }
-                penumbra_transaction::ActionView::ProposalWithdraw(proposal_withdraw) => {
+                penumbra_sdk_transaction::ActionView::ProposalWithdraw(proposal_withdraw) => {
                     action = format!(
                         "Withdraw Governance Proposal #{}",
                         proposal_withdraw.proposal
                     );
                     [&action, ""]
                 }
-                penumbra_transaction::ActionView::IbcRelay(_) => ["IBC Relay", ""],
-                penumbra_transaction::ActionView::DelegatorVote(_) => ["Delegator Vote", ""],
-                penumbra_transaction::ActionView::ValidatorDefinition(_) => {
+                penumbra_sdk_transaction::ActionView::IbcRelay(_) => ["IBC Relay", ""],
+                penumbra_sdk_transaction::ActionView::DelegatorVote(_) => ["Delegator Vote", ""],
+                penumbra_sdk_transaction::ActionView::ValidatorDefinition(_) => {
                     ["Upload Validator Definition", ""]
                 }
-                penumbra_transaction::ActionView::ValidatorVote(_) => ["Validator Vote", ""],
-                penumbra_transaction::ActionView::CommunityPoolDeposit(_) => {
+                penumbra_sdk_transaction::ActionView::ValidatorVote(_) => ["Validator Vote", ""],
+                penumbra_sdk_transaction::ActionView::CommunityPoolDeposit(_) => {
                     ["Community Pool Deposit", ""]
                 }
-                penumbra_transaction::ActionView::CommunityPoolSpend(_) => {
+                penumbra_sdk_transaction::ActionView::CommunityPoolSpend(_) => {
                     ["Community Pool Spend", ""]
                 }
-                penumbra_transaction::ActionView::CommunityPoolOutput(_) => {
+                penumbra_sdk_transaction::ActionView::CommunityPoolOutput(_) => {
                     ["Community Pool Output", ""]
                 }
-                penumbra_transaction::ActionView::Delegate(_) => ["Delegation", ""],
-                penumbra_transaction::ActionView::Undelegate(_) => ["Undelegation", ""],
-                penumbra_transaction::ActionView::UndelegateClaim(_) => ["Undelegation Claim", ""],
-                penumbra_transaction::ActionView::ActionDutchAuctionSchedule(x) => {
+                penumbra_sdk_transaction::ActionView::Delegate(_) => ["Delegation", ""],
+                penumbra_sdk_transaction::ActionView::Undelegate(_) => ["Undelegation", ""],
+                penumbra_sdk_transaction::ActionView::UndelegateClaim(_) => {
+                    ["Undelegation Claim", ""]
+                }
+                penumbra_sdk_transaction::ActionView::ActionDutchAuctionSchedule(x) => {
                     let description = &x.action.description;
 
                     let input: String = format_value_view(&create_value_view(
@@ -439,11 +443,11 @@ impl TransactionViewExt for TransactionView {
                     );
                     ["Dutch Auction Schedule", &action]
                 }
-                penumbra_transaction::ActionView::ActionDutchAuctionEnd(x) => {
+                penumbra_sdk_transaction::ActionView::ActionDutchAuctionEnd(x) => {
                     action = format!("{}", x.auction_id);
                     ["Dutch Auction End", &action]
                 }
-                penumbra_transaction::ActionView::ActionDutchAuctionWithdraw(x) => {
+                penumbra_sdk_transaction::ActionView::ActionDutchAuctionWithdraw(x) => {
                     let inside = x
                         .reserves
                         .iter()

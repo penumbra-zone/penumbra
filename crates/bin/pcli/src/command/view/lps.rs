@@ -1,11 +1,11 @@
 use anyhow::{anyhow, Result};
 use futures::stream::TryStreamExt;
-use penumbra_dex::lp::position::{Position, State};
-use penumbra_proto::core::component::dex::v1::{
+use penumbra_sdk_dex::lp::position::{Position, State};
+use penumbra_sdk_proto::core::component::dex::v1::{
     query_service_client::QueryServiceClient as DexQueryServiceClient,
     LiquidityPositionsByIdRequest,
 };
-use penumbra_view::ViewClient;
+use penumbra_sdk_view::ViewClient;
 
 use crate::{command::utils, App};
 

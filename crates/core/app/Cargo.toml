@@ -1,31 +1,32 @@
 [package]
-name        = "penumbra-app"
+name        = "penumbra-sdk-app"
 version     = { workspace = true }
 authors     = { workspace = true }
 edition     = { workspace = true}
 repository  = { workspace = true }
 homepage    = { workspace = true }
 license     = { workspace = true }
-publish     = false
+description = "A stack of components implementing the Penumbra protocol"
+publish     = true
 
 [features]
 component = [
   "dep:cnidarium",
   "dep:cnidarium-component",
-  "penumbra-proto/cnidarium",
-  "penumbra-auction/component",
-  "penumbra-community-pool/component",
-  "penumbra-compact-block/component",
-  "penumbra-dex/component",
-  "penumbra-distributions/component",
-  "penumbra-fee/component",
-  "penumbra-funding/component",
-  "penumbra-governance/component",
-  "penumbra-ibc/component",
-  "penumbra-ibc/rpc",
-  "penumbra-sct/component",
-  "penumbra-shielded-pool/component",
-  "penumbra-stake/component",
+  "penumbra-sdk-proto/cnidarium",
+  "penumbra-sdk-auction/component",
+  "penumbra-sdk-community-pool/component",
+  "penumbra-sdk-compact-block/component",
+  "penumbra-sdk-dex/component",
+  "penumbra-sdk-distributions/component",
+  "penumbra-sdk-fee/component",
+  "penumbra-sdk-funding/component",
+  "penumbra-sdk-governance/component",
+  "penumbra-sdk-ibc/component",
+  "penumbra-sdk-ibc/rpc",
+  "penumbra-sdk-sct/component",
+  "penumbra-sdk-shielded-pool/component",
+  "penumbra-sdk-stake/component",
   "dep:tonic",
   "dep:tonic-reflection",
   "dep:tonic-web"
@@ -57,28 +58,28 @@ jmt                              = { workspace = true }
 metrics                          = { workspace = true }
 once_cell                        = { workspace = true }
 parking_lot                      = { workspace = true }
-penumbra-asset                   = { workspace = true, default-features = true }
-penumbra-auction                 = { workspace = true, default-features = false }
-penumbra-community-pool          = { workspace = true, default-features = false }
-penumbra-compact-block           = { workspace = true, default-features = false }
-penumbra-dex                     = { workspace = true, default-features = false }
-penumbra-distributions           = { workspace = true, default-features = false }
-penumbra-fee                     = { workspace = true, default-features = false }
-penumbra-funding                 = { workspace = true, default-features = false }
-penumbra-governance              = { workspace = true, default-features = false }
-penumbra-ibc                     = { workspace = true, default-features = false }
-penumbra-keys                    = { workspace = true, default-features = true }
-penumbra-num                     = { workspace = true, default-features = true }
-penumbra-proof-params            = { workspace = true, default-features = false }
-penumbra-proto                   = { workspace = true, default-features = true }
-penumbra-sct                     = { workspace = true, default-features = false }
-penumbra-shielded-pool           = { workspace = true, default-features = false }
-penumbra-stake                   = { workspace = true, default-features = false }
-penumbra-tct                     = { workspace = true, default-features = true }
-penumbra-test-subscriber         = { workspace = true }
-penumbra-tower-trace             = {  path = "../../util/tower-trace"  }
-penumbra-transaction             = { workspace = true, features = ["parallel"], default-features = true }
-penumbra-txhash                  = { workspace = true, default-features = true }
+penumbra-sdk-asset                   = { workspace = true, default-features = true }
+penumbra-sdk-auction                 = { workspace = true, default-features = false }
+penumbra-sdk-community-pool          = { workspace = true, default-features = false }
+penumbra-sdk-compact-block           = { workspace = true, default-features = false }
+penumbra-sdk-dex                     = { workspace = true, default-features = false }
+penumbra-sdk-distributions           = { workspace = true, default-features = false }
+penumbra-sdk-fee                     = { workspace = true, default-features = false }
+penumbra-sdk-funding                 = { workspace = true, default-features = false }
+penumbra-sdk-governance              = { workspace = true, default-features = false }
+penumbra-sdk-ibc                     = { workspace = true, default-features = false }
+penumbra-sdk-keys                    = { workspace = true, default-features = true }
+penumbra-sdk-num                     = { workspace = true, default-features = true }
+penumbra-sdk-proof-params            = { workspace = true, default-features = false }
+penumbra-sdk-proto                   = { workspace = true, default-features = true }
+penumbra-sdk-sct                     = { workspace = true, default-features = false }
+penumbra-sdk-shielded-pool           = { workspace = true, default-features = false }
+penumbra-sdk-stake                   = { workspace = true, default-features = false }
+penumbra-sdk-tct                     = { workspace = true, default-features = true }
+penumbra-sdk-test-subscriber         = { workspace = true }
+penumbra-sdk-tower-trace             = {  version = "0.82.0-alpha.0", path = "../../util/tower-trace"  }
+penumbra-sdk-transaction             = { workspace = true, features = ["parallel"], default-features = true }
+penumbra-sdk-txhash                  = { workspace = true, default-features = true }
 prost                            = { workspace = true }
 rand_chacha                      = { workspace = true }
 regex                            = { workspace = true }
@@ -108,13 +109,11 @@ axum-server                      = { workspace = true }
 camino                           = { workspace = true }
 decaf377-fmd                     = { workspace = true, default-features = true }
 ed25519-consensus                = { workspace = true }
-penumbra-mock-client             = { workspace = true }
-penumbra-mock-consensus          = { workspace = true }
-penumbra-proto                   = { workspace = true, features = ["box-grpc"] }
-penumbra-test-subscriber         = { workspace = true }
-penumbra-mock-tendermint-proxy   = { workspace = true }
-penumbra-view                    = { workspace = true }
-penumbra-wallet                  = { workspace = true }
+penumbra-sdk-mock-client             = { workspace = true }
+penumbra-sdk-mock-consensus          = { workspace = true }
+penumbra-sdk-proto                   = { workspace = true, features = ["box-grpc"] }
+penumbra-sdk-test-subscriber         = { workspace = true }
+penumbra-sdk-mock-tendermint-proxy   = { workspace = true }
 rand                             = { workspace = true }
 rand_chacha                      = { workspace = true }
 rand_core                        = { workspace = true }
@@ -124,11 +123,3 @@ tendermint-config                = { workspace = true }
 tower-http                       = { workspace = true, features = ["cors"] }
 tracing-subscriber               = { workspace = true }
 url                              = { workspace = true }
-
-# Enable the feature flags to get proving keys when running tests.
-[dev-dependencies.penumbra-proof-params]
-workspace = true
-features = [
-    "bundled-proving-keys",
-    "download-proving-keys",
-]

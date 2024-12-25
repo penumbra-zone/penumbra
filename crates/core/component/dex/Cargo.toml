@@ -1,10 +1,14 @@
 [package]
-name = "penumbra-dex"
+name = "penumbra-sdk-dex"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "DEX engine component implementation for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [[test]]
-name = "penumbra-dex-integration-tests"
+name = "penumbra-sdk-dex-integration-tests"
 path = "tests/integration/mod.rs"
 
 [features]
@@ -12,17 +16,17 @@ component = [
     "cnidarium-component",
     "cnidarium",
     "metrics-exporter-prometheus",
-    "penumbra-proto/cnidarium",
-    "penumbra-shielded-pool/component",
-    "penumbra-fee/component",
+    "penumbra-sdk-proto/cnidarium",
+    "penumbra-sdk-shielded-pool/component",
+    "penumbra-sdk-fee/component",
     "tokio",
     "tonic",
 ]
 default = ["component"]
 docsrs = []
-# proving-keys = ["penumbra-proof-params/proving-keys"]
+# proving-keys = ["penumbra-sdk-proof-params/proving-keys"]
 parallel = [
-    "penumbra-tct/parallel",
+    "penumbra-sdk-tct/parallel",
     "ark-ff/parallel",
     "poseidon377/parallel",
     "decaf377-rdsa/parallel",
@@ -58,16 +62,16 @@ metrics-exporter-prometheus = {workspace = true, optional = true}
 once_cell = {workspace = true}
 parking_lot = {workspace = true}
 pbjson-types = {workspace = true}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-fee = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-proof-params = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = false}
-penumbra-txhash = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-fee = {workspace = true, default-features = false}
+penumbra-sdk-keys = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proof-params = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = false}
+penumbra-sdk-txhash = {workspace = true, default-features = false}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 prost = {workspace = true}
 rand_core = {workspace = true}

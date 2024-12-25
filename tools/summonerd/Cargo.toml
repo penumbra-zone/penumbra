@@ -7,7 +7,7 @@ description = "Coordination node for summoning ceremony"
 repository = {workspace = true}
 homepage = {workspace = true}
 license = {workspace = true}
-publish = false
+publish = true
 rust-version = "1.65"
 
 [dependencies]
@@ -26,13 +26,13 @@ futures = {workspace = true}
 hex = {workspace = true}
 http-body = {workspace = true}
 metrics-tracing-context = {workspace = true}
-penumbra-asset = {workspace = true, default-features = true}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-num = {workspace = true, default-features = true}
-penumbra-proof-params = {workspace = true, default-features = true}
-penumbra-proof-setup = {workspace = true, features = ["parallel"]}
-penumbra-proto = {workspace = true, default-features = true}
-penumbra-view = {workspace = true}
+penumbra-sdk-asset = {workspace = true, default-features = true}
+penumbra-sdk-keys = {workspace = true, default-features = true}
+penumbra-sdk-num = {workspace = true, default-features = true}
+penumbra-sdk-proof-params = {workspace = true, default-features = true}
+penumbra-sdk-proof-setup = {workspace = true, features = ["parallel"]}
+penumbra-sdk-proto = {workspace = true, default-features = true}
+penumbra-sdk-view = {workspace = true}
 r2d2 = {workspace = true}
 r2d2_sqlite = {workspace = true, features = ["bundled"]}
 rand = {workspace = true}

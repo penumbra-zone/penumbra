@@ -7,7 +7,7 @@ description = "The node software for the Penumbra Zone"
 repository = { workspace = true }
 homepage = { workspace = true }
 license = { workspace = true }
-publish = false
+publish = true
 rust-version = "1.75"
 
 [package.metadata.dist]
@@ -16,7 +16,7 @@ dist = true
 [features]
 default = ["download-proving-keys"]
 std = ["ibc-types/std"]
-download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
+download-proving-keys = ["penumbra-sdk-proof-params/download-proving-keys"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -59,26 +59,26 @@ metrics-util                     = "0.18.0"
 mime_guess                       = "2"
 once_cell                        = { workspace = true }
 pbjson-types                     = { workspace = true }
-penumbra-app                     = { workspace = true, default-features = true }
-penumbra-asset                   = { workspace = true, default-features = true }
-penumbra-auto-https              = { path = "../../util/auto-https" }
-penumbra-compact-block           = { workspace = true, default-features = true }
-penumbra-custody                 = { workspace = true }
-penumbra-auction                 = { workspace = true, features = ["parallel"], default-features = true }
-penumbra-dex                     = { workspace = true, features = ["parallel"], default-features = true }
-penumbra-fee                     = { workspace = true, default-features = true }
-penumbra-governance              = { workspace = true, features = ["parallel"], default-features = true }
-penumbra-ibc                     = { workspace = true, features = ["rpc"], default-features = true }
-penumbra-keys                    = { workspace = true, default-features = true }
-penumbra-num                     = { workspace = true, default-features = true }
-penumbra-proto                   = { workspace = true, default-features = true }
-penumbra-sct                     = { workspace = true, default-features = true }
-penumbra-shielded-pool           = { workspace = true, features = ["parallel"], default-features = true }
-penumbra-stake                   = { workspace = true, features = ["parallel"], default-features = true }
-penumbra-tct                     = { workspace = true, default-features = true }
-penumbra-tendermint-proxy        = { path = "../../util/tendermint-proxy" }
-penumbra-tower-trace             = { path = "../../util/tower-trace" }
-penumbra-transaction             = { workspace = true, default-features = true }
+penumbra-sdk-app                     = { workspace = true, default-features = true }
+penumbra-sdk-asset                   = { workspace = true, default-features = true }
+penumbra-sdk-auto-https              = { version = "0.82.0-alpha.0", path = "../../util/auto-https" }
+penumbra-sdk-compact-block           = { workspace = true, default-features = true }
+penumbra-sdk-custody                 = { workspace = true }
+penumbra-sdk-auction                 = { workspace = true, features = ["parallel"], default-features = true }
+penumbra-sdk-dex                     = { workspace = true, features = ["parallel"], default-features = true }
+penumbra-sdk-fee                     = { workspace = true, default-features = true }
+penumbra-sdk-governance              = { workspace = true, features = ["parallel"], default-features = true }
+penumbra-sdk-ibc                     = { workspace = true, features = ["rpc"], default-features = true }
+penumbra-sdk-keys                    = { workspace = true, default-features = true }
+penumbra-sdk-num                     = { workspace = true, default-features = true }
+penumbra-sdk-proto                   = { workspace = true, default-features = true }
+penumbra-sdk-sct                     = { workspace = true, default-features = true }
+penumbra-sdk-shielded-pool           = { workspace = true, features = ["parallel"], default-features = true }
+penumbra-sdk-stake                   = { workspace = true, features = ["parallel"], default-features = true }
+penumbra-sdk-tct                     = { workspace = true, default-features = true }
+penumbra-sdk-tendermint-proxy        = { version = "0.82.0-alpha.0", path = "../../util/tendermint-proxy" }
+penumbra-sdk-tower-trace             = { version = "0.82.0-alpha.0", path = "../../util/tower-trace" }
+penumbra-sdk-transaction             = { workspace = true, default-features = true }
 pin-project                      = { workspace = true }
 pin-project-lite                 = { workspace = true }
 prost                            = { workspace = true }
@@ -119,7 +119,7 @@ url = { workspace = true }
 zip = "0.6"
 
 [dev-dependencies]
-penumbra-proof-params = { workspace = true, features = [
+penumbra-sdk-proof-params = { workspace = true, features = [
     "bundled-proving-keys",
     "download-proving-keys",
 ], default-features = true }

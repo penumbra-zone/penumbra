@@ -9,9 +9,9 @@ use anyhow::{anyhow, Context, Error, Result};
 use colored::Colorize;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
-use penumbra_app::params::AppParameters;
-use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{
+use penumbra_sdk_app::params::AppParameters;
+use penumbra_sdk_num::{fixpoint::U128x128, Amount};
+use penumbra_sdk_proto::{
     core::{
         app::v1::{
             query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
@@ -24,7 +24,7 @@ use penumbra_proto::{
     },
     DomainType,
 };
-use penumbra_stake::{
+use penumbra_sdk_stake::{
     rate::RateData,
     validator::{self, Info, Status, Validator, ValidatorToml},
     IdentityKey, Uptime, BPS_SQUARED_SCALING_FACTOR,

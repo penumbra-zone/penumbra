@@ -5,11 +5,11 @@ use std::{
 };
 
 use anyhow::Context;
-use penumbra_auction::auction::AuctionNft;
-use penumbra_compact_block::CompactBlock;
-use penumbra_dex::lp::{position, LpNft};
-use penumbra_keys::FullViewingKey;
-use penumbra_proto::core::{
+use penumbra_sdk_auction::auction::AuctionNft;
+use penumbra_sdk_compact_block::CompactBlock;
+use penumbra_sdk_dex::lp::{position, LpNft};
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_proto::core::{
     app::v1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient,
         TransactionsByHeightRequest,
@@ -25,8 +25,8 @@ use penumbra_proto::core::{
         },
     },
 };
-use penumbra_sct::{CommitmentSource, Nullifier};
-use penumbra_transaction::Transaction;
+use penumbra_sdk_sct::{CommitmentSource, Nullifier};
+use penumbra_sdk_transaction::Transaction;
 use tap::Tap;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
@@ -42,7 +42,7 @@ const MAX_CB_SIZE_BYTES: usize = 12 * 1024 * 1024;
 
 pub struct Worker {
     storage: Storage,
-    sct: Arc<RwLock<penumbra_tct::Tree>>,
+    sct: Arc<RwLock<penumbra_sdk_tct::Tree>>,
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     sync_height_tx: watch::Sender<u64>,
@@ -64,7 +64,7 @@ impl Worker {
     ) -> Result<
         (
             Self,
-            Arc<RwLock<penumbra_tct::Tree>>,
+            Arc<RwLock<penumbra_sdk_tct::Tree>>,
             Arc<Mutex<Option<anyhow::Error>>>,
             watch::Receiver<u64>,
         ),
@@ -263,7 +263,7 @@ impl Worker {
                 for transaction in &transactions {
                     for action in transaction.actions() {
                         match action {
-                            penumbra_transaction::Action::PositionOpen(position_open) => {
+                            penumbra_sdk_transaction::Action::PositionOpen(position_open) => {
                                 let position_id = position_open.position.id();
 
                                 // Record every possible permutation.
@@ -290,7 +290,7 @@ impl Worker {
                                     .record_position(position_open.position.clone())
                                     .await?;
                             }
-                            penumbra_transaction::Action::PositionClose(position_close) => {
+                            penumbra_sdk_transaction::Action::PositionClose(position_close) => {
                                 let position_id = position_close.position_id;
 
                                 // Update the position record
@@ -298,7 +298,9 @@ impl Worker {
                                     .update_position(position_id, position::State::Closed)
                                     .await?;
                             }
-                            penumbra_transaction::Action::PositionWithdraw(position_withdraw) => {
+                            penumbra_sdk_transaction::Action::PositionWithdraw(
+                                position_withdraw,
+                            ) => {
                                 let position_id = position_withdraw.position_id;
 
                                 // Record the LPNFT for the current sequence number.
@@ -312,7 +314,7 @@ impl Worker {
                                 // Update the position record
                                 self.storage.update_position(position_id, state).await?;
                             }
-                            penumbra_transaction::Action::ActionDutchAuctionSchedule(
+                            penumbra_sdk_transaction::Action::ActionDutchAuctionSchedule(
                                 schedule_da,
                             ) => {
                                 let auction_id = schedule_da.description.id();
@@ -328,7 +330,7 @@ impl Worker {
                                     )
                                     .await?;
                             }
-                            penumbra_transaction::Action::ActionDutchAuctionEnd(end_da) => {
+                            penumbra_sdk_transaction::Action::ActionDutchAuctionEnd(end_da) => {
                                 let auction_id = end_da.auction_id;
                                 let auction_nft_closed = AuctionNft::new(auction_id, 1);
                                 let nft_metadata_closed = auction_nft_closed.metadata.clone();
@@ -339,7 +341,7 @@ impl Worker {
                                     .record_auction_with_state(end_da.auction_id, 1)
                                     .await?;
                             }
-                            penumbra_transaction::Action::ActionDutchAuctionWithdraw(
+                            penumbra_sdk_transaction::Action::ActionDutchAuctionWithdraw(
                                 withdraw_da,
                             ) => {
                                 let auction_id = withdraw_da.auction_id;
@@ -483,11 +485,11 @@ async fn fetch_transactions(
 async fn sct_divergence_check(
     channel: Channel,
     height: u64,
-    actual_root: penumbra_tct::Root,
+    actual_root: penumbra_sdk_tct::Root,
 ) -> anyhow::Result<()> {
     use cnidarium::proto::v1::query_service_client::QueryServiceClient;
-    use penumbra_proto::DomainType;
-    use penumbra_sct::state_key as sct_state_key;
+    use penumbra_sdk_proto::DomainType;
+    use penumbra_sdk_sct::state_key as sct_state_key;
 
     let mut client = QueryServiceClient::new(channel);
     tracing::info!(?height, "fetching anchor @ height");
@@ -503,7 +505,7 @@ async fn sct_divergence_check(
         .value
         .context("sct state not found")?;
 
-    let expected_root = penumbra_tct::Root::decode(value.value.as_slice())?;
+    let expected_root = penumbra_sdk_tct::Root::decode(value.value.as_slice())?;
 
     if actual_root == expected_root {
         tracing::info!(?height, ?actual_root, ?expected_root, "sct roots match");

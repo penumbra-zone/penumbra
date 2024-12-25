@@ -18,13 +18,13 @@ use clap::Parser;
 use coordinator::Coordinator;
 use decaf377::Bls12_377;
 use metrics_tracing_context::MetricsLayer;
-use penumbra_keys::FullViewingKey;
-use penumbra_proof_params::{ProvingKeyExt, VerifyingKeyExt};
-use penumbra_proof_setup::all::combine;
-use penumbra_proof_setup::all::transition;
-use penumbra_proto::tools::summoning::v1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer;
-use penumbra_proto::tools::summoning::v1::CeremonyCrs;
-use penumbra_proto::Message;
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_proof_params::{ProvingKeyExt, VerifyingKeyExt};
+use penumbra_sdk_proof_setup::all::combine;
+use penumbra_sdk_proof_setup::all::transition;
+use penumbra_sdk_proto::tools::summoning::v1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer;
+use penumbra_sdk_proto::tools::summoning::v1::CeremonyCrs;
+use penumbra_sdk_proto::Message;
 use std::fs;
 use std::fs::File;
 use std::io;
@@ -46,7 +46,7 @@ use crate::phase::PhaseMarker;
 use crate::queue::ParticipantQueue;
 use crate::web::web_app;
 use crate::{penumbra_knower::PenumbraKnower, server::CoordinatorService};
-use penumbra_proof_setup::all::{Phase1CeremonyCRS, Phase1RawCeremonyCRS};
+use penumbra_sdk_proof_setup::all::{Phase1CeremonyCRS, Phase1RawCeremonyCRS};
 
 /// 100 MIB
 fn max_message_size(phase: PhaseMarker) -> usize {

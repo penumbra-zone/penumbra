@@ -1,6 +1,10 @@
 [package]
-name = "penumbra-tower-trace"
+name = "penumbra-sdk-tower-trace"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Penumbra's tower-trace layer"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [dependencies]

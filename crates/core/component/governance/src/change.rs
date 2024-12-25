@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use anyhow::Context;
-use penumbra_proto::{core::component::governance::v1 as pb, DomainType};
+use penumbra_sdk_proto::{core::component::governance::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// An encoded parameter.
@@ -199,7 +199,7 @@ fn get_component<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use penumbra_num::Amount;
+    use penumbra_sdk_num::Amount;
 
     use crate::params::GovernanceParameters;
 

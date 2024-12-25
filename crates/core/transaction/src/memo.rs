@@ -6,16 +6,16 @@ use std::{
 use anyhow::anyhow;
 
 use decaf377_ka as ka;
-use penumbra_asset::balance;
-use penumbra_keys::{
+use penumbra_sdk_asset::balance;
+use penumbra_sdk_keys::{
     address::ADDRESS_LEN_BYTES,
     keys::OutgoingViewingKey,
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
     Address,
 };
-use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
-use penumbra_shielded_pool::{note, Note};
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_proto::{core::transaction::v1 as pbt, DomainType};
+use penumbra_sdk_shielded_pool::{note, Note};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
@@ -264,8 +264,8 @@ mod tests {
 
     use super::*;
     use decaf377::Fr;
-    use penumbra_asset::{asset, Value};
-    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use penumbra_sdk_asset::{asset, Value};
+    use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 
     use proptest::prelude::*;
 

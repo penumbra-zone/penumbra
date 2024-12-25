@@ -11,9 +11,9 @@ use tempfile::tempdir;
 use tokio::process::Command as TokioCommand;
 
 use pclientd::PclientdConfig;
-use penumbra_keys::test_keys;
-use penumbra_proto::view::v1::view_service_client::ViewServiceClient;
-use penumbra_view::ViewClient;
+use penumbra_sdk_keys::test_keys;
+use penumbra_sdk_proto::view::v1::view_service_client::ViewServiceClient;
+use penumbra_sdk_view::ViewClient;
 
 const NODE_URL: &str = "https://testnet.plinfra.net";
 

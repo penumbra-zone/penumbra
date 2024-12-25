@@ -15,13 +15,13 @@ mod testnet77;
 mod testnet78;
 
 use anyhow::{ensure, Context};
-use penumbra_governance::StateReadExt;
-use penumbra_sct::component::clock::EpochRead;
+use penumbra_sdk_governance::StateReadExt;
+use penumbra_sdk_sct::component::clock::EpochRead;
 use std::path::{Path, PathBuf};
 use tracing::instrument;
 
 use cnidarium::Storage;
-use penumbra_app::SUBSTORE_PREFIXES;
+use penumbra_sdk_app::SUBSTORE_PREFIXES;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;

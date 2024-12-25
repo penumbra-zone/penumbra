@@ -1,9 +1,10 @@
 [package]
-name = "penumbra-tendermint-proxy"
-authors.workspace    = true
+name = "penumbra-sdk-tendermint-proxy"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "A gRPC proxy for Tendermint/CometBFT APIs"
 edition.workspace    = true
 version.workspace    = true
-repository.workspace = true
 homepage.workspace   = true
 license.workspace    = true
 
@@ -15,8 +16,8 @@ hex                              = { workspace = true }
 http                             = { workspace = true }
 metrics                          = { workspace = true }
 pbjson-types                     = { workspace = true }
-penumbra-proto                   = { workspace = true, features = ["rpc", "tendermint"] }
-penumbra-transaction             = { workspace = true }
+penumbra-sdk-proto                   = { workspace = true, features = ["rpc", "tendermint"] }
+penumbra-sdk-transaction             = { workspace = true }
 pin-project                      = { workspace = true }
 pin-project-lite                 = { workspace = true }
 sha2                             = { workspace = true }

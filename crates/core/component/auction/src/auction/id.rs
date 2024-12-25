@@ -1,5 +1,5 @@
 use anyhow::{bail, Context};
-use penumbra_proto::{
+use penumbra_sdk_proto::{
     penumbra::core::component::auction::v1 as pb, serializers::bech32str, DomainType,
 };
 use serde::{Deserialize, Serialize};

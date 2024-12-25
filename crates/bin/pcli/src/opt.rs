@@ -7,15 +7,15 @@ use crate::{
 use anyhow::Result;
 use camino::Utf8PathBuf;
 use clap::Parser;
-use penumbra_custody::{null_kms::NullKms, soft_kms::SoftKms};
-use penumbra_proto::box_grpc_svc;
-use penumbra_proto::{
+use penumbra_sdk_custody::{null_kms::NullKms, soft_kms::SoftKms};
+use penumbra_sdk_proto::box_grpc_svc;
+use penumbra_sdk_proto::{
     custody::v1::{
         custody_service_client::CustodyServiceClient, custody_service_server::CustodyServiceServer,
     },
     view::v1::{view_service_client::ViewServiceClient, view_service_server::ViewServiceServer},
 };
-use penumbra_view::ViewServer;
+use penumbra_sdk_view::ViewServer;
 use std::io::IsTerminal as _;
 use tracing_subscriber::EnvFilter;
 use url::Url;
@@ -82,7 +82,7 @@ impl Opt {
             }
             CustodyConfig::Threshold(config) => {
                 tracing::info!("using manual threshold custody service");
-                let threshold_kms = penumbra_custody::threshold::Threshold::new(
+                let threshold_kms = penumbra_sdk_custody::threshold::Threshold::new(
                     config.clone(),
                     ActualTerminal {
                         fvk: Some(fvk.clone()),
@@ -93,7 +93,7 @@ impl Opt {
             }
             CustodyConfig::Encrypted(config) => {
                 tracing::info!("using encrypted custody service");
-                let encrypted_kms = penumbra_custody::encrypted::Encrypted::new(
+                let encrypted_kms = penumbra_sdk_custody::encrypted::Encrypted::new(
                     config.clone(),
                     ActualTerminal {
                         fvk: Some(fvk.clone()),
@@ -119,7 +119,7 @@ impl Opt {
                     tracing::info!(
                         "using separate manual threshold custody service for validator voting"
                     );
-                    let threshold_kms = penumbra_custody::threshold::Threshold::new(
+                    let threshold_kms = penumbra_sdk_custody::threshold::Threshold::new(
                         config.clone(),
                         ActualTerminal { fvk: Some(fvk) },
                     );
@@ -128,7 +128,7 @@ impl Opt {
                 }
                 GovernanceCustodyConfig::Encrypted { config, .. } => {
                     tracing::info!("using separate encrypted custody service for validator voting");
-                    let encrypted_kms = penumbra_custody::encrypted::Encrypted::new(
+                    let encrypted_kms = penumbra_sdk_custody::encrypted::Encrypted::new(
                         config.clone(),
                         ActualTerminal { fvk: Some(fvk) },
                     );

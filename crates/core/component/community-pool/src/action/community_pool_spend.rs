@@ -2,9 +2,9 @@ use anyhow::{Context, Error};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
-use penumbra_asset::{Balance, Value};
-use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_asset::{Balance, Value};
+use penumbra_sdk_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::CommunityPoolSpend", into = "pb::CommunityPoolSpend")]

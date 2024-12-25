@@ -1,19 +1,23 @@
 [package]
-name = "penumbra-auction"
+name = "penumbra-sdk-auction"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Auction component implementation for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
 component = [
     "cnidarium-component",
     "cnidarium",
-    "penumbra-sct/component",
-    "penumbra-shielded-pool/component",
-    "penumbra-dex/component",
+    "penumbra-sdk-sct/component",
+    "penumbra-sdk-shielded-pool/component",
+    "penumbra-sdk-dex/component",
     "tokio",
     "tonic",
-    "penumbra-proto/cnidarium",
-    "penumbra-proto/rpc",
+    "penumbra-sdk-proto/cnidarium",
+    "penumbra-sdk-proto/rpc",
 
     "futures",
     "async-stream",
@@ -22,7 +26,7 @@ component = [
 default = ["component"]
 docsrs = []
 parallel = [
-    "penumbra-tct/parallel",
+    "penumbra-sdk-tct/parallel",
     "ark-ff/parallel",
     "decaf377-rdsa/parallel",
     "ark-groth16/parallel",
@@ -56,16 +60,16 @@ im = {workspace = true, optional = true}
 metrics = {workspace = true}
 once_cell = {workspace = true}
 pbjson-types = { workspace = true }
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-proof-params = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = true}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-dex = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-txhash = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-keys = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proof-params = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = true}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-dex = {workspace = true, default-features = false}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = true}
+penumbra-sdk-txhash = {workspace = true, default-features = false}
 rand_chacha = {workspace = true}
 rand_core = {workspace = true}
 regex = {workspace = true}

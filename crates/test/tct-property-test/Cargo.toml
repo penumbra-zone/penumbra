@@ -1,12 +1,16 @@
 [package]
-name = "penumbra-tct-property-test"
+name = "penumbra-sdk-tct-property-test"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Property testing for the TCT, as a library"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [dev-dependencies]
 anyhow = {workspace = true}
 futures = {workspace = true}
-penumbra-tct = {workspace = true, features = ["arbitrary"], default-features = true}
+penumbra-sdk-tct = {workspace = true, features = ["arbitrary"], default-features = true}
 proptest = {workspace = true}
 proptest-derive = {workspace = true}
 tokio = {workspace = true, features = ["full"]}

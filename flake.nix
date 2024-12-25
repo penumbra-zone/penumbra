@@ -152,6 +152,7 @@
             inputsFrom = [ penumbra ];
             packages = [
               buf
+              cargo-hack
               cargo-nextest
               cargo-release
               cargo-watch

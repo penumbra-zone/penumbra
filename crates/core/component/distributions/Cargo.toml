@@ -1,14 +1,18 @@
 [package]
-name = "penumbra-distributions"
+name = "penumbra-sdk-distributions"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Distribution component implementation for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
 component = [
     "cnidarium-component",
     "cnidarium",
-    "penumbra-proto/cnidarium",
-    "penumbra-sct/component",
+    "penumbra-sdk-proto/cnidarium",
+    "penumbra-sdk-sct/component",
 ]
 default = ["component"]
 docsrs = []
@@ -18,10 +22,10 @@ anyhow = {workspace = true}
 async-trait = {workspace = true}
 cnidarium = {workspace = true, optional = true, default-features = true}
 cnidarium-component = {workspace = true, optional = true, default-features = true}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-sct = {workspace = true, default-features = false}
 serde = {workspace = true, features = ["derive"]}
 tendermint = {workspace = true}
 tracing = {workspace = true}

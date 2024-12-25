@@ -1,12 +1,13 @@
 [package]
 name = "pmonitor"
+description = "Monitoring tool for your Penumbra full-viewing key"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
 license = { workspace = true }
-publish = false
+publish = true
 
 [features]
 integration-testnet = []
@@ -19,17 +20,17 @@ colored = "2.1.0"
 directories = {workspace = true}
 futures = {workspace = true}
 indicatif = {workspace = true}
-pcli = {path = "../pcli", default-features = true}
-penumbra-app = {workspace = true}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-compact-block = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-proto = {workspace = true}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = false}
-penumbra-view = {workspace = true}
+pcli = {version = "0.82.0-alpha.0", path = "../pcli", default-features = true}
+penumbra-sdk-app = {workspace = true}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-compact-block = {workspace = true, default-features = false}
+penumbra-sdk-keys = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proto = {workspace = true}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
+penumbra-sdk-stake = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = false}
+penumbra-sdk-view = {workspace = true}
 regex = {workspace = true}
 rustls = {workspace = true}
 serde = {workspace = true, features = ["derive"]}

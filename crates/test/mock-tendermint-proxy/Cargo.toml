@@ -1,17 +1,18 @@
 [package]
-name = "penumbra-mock-tendermint-proxy"
-authors.workspace    = true
+name = "penumbra-sdk-mock-tendermint-proxy"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Mock the tendermint proxy crate for e2e tests"
 edition.workspace    = true
 version.workspace    = true
-repository.workspace = true
 homepage.workspace   = true
 license.workspace    = true
 
 [dependencies]
 hex = { workspace = true }
 pbjson-types            = { workspace = true }
-penumbra-mock-consensus = { workspace = true }
-penumbra-proto          = { workspace = true, features = ["rpc", "tendermint"] }
+penumbra-sdk-mock-consensus = { workspace = true }
+penumbra-sdk-proto          = { workspace = true, features = ["rpc", "tendermint"] }
 tap                     = { workspace = true }
 tendermint              = { workspace = true }
 tendermint-proto        = { workspace = true }

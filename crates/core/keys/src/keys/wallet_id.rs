@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::core::keys::v1;
-use penumbra_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str, DomainType};
+use penumbra_sdk_proto::core::keys::v1;
+use penumbra_sdk_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str, DomainType};
 
 /// The hash of a full viewing key, used as an account identifier.
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]

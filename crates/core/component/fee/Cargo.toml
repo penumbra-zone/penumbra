@@ -1,15 +1,19 @@
 [package]
-name = "penumbra-fee"
+name = "penumbra-sdk-fee"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Multidimensional fee implementation for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
 component = [
     "cnidarium-component",
     "cnidarium",
-    "penumbra-proto/cnidarium",
+    "penumbra-sdk-proto/cnidarium",
     "tonic",
-    "penumbra-proto/rpc"
+    "penumbra-sdk-proto/rpc"
 ]
 default = ["std", "component"]
 std = ["ark-ff/std"]
@@ -27,9 +31,9 @@ decaf377 = {workspace = true, default-features = true}
 decaf377-rdsa = {workspace = true}
 im = {workspace = true}
 metrics = {workspace = true}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-proto = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proto = {workspace = true, default-features = false}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 serde = {workspace = true, features = ["derive"]}

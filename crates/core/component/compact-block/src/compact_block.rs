@@ -1,15 +1,15 @@
 use std::{collections::BTreeMap, convert::TryFrom};
 
 use anyhow::Result;
-use penumbra_dex::{BatchSwapOutputData, TradingPair};
-use penumbra_fee::GasPrices;
-use penumbra_proto::{
+use penumbra_sdk_dex::{BatchSwapOutputData, TradingPair};
+use penumbra_sdk_fee::GasPrices;
+use penumbra_sdk_proto::{
     core::component::compact_block::v1::CompactBlockRangeResponse,
     penumbra::core::component::compact_block::v1 as pb, DomainType,
 };
-use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::fmd;
-use penumbra_tct::builder::{block, epoch};
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_shielded_pool::fmd;
+use penumbra_sdk_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
 
 use super::StatePayload;

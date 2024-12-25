@@ -3,12 +3,12 @@ use comfy_table::{presets, Table};
 use futures::{Stream, StreamExt, TryStreamExt};
 use std::pin::Pin;
 
-use penumbra_asset::{asset, asset::Metadata, Value};
-use penumbra_dex::{
+use penumbra_sdk_asset::{asset, asset::Metadata, Value};
+use penumbra_sdk_dex::{
     lp::position::{self, Position},
     BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair,
 };
-use penumbra_proto::core::component::{
+use penumbra_sdk_proto::core::component::{
     dex::v1::{
         query_service_client::QueryServiceClient as DexQueryServiceClient,
         simulation_service_client::SimulationServiceClient, ArbExecutionRequest,
@@ -20,7 +20,7 @@ use penumbra_proto::core::component::{
         AssetMetadataByIdRequest,
     },
 };
-use penumbra_view::ViewClient;
+use penumbra_sdk_view::ViewClient;
 use tonic::transport::Channel;
 
 use crate::{
@@ -154,7 +154,7 @@ impl DexCmd {
         input: Value,
         output: asset::Id,
     ) -> Result<SwapExecution> {
-        use penumbra_proto::core::component::dex::v1::simulate_trade_request::{
+        use penumbra_sdk_proto::core::component::dex::v1::simulate_trade_request::{
             routing::Setting, Routing,
         };
         let mut client = SimulationServiceClient::new(app.pd_channel().await?);
@@ -248,7 +248,7 @@ impl DexCmd {
         table.set_header(headers);
 
         let price_string = |input: Value, output: Value| -> String {
-            use penumbra_dex::lp::SellOrder;
+            use penumbra_sdk_dex::lp::SellOrder;
             format!(
                 "{}/{}",
                 SellOrder {

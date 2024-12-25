@@ -2,11 +2,11 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use decaf377_fmd::Clue;
-use penumbra_proto::{
+use penumbra_sdk_proto::{
     core::component::shielded_pool::v1::{self as pb},
     StateWriteProto,
 };
-use penumbra_txhash::TransactionId;
+use penumbra_sdk_txhash::TransactionId;
 
 use crate::fmd::state_key;
 

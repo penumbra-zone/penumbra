@@ -82,7 +82,7 @@ pub fn get_tendermint_client_state(client_state: Any) -> Result<TendermintClient
 
 // validate the parameters of an AnyClientState, verifying that it is a valid Penumbra client
 // state.
-pub fn validate_penumbra_client_state(
+pub fn validate_penumbra_sdk_client_state(
     client_state: Any,
     chain_id: &str,
     current_height: u64,

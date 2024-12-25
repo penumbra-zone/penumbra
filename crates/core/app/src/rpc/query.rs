@@ -1,7 +1,7 @@
 use {
     crate::app::StateReadExt as _,
     cnidarium::Storage,
-    penumbra_proto::core::app::v1::{
+    penumbra_sdk_proto::core::app::v1::{
         query_service_server::QueryService, AppParametersRequest, AppParametersResponse,
         TransactionsByHeightRequest, TransactionsByHeightResponse,
     },

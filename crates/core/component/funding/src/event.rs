@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context};
-use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::funding::v1 as pb, DomainType, Name as _};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{penumbra::core::component::funding::v1 as pb, DomainType, Name as _};
 
 #[derive(Clone, Debug)]
 pub struct EventFundingStreamReward {

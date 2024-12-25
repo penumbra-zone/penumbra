@@ -3,11 +3,11 @@ use std::{
     ops::{Add, AddAssign},
 };
 
-use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use serde::{Deserialize, Serialize};
 
-use penumbra_num::Amount;
-use penumbra_proto::{core::component::fee::v1 as pb, DomainType};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{core::component::fee::v1 as pb, DomainType};
 
 use crate::Fee;
 

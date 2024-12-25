@@ -7,9 +7,9 @@ use async_trait::async_trait;
 use cnidarium::{EscapedByteSlice, StateRead, StateWrite};
 use futures::Stream;
 use futures::StreamExt;
-use penumbra_asset::{asset, Balance};
-use penumbra_proto::DomainType;
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_asset::{asset, Balance};
+use penumbra_sdk_proto::DomainType;
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 use tap::Tap;
 use tracing::instrument;
 

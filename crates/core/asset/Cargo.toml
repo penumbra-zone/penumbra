@@ -1,6 +1,10 @@
 [package]
-name = "penumbra-asset"
+name = "penumbra-sdk-asset"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Core asset data structures for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
@@ -35,8 +39,8 @@ hex = {workspace = true}
 ibig = {workspace = true}
 num-bigint = {workspace = true}
 once_cell = {workspace = true}
-penumbra-num = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = true}
+penumbra-sdk-num = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = true}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}

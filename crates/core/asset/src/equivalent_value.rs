@@ -1,6 +1,6 @@
 use crate::asset::Metadata;
-use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::asset::v1 as pb, DomainType};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{penumbra::core::asset::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// An equivalent value in terms of a different numeraire.
