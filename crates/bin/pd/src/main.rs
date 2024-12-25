@@ -133,18 +133,19 @@ async fn main() -> anyhow::Result<()> {
 
             let tm_proxy = penumbra_sdk_tendermint_proxy::TendermintProxy::new(cometbft_addr);
 
-            let grpc_routes = penumbra_sdk_app::rpc::routes(&storage, tm_proxy, enable_expensive_rpc)?
-                .into_axum_router()
-                .layer(
-                    ServiceBuilder::new().layer(TraceLayer::new_for_grpc().make_span_with(
-                        |req: &http::Request<_>| match remote_addr(req) {
-                            Some(remote_addr) => {
-                                tracing::error_span!("grpc", ?remote_addr)
-                            }
-                            None => tracing::error_span!("grpc"),
-                        },
-                    )),
-                );
+            let grpc_routes =
+                penumbra_sdk_app::rpc::routes(&storage, tm_proxy, enable_expensive_rpc)?
+                    .into_axum_router()
+                    .layer(
+                        ServiceBuilder::new().layer(TraceLayer::new_for_grpc().make_span_with(
+                            |req: &http::Request<_>| match remote_addr(req) {
+                                Some(remote_addr) => {
+                                    tracing::error_span!("grpc", ?remote_addr)
+                                }
+                                None => tracing::error_span!("grpc"),
+                            },
+                        )),
+                    );
 
             // Create Axum routes for the frontend app.
             let frontend = pd::zipserve::router("/app/", pd::MINIFRONT_ARCHIVE_BYTES);

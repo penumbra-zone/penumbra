@@ -123,10 +123,11 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
                 },
             },
             community_pool_content: penumbra_sdk_community_pool::genesis::Content {
-                community_pool_params: penumbra_sdk_community_pool::params::CommunityPoolParameters {
-                    // Disable community spend proposals.
-                    community_pool_spend_proposals_enabled: false,
-                },
+                community_pool_params:
+                    penumbra_sdk_community_pool::params::CommunityPoolParameters {
+                        // Disable community spend proposals.
+                        community_pool_spend_proposals_enabled: false,
+                    },
                 ..Default::default()
             },
             ..Default::default()

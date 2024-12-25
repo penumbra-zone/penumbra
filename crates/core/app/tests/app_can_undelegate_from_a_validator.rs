@@ -14,7 +14,9 @@ use {
     penumbra_sdk_num::fixpoint::U128x128,
     penumbra_sdk_proto::DomainType,
     penumbra_sdk_sct::component::clock::EpochRead as _,
-    penumbra_sdk_stake::{component::validator_handler::ValidatorDataRead as _, UndelegateClaimPlan},
+    penumbra_sdk_stake::{
+        component::validator_handler::ValidatorDataRead as _, UndelegateClaimPlan,
+    },
     penumbra_sdk_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
     },

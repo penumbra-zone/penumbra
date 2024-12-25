@@ -273,7 +273,9 @@ pub struct HeightOverflowError {
     source: <i64 as TryFrom<u64>>::Error,
 }
 
-impl TryFrom<tendermint_rpc::endpoint::abci_query::AbciQuery> for penumbra_sdk_pb::AbciQueryResponse {
+impl TryFrom<tendermint_rpc::endpoint::abci_query::AbciQuery>
+    for penumbra_sdk_pb::AbciQueryResponse
+{
     type Error = HeightOverflowError;
     fn try_from(
         tendermint_rpc::endpoint::abci_query::AbciQuery {
@@ -338,7 +340,9 @@ impl From<tendermint::merkle::proof::ProofOp> for crate::tendermint::crypto::Pro
 
 // === get_block_by_height ===
 
-impl TryFrom<tendermint_rpc::endpoint::block::Response> for penumbra_sdk_pb::GetBlockByHeightResponse {
+impl TryFrom<tendermint_rpc::endpoint::block::Response>
+    for penumbra_sdk_pb::GetBlockByHeightResponse
+{
     type Error = anyhow::Error;
     fn try_from(
         tendermint_rpc::endpoint::block::Response {

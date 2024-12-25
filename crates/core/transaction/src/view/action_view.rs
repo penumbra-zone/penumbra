@@ -8,7 +8,9 @@ use penumbra_sdk_dex::{
     swap::SwapView,
     swap_claim::SwapClaimView,
 };
-use penumbra_sdk_governance::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
+use penumbra_sdk_governance::{
+    ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
+};
 use penumbra_sdk_ibc::IbcRelay;
 use penumbra_sdk_proto::{core::transaction::v1 as pbt, DomainType};
 use penumbra_sdk_shielded_pool::Ics20Withdrawal;

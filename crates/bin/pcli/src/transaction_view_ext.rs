@@ -377,7 +377,9 @@ impl TransactionViewExt for TransactionView {
                 penumbra_sdk_transaction::ActionView::PositionWithdraw(_) => {
                     ["Withdraw Liquitity Position", ""]
                 }
-                penumbra_sdk_transaction::ActionView::ProposalDepositClaim(proposal_deposit_claim) => {
+                penumbra_sdk_transaction::ActionView::ProposalDepositClaim(
+                    proposal_deposit_claim,
+                ) => {
                     action = format!(
                         "Claim Deposit for Governance Proposal #{}",
                         proposal_deposit_claim.proposal
@@ -415,7 +417,9 @@ impl TransactionViewExt for TransactionView {
                 }
                 penumbra_sdk_transaction::ActionView::Delegate(_) => ["Delegation", ""],
                 penumbra_sdk_transaction::ActionView::Undelegate(_) => ["Undelegation", ""],
-                penumbra_sdk_transaction::ActionView::UndelegateClaim(_) => ["Undelegation Claim", ""],
+                penumbra_sdk_transaction::ActionView::UndelegateClaim(_) => {
+                    ["Undelegation Claim", ""]
+                }
                 penumbra_sdk_transaction::ActionView::ActionDutchAuctionSchedule(x) => {
                     let description = &x.action.description;
 

@@ -94,7 +94,9 @@ fn pretty_print_transaction_plan(
         output::Output {
             body: output::Body {
                 note_payload: penumbra_sdk_shielded_pool::NotePayload {
-                    note_commitment: penumbra_sdk_shielded_pool::note::StateCommitment(Fq::default()),
+                    note_commitment: penumbra_sdk_shielded_pool::note::StateCommitment(
+                        Fq::default(),
+                    ),
                     ephemeral_key: [0u8; 32]
                         .as_slice()
                         .try_into()

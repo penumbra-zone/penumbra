@@ -212,7 +212,10 @@ impl TestNodeWithIBC {
     pub fn create_tendermint_header(
         &self,
         trusted_height: Option<Height>,
-        penumbra_sdk_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse{block_id: _, block}: penumbra_sdk_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse,
+        penumbra_sdk_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse {
+            block_id: _,
+            block,
+        }: penumbra_sdk_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse,
     ) -> Result<TendermintHeader> {
         let pk = self
             .node

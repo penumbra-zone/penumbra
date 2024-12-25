@@ -210,7 +210,10 @@ impl MockClient {
         self.swaps.get(commitment).cloned()
     }
 
-    pub fn position(&self, commitment: note::StateCommitment) -> Option<penumbra_sdk_tct::Position> {
+    pub fn position(
+        &self,
+        commitment: note::StateCommitment,
+    ) -> Option<penumbra_sdk_tct::Position> {
         self.sct.witness(commitment).map(|proof| proof.position())
     }
 

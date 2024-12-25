@@ -188,10 +188,9 @@ impl GovernanceCmd {
                                     .tally
                                     .expect("tally must be set for vote response")
                                     .try_into()?;
-                                Ok::<(IdentityKey, penumbra_sdk_governance::Tally), anyhow::Error>((
-                                    identity_key,
-                                    tally,
-                                ))
+                                Ok::<(IdentityKey, penumbra_sdk_governance::Tally), anyhow::Error>(
+                                    (identity_key, tally),
+                                )
                             })
                             // TODO: double iterator here is suboptimal but trying to collect
                             // `Result<Vec<_>>` was annoying

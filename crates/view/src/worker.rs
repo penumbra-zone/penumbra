@@ -298,7 +298,9 @@ impl Worker {
                                     .update_position(position_id, position::State::Closed)
                                     .await?;
                             }
-                            penumbra_sdk_transaction::Action::PositionWithdraw(position_withdraw) => {
+                            penumbra_sdk_transaction::Action::PositionWithdraw(
+                                position_withdraw,
+                            ) => {
                                 let position_id = position_withdraw.position_id;
 
                                 // Record the LPNFT for the current sequence number.

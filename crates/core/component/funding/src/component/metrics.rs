@@ -40,7 +40,8 @@ pub fn register_metrics() {
     );
 }
 
-pub const TOTAL_VALIDATOR_REWARDS: &str = "penumbra_sdk_funding_total_validator_rewards_staking_token";
+pub const TOTAL_VALIDATOR_REWARDS: &str =
+    "penumbra_sdk_funding_total_validator_rewards_staking_token";
 pub const VALIDATOR_FUNDING_VS_BUDGET_DIFFERENCE: &str =
     "penumbra_sdk_funding_validator_vs_budget_difference_staking_token";
 pub const FETCH_FUNDING_QUEUE_LATENCY: &str =

@@ -118,7 +118,10 @@ mod tests {
             penumbra_sdk_display_denom.format_value(6700001u64.into()),
             "6.700001"
         );
-        assert_eq!(penumbra_sdk_display_denom.format_value(1u64.into()), "0.000001");
+        assert_eq!(
+            penumbra_sdk_display_denom.format_value(1u64.into()),
+            "0.000001"
+        );
 
         // with exponent 3, 1782000 formats to 1782
         let mpenumbra_sdk_display_denom = REGISTRY.parse_unit("mpenumbra");
@@ -183,7 +186,9 @@ mod tests {
             mpenumbra_sdk_display_denom.parse_value("1782").unwrap(),
             1782000u64.into()
         );
-        assert!(mpenumbra_sdk_display_denom.parse_value("1782.0001").is_err());
+        assert!(mpenumbra_sdk_display_denom
+            .parse_value("1782.0001")
+            .is_err());
 
         let upenumbra_sdk_display_denom = REGISTRY.parse_unit("upenumbra");
         assert_eq!(

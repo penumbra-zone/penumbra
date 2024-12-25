@@ -31,7 +31,9 @@ use penumbra_sdk_shielded_pool::{
     NullifierDerivationProof, NullifierDerivationProofPrivate, NullifierDerivationProofPublic,
     OutputProof, SpendProof, SpendProofPrivate, SpendProofPublic,
 };
-use penumbra_sdk_stake::undelegate_claim::{UndelegateClaimProofPrivate, UndelegateClaimProofPublic};
+use penumbra_sdk_stake::undelegate_claim::{
+    UndelegateClaimProofPrivate, UndelegateClaimProofPublic,
+};
 use penumbra_sdk_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
 use penumbra_sdk_tct as tct;
 use rand_core::OsRng;

@@ -26,7 +26,10 @@ pub trait BuilderExt: Sized {
 
 impl BuilderExt for Builder {
     type Error = anyhow::Error;
-    fn with_penumbra_sdk_auto_app_state(mut self, app_state: AppState) -> Result<Self, Self::Error> {
+    fn with_penumbra_sdk_auto_app_state(
+        mut self,
+        app_state: AppState,
+    ) -> Result<Self, Self::Error> {
         let Self { keyring, .. } = &self;
         let mut content = match app_state {
             AppState::Content(c) => c,

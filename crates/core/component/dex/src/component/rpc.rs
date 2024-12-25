@@ -571,9 +571,11 @@ impl QueryService for Server {
             }
         };
         Ok(tonic::Response::new(
-            s.map_ok(|p: penumbra_sdk_proto::core::component::dex::v1::Position| {
-                LiquidityPositionsByIdResponse { data: Some(p) }
-            })
+            s.map_ok(
+                |p: penumbra_sdk_proto::core::component::dex::v1::Position| {
+                    LiquidityPositionsByIdResponse { data: Some(p) }
+                },
+            )
             .map_err(|e: anyhow::Error| {
                 tonic::Status::unavailable(format!(
                     "error getting position value from storage: {e}"

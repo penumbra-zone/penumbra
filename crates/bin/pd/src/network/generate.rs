@@ -773,7 +773,8 @@ mod tests {
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
         // No external address template was given, so only 1 validator will be present.
-        let penumbra_sdk_app::genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
+        let penumbra_sdk_app::genesis::AppState::Content(app_state) =
+            testnet_config.genesis.app_state
         else {
             unimplemented!("TODO: support checkpointed app state")
         };
@@ -803,7 +804,8 @@ mod tests {
         )?;
         assert_eq!(testnet_config.name, "test-chain-4567");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
-        let penumbra_sdk_app::genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
+        let penumbra_sdk_app::genesis::AppState::Content(app_state) =
+            testnet_config.genesis.app_state
         else {
             unimplemented!("TODO: support checkpointed app state")
         };

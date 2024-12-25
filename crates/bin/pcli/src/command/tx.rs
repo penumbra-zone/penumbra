@@ -29,7 +29,9 @@ use liquidity_position::PositionCmd;
 use penumbra_sdk_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_sdk_fee::FeeTier;
-use penumbra_sdk_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
+use penumbra_sdk_governance::{
+    proposal::ProposalToml, proposal_state::State as ProposalState, Vote,
+};
 use penumbra_sdk_keys::{keys::AddressIndex, Address};
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::{
@@ -64,7 +66,9 @@ use penumbra_sdk_proto::{
 };
 use penumbra_sdk_shielded_pool::Ics20Withdrawal;
 use penumbra_sdk_stake::rate::RateData;
-use penumbra_sdk_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
+use penumbra_sdk_stake::{
+    DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan,
+};
 use penumbra_sdk_transaction::{gas::swap_claim_gas_cost, Transaction};
 use penumbra_sdk_view::{SpendableNoteRecord, ViewClient};
 use penumbra_sdk_wallet::plan::{self, Planner};

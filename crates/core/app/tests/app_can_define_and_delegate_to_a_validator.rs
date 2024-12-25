@@ -82,7 +82,9 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
 
     // Show that the existing validator is and was active.
     {
-        use penumbra_sdk_stake::{component::validator_handler::ValidatorDataRead, validator::State};
+        use penumbra_sdk_stake::{
+            component::validator_handler::ValidatorDataRead, validator::State,
+        };
         let start = snapshot_start
             .get_validator_state(&existing_validator_id)
             .await?;

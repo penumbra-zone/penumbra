@@ -8,7 +8,9 @@ use clap::Subcommand;
 use comfy_table::presets;
 use dialoguer::Confirm;
 use penumbra_sdk_asset::{asset::Cache, Value};
-use penumbra_sdk_auction::auction::{dutch::DutchAuction, dutch::DutchAuctionDescription, AuctionId};
+use penumbra_sdk_auction::auction::{
+    dutch::DutchAuction, dutch::DutchAuctionDescription, AuctionId,
+};
 use penumbra_sdk_keys::keys::AddressIndex;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::{view::v1::GasPricesRequest, DomainType};
