@@ -78,7 +78,7 @@ impl TestNodeWithIBC {
     ) -> Result<Self, anyhow::Error> {
         let chain_id = format!("{}-{}", TestNode::<()>::CHAIN_ID, suffix);
         // Use the correct substores
-        let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
+        let storage = TempStorage::new_with_penumbra_prefixes().await?;
         // Instantiate a mock tendermint proxy, which we will connect to the test node.
         let proxy = penumbra_sdk_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
 
@@ -90,7 +90,7 @@ impl TestNodeWithIBC {
                 .with_keys(vec![keys])
                 .single_validator()
                 .with_initial_timestamp(start_time)
-                .with_penumbra_sdk_auto_app_state(app_state)?
+                .with_penumbra_auto_app_state(app_state)?
                 .on_block(proxy.on_block_callback())
                 .init_chain(consensus)
                 .await

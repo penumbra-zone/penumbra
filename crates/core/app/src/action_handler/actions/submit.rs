@@ -310,8 +310,8 @@ impl AppActionHandler for ProposalSubmit {
 /// hashes of two arbitrary strings.
 static COMMUNITY_POOL_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
     // We start with two different personalization strings for the hash function:
-    let ak_personalization = b"penumbra_sdk_CP_ak";
-    let nk_personalization = b"penumbra_sdk_CP_nk";
+    let ak_personalization = b"Penumbra_CP_ak";
+    let nk_personalization = b"Penumbra_CP_nk";
 
     // We pick two different arbitrary strings to hash:
     let ak_hash_input =

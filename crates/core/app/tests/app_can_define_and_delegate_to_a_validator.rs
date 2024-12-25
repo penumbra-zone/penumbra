@@ -33,7 +33,7 @@ const EPOCH_DURATION: u64 = 8;
 async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
     let app_state = AppState::Content(
@@ -47,7 +47,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_sdk_auto_app_state(app_state)?
+            .with_penumbra_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
     }?;

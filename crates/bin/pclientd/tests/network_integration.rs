@@ -1,6 +1,6 @@
 //! Basic integration testing of `pclientd` versus a target testnet.
 //!
-//! Tests against the network in the `penumbra_sdk_NODE_PD_URL` environment variable.
+//! Tests against the network in the `PENUMBRA_NODE_PD_URL` environment variable.
 //!
 //! Tests assume that the initial state of the test account is after genesis,
 //! where no tokens have been delegated, and the address with index 0
@@ -34,7 +34,7 @@ use penumbra_sdk_view::ViewClient;
 fn generate_config() -> anyhow::Result<PclientdConfig> {
     Ok(PclientdConfig {
         full_viewing_key: test_keys::FULL_VIEWING_KEY.clone(),
-        grpc_url: std::env::var("penumbra_sdk_NODE_PD_URL")
+        grpc_url: std::env::var("PENUMBRA_NODE_PD_URL")
             .unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned())
             .parse()?,
         bind_addr: "127.0.0.1:8081".parse()?,

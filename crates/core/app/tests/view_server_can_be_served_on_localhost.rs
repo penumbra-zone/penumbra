@@ -31,7 +31,7 @@ mod common;
 async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Instantiate a mock tendermint proxy, which we will connect to the test node.
     let proxy = penumbra_sdk_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
@@ -44,7 +44,7 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_sdk_auto_app_state(app_state)?
+            .with_penumbra_auto_app_state(app_state)?
             .on_block(proxy.on_block_callback())
             .init_chain(consensus)
             .await

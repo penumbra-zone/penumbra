@@ -24,7 +24,7 @@ mod common;
 async fn app_rejects_validator_definitions_with_invalid_auth_sigs() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Start the test node.
     let mut node = {
@@ -34,7 +34,7 @@ async fn app_rejects_validator_definitions_with_invalid_auth_sigs() -> anyhow::R
         );
         TestNode::builder()
             .single_validator()
-            .with_penumbra_sdk_auto_app_state(app_state)?
+            .with_penumbra_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
     }?;

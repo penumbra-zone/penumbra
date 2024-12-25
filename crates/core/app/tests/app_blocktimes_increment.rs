@@ -32,7 +32,7 @@ async fn mock_tendermint_block_times_correct() -> anyhow::Result<()> {
         // This should use the default time callback of 5s
         TestNode::builder()
             .single_validator()
-            .with_penumbra_sdk_auto_app_state(app_state)?
+            .with_penumbra_auto_app_state(app_state)?
             .with_initial_timestamp(start_time)
             .init_chain(consensus)
             .await
@@ -67,7 +67,7 @@ async fn mock_tendermint_block_times_correct() -> anyhow::Result<()> {
         // This should use the default time callback of 5s
         TestNode::builder()
             .single_validator()
-            .with_penumbra_sdk_auto_app_state(app_state)?
+            .with_penumbra_auto_app_state(app_state)?
             .with_initial_timestamp(start_time)
             // Set a callback to add 13 seconds instead
             .ts_callback(move |t| t.checked_add(block_duration).unwrap())

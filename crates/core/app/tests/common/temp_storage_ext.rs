@@ -10,12 +10,12 @@ pub trait TempStorageExt: Sized {
     async fn apply_genesis(self, genesis: AppState) -> anyhow::Result<Self>;
     #[allow(dead_code)]
     async fn apply_default_genesis(self) -> anyhow::Result<Self>;
-    async fn new_with_penumbra_sdk_prefixes() -> anyhow::Result<TempStorage>;
+    async fn new_with_penumbra_prefixes() -> anyhow::Result<TempStorage>;
 }
 
 #[async_trait]
 impl TempStorageExt for TempStorage {
-    async fn new_with_penumbra_sdk_prefixes() -> anyhow::Result<TempStorage> {
+    async fn new_with_penumbra_prefixes() -> anyhow::Result<TempStorage> {
         TempStorage::new_with_prefixes(SUBSTORE_PREFIXES.to_vec()).await
     }
 

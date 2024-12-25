@@ -16,17 +16,17 @@ use {
 
 /// Penumbra-specific extensions to the mock consensus builder.
 pub trait BuilderExt: Sized {
-    /// The error thrown by [`with_penumbra_sdk_auto_app_state`]
+    /// The error thrown by [`with_penumbra_auto_app_state`]
     type Error;
     /// Add the provided Penumbra [`AppState`] to the builder.
     ///
     /// This will inject any configured validators into the state before serializing it into bytes.
-    fn with_penumbra_sdk_auto_app_state(self, app_state: AppState) -> Result<Self, Self::Error>;
+    fn with_penumbra_auto_app_state(self, app_state: AppState) -> Result<Self, Self::Error>;
 }
 
 impl BuilderExt for Builder {
     type Error = anyhow::Error;
-    fn with_penumbra_sdk_auto_app_state(
+    fn with_penumbra_auto_app_state(
         mut self,
         app_state: AppState,
     ) -> Result<Self, Self::Error> {

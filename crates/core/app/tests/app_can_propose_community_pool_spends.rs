@@ -50,7 +50,7 @@ const PROPOSAL_VOTING_BLOCKS: u64 = 3;
 async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Define a helper to get the current community pool balance.
     let pool_balance = || async { storage.latest_snapshot().community_pool_balance().await };

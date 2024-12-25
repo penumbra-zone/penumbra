@@ -31,4 +31,4 @@ pub fn register_metrics() {
     );
 }
 
-pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_sdk_pd_mempool_checktx_total";
+pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";

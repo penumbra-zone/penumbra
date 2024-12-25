@@ -39,7 +39,7 @@ pub struct Opt {
     #[clap(
         short,
         long,
-        env = "penumbra_sdk_NODE_PD_URL",
+        env = "PENUMBRA_NODE_PD_URL",
         parse(try_from_str = url::Url::parse)
     )]
     node: Url,

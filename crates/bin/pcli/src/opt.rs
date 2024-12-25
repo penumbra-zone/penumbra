@@ -26,7 +26,7 @@ pub struct Opt {
     #[clap(subcommand)]
     pub cmd: Command,
     /// The home directory used to store configuration and data.
-    #[clap(long, default_value_t = default_home(), env = "penumbra_sdk_PCLI_HOME")]
+    #[clap(long, default_value_t = default_home(), env = "PENUMBRA_PCLI_HOME")]
     pub home: Utf8PathBuf,
     /// Override the GRPC URL that will be used to connect to a fullnode.
     ///

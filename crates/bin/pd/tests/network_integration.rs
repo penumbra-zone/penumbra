@@ -19,7 +19,7 @@ use url::Url;
 async fn check_cors_headers() -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let pd_url =
-        std::env::var("penumbra_sdk_NODE_PD_URL").unwrap_or("http://localhost:8080".to_string());
+        std::env::var("PENUMBRA_NODE_PD_URL").unwrap_or("http://localhost:8080".to_string());
     let r = client.get(pd_url).send().await?;
     assert_eq!(r.headers().get("access-control-allow-origin").unwrap(), "*");
     assert_eq!(
@@ -39,7 +39,7 @@ async fn check_cors_headers() -> anyhow::Result<()> {
 async fn check_minifront_http_ok() -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let pd_url =
-        std::env::var("penumbra_sdk_NODE_PD_URL").unwrap_or("http://localhost:8080".to_string());
+        std::env::var("PENUMBRA_NODE_PD_URL").unwrap_or("http://localhost:8080".to_string());
     let r = client.get(pd_url).send().await?;
     assert_eq!(r.status(), StatusCode::OK);
     Ok(())
@@ -50,7 +50,7 @@ async fn check_minifront_http_ok() -> anyhow::Result<()> {
 /// Validate that gRPC server reflection is enabled and working, by calling out
 /// to `grpcurl` and verifying that it can view methods. See GH4392 for context.
 async fn check_grpc_server_reflection() -> anyhow::Result<()> {
-    let pd_url: Url = std::env::var("penumbra_sdk_NODE_PD_URL")
+    let pd_url: Url = std::env::var("PENUMBRA_NODE_PD_URL")
         .unwrap_or("http://localhost:8080".to_string())
         .parse()
         .unwrap();

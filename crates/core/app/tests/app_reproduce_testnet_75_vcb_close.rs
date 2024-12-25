@@ -66,7 +66,7 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
 
         common::set_tracing_subscriber_with_env_filter(filter)
     };
-    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
     let app_state = AppState::Content(
         genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
     );
@@ -75,7 +75,7 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_sdk_auto_app_state(app_state)?
+            .with_penumbra_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
     }?;

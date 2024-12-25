@@ -22,4 +22,4 @@ pub fn register_metrics() {
     //     );
 }
 
-// pub const SOMETHING_TO_MEASURE: &str = "penumbra_sdk_auction_something_to_measure";
+// pub const SOMETHING_TO_MEASURE: &str = "penumbra_auction_something_to_measure";

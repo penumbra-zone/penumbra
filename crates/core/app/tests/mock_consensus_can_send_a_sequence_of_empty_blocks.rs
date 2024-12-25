@@ -19,7 +19,7 @@ mod common;
 async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
     let mut test_node = {
         let app_state = AppState::Content(
             genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
@@ -27,7 +27,7 @@ async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_sdk_auto_app_state(app_state)?
+            .with_penumbra_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
             .tap_ok(|e| tracing::info!(hash = %e.last_app_hash_hex(), "finished init chain"))?

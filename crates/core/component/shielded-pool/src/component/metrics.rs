@@ -27,4 +27,4 @@ pub fn register_metrics() {
 }
 
 // Sample code for reference -- delete when adding the first metric
-// pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_sdk_pd_mempool_checktx_total";
+// pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";

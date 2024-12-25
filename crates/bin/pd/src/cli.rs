@@ -20,7 +20,7 @@ pub enum RootCommand {
     Start {
         /// The path used to store all `pd`-related data and configuration.
         /// If unset, defaults to ~/.penumbra/network_data/node0/pd.
-        #[clap(long, env = "penumbra_sdk_PD_HOME", display_order = 100)]
+        #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
         home: Option<PathBuf>,
         /// Bind the ABCI server to this socket.
         ///
@@ -28,7 +28,7 @@ pub enum RootCommand {
         #[clap(
             short,
             long,
-            env = "penumbra_sdk_PD_ABCI_BIND",
+            env = "PENUMBRA_PD_ABCI_BIND",
             default_value = "127.0.0.1:26658",
             display_order = 400
         )]
@@ -41,7 +41,7 @@ pub enum RootCommand {
         /// If `grpc_auto_https` is set, this defaults to `0.0.0.0:443` and uses HTTPS.
         ///
         /// If `grpc_auto_https` is not set, this defaults to `127.0.0.1:8080` without HTTPS.
-        #[clap(short, long, env = "penumbra_sdk_PD_GRPC_BIND", display_order = 201)]
+        #[clap(short, long, env = "PENUMBRA_PD_GRPC_BIND", display_order = 201)]
         grpc_bind: Option<SocketAddr>,
         /// If set, serve gRPC using auto-managed HTTPS with this domain name.
         ///
@@ -64,7 +64,7 @@ pub enum RootCommand {
         #[clap(
             short,
             long,
-            env = "penumbra_sdk_PD_METRICS_BIND",
+            env = "PENUMBRA_PD_METRICS_BIND",
             default_value = "127.0.0.1:9000",
             display_order = 300
         )]
@@ -79,7 +79,7 @@ pub enum RootCommand {
         #[clap(
             short,
             long,
-            env = "penumbra_sdk_PD_COMETBFT_PROXY_URL",
+            env = "PENUMBRA_PD_COMETBFT_PROXY_URL",
             default_value = "http://127.0.0.1:26657",
             display_order = 401,
             // Support old arg name for a while, as we migrate Tendermint -> CometBFT.
@@ -104,7 +104,7 @@ pub enum RootCommand {
     /// Export the storage state the full node.
     Export {
         /// The home directory of the full node.
-        #[clap(long, env = "penumbra_sdk_PD_HOME", display_order = 100)]
+        #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
         home: PathBuf,
         /// The directory where the exported node state will be written.
         #[clap(long, display_order = 200, alias = "export-path")]
@@ -123,7 +123,7 @@ pub enum RootCommand {
         /// The home directory of the full node.
         ///
         /// Migration is performed in-place on the home directory.
-        #[clap(long, env = "penumbra_sdk_PD_HOME", display_order = 100)]
+        #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
         home: Option<PathBuf>,
         /// If set, also migrate the CometBFT state located in this home directory.
         /// If both `--home` and `--comet-home` are unset, will attempt to migrate
@@ -218,17 +218,17 @@ pub enum NetworkCommand {
     /// Requires a URL for the CometBFT RPC for the bootstrap node.
     Join {
         /// URL of the remote CometBFT RPC endpoint for bootstrapping connection.
-        #[clap(env = "penumbra_sdk_PD_JOIN_URL")]
+        #[clap(env = "PENUMBRA_PD_JOIN_URL")]
         node: Url,
         /// Optional URL of archived node state in .tar.gz format. The archive will be
         /// downloaded and extracted locally, allowing the node to join a network at a block height
         /// higher than 0. Supports loading the archive from a local file, if set with file scheme
         /// explicitly, e.g. `file:///path/to/archive.tar.gz`.
-        #[clap(long, env = "penumbra_sdk_PD_ARCHIVE_URL")]
+        #[clap(long, env = "PENUMBRA_PD_ARCHIVE_URL")]
         archive_url: Option<Url>,
         /// Human-readable name to identify node on network
         // Default: 'node-#'
-        #[clap(long, env = "penumbra_sdk_PD_TM_MONIKER")]
+        #[clap(long, env = "PENUMBRA_PD_TM_EXTERNAL_ADDR")]
         moniker: Option<String>,
         /// Public URL to advertise for this node's Tendermint P2P service.
         /// Setting this option will instruct other nodes on the network to connect
@@ -238,19 +238,19 @@ pub enum NetworkCommand {
         /// When generating Tendermint config, use this socket to bind the Tendermint RPC service.
         #[clap(
             long,
-            env = "penumbra_sdk_PD_TM_RPC_BIND",
+            env = "PENUMBRA_PD_TM_RPC_BIND",
             default_value = "0.0.0.0:26657"
         )]
         tendermint_rpc_bind: SocketAddr,
         /// When generating Tendermint config, use this socket to bind the Tendermint P2P service.
         #[clap(
             long,
-            env = "penumbra_sdk_PD_TM_P2P_BIND",
+            env = "PENUMBRA_PD_TM_P2P_BIND",
             default_value = "0.0.0.0:26656"
         )]
         tendermint_p2p_bind: SocketAddr,
         /// Leave the downloaded archive file on disk after extraction.
-        #[clap(long, env = "penumbra_sdk_PD_LEAVE_ARCHIVE", action)]
+        #[clap(long, env = "PENUMBRA_PD_LEAVE_ARCHIVE", action)]
         leave_archive: bool,
     },
 

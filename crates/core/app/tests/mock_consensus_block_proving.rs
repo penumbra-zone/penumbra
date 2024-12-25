@@ -48,7 +48,7 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = set_tracing_subscriber();
 
-    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     let start_time = tendermint::Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z")?;
 
@@ -61,7 +61,7 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
         // let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_sdk_auto_app_state(app_state)?
+            .with_penumbra_auto_app_state(app_state)?
             .on_block(proxy.on_block_callback())
             .init_chain(consensus)
             .await

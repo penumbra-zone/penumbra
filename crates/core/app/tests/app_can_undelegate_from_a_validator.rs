@@ -40,7 +40,7 @@ const UNBONDING_DELAY: u64 = 4;
 async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_prefixes().await?;
 
     // Helper function to get the latest block height.
     let get_latest_height = || async {
@@ -73,7 +73,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_sdk_auto_app_state(app_state)?
+            .with_penumbra_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
     }?;

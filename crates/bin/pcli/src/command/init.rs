@@ -27,7 +27,7 @@ pub struct InitCmd {
         // pcli init inside of the test harness (where we override that)
         // will correctly set the URL, even though we don't subsequently
         // read it from the environment.
-        env = "penumbra_sdk_NODE_PD_URL",
+        env = "PENUMBRA_NODE_PD_URL",
         parse(try_from_str = Url::parse),
     )]
     grpc_url: Url,
