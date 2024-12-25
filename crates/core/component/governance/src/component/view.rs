@@ -8,25 +8,25 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
 use ibc_types::core::client::ClientId;
-use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
-use penumbra_ibc::component::ClientStateReadExt as _;
-use penumbra_ibc::component::ClientStateWriteExt as _;
-use penumbra_num::Amount;
-use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_sct::{
+use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_DENOM};
+use penumbra_sdk_ibc::component::ClientStateReadExt as _;
+use penumbra_sdk_ibc::component::ClientStateWriteExt as _;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_sct::{
     component::{clock::EpochRead, tree::SctRead},
     Nullifier,
 };
-use penumbra_shielded_pool::component::AssetRegistryRead;
-use penumbra_stake::{
+use penumbra_sdk_shielded_pool::component::AssetRegistryRead;
+use penumbra_sdk_stake::{
     component::{validator_handler::ValidatorDataRead, ConsensusIndexRead},
     DelegationToken, GovernanceKey, IdentityKey,
 };
-use penumbra_tct as tct;
+use penumbra_sdk_tct as tct;
 use tokio::task::JoinSet;
 use tracing::instrument;
 
-use penumbra_stake::{rate::RateData, validator};
+use penumbra_sdk_stake::{rate::RateData, validator};
 
 use crate::{
     change::ParameterChange,
@@ -40,7 +40,7 @@ use crate::{
 use crate::{state_key, tally::Tally};
 
 #[async_trait]
-pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
+pub trait StateReadExt: StateRead + penumbra_sdk_stake::StateReadExt {
     /// Returns true if the next height is an upgrade height.
     /// We look-ahead to the next height because we want to halt the chain immediately after
     /// committing the block.
@@ -584,10 +584,10 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     }
 }
 
-impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
+impl<T: StateRead + penumbra_sdk_stake::StateReadExt + ?Sized> StateReadExt for T {}
 
 #[async_trait]
-pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWriteExt {
+pub trait StateWriteExt: StateWrite + penumbra_sdk_ibc::component::ConnectionStateWriteExt {
     /// Writes the provided governance parameters to the JMT.
     fn put_governance_params(&mut self, params: GovernanceParameters) {
         // Change the governance parameters:
@@ -618,7 +618,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
 
             let state = self.get_validator_state(&identity_key);
             let rate_data = self.get_validator_rate(&identity_key);
-            let power: penumbra_proto::state::future::DomainFuture<
+            let power: penumbra_sdk_proto::state::future::DomainFuture<
                 Amount,
                 <Self as StateRead>::GetRawFut,
             > = self.get_validator_power(&identity_key);

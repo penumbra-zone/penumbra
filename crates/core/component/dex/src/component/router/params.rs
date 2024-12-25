@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use penumbra_asset::asset;
-use penumbra_num::fixpoint::U128x128;
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_num::fixpoint::U128x128;
 
 use crate::DexParameters;
 

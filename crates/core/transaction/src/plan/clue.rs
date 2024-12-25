@@ -1,6 +1,6 @@
 use decaf377_fmd::{Clue, Precision};
-use penumbra_keys::Address;
-use penumbra_proto::{core::transaction::v1 as pb, DomainType};
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_proto::{core::transaction::v1 as pb, DomainType};
 
 use rand::{CryptoRng, RngCore};
 

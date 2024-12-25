@@ -1,10 +1,10 @@
 use async_trait::async_trait;
-use penumbra_ibc::component::HostInterface;
-use penumbra_sct::component::clock::EpochRead;
+use penumbra_sdk_ibc::component::HostInterface;
+use penumbra_sdk_sct::component::clock::EpochRead;
 
 use crate::app::StateReadExt;
 
-/// The implementation of [`penumbra_ibc::component::HostInterface`] for Penumbra.
+/// The implementation of [`penumbra_sdk_ibc::component::HostInterface`] for Penumbra.
 /// It encapsulates all of the chain-specific data that the ibc implementation needs.
 #[derive(Clone)]
 pub struct PenumbraHost {}

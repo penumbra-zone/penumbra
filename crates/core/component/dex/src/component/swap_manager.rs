@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_asset::Value;
-use penumbra_sct::{component::tree::SctManager, CommitmentSource};
-use penumbra_tct as tct;
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_sct::{component::tree::SctManager, CommitmentSource};
+use penumbra_sdk_tct as tct;
 use tracing::instrument;
 
 use crate::component::circuit_breaker::value::ValueCircuitBreaker;
@@ -12,7 +12,7 @@ use crate::{
     component::flow::SwapFlow, state_key, swap::SwapPayload, DirectedTradingPair, TradingPair,
 };
 use anyhow::Result;
-use penumbra_proto::StateWriteProto;
+use penumbra_sdk_proto::StateWriteProto;
 
 /// Manages the addition of new notes to the chain state.
 #[async_trait]

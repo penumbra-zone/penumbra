@@ -49,7 +49,7 @@ pub mod tree {
         format!("sct/tree/anchor_by_height/{}", height)
     }
 
-    pub fn anchor_lookup(anchor: penumbra_tct::Root) -> String {
+    pub fn anchor_lookup(anchor: penumbra_sdk_tct::Root) -> String {
         format!("sct/tree/anchor_lookup/{}", anchor)
     }
 
@@ -57,7 +57,7 @@ pub mod tree {
         "sct/tree/state_commitment_tree"
     }
 
-    pub fn note_source(note_commitment: &penumbra_tct::StateCommitment) -> String {
+    pub fn note_source(note_commitment: &penumbra_sdk_tct::StateCommitment) -> String {
         format!("sct/tree/note_source/{}", note_commitment)
     }
 }

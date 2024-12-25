@@ -11,15 +11,15 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
-use penumbra_asset::{Balance, Value};
-use penumbra_dex::component::{PositionManager, PositionRead, StateReadExt as _};
-use penumbra_dex::lp::position::{self, Position};
-use penumbra_dex::lp::Reserves;
-use penumbra_dex::DirectedTradingPair;
-use penumbra_num::Amount;
-use penumbra_proto::core::component::auction::v1 as pb;
-use penumbra_proto::StateWriteProto;
-use penumbra_sct::component::clock::EpochRead;
+use penumbra_sdk_asset::{Balance, Value};
+use penumbra_sdk_dex::component::{PositionManager, PositionRead, StateReadExt as _};
+use penumbra_sdk_dex::lp::position::{self, Position};
+use penumbra_sdk_dex::lp::Reserves;
+use penumbra_sdk_dex::DirectedTradingPair;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::core::component::auction::v1 as pb;
+use penumbra_sdk_proto::StateWriteProto;
+use penumbra_sdk_sct::component::clock::EpochRead;
 use prost::{Message, Name};
 use tracing::instrument;
 
@@ -456,7 +456,7 @@ pub(crate) trait DutchAuctionData: StateRead {
         &self,
         trigger_height: u64,
     ) -> Pin<Box<dyn futures::Stream<Item = AuctionId> + Send + 'static>> {
-        use penumbra_proto::StateReadProto;
+        use penumbra_sdk_proto::StateReadProto;
         let prefix_key = state_key::dutch::trigger::by_height(trigger_height)
             .as_bytes()
             .to_vec();

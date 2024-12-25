@@ -1,13 +1,13 @@
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{r1cs::FqVar, Fq};
-use penumbra_tct as tct;
-use penumbra_tct::{r1cs::StateCommitmentVar, StateCommitment};
+use penumbra_sdk_tct as tct;
+use penumbra_sdk_tct::{r1cs::StateCommitmentVar, StateCommitment};
 use poseidon377::hash_3;
 
 use once_cell::sync::Lazy;
-use penumbra_keys::keys::{NullifierKey, NullifierKeyVar};
-use penumbra_proto::{core::component::sct::v1 as pb, DomainType};
+use penumbra_sdk_keys::keys::{NullifierKey, NullifierKeyVar};
+use penumbra_sdk_proto::{core::component::sct::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -68,7 +68,7 @@ impl Nullifier {
     /// and [`Commitment`].
     pub fn derive(
         nk: &NullifierKey,
-        pos: penumbra_tct::Position,
+        pos: penumbra_sdk_tct::Position,
         state_commitment: &StateCommitment,
     ) -> Nullifier {
         Nullifier(hash_3(

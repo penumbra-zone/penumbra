@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
-use penumbra_keys::Address;
-use penumbra_num::Amount;
-use penumbra_proto::{
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{
     penumbra::tools::summoning::v1::{
         self as pb,
         participate_request::Msg as RequestMsg,

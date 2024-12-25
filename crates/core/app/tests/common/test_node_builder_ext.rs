@@ -1,14 +1,14 @@
 use {
     decaf377_rdsa::VerificationKey,
-    penumbra_app::genesis::AppState,
-    penumbra_keys::keys::{SpendKey, SpendKeyBytes},
-    penumbra_mock_consensus::builder::Builder,
-    penumbra_proto::{
+    penumbra_sdk_app::genesis::AppState,
+    penumbra_sdk_keys::keys::{SpendKey, SpendKeyBytes},
+    penumbra_sdk_mock_consensus::builder::Builder,
+    penumbra_sdk_proto::{
         core::keys::v1::{GovernanceKey, IdentityKey},
         penumbra::core::component::stake::v1::Validator as PenumbraValidator,
     },
-    penumbra_shielded_pool::genesis::Allocation,
-    penumbra_stake::DelegationToken,
+    penumbra_sdk_shielded_pool::genesis::Allocation,
+    penumbra_sdk_stake::DelegationToken,
     rand::Rng,
     rand_core::OsRng,
     tracing::trace,
@@ -16,17 +16,17 @@ use {
 
 /// Penumbra-specific extensions to the mock consensus builder.
 pub trait BuilderExt: Sized {
-    /// The error thrown by [`with_penumbra_auto_app_state`]
+    /// The error thrown by [`with_penumbra_sdk_auto_app_state`]
     type Error;
     /// Add the provided Penumbra [`AppState`] to the builder.
     ///
     /// This will inject any configured validators into the state before serializing it into bytes.
-    fn with_penumbra_auto_app_state(self, app_state: AppState) -> Result<Self, Self::Error>;
+    fn with_penumbra_sdk_auto_app_state(self, app_state: AppState) -> Result<Self, Self::Error>;
 }
 
 impl BuilderExt for Builder {
     type Error = anyhow::Error;
-    fn with_penumbra_auto_app_state(mut self, app_state: AppState) -> Result<Self, Self::Error> {
+    fn with_penumbra_sdk_auto_app_state(mut self, app_state: AppState) -> Result<Self, Self::Error> {
         let Self { keyring, .. } = &self;
         let mut content = match app_state {
             AppState::Content(c) => c,
@@ -40,7 +40,7 @@ impl BuilderExt for Builder {
 
             // Generate a penumbra validator with this consensus key, and a corresponding
             // allocation of delegation tokens.
-            let (validator, allocation) = generate_penumbra_validator(consensus_vk, seed);
+            let (validator, allocation) = generate_penumbra_sdk_validator(consensus_vk, seed);
 
             // Add the validator to the staking component's genesis content.
             trace!(?validator, "adding validator to staking genesis content");
@@ -68,7 +68,7 @@ impl BuilderExt for Builder {
 }
 
 /// Generates a [`Validator`][PenumbraValidator] given a consensus verification key.
-fn generate_penumbra_validator(
+fn generate_penumbra_sdk_validator(
     consensus_key: &ed25519_consensus::VerificationKey,
     seed: Option<SpendKeyBytes>,
 ) -> (PenumbraValidator, Allocation) {
@@ -100,7 +100,7 @@ fn generate_penumbra_validator(
         .incoming()
         .payment_address(0u32.into());
 
-    let ik = penumbra_stake::IdentityKey(validator_id_vk.into());
+    let ik = penumbra_sdk_stake::IdentityKey(validator_id_vk.into());
     let delegation_denom = DelegationToken::from(ik).denom();
 
     let allocation = Allocation {

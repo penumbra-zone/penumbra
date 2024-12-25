@@ -6,12 +6,12 @@ use decaf377::Fq;
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 use once_cell::sync::Lazy;
-use penumbra_keys::{
+use penumbra_sdk_keys::{
     keys::{Diversifier, FullViewingKey, IncomingViewingKey, OutgoingViewingKey},
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
     Address, AddressView,
 };
-use penumbra_proto::penumbra::core::component::shielded_pool::v1 as pb;
+use penumbra_sdk_proto::penumbra::core::component::shielded_pool::v1 as pb;
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 use thiserror;
@@ -19,10 +19,10 @@ use thiserror;
 mod r1cs;
 pub use r1cs::NoteVar;
 
-pub use penumbra_tct::StateCommitment;
+pub use penumbra_sdk_tct::StateCommitment;
 
-use penumbra_asset::{asset, balance, Value, ValueView};
-use penumbra_num::Amount;
+use penumbra_sdk_asset::{asset, balance, Value, ValueView};
+use penumbra_sdk_num::Amount;
 
 use crate::{NotePayload, Rseed};
 
@@ -579,7 +579,7 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 
     #[test]
     fn note_encryption_and_decryption() {

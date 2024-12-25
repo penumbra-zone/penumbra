@@ -2,8 +2,8 @@ use anyhow::Result;
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa as rdsa;
-use penumbra_keys::FullViewingKey;
-use penumbra_txhash::AuthorizingData;
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_txhash::AuthorizingData;
 
 use super::TransactionPlan;
 use crate::ActionPlan;
@@ -191,10 +191,10 @@ impl TransactionPlan {
     }
 
     /// Returns a [`WitnessData`], which may be used to build this transaction.
-    pub fn witness_data(&self, sct: &penumbra_tct::Tree) -> Result<WitnessData, anyhow::Error> {
+    pub fn witness_data(&self, sct: &penumbra_sdk_tct::Tree) -> Result<WitnessData, anyhow::Error> {
         let anchor = sct.root();
 
-        let witness_note = |spend: &penumbra_shielded_pool::SpendPlan| {
+        let witness_note = |spend: &penumbra_sdk_shielded_pool::SpendPlan| {
             let commitment = spend.note.commit();
             sct.witness(commitment)
                 .ok_or_else(|| anyhow::anyhow!("commitment should exist in tree"))

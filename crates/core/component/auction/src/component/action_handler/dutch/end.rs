@@ -2,7 +2,7 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
-use penumbra_proto::StateWriteProto;
+use penumbra_sdk_proto::StateWriteProto;
 use tracing::instrument;
 
 use crate::auction::dutch::ActionDutchAuctionEnd;

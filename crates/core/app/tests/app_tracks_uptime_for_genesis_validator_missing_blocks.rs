@@ -3,12 +3,12 @@ use {
     anyhow::Context,
     cnidarium::TempStorage,
     common::TempStorageExt as _,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_mock_consensus::TestNode,
-    penumbra_stake::component::validator_handler::validator_store::ValidatorDataRead,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_stake::component::validator_handler::validator_store::ValidatorDataRead,
     tap::Tap,
     tracing::{error_span, trace, Instrument},
 };
@@ -19,7 +19,7 @@ mod common;
 async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
 
     // Start the test node.
     let mut node = {
@@ -29,7 +29,7 @@ async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Res
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_auto_app_state(app_state)?
+            .with_penumbra_sdk_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
     }?;

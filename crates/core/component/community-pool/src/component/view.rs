@@ -5,9 +5,9 @@ use async_trait::async_trait;
 
 use cnidarium::{StateRead, StateWrite};
 use futures::{StreamExt, TryStreamExt};
-use penumbra_asset::{asset, Value};
-use penumbra_num::Amount;
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 
 use crate::params::CommunityPoolParameters;
 

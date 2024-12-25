@@ -3,22 +3,22 @@ use {
     anyhow::Context,
     cnidarium::TempStorage,
     common::TempStorageExt as _,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_asset::STAKING_TOKEN_ASSET_ID,
-    penumbra_keys::{keys::AddressIndex, test_keys},
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_proto::{
+    penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID,
+    penumbra_sdk_keys::{keys::AddressIndex, test_keys},
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_proto::{
         view::v1::{
             view_service_client::ViewServiceClient, view_service_server::ViewServiceServer,
             GasPricesRequest, StatusRequest, StatusResponse,
         },
         DomainType,
     },
-    penumbra_view::{Planner, SpendableNoteRecord, ViewClient},
+    penumbra_sdk_view::{Planner, SpendableNoteRecord, ViewClient},
     std::ops::Deref,
     tap::{Tap, TapFallible},
 };
@@ -31,10 +31,10 @@ mod common;
 async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
 
     // Instantiate a mock tendermint proxy, which we will connect to the test node.
-    let proxy = penumbra_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
+    let proxy = penumbra_sdk_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
 
     // Start the test node.
     let mut test_node = {
@@ -44,7 +44,7 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_auto_app_state(app_state)?
+            .with_penumbra_sdk_auto_app_state(app_state)?
             .on_block(proxy.on_block_callback())
             .init_chain(consensus)
             .await
@@ -71,7 +71,7 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
 
     // Spawn the server-side view server.
     {
-        let make_svc = penumbra_app::rpc::routes(
+        let make_svc = penumbra_sdk_app::rpc::routes(
             storage.as_ref(),
             proxy,
             false, /*enable_expensive_rpc*/
@@ -91,7 +91,7 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
 
     // Spawn the client-side view server...
     let view_server = {
-        penumbra_view::ViewServer::load_or_initialize(
+        penumbra_sdk_view::ViewServer::load_or_initialize(
             None::<&camino::Utf8Path>,
             None::<&camino::Utf8Path>,
             &*test_keys::FULL_VIEWING_KEY,
@@ -167,7 +167,7 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
 
     // Check that the nullifiers were spent as a result of the transaction:
     for nf in tx.spent_nullifiers() {
-        use penumbra_sct::component::tree::SctRead as _;
+        use penumbra_sdk_sct::component::tree::SctRead as _;
         assert!(pre_tx_snapshot.spend_info(nf).await?.is_none());
         assert!(post_tx_snapshot.spend_info(nf).await?.is_some());
     }

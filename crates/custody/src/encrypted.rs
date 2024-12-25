@@ -1,4 +1,4 @@
-use penumbra_proto::custody::v1::{self as pb, AuthorizeResponse};
+use penumbra_sdk_proto::custody::v1::{self as pb, AuthorizeResponse};
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use serde_with::{formats::Uppercase, hex::Hex};

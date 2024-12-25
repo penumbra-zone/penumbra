@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
 use cnidarium::{StateRead, StateWrite};
-use penumbra_asset::{asset, Value};
-use penumbra_num::Amount;
-use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{DomainType, StateReadProto, StateWriteProto};
 use tonic::async_trait;
 use tracing::instrument;
 
@@ -97,12 +97,12 @@ mod tests {
     use crate::{BatchSwapOutputData, PositionOpen};
     use cnidarium::{ArcStateDeltaExt as _, StateDelta, TempStorage};
     use cnidarium_component::ActionHandler as _;
-    use penumbra_asset::asset;
-    use penumbra_num::Amount;
-    use penumbra_proto::StateWriteProto as _;
-    use penumbra_sct::component::clock::EpochManager as _;
-    use penumbra_sct::component::source::SourceContext as _;
-    use penumbra_sct::epoch::Epoch;
+    use penumbra_sdk_asset::asset;
+    use penumbra_sdk_num::Amount;
+    use penumbra_sdk_proto::StateWriteProto as _;
+    use penumbra_sdk_sct::component::clock::EpochManager as _;
+    use penumbra_sdk_sct::component::source::SourceContext as _;
+    use penumbra_sdk_sct::epoch::Epoch;
 
     use super::*;
 

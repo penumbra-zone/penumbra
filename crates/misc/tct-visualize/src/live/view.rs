@@ -19,7 +19,7 @@ use serde_json::json;
 use tokio::sync::{mpsc, watch};
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
-use penumbra_tct::{Forgotten, Position, Tree};
+use penumbra_sdk_tct::{Forgotten, Position, Tree};
 
 mod resources;
 use resources::*;

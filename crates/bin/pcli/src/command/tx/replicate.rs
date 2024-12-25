@@ -4,8 +4,8 @@ pub mod linear;
 pub mod xyk;
 
 use linear::Linear;
-use penumbra_dex::DirectedUnitPair;
-use penumbra_proto::core::component::dex::v1::{
+use penumbra_sdk_dex::DirectedUnitPair;
+use penumbra_sdk_proto::core::component::dex::v1::{
     query_service_client::QueryServiceClient as DexQueryServiceClient, SpreadRequest,
 };
 use xyk::ConstantProduct;

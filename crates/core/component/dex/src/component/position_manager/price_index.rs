@@ -1,5 +1,5 @@
 use cnidarium::StateWrite;
-use penumbra_proto::StateWriteProto;
+use penumbra_sdk_proto::StateWriteProto;
 
 use crate::{
     lp::position::{self, Position},

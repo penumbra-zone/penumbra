@@ -14,15 +14,15 @@ use {
         path::ClientStatePath,
         DomainType as _,
     },
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_ibc::{IbcRelay, MerklePrefixExt as _, IBC_COMMITMENT_PREFIX, IBC_PROOF_SPECS},
-    penumbra_keys::test_keys,
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_proto::{
+    penumbra_sdk_ibc::{IbcRelay, MerklePrefixExt as _, IBC_COMMITMENT_PREFIX, IBC_PROOF_SPECS},
+    penumbra_sdk_keys::test_keys,
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_proto::{
         cnidarium::v1::{
             query_service_client::QueryServiceClient as CnidariumQueryServiceClient,
             KeyValueRequest,
@@ -32,8 +32,8 @@ use {
         },
         DomainType, Message as _,
     },
-    penumbra_test_subscriber::set_tracing_subscriber,
-    penumbra_transaction::{TransactionParameters, TransactionPlan},
+    penumbra_sdk_test_subscriber::set_tracing_subscriber,
+    penumbra_sdk_transaction::{TransactionParameters, TransactionPlan},
     std::{str::FromStr as _, time::Duration},
     tap::{Tap as _, TapFallible as _},
     tendermint::Hash,
@@ -48,11 +48,11 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = set_tracing_subscriber();
 
-    let storage = TempStorage::new_with_penumbra_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
 
     let start_time = tendermint::Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z")?;
 
-    let proxy = penumbra_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
+    let proxy = penumbra_sdk_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
     let mut node = {
         let app_state = AppState::Content(
             genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
@@ -61,7 +61,7 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
         // let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_auto_app_state(app_state)?
+            .with_penumbra_sdk_auto_app_state(app_state)?
             .on_block(proxy.on_block_callback())
             .init_chain(consensus)
             .await
@@ -191,7 +191,7 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
     // Spawn the node's RPC server.
     let _rpc_server = {
         let make_svc =
-            penumbra_app::rpc::routes(&storage, proxy, false /*enable_expensive_rpc*/)?
+            penumbra_sdk_app::rpc::routes(&storage, proxy, false /*enable_expensive_rpc*/)?
                 .into_axum_router()
                 .layer(tower_http::cors::CorsLayer::permissive())
                 .into_make_service()
@@ -285,7 +285,7 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
             .revision_height
     );
 
-    let proof_block: penumbra_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse =
+    let proof_block: penumbra_sdk_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse =
         tendermint_proxy_service_client
             .get_block_by_height(GetBlockByHeightRequest {
                 height: ibc_client_state_response
@@ -307,7 +307,7 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
 
     // We should be able to get the block from the proof_height associated with
     // the proof and use the app_hash as the jmt root and succeed in proving:
-    let proof_block: penumbra_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse =
+    let proof_block: penumbra_sdk_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse =
         tendermint_proxy_service_client
             .get_block_by_height(GetBlockByHeightRequest {
                 height: ibc_client_state_response

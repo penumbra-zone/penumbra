@@ -1,14 +1,14 @@
 use anyhow::anyhow;
 use pbjson_types::Any;
-use penumbra_asset::{asset, EstimatedPrice, Value, ValueView};
-use penumbra_dex::BatchSwapOutputData;
-use penumbra_keys::{Address, AddressView, PayloadKey};
-use penumbra_proto::core::transaction::v1::{
+use penumbra_sdk_asset::{asset, EstimatedPrice, Value, ValueView};
+use penumbra_sdk_dex::BatchSwapOutputData;
+use penumbra_sdk_keys::{Address, AddressView, PayloadKey};
+use penumbra_sdk_proto::core::transaction::v1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
-use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{note, Note, NoteView};
-use penumbra_txhash::TransactionId;
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_shielded_pool::{note, Note, NoteView};
+use penumbra_sdk_txhash::TransactionId;
 
 use std::collections::BTreeMap;
 
@@ -214,7 +214,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
         for denom in msg.denoms {
             denoms.insert(
                 denom
-                    .penumbra_asset_id
+                    .penumbra_sdk_asset_id
                     .clone()
                     .ok_or_else(|| anyhow!("missing penumbra asset ID in denom"))?
                     .try_into()?,

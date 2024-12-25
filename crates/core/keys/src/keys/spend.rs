@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
-use penumbra_proto::{penumbra::core::keys::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::keys::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -173,7 +173,7 @@ impl TryFrom<&[u8]> for SpendKeyBytes {
 
 impl std::fmt::Display for SpendKey {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use penumbra_proto::serializers::bech32str;
+        use penumbra_sdk_proto::serializers::bech32str;
         let proto = pb::SpendKey::from(self.clone());
         f.write_str(&bech32str::encode(
             &proto.inner,
@@ -187,7 +187,7 @@ impl std::str::FromStr for SpendKey {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use penumbra_proto::serializers::bech32str;
+        use penumbra_sdk_proto::serializers::bech32str;
         pb::SpendKey {
             inner: bech32str::decode(s, bech32str::spend_key::BECH32_PREFIX, bech32str::Bech32m)?,
         }

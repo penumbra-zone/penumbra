@@ -1,5 +1,5 @@
 use crate::Ics20Withdrawal;
-use penumbra_ibc::component::HostInterface;
+use penumbra_sdk_ibc::component::HostInterface;
 use std::marker::PhantomData;
 
 pub struct Ics20WithdrawalWithHandler<HI>(Ics20Withdrawal, PhantomData<HI>);

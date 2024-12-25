@@ -1,10 +1,10 @@
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_keys::{keys::AddressIndex, FullViewingKey};
-use penumbra_proto::{core::component::shielded_pool::v1 as pb, DomainType};
-use penumbra_sct::Nullifier;
-use penumbra_tct as tct;
+use penumbra_sdk_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_keys::{keys::AddressIndex, FullViewingKey};
+use penumbra_sdk_proto::{core::component::shielded_pool::v1 as pb, DomainType};
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -121,7 +121,7 @@ impl SpendPlan {
         SpendProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
-            &penumbra_proof_params::SPEND_PROOF_PROVING_KEY,
+            &penumbra_sdk_proof_params::SPEND_PROOF_PROVING_KEY,
             public,
             private,
         )

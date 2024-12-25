@@ -5,12 +5,12 @@ use decaf377::Fq;
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
 
-use penumbra_dex::swap_claim::SwapClaimPlan;
-use penumbra_keys::keys::AddressIndex;
-use penumbra_proto::view::v1::NotesRequest;
-use penumbra_transaction::{TransactionParameters, TransactionPlan};
-pub use penumbra_view::Planner;
-use penumbra_view::{SpendableNoteRecord, ViewClient};
+use penumbra_sdk_dex::swap_claim::SwapClaimPlan;
+use penumbra_sdk_keys::keys::AddressIndex;
+use penumbra_sdk_proto::view::v1::NotesRequest;
+use penumbra_sdk_transaction::{TransactionParameters, TransactionPlan};
+pub use penumbra_sdk_view::Planner;
+use penumbra_sdk_view::{SpendableNoteRecord, ViewClient};
 
 pub const SWEEP_COUNT: usize = 8;
 

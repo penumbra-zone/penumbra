@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
-use penumbra_transaction::Transaction;
-use penumbra_txhash::AuthorizingData;
+use penumbra_sdk_transaction::Transaction;
+use penumbra_sdk_txhash::AuthorizingData;
 
 #[tracing::instrument(skip(tx))]
 pub(super) fn valid_binding_signature(tx: &Transaction) -> Result<()> {

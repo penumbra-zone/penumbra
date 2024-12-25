@@ -6,14 +6,14 @@ use async_trait::async_trait;
 use cnidarium::StateRead;
 use futures::Stream;
 use futures::StreamExt;
-use penumbra_proto::{penumbra::core::component::compact_block::v1::CompactBlock, Message};
+use penumbra_sdk_proto::{penumbra::core::component::compact_block::v1::CompactBlock, Message};
 use std::pin::Pin;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
     /// Returns a stream of [`CompactBlock`]s starting from `start_height`.
     ///
-    /// Note: this method returns the proto type from `penumbra_proto`, rather
+    /// Note: this method returns the proto type from `penumbra_sdk_proto`, rather
     /// than deserializing into the domain type, because the primary use is in
     /// serving RPC requests, where the proto type will be re-serialized and
     /// sent to clients.
@@ -38,7 +38,7 @@ pub trait StateReadExt: StateRead {
 
     /// Returns a single [`CompactBlock`] at the given `height`.
     ///
-    /// Note: this method returns the proto type from `penumbra_proto`, rather
+    /// Note: this method returns the proto type from `penumbra_sdk_proto`, rather
     /// than deserializing into the domain type, because the primary use is in
     /// serving RPC requests, where the proto type will be re-serialized and
     /// sent to clients.

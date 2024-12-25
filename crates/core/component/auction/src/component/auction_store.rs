@@ -2,10 +2,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateRead;
 use pbjson_types::Any;
-use penumbra_proto::core::component::auction::v1 as pb;
-use penumbra_proto::DomainType;
-use penumbra_proto::Name;
-use penumbra_proto::StateReadProto;
+use penumbra_sdk_proto::core::component::auction::v1 as pb;
+use penumbra_sdk_proto::DomainType;
+use penumbra_sdk_proto::Name;
+use penumbra_sdk_proto::StateReadProto;
 
 use crate::{
     auction::{dutch::DutchAuction, id::AuctionId},

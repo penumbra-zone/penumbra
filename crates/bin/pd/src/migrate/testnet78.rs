@@ -6,19 +6,19 @@ use cnidarium::{Snapshot, StateDelta, StateWrite, Storage};
 use futures::TryStreamExt as _;
 use futures::{pin_mut, StreamExt};
 use jmt::RootHash;
-use penumbra_app::app::StateReadExt as _;
-use penumbra_dex::component::{PositionManager, StateReadExt, StateWriteExt};
-use penumbra_dex::lp::position;
-use penumbra_dex::lp::position::Position;
-use penumbra_governance::proposal_state::State as ProposalState;
-use penumbra_governance::Proposal;
-use penumbra_governance::StateReadExt as _;
-use penumbra_governance::StateWriteExt as _;
-use penumbra_proto::core::component::governance::v1 as pb_governance;
-use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_sct::component::clock::EpochManager;
-use penumbra_sct::component::clock::EpochRead;
-use penumbra_stake::validator::Validator;
+use penumbra_sdk_app::app::StateReadExt as _;
+use penumbra_sdk_dex::component::{PositionManager, StateReadExt, StateWriteExt};
+use penumbra_sdk_dex::lp::position;
+use penumbra_sdk_dex::lp::position::Position;
+use penumbra_sdk_governance::proposal_state::State as ProposalState;
+use penumbra_sdk_governance::Proposal;
+use penumbra_sdk_governance::StateReadExt as _;
+use penumbra_sdk_governance::StateWriteExt as _;
+use penumbra_sdk_proto::core::component::governance::v1 as pb_governance;
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_sct::component::clock::EpochManager;
+use penumbra_sdk_sct::component::clock::EpochRead;
+use penumbra_sdk_stake::validator::Validator;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
@@ -116,7 +116,7 @@ pub async fn migrate(
     tracing::info!("migration completed, generating genesis and signing state...");
 
     /* `Migration::complete`: the state transition has been performed, we prepare the checkpointed genesis and signing state */
-    let app_state = penumbra_app::genesis::Content {
+    let app_state = penumbra_sdk_app::genesis::Content {
         chain_id,
         ..Default::default()
     };
@@ -194,7 +194,7 @@ async fn update_dex_params(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<(
 /// Reindex opened liquidity positions to augment the price indexes.
 async fn reindex_dex_positions(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
     tracing::info!("running dex re-indexing migration");
-    let prefix_key_lp = penumbra_dex::state_key::all_positions();
+    let prefix_key_lp = penumbra_sdk_dex::state_key::all_positions();
     let stream_all_lp = delta.prefix::<Position>(&prefix_key_lp);
     let stream_open_lp = stream_all_lp.filter_map(|entry| async {
         match entry {
@@ -210,7 +210,7 @@ async fn reindex_dex_positions(delta: &mut StateDelta<Snapshot>) -> anyhow::Resu
         // Close the position, adjusting all its index entries.
         delta.close_position_by_id(&id).await?;
         // Erase the position from the state, so that we circumvent the `update_position` guard.
-        delta.delete(penumbra_dex::state_key::position_by_id(&id));
+        delta.delete(penumbra_sdk_dex::state_key::position_by_id(&id));
         // Open a position with the adjusted indexing logic.
         delta.open_position(lp).await?;
     }
@@ -224,14 +224,14 @@ async fn reindex_dex_positions(delta: &mut StateDelta<Snapshot>) -> anyhow::Resu
 ///    - `description` (280 bytes)
 async fn truncate_validator_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
     tracing::info!("truncating validator fields");
-    let key_prefix_validators = penumbra_stake::state_key::validators::definitions::prefix();
+    let key_prefix_validators = penumbra_sdk_stake::state_key::validators::definitions::prefix();
     let all_validators = delta
-        .prefix_proto::<penumbra_proto::core::component::stake::v1::Validator>(
+        .prefix_proto::<penumbra_sdk_proto::core::component::stake::v1::Validator>(
             &key_prefix_validators,
         )
         .try_collect::<Vec<(
             String,
-            penumbra_proto::core::component::stake::v1::Validator,
+            penumbra_sdk_proto::core::component::stake::v1::Validator,
         )>>()
         .await?;
 
@@ -271,7 +271,7 @@ async fn truncate_proposal_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::R
         tracing::info!("truncating proposal: {}", proposal_id);
         let proposal = delta
             .get_proto::<pb_governance::Proposal>(
-                &penumbra_governance::state_key::proposal_definition(proposal_id),
+                &penumbra_sdk_governance::state_key::proposal_definition(proposal_id),
             )
             .await?;
 
@@ -348,12 +348,12 @@ async fn truncate_proposal_fields(delta: &mut StateDelta<Snapshot>) -> anyhow::R
         // Store the truncated proposal data
         tracing::info!(
             "put key {:?}",
-            penumbra_governance::state_key::proposal_definition(proposal_id)
+            penumbra_sdk_governance::state_key::proposal_definition(proposal_id)
         );
         // Ensure the proposal can be serialized back to the domain type:
         let proposal: Proposal = proposal.try_into()?;
         delta.put(
-            penumbra_governance::state_key::proposal_definition(proposal_id),
+            penumbra_sdk_governance::state_key::proposal_definition(proposal_id),
             proposal,
         );
     }
@@ -372,7 +372,7 @@ async fn truncate_proposal_outcome_fields(delta: &mut StateDelta<Snapshot>) -> a
         tracing::info!("truncating proposal outcomes: {}", proposal_id);
         let proposal_state = delta
             .get_proto::<pb_governance::ProposalState>(
-                &penumbra_governance::state_key::proposal_state(proposal_id),
+                &penumbra_sdk_governance::state_key::proposal_state(proposal_id),
             )
             .await?;
 
@@ -518,11 +518,11 @@ async fn truncate_proposal_outcome_fields(delta: &mut StateDelta<Snapshot>) -> a
         // Store the truncated proposal state data
         tracing::info!(
             "put key {:?}",
-            penumbra_governance::state_key::proposal_state(proposal_id)
+            penumbra_sdk_governance::state_key::proposal_state(proposal_id)
         );
         let proposal_state: ProposalState = proposal_state.try_into()?;
         delta.put(
-            penumbra_governance::state_key::proposal_state(proposal_id),
+            penumbra_sdk_governance::state_key::proposal_state(proposal_id),
             proposal_state,
         );
     }

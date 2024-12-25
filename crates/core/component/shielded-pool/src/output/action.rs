@@ -1,13 +1,13 @@
 use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
-use penumbra_asset::balance;
-use penumbra_keys::symmetric::{OvkWrappedKey, WrappedMemoKey};
-use penumbra_proto::{
+use penumbra_sdk_asset::balance;
+use penumbra_sdk_keys::symmetric::{OvkWrappedKey, WrappedMemoKey};
+use penumbra_sdk_proto::{
     core::component::shielded_pool::v1 as pb, penumbra::core::component::shielded_pool::v1 as pbc,
     DomainType,
 };
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::{NotePayload, OutputProof};

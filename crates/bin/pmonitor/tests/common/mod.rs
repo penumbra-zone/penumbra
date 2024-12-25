@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use assert_cmd::Command as AssertCommand;
 use once_cell::sync::Lazy;
 use pcli::config::PcliConfig;
-use penumbra_keys::address::Address;
+use penumbra_sdk_keys::address::Address;
 use std::fs::{create_dir_all, remove_dir_all, File};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
@@ -124,8 +124,8 @@ impl PmonitorTestRunner {
         let mut results = Vec::<Address>::new();
         for i in 0..self.num_wallets - 1 {
             let pcli_home = self.wallets_dir()?.join(format!("wallet-{}", i));
-            let penumbra_address = pcli_view_address(&pcli_home)?;
-            results.push(penumbra_address);
+            let penumbra_sdk_address = pcli_view_address(&pcli_home)?;
+            results.push(penumbra_sdk_address);
         }
         Ok(results)
     }

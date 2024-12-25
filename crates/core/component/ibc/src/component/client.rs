@@ -17,7 +17,7 @@ use ibc_types::lightclients::tendermint::{
     consensus_state::ConsensusState as TendermintConsensusState,
     header::Header as TendermintHeader,
 };
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 
 use crate::component::client_counter::{ClientCounter, VerifiedHeights};
 use crate::prefix::MerklePrefixExt;
@@ -216,14 +216,14 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
             format!(
                 // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
                 // it's not in the same path namespace.
-                "penumbra_verified_heights/{client_id}/verified_heights"
+                "penumbra_sdk_verified_heights/{client_id}/verified_heights"
             ),
             verified_heights,
         );
     }
 
     // returns the ConsensusState for the penumbra chain (this chain) at the given height
-    fn put_penumbra_consensus_state(
+    fn put_penumbra_sdk_consensus_state(
         &mut self,
         height: Height,
         consensus_state: TendermintConsensusState,
@@ -231,7 +231,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
         self.put(
-            format!("penumbra_consensus_states/{height}"),
+            format!("penumbra_sdk_consensus_states/{height}"),
             consensus_state,
         );
     }
@@ -324,19 +324,19 @@ pub trait StateReadExt: StateRead {
         self.get(&format!(
             // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
             // it's not in the same path namespace.
-            "penumbra_verified_heights/{client_id}/verified_heights"
+            "penumbra_sdk_verified_heights/{client_id}/verified_heights"
         ))
         .await
     }
 
     // returns the ConsensusState for the penumbra chain (this chain) at the given height
-    async fn get_penumbra_consensus_state(
+    async fn get_penumbra_sdk_consensus_state(
         &self,
         height: Height,
     ) -> Result<TendermintConsensusState> {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
-        self.get(&format!("penumbra_consensus_states/{height}"))
+        self.get(&format!("penumbra_sdk_consensus_states/{height}"))
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!("penumbra consensus state not found for height {height}")
@@ -466,7 +466,7 @@ mod tests {
     use cnidarium::{ArcStateDeltaExt, StateDelta};
     use ibc_types::core::client::msgs::MsgUpdateClient;
     use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
-    use penumbra_sct::component::clock::{EpochManager as _, EpochRead};
+    use penumbra_sdk_sct::component::clock::{EpochManager as _, EpochRead};
     use std::str::FromStr;
     use tendermint::Time;
 
@@ -588,7 +588,7 @@ mod tests {
     // test that we can create and update a light client.
     #[tokio::test]
     async fn test_create_and_update_light_client() -> anyhow::Result<()> {
-        use penumbra_sct::epoch::Epoch;
+        use penumbra_sdk_sct::epoch::Epoch;
         // create a storage backend for testing
 
         // TODO(erwan): `apply_default_genesis` is not available here. We need a component

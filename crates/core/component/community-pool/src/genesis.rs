@@ -1,6 +1,6 @@
 use anyhow::Context;
-use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_proto::{penumbra::core::component::community_pool::v1 as pb, DomainType};
+use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_proto::{penumbra::core::component::community_pool::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::params::CommunityPoolParameters;

@@ -1,4 +1,4 @@
-use penumbra_proto::{
+use penumbra_sdk_proto::{
     // TODO: why is the governance key part of this crate?
     core::keys::v1 as pb,
     serializers::bech32str::{self, validator_governance_key::BECH32_PREFIX},

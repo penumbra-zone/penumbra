@@ -10,7 +10,7 @@ use anyhow::Context;
 use ark_serialize::CanonicalDeserialize;
 use decaf377::Fq;
 use f4jumble::{f4jumble, f4jumble_inv};
-use penumbra_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str, DomainType};
+use penumbra_sdk_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str, DomainType};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -471,7 +471,7 @@ mod tests {
 
         let addr = Address::from_str(&bech32m_addr).expect("can decode valid address");
 
-        use penumbra_proto::Message;
+        use penumbra_sdk_proto::Message;
 
         let proto_addr = dest.encode_to_vec();
         let proto_addr_bech32m = pb::Address {

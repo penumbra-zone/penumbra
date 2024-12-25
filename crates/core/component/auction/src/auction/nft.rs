@@ -1,7 +1,7 @@
 use crate::auction::id::AuctionId;
 use anyhow::{anyhow, Result};
-use penumbra_asset::asset::{self, Metadata};
-use penumbra_proto::{core::component::auction::v1 as pb, DomainType};
+use penumbra_sdk_asset::asset::{self, Metadata};
+use penumbra_sdk_proto::{core::component::auction::v1 as pb, DomainType};
 use regex::Regex;
 
 /// An non-fungible token (NFT) tracking the state and ownership of an auction.

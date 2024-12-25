@@ -1,9 +1,9 @@
 use anyhow::Result;
 use comfy_table::{presets, Cell, ContentArrangement, Table};
-use penumbra_auction::auction::dutch::DutchAuction;
-use penumbra_keys::FullViewingKey;
-use penumbra_proto::{core::component::auction::v1 as pb_auction, DomainType, Name};
-use penumbra_view::ViewClient;
+use penumbra_sdk_auction::auction::dutch::DutchAuction;
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_proto::{core::component::auction::v1 as pb_auction, DomainType, Name};
+use penumbra_sdk_view::ViewClient;
 
 use crate::command::query::auction::render_dutch_auction;
 
@@ -28,11 +28,11 @@ impl AuctionCmd {
         _fvk: &FullViewingKey,
     ) -> Result<()> {
         let auctions: Vec<(
-            penumbra_auction::auction::AuctionId,
-            penumbra_view::SpendableNoteRecord,
+            penumbra_sdk_auction::auction::AuctionId,
+            penumbra_sdk_view::SpendableNoteRecord,
             u64,
             Option<pbjson_types::Any>,
-            Vec<penumbra_dex::lp::position::Position>,
+            Vec<penumbra_sdk_dex::lp::position::Position>,
         )> = view_client
             .auctions(None, self.include_inactive, self.query_latest_state)
             .await?;
@@ -57,7 +57,7 @@ impl AuctionCmd {
             } else {
                 let position_ids: Vec<String> = positions
                     .into_iter()
-                    .map(|lp: penumbra_dex::lp::position::Position| format!("{}", lp.id()))
+                    .map(|lp: penumbra_sdk_dex::lp::position::Position| format!("{}", lp.id()))
                     .collect();
 
                 let mut auction_table = Table::new();

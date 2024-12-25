@@ -7,8 +7,8 @@ use std::{
 
 use anyhow::{ensure, Context};
 use decaf377::Fq;
-use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::asset::v1 as pb, view::v1::AssetsResponse, DomainType};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{penumbra::core::asset::v1 as pb, view::v1::AssetsResponse, DomainType};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -63,7 +63,7 @@ impl From<&Inner> for pb::Metadata {
             display: inner.units[inner.display_index].denom.clone(),
             name: inner.name.clone(),
             symbol: inner.symbol.clone(),
-            penumbra_asset_id: Some(inner.id.into()),
+            penumbra_sdk_asset_id: Some(inner.id.into()),
             denom_units: inner.units.clone().into_iter().map(|x| x.into()).collect(),
             images: inner.images.clone(),
             badges: inner.badges.clone(),
@@ -85,7 +85,7 @@ impl TryFrom<pb::Metadata> for Inner {
         // Compute the ID from the base denom to ensure we don't get confused.
         let id = Id::from_raw_denom(&base_denom);
         // If the ID was supplied, we should check that it's consistent with the base denom.
-        if let Some(supplied_id) = value.penumbra_asset_id {
+        if let Some(supplied_id) = value.penumbra_sdk_asset_id {
             let supplied_id = Id::try_from(supplied_id)?;
             ensure!(
                 id == supplied_id,
@@ -225,7 +225,7 @@ impl Inner {
         let id = Id(Fq::from_le_bytes_mod_order(
             // XXX choice of hash function?
             blake2b_simd::Params::default()
-                .personal(b"Penumbra_AssetID")
+                .personal(b"penumbra_sdk_AssetID")
                 .hash(base_denom.as_bytes())
                 .as_bytes(),
         ));

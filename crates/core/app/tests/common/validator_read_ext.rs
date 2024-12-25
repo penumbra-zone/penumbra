@@ -4,8 +4,8 @@
 use {
     async_trait::async_trait,
     futures::TryStreamExt,
-    penumbra_proto::StateReadProto,
-    penumbra_stake::{
+    penumbra_sdk_proto::StateReadProto,
+    penumbra_sdk_stake::{
         component::validator_handler::ValidatorDataRead, state_key, validator::Validator,
         IdentityKey,
     },

@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use ark_r1cs_std::prelude::*;
 use ark_r1cs_std::uint8::UInt8;
 use ark_relations::r1cs::SynthesisError;
-use penumbra_num::{Amount, AmountVar};
+use penumbra_sdk_num::{Amount, AmountVar};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{btree_map, BTreeMap},
@@ -29,7 +29,7 @@ use decaf377::{r1cs::ElementVar, Fq, Fr};
 use imbalance::{Imbalance, Sign};
 
 use self::commitment::BalanceCommitmentVar;
-use penumbra_proto::{penumbra::core::asset::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::asset::v1 as pb, DomainType};
 
 /// A `Balance` is a "vector of [`Value`]s", where some values may be required, while others may be
 /// provided. For a transaction to be valid, its balance must be zero.
@@ -470,7 +470,7 @@ mod test {
     use ark_ff::Zero;
     use decaf377::Fr;
     use once_cell::sync::Lazy;
-    use penumbra_proto::core::num::v1::Amount as ProtoAmount;
+    use penumbra_sdk_proto::core::num::v1::Amount as ProtoAmount;
     use proptest::prelude::*;
     use rand_core::OsRng;
 

@@ -7,12 +7,12 @@ use ark_r1cs_std::{
 };
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{r1cs::FqVar, Fq};
-use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
-use penumbra_tct::Position;
+use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_tct::Position;
 use serde::{Deserialize, Serialize};
 
-use penumbra_num::fixpoint::{bit_constrain, U128x128, U128x128Var};
-use penumbra_num::{Amount, AmountVar};
+use penumbra_sdk_num::fixpoint::{bit_constrain, U128x128, U128x128Var};
+use penumbra_sdk_num::{Amount, AmountVar};
 
 use crate::TradingPairVar;
 
@@ -346,8 +346,8 @@ mod tests {
     use ark_relations::r1cs::ConstraintSynthesizer;
     use ark_snark::SNARK;
     use decaf377::Bls12_377;
-    use penumbra_asset::asset;
-    use penumbra_proof_params::{generate_test_parameters, DummyWitness};
+    use penumbra_sdk_asset::asset;
+    use penumbra_sdk_proof_params::{generate_test_parameters, DummyWitness};
     use rand_core::OsRng;
 
     use super::*;

@@ -2,9 +2,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
-use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
-use penumbra_proto::{DomainType as _, StateWriteProto as _};
-use penumbra_sct::component::source::SourceContext;
+use penumbra_sdk_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
+use penumbra_sdk_proto::{DomainType as _, StateWriteProto as _};
+use penumbra_sdk_sct::component::source::SourceContext;
 
 use crate::{component::NoteManager, event, output::OutputProofPublic, Output};
 

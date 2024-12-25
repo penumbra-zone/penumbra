@@ -4,7 +4,7 @@ fn main() -> anyhow::Result<()> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     println!("root: {}", root.display());
 
-    // We build the proto files for the main penumbra_proto crate
+    // We build the proto files for the main penumbra_sdk_proto crate
     // and for the cnidarium crate separately, because the
     // cnidarium crate is supposed to be independent of the
     // rest of the Penumbra codebase and its proto structures.

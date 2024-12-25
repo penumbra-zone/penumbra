@@ -41,17 +41,17 @@ use {
         timestamp::Timestamp,
         DomainType as _,
     },
-    penumbra_asset::{asset::Cache, Value},
-    penumbra_ibc::{
+    penumbra_sdk_asset::{asset::Cache, Value},
+    penumbra_sdk_ibc::{
         component::{ChannelStateReadExt as _, ConnectionStateReadExt as _},
         IbcRelay, IbcToken, IBC_COMMITMENT_PREFIX, IBC_PROOF_SPECS,
     },
-    penumbra_keys::keys::AddressIndex,
-    penumbra_num::Amount,
-    penumbra_proto::{util::tendermint_proxy::v1::GetBlockByHeightRequest, DomainType},
-    penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan},
-    penumbra_stake::state_key::chain,
-    penumbra_transaction::{
+    penumbra_sdk_keys::keys::AddressIndex,
+    penumbra_sdk_num::Amount,
+    penumbra_sdk_proto::{util::tendermint_proxy::v1::GetBlockByHeightRequest, DomainType},
+    penumbra_sdk_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan},
+    penumbra_sdk_stake::state_key::chain,
+    penumbra_sdk_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
     },
     prost::Message as _,
@@ -332,7 +332,7 @@ impl MockRelayer {
                         // The latest_height is for chain B
                         latest_height: chain_b_ibc.get_latest_height().await?,
                         // The ICS02 validation is hardcoded to expect 2 proof specs
-                        // (root and substore, see [`penumbra_ibc::component::ics02_validation`]).
+                        // (root and substore, see [`penumbra_sdk_ibc::component::ics02_validation`]).
                         proof_specs: IBC_PROOF_SPECS.to_vec(),
                         upgrade_path: vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
                         allow_update: AllowUpdate {
@@ -1625,7 +1625,7 @@ impl MockRelayer {
                 };
 
                 let plan = {
-                    let ics20_msg = penumbra_transaction::ActionPlan::IbcAction(
+                    let ics20_msg = penumbra_sdk_transaction::ActionPlan::IbcAction(
                         IbcRelay::RecvPacket(msg_recv_packet),
                     )
                     .into();
@@ -1745,7 +1745,7 @@ impl MockRelayer {
                 };
 
                 let plan = {
-                    let ics20_msg = penumbra_transaction::ActionPlan::IbcAction(
+                    let ics20_msg = penumbra_sdk_transaction::ActionPlan::IbcAction(
                         IbcRelay::Acknowledgement(msg_ack),
                     )
                     .into();
@@ -1791,7 +1791,7 @@ async fn _build_and_send_update_client(
     chain_b_ibc: &mut TestNodeWithIBC,
 ) -> Result<Height> {
     let chain_b_height = chain_b_ibc.get_latest_height().await?;
-    let chain_b_latest_block: penumbra_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse =
+    let chain_b_latest_block: penumbra_sdk_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse =
         chain_b_ibc
             .tendermint_proxy_service_client
             .get_block_by_height(GetBlockByHeightRequest {

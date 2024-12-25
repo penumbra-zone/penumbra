@@ -3,19 +3,19 @@ use {
     anyhow::anyhow,
     cnidarium::TempStorage,
     common::TempStorageExt as _,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_asset::asset,
-    penumbra_community_pool::{CommunityPoolDeposit, StateReadExt},
-    penumbra_keys::test_keys,
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_num::Amount,
-    penumbra_proto::DomainType,
-    penumbra_shielded_pool::SpendPlan,
-    penumbra_transaction::{TransactionParameters, TransactionPlan},
+    penumbra_sdk_asset::asset,
+    penumbra_sdk_community_pool::{CommunityPoolDeposit, StateReadExt},
+    penumbra_sdk_keys::test_keys,
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_num::Amount,
+    penumbra_sdk_proto::DomainType,
+    penumbra_sdk_shielded_pool::SpendPlan,
+    penumbra_sdk_transaction::{TransactionParameters, TransactionPlan},
     rand_core::OsRng,
     std::collections::BTreeMap,
     tap::{Tap, TapFallible},
@@ -29,7 +29,7 @@ mod common;
 async fn app_can_deposit_into_community_pool() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
 
     // Define our application state, and start the test node.
     let mut test_node = {
@@ -39,7 +39,7 @@ async fn app_can_deposit_into_community_pool() -> anyhow::Result<()> {
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_auto_app_state(app_state)?
+            .with_penumbra_sdk_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
             .tap_ok(|e| tracing::info!(hash = %e.last_app_hash_hex(), "finished init chain"))?

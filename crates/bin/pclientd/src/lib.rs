@@ -8,18 +8,18 @@ use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
-use penumbra_custody::policy::{AuthPolicy, PreAuthorizationPolicy};
-use penumbra_custody::soft_kms::{self, SoftKms};
-use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-use penumbra_keys::FullViewingKey;
-use penumbra_proto::{
+use penumbra_sdk_custody::policy::{AuthPolicy, PreAuthorizationPolicy};
+use penumbra_sdk_custody::soft_kms::{self, SoftKms};
+use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_proto::{
     core::app::v1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
     custody::v1::custody_service_server::CustodyServiceServer,
     view::v1::view_service_server::ViewServiceServer,
 };
-use penumbra_view::{Storage, ViewServer};
+use penumbra_sdk_view::{Storage, ViewServer};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -81,7 +81,7 @@ pub struct Opt {
     #[clap(subcommand)]
     pub cmd: Command,
     /// The path used to store pclientd state and config files.
-    #[clap(long, default_value_t = default_home(), env = "PENUMBRA_PCLIENTD_HOME")]
+    #[clap(long, default_value_t = default_home(), env = "penumbra_sdk_PCLIENTD_HOME")]
     pub home: Utf8PathBuf,
 }
 
@@ -342,7 +342,7 @@ impl Opt {
                     .add_service(tonic_web::enable(
                         tonic_reflection::server::Builder::configure()
                             .register_encoded_file_descriptor_set(
-                                penumbra_proto::FILE_DESCRIPTOR_SET,
+                                penumbra_sdk_proto::FILE_DESCRIPTOR_SET,
                             )
                             .build_v1()
                             .with_context(|| "could not configure grpc reflection service")?,

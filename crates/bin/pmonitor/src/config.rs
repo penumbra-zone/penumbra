@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 use uuid::Uuid;
 
-use penumbra_keys::FullViewingKey;
-use penumbra_num::Amount;
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_num::Amount;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FvkEntry {

@@ -1,10 +1,10 @@
-use penumbra_asset::{
+use penumbra_sdk_asset::{
     asset::{self, Metadata, Unit},
     Value,
 };
-use penumbra_keys::Address;
-use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// A (transparent) genesis allocation.

@@ -40,10 +40,10 @@ pub fn register_metrics() {
     );
 }
 
-pub const TOTAL_VALIDATOR_REWARDS: &str = "penumbra_funding_total_validator_rewards_staking_token";
+pub const TOTAL_VALIDATOR_REWARDS: &str = "penumbra_sdk_funding_total_validator_rewards_staking_token";
 pub const VALIDATOR_FUNDING_VS_BUDGET_DIFFERENCE: &str =
-    "penumbra_funding_validator_vs_budget_difference_staking_token";
+    "penumbra_sdk_funding_validator_vs_budget_difference_staking_token";
 pub const FETCH_FUNDING_QUEUE_LATENCY: &str =
-    "penumbra_funding_fetch_funding_queue_latency_milliseconds";
+    "penumbra_sdk_funding_fetch_funding_queue_latency_milliseconds";
 pub const TOTAL_FUNDING_STREAMS_PROCESSING_TIME: &str =
-    "penumbra_funding_streams_total_processing_time_milliseconds";
+    "penumbra_sdk_funding_streams_total_processing_time_milliseconds";

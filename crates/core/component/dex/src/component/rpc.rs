@@ -8,8 +8,8 @@ use tonic::Status;
 use tracing::instrument;
 
 use cnidarium::{StateDelta, Storage};
-use penumbra_asset::{asset, Value};
-use penumbra_proto::{
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_proto::{
     core::component::dex::v1::{
         query_service_server::QueryService,
         simulate_trade_request::{
@@ -571,7 +571,7 @@ impl QueryService for Server {
             }
         };
         Ok(tonic::Response::new(
-            s.map_ok(|p: penumbra_proto::core::component::dex::v1::Position| {
+            s.map_ok(|p: penumbra_sdk_proto::core::component::dex::v1::Position| {
                 LiquidityPositionsByIdResponse { data: Some(p) }
             })
             .map_err(|e: anyhow::Error| {

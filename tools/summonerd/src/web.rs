@@ -6,7 +6,7 @@ use axum::{
     routing::get,
     Router,
 };
-use penumbra_keys::Address;
+use penumbra_sdk_keys::Address;
 use std::sync::Arc;
 
 use crate::{config::Config, PhaseMarker};

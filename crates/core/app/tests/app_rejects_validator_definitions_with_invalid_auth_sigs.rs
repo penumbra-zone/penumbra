@@ -3,15 +3,15 @@ use {
     cnidarium::TempStorage,
     common::TempStorageExt as _,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_keys::test_keys,
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_proto::DomainType,
-    penumbra_stake::{validator::Validator, FundingStreams, GovernanceKey, IdentityKey},
+    penumbra_sdk_keys::test_keys,
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_proto::DomainType,
+    penumbra_sdk_stake::{validator::Validator, FundingStreams, GovernanceKey, IdentityKey},
     rand_core::OsRng,
     tap::Tap,
     tracing::{error_span, info, Instrument},
@@ -24,7 +24,7 @@ mod common;
 async fn app_rejects_validator_definitions_with_invalid_auth_sigs() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
 
     // Start the test node.
     let mut node = {
@@ -34,7 +34,7 @@ async fn app_rejects_validator_definitions_with_invalid_auth_sigs() -> anyhow::R
         );
         TestNode::builder()
             .single_validator()
-            .with_penumbra_auto_app_state(app_state)?
+            .with_penumbra_sdk_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
     }?;
@@ -92,8 +92,8 @@ async fn app_rejects_validator_definitions_with_invalid_auth_sigs() -> anyhow::R
     // Make a transaction that defines a new validator, providing an invalid signature.
     let plan = {
         use {
-            penumbra_stake::validator,
-            penumbra_transaction::{ActionPlan, TransactionParameters, TransactionPlan},
+            penumbra_sdk_stake::validator,
+            penumbra_sdk_transaction::{ActionPlan, TransactionParameters, TransactionPlan},
             rand_core::OsRng,
         };
         let bytes = new_validator.encode_to_vec();

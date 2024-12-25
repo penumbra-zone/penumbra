@@ -3,12 +3,12 @@ use {
     anyhow::anyhow,
     cnidarium::TempStorage,
     common::TempStorageExt as _,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID},
-    penumbra_auction::{
+    penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID},
+    penumbra_sdk_auction::{
         auction::{
             dutch::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule, DutchAuctionDescription},
             AuctionNft,
@@ -16,12 +16,12 @@ use {
         component::AuctionStoreRead,
         StateReadExt as _,
     },
-    penumbra_keys::test_keys,
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_proto::DomainType,
-    penumbra_shielded_pool::{Note, OutputPlan, SpendPlan},
-    penumbra_transaction::{
+    penumbra_sdk_keys::test_keys,
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_proto::DomainType,
+    penumbra_sdk_shielded_pool::{Note, OutputPlan, SpendPlan},
+    penumbra_sdk_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, ActionPlan, TransactionParameters, TransactionPlan,
     },
     rand_core::OsRng,
@@ -54,19 +54,19 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
     let guard = {
         let filter = EnvFilter::default()
             .add_directive(
-                "penumbra_auction=trace"
+                "penumbra_sdk_auction=trace"
                     .parse()
                     .expect("we only write valid code :)"),
             )
             .add_directive(
-                "penumbra_dex=debug"
+                "penumbra_sdk_dex=debug"
                     .parse()
                     .expect("we only write valid code :)"),
             );
 
         common::set_tracing_subscriber_with_env_filter(filter)
     };
-    let storage = TempStorage::new_with_penumbra_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
     let app_state = AppState::Content(
         genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
     );
@@ -75,7 +75,7 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_auto_app_state(app_state)?
+            .with_penumbra_sdk_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
     }?;

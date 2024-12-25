@@ -235,7 +235,7 @@ mod test {
 pub struct PathDecodeError;
 
 use decaf377::Fq;
-use penumbra_proto::penumbra::crypto::tct::v1 as pb;
+use penumbra_sdk_proto::penumbra::crypto::tct::v1 as pb;
 use std::{
     collections::VecDeque,
     ops::{Index, IndexMut},

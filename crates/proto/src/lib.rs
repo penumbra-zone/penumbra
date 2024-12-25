@@ -7,7 +7,7 @@
 //!
 //! ```ascii
 //! ┌───────┐          ┌──────────────┐               ┌──────────────┐
-//! │encoded│ protobuf │penumbra_proto│ TryFrom/Into  │ domain types │
+//! │encoded│ protobuf │penumbra_sdk_proto│ TryFrom/Into  │ domain types │
 //! │ bytes │<──wire ─>│    types     │<─validation ─>│(other crates)│
 //! └───────┘  format  └──────────────┘   boundary    └──────────────┘
 //! ```

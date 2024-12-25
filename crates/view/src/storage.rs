@@ -5,7 +5,7 @@ use camino::Utf8Path;
 use decaf377::Fq;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use penumbra_auction::auction::AuctionId;
+use penumbra_sdk_auction::auction::AuctionId;
 use r2d2_sqlite::{
     rusqlite::{OpenFlags, OptionalExtension},
     SqliteConnectionManager,
@@ -19,26 +19,26 @@ use tokio::{
 use tracing::{error_span, Instrument};
 use url::Url;
 
-use penumbra_app::params::AppParameters;
-use penumbra_asset::{asset, asset::Id, asset::Metadata, Value};
-use penumbra_dex::{
+use penumbra_sdk_app::params::AppParameters;
+use penumbra_sdk_asset::{asset, asset::Id, asset::Metadata, Value};
+use penumbra_sdk_dex::{
     lp::position::{self, Position, State},
     TradingPair,
 };
-use penumbra_fee::GasPrices;
-use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
-use penumbra_num::Amount;
-use penumbra_proto::{
+use penumbra_sdk_fee::GasPrices;
+use penumbra_sdk_keys::{keys::AddressIndex, Address, FullViewingKey};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{
     core::app::v1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
     DomainType,
 };
-use penumbra_sct::{CommitmentSource, Nullifier};
-use penumbra_shielded_pool::{fmd, note, Note, Rseed};
-use penumbra_stake::{DelegationToken, IdentityKey};
-use penumbra_tct as tct;
-use penumbra_transaction::Transaction;
+use penumbra_sdk_sct::{CommitmentSource, Nullifier};
+use penumbra_sdk_shielded_pool::{fmd, note, Note, Rseed};
+use penumbra_sdk_stake::{DelegationToken, IdentityKey};
+use penumbra_sdk_tct as tct;
+use penumbra_sdk_transaction::Transaction;
 use sct::TreeStore;
 use tct::StateCommitment;
 
@@ -878,7 +878,7 @@ impl Storage {
         &self,
         include_spent: bool,
         asset_id: Option<asset::Id>,
-        address_index: Option<penumbra_keys::keys::AddressIndex>,
+        address_index: Option<penumbra_sdk_keys::keys::AddressIndex>,
         amount_to_spend: Option<Amount>,
     ) -> anyhow::Result<Vec<SpendableNoteRecord>> {
         // If set, return spent notes as well as unspent notes.
@@ -986,7 +986,7 @@ impl Storage {
 
     pub async fn notes_for_voting(
         &self,
-        address_index: Option<penumbra_keys::keys::AddressIndex>,
+        address_index: Option<penumbra_sdk_keys::keys::AddressIndex>,
         votable_at_height: u64,
     ) -> anyhow::Result<Vec<(SpendableNoteRecord, IdentityKey)>> {
         // If set, only return notes with the specified address index.

@@ -70,14 +70,14 @@ const GENERIC_DEX_BUCKETS: &[f64; 16] = &[
     0.06786044041,
 ];
 
-pub const DEX_PATH_SEARCH_DURATION: &str = "penumbra_dex_path_search_duration_seconds";
+pub const DEX_PATH_SEARCH_DURATION: &str = "penumbra_sdk_dex_path_search_duration_seconds";
 pub const DEX_PATH_SEARCH_RELAX_PATH_DURATION: &str =
-    "penumbra_dex_path_search_relax_path_duration_seconds";
-pub const DEX_ROUTE_FILL_DURATION: &str = "penumbra_dex_route_fill_duration_seconds";
-pub const DEX_ARB_DURATION: &str = "penumbra_dex_arb_duration_seconds";
-pub const DEX_BATCH_DURATION: &str = "penumbra_dex_batch_duration_seconds";
+    "penumbra_sdk_dex_path_search_relax_path_duration_seconds";
+pub const DEX_ROUTE_FILL_DURATION: &str = "penumbra_sdk_dex_route_fill_duration_seconds";
+pub const DEX_ARB_DURATION: &str = "penumbra_sdk_dex_arb_duration_seconds";
+pub const DEX_BATCH_DURATION: &str = "penumbra_sdk_dex_batch_duration_seconds";
 pub const DEX_RPC_SIMULATE_TRADE_DURATION: &str =
-    "penumbra_dex_rpc_simulate_trade_duration_seconds";
+    "penumbra_sdk_dex_rpc_simulate_trade_duration_seconds";
 
 /// An extension trait providing DEX-related interfaces for [`PrometheusBuilder`].
 ///

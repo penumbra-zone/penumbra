@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
-use penumbra_proto::{DomainType as _, StateWriteProto as _};
+use penumbra_sdk_proto::{DomainType as _, StateWriteProto as _};
 
 use crate::{component::PositionManager, event, lp::action::PositionClose};
 

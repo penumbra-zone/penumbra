@@ -3,12 +3,12 @@ use {
     anyhow::anyhow,
     cnidarium::TempStorage,
     common::TempStorageExt as _,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_mock_consensus::TestNode,
-    penumbra_stake::component::validator_handler::ValidatorDataRead as _,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_stake::component::validator_handler::ValidatorDataRead as _,
     tap::{Tap, TapFallible},
     tracing::info,
 };
@@ -20,7 +20,7 @@ mod common;
 async fn mock_consensus_can_define_a_genesis_validator() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
     let test_node = {
         let app_state = AppState::Content(
             genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
@@ -28,7 +28,7 @@ async fn mock_consensus_can_define_a_genesis_validator() -> anyhow::Result<()> {
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_auto_app_state(app_state)?
+            .with_penumbra_sdk_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
             .tap_ok(|e| tracing::info!(hash = %e.last_app_hash_hex(), "finished init chain"))?
@@ -48,7 +48,7 @@ async fn mock_consensus_can_define_a_genesis_validator() -> anyhow::Result<()> {
                 .ok_or_else(|| anyhow!("could not find validator status"))?;
             assert_eq!(
                 status,
-                penumbra_stake::validator::State::Active,
+                penumbra_sdk_stake::validator::State::Active,
                 "validator should be active"
             );
         }

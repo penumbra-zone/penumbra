@@ -3,16 +3,16 @@ use {
     cnidarium::TempStorage,
     common::TempStorageExt as _,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_keys::test_keys,
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_proto::DomainType,
-    penumbra_sct::component::clock::EpochRead,
-    penumbra_stake::{
+    penumbra_sdk_keys::test_keys,
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_proto::DomainType,
+    penumbra_sdk_sct::component::clock::EpochRead,
+    penumbra_sdk_stake::{
         component::validator_handler::validator_store::ValidatorDataRead, validator::Validator,
         FundingStreams, GovernanceKey, IdentityKey, Uptime,
     },
@@ -26,14 +26,14 @@ mod common;
 
 #[tokio::test]
 async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<()> {
-    /// The length of the [`penumbra_sct`] epoch.
+    /// The length of the [`penumbra_sdk_sct`] epoch.
     ///
     /// This test relies on many epochs turning over, so we will work with a shorter epoch duration.
     const EPOCH_DURATION: u64 = 8;
 
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
-    let storage = TempStorage::new_with_penumbra_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
     let app_state = AppState::Content(
@@ -47,7 +47,7 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .with_penumbra_auto_app_state(app_state)?
+            .with_penumbra_sdk_auto_app_state(app_state)?
             .init_chain(consensus)
             .await
     }?;
@@ -66,7 +66,7 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
 
     // Helper function, count the validators in the current consensus set.
     let get_latest_consensus_set = || async {
-        use penumbra_stake::component::ConsensusIndexRead;
+        use penumbra_sdk_stake::component::ConsensusIndexRead;
         storage
             .latest_snapshot()
             .get_consensus_set()
@@ -114,8 +114,8 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     // Make a transaction that defines the new validator.
     let plan = {
         use {
-            penumbra_stake::validator,
-            penumbra_transaction::{ActionPlan, TransactionParameters, TransactionPlan},
+            penumbra_sdk_stake::validator,
+            penumbra_sdk_transaction::{ActionPlan, TransactionParameters, TransactionPlan},
             rand_core::OsRng,
         };
         let bytes = new_validator.encode_to_vec();
@@ -160,10 +160,10 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     // Now, create a transaction that delegates to the new validator.
     let plan = {
         use {
-            penumbra_asset::STAKING_TOKEN_ASSET_ID,
-            penumbra_sct::component::clock::EpochRead,
-            penumbra_shielded_pool::{OutputPlan, SpendPlan},
-            penumbra_transaction::{
+            penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID,
+            penumbra_sdk_sct::component::clock::EpochRead,
+            penumbra_sdk_shielded_pool::{OutputPlan, SpendPlan},
+            penumbra_sdk_transaction::{
                 memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
             },
         };
@@ -280,10 +280,10 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     // Build a transaction that will now undelegate from the validator.
     let plan = {
         use {
-            penumbra_sct::component::clock::EpochRead,
-            penumbra_shielded_pool::{OutputPlan, SpendPlan},
-            penumbra_stake::DelegationToken,
-            penumbra_transaction::{
+            penumbra_sdk_sct::component::clock::EpochRead,
+            penumbra_sdk_shielded_pool::{OutputPlan, SpendPlan},
+            penumbra_sdk_stake::DelegationToken,
+            penumbra_sdk_transaction::{
                 memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
             },
         };

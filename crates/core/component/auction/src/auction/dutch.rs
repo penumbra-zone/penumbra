@@ -1,10 +1,10 @@
 use std::num::NonZeroU64;
 
 use anyhow::anyhow;
-use penumbra_asset::{asset, Value};
-use penumbra_dex::lp::position::{self};
-use penumbra_num::Amount;
-use penumbra_proto::{core::component::auction::v1 as pb, DomainType};
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_dex::lp::position::{self};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{core::component::auction::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::auction::AuctionId;
@@ -12,7 +12,7 @@ use crate::auction::AuctionId;
 pub mod actions;
 pub use actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw};
 
-pub const DUTCH_AUCTION_DOMAIN_SEP: &[u8] = b"penumbra_DA_nft";
+pub const DUTCH_AUCTION_DOMAIN_SEP: &[u8] = b"penumbra_sdk_DA_nft";
 
 /// A deployed Dutch Auction, containing an immutable description
 /// and stateful data about its current state.

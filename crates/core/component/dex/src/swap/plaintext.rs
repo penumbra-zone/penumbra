@@ -5,20 +5,20 @@ use ark_relations::r1cs::SynthesisError;
 use decaf377::r1cs::FqVar;
 use decaf377::Fq;
 use once_cell::sync::Lazy;
-use penumbra_fee::Fee;
-use penumbra_proto::{
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_proto::{
     core::keys::v1 as pb_keys, penumbra::core::component::dex::v1 as pb, DomainType,
 };
-use penumbra_tct::StateCommitment;
+use penumbra_sdk_tct::StateCommitment;
 use poseidon377::{hash_1, hash_4, hash_7};
 use rand_core::{CryptoRng, RngCore};
 
 use decaf377_ka as ka;
-use penumbra_asset::{asset, Value, ValueVar};
-use penumbra_keys::{keys::OutgoingViewingKey, Address, AddressVar, PayloadKey};
-use penumbra_num::{Amount, AmountVar};
-use penumbra_shielded_pool::{Note, Rseed};
-use penumbra_tct::r1cs::StateCommitmentVar;
+use penumbra_sdk_asset::{asset, Value, ValueVar};
+use penumbra_sdk_keys::{keys::OutgoingViewingKey, Address, AddressVar, PayloadKey};
+use penumbra_sdk_num::{Amount, AmountVar};
+use penumbra_sdk_shielded_pool::{Note, Rseed};
+use penumbra_sdk_tct::r1cs::StateCommitmentVar;
 
 use crate::{BatchSwapOutputData, TradingPair, TradingPairVar};
 
@@ -420,8 +420,8 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use penumbra_asset::{asset, Value};
-    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use penumbra_sdk_asset::{asset, Value};
+    use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 
     #[test]
     /// Check the swap plaintext can be encrypted and decrypted with the OVK.

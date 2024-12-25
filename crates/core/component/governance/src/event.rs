@@ -1,5 +1,5 @@
-use penumbra_proto::penumbra::core::component::governance::v1 as pb;
-use penumbra_stake::IdentityKey;
+use penumbra_sdk_proto::penumbra::core::component::governance::v1 as pb;
+use penumbra_sdk_stake::IdentityKey;
 
 use crate::{
     DelegatorVote, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,

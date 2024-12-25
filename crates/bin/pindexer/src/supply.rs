@@ -4,17 +4,17 @@ use anyhow::{anyhow, Result};
 use cometindex::{
     async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
 };
-use penumbra_app::genesis::Content;
-use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
-use penumbra_num::Amount;
-use penumbra_proto::{
+use penumbra_sdk_app::genesis::Content;
+use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{
     event::ProtoEvent,
     penumbra::core::component::{
         auction::v1 as pb_auction, dex::v1 as pb_dex, fee::v1 as pb_fee, funding::v1 as pb_funding,
         stake::v1 as pb_stake,
     },
 };
-use penumbra_stake::{rate::RateData, validator::Validator, IdentityKey};
+use penumbra_sdk_stake::{rate::RateData, validator::Validator, IdentityKey};
 use sqlx::{Postgres, Transaction};
 use std::iter;
 
@@ -127,8 +127,8 @@ mod delegated_supply {
     //! This module handles updates around the delegated supply to a validator.
     use anyhow::{anyhow, Result};
     use cometindex::PgTransaction;
-    use penumbra_num::fixpoint::U128x128;
-    use penumbra_stake::{rate::RateData, IdentityKey};
+    use penumbra_sdk_num::fixpoint::U128x128;
+    use penumbra_sdk_stake::{rate::RateData, IdentityKey};
 
     const BPS_SQUARED: u64 = 1_0000_0000u64;
 
@@ -413,11 +413,11 @@ enum Event {
     },
     DexArb {
         height: u64,
-        swap_execution: penumbra_dex::SwapExecution,
+        swap_execution: penumbra_sdk_dex::SwapExecution,
     },
     BlockFees {
         height: u64,
-        total: penumbra_fee::Fee,
+        total: penumbra_sdk_fee::Fee,
     },
 }
 

@@ -1,8 +1,8 @@
 use anyhow::Result;
 use std::{collections::HashSet, sync::Arc};
 
-use penumbra_keys::Address;
-use penumbra_num::Amount;
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_num::Amount;
 use tokio::sync::RwLock;
 
 use crate::participant::Participant;

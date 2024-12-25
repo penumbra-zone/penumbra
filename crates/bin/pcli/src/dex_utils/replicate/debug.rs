@@ -1,6 +1,6 @@
-use penumbra_dex::lp::position::Position;
-use penumbra_dex::DirectedUnitPair;
-use penumbra_num::fixpoint::U128x128;
+use penumbra_sdk_dex::lp::position::Position;
+use penumbra_sdk_dex::DirectedUnitPair;
+use penumbra_sdk_num::fixpoint::U128x128;
 use serde::Serialize;
 
 #[derive(Serialize)]

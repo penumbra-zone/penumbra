@@ -3,8 +3,8 @@
 use anyhow;
 use cnidarium::{StateDelta, StateWrite, Storage};
 use jmt::RootHash;
-use penumbra_app::app::StateReadExt as _;
-use penumbra_sct::component::clock::{EpochManager, EpochRead};
+use penumbra_sdk_app::app::StateReadExt as _;
+use penumbra_sdk_sct::component::clock::{EpochManager, EpochRead};
 use std::path::PathBuf;
 
 use crate::network::generate::NetworkConfig;
@@ -43,7 +43,7 @@ pub async fn migrate(
 
     /* ---------- generate genesis ------------  */
     let chain_id = migrated_state.get_chain_id().await?;
-    let app_state = penumbra_app::genesis::Content {
+    let app_state = penumbra_sdk_app::genesis::Content {
         chain_id,
         ..Default::default()
     };

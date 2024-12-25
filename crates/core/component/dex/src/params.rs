@@ -1,6 +1,6 @@
-use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
-use penumbra_proto::penumbra::core::component::dex::v1 as pb;
-use penumbra_proto::DomainType;
+use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_proto::penumbra::core::component::dex::v1 as pb;
+use penumbra_sdk_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]

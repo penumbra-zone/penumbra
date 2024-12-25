@@ -7,7 +7,7 @@ use aes::Aes128;
 
 use anyhow::Context;
 use derivative::Derivative;
-use penumbra_proto::{penumbra::core::keys::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::keys::v1 as pb, DomainType};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -26,7 +26,7 @@ impl Diversifier {
     /// Generate the diversified basepoint associated to this diversifier.
     pub fn diversified_generator(&self) -> decaf377::Element {
         let hash = blake2b_simd::Params::new()
-            .personal(b"Penumbra_Divrsfy")
+            .personal(b"penumbra_sdk_Divrsfy")
             .hash(&self.0);
 
         decaf377::Element::encode_to_curve(&Fq::from_le_bytes_mod_order(hash.as_bytes()))

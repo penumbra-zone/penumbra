@@ -31,9 +31,9 @@ use ibc_types::core::{
 
 use ibc_types::DomainType as IbcTypesDomainType;
 
-use penumbra_proto::penumbra::core::component::ibc::v1::{self as pb};
-use penumbra_proto::{DomainType, Name};
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_proto::penumbra::core::component::ibc::v1::{self as pb};
+use penumbra_sdk_proto::{DomainType, Name};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

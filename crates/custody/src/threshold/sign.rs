@@ -5,18 +5,18 @@ use std::{
 
 use anyhow::{anyhow, Result};
 use ed25519_consensus::{Signature, SigningKey, VerificationKey};
-use penumbra_keys::FullViewingKey;
+use penumbra_sdk_keys::FullViewingKey;
 use rand_core::CryptoRngCore;
 
 use decaf377_frost as frost;
 use frost::round1::SigningCommitments;
-use penumbra_proto::core::component::{
+use penumbra_sdk_proto::core::component::{
     governance::v1::ValidatorVoteBody as ProtoValidatorVoteBody,
     stake::v1::Validator as ProtoValidator,
 };
-use penumbra_proto::{penumbra::custody::threshold::v1 as pb, DomainType, Message};
-use penumbra_transaction::AuthorizationData;
-use penumbra_txhash::EffectHash;
+use penumbra_sdk_proto::{penumbra::custody::threshold::v1 as pb, DomainType, Message};
+use penumbra_sdk_transaction::AuthorizationData;
+use penumbra_sdk_txhash::EffectHash;
 
 use crate::terminal::SigningRequest;
 

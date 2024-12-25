@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
-use penumbra_num::Amount;
+use penumbra_sdk_num::Amount;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
@@ -58,7 +58,7 @@ impl Component for Distributions {
 trait DistributionManager: StateWriteExt {
     /// Compute the total new issuance of staking tokens for this epoch.
     async fn compute_new_issuance(&self) -> Result<Amount> {
-        use penumbra_sct::component::clock::EpochRead;
+        use penumbra_sdk_sct::component::clock::EpochRead;
 
         let current_block_height = self.get_block_height().await?;
         let current_epoch = self.get_current_epoch().await?;

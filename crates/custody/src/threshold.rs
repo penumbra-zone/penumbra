@@ -1,11 +1,11 @@
 use anyhow::{anyhow, Result};
-use penumbra_transaction::AuthorizationData;
+use penumbra_sdk_transaction::AuthorizationData;
 use rand_core::OsRng;
 use serde::Serialize;
 use tonic::{async_trait, Request, Response, Status};
 
-use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
-use penumbra_proto::{custody::v1 as pb, DomainType};
+use penumbra_sdk_keys::{keys::AddressIndex, Address, FullViewingKey};
+use penumbra_sdk_proto::{custody::v1 as pb, DomainType};
 
 use crate::{AuthorizeRequest, AuthorizeValidatorDefinitionRequest, AuthorizeValidatorVoteRequest};
 
@@ -362,7 +362,7 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
 mod test {
     use std::collections::HashMap;
 
-    use penumbra_transaction::TransactionPlan;
+    use penumbra_sdk_transaction::TransactionPlan;
 
     use tokio::sync;
 

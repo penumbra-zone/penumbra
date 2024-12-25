@@ -1,11 +1,11 @@
 use crate::App;
 use anyhow::{anyhow, Context, Result};
-use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_keys::FullViewingKey;
-use penumbra_num::Amount;
-use penumbra_proto::view::v1::GasPricesRequest;
-use penumbra_view::ViewClient;
-use penumbra_wallet::plan::Planner;
+use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::view::v1::GasPricesRequest;
+use penumbra_sdk_view::ViewClient;
+use penumbra_sdk_wallet::plan::Planner;
 use rand_core::OsRng;
 use std::{collections::HashMap, io::Write};
 use termion::input::TermRead;

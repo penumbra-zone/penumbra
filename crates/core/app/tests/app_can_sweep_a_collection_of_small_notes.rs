@@ -2,24 +2,24 @@ use {
     anyhow::Context,
     cnidarium::TempStorage,
     common::TempStorageExt as _,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{AppState, Content},
         server::consensus::Consensus,
     },
-    penumbra_asset::{STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM},
-    penumbra_keys::{keys::AddressIndex, test_keys},
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_proto::{
+    penumbra_sdk_asset::{STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM},
+    penumbra_sdk_keys::{keys::AddressIndex, test_keys},
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_proto::{
         view::v1::{
             view_service_client::ViewServiceClient, view_service_server::ViewServiceServer,
             StatusRequest, StatusResponse,
         },
         DomainType,
     },
-    penumbra_shielded_pool::genesis::Allocation,
-    penumbra_view::ViewClient,
-    penumbra_wallet::plan::SWEEP_COUNT,
+    penumbra_sdk_shielded_pool::genesis::Allocation,
+    penumbra_sdk_view::ViewClient,
+    penumbra_sdk_wallet::plan::SWEEP_COUNT,
     rand_core::OsRng,
     std::ops::Deref,
     tap::{Tap, TapFallible},
@@ -38,10 +38,10 @@ const COUNT: usize = SWEEP_COUNT + 1;
 async fn app_can_sweep_a_collection_of_small_notes() -> anyhow::Result<()> {
     // Install a test logger, and acquire some temporary storage.
     let guard = common::set_tracing_subscriber_with_env_filter("info".into());
-    let storage = TempStorage::new_with_penumbra_prefixes().await?;
+    let storage = TempStorage::new_with_penumbra_sdk_prefixes().await?;
 
     // Instantiate a mock tendermint proxy, which we will connect to the test node.
-    let proxy = penumbra_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
+    let proxy = penumbra_sdk_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
 
     // Define allocations to the test address, as many small notes.
     let allocations = {
@@ -57,7 +57,7 @@ async fn app_can_sweep_a_collection_of_small_notes() -> anyhow::Result<()> {
     let mut test_node = {
         let content = Content {
             chain_id: TestNode::<()>::CHAIN_ID.to_string(),
-            shielded_pool_content: penumbra_shielded_pool::genesis::Content {
+            shielded_pool_content: penumbra_sdk_shielded_pool::genesis::Content {
                 allocations,
                 ..Default::default()
             },
@@ -95,7 +95,7 @@ async fn app_can_sweep_a_collection_of_small_notes() -> anyhow::Result<()> {
 
     // Spawn the server-side view server.
     {
-        let make_svc = penumbra_app::rpc::routes(
+        let make_svc = penumbra_sdk_app::rpc::routes(
             storage.as_ref(),
             proxy,
             false, /*enable_expensive_rpc*/
@@ -115,7 +115,7 @@ async fn app_can_sweep_a_collection_of_small_notes() -> anyhow::Result<()> {
 
     // Spawn the client-side view server...
     let view_server = {
-        penumbra_view::ViewServer::load_or_initialize(
+        penumbra_sdk_view::ViewServer::load_or_initialize(
             None::<&camino::Utf8Path>,
             None::<&camino::Utf8Path>,
             &*test_keys::FULL_VIEWING_KEY,
@@ -159,7 +159,7 @@ async fn app_can_sweep_a_collection_of_small_notes() -> anyhow::Result<()> {
     );
 
     loop {
-        let plans = penumbra_wallet::plan::sweep(&mut view_client, OsRng)
+        let plans = penumbra_sdk_wallet::plan::sweep(&mut view_client, OsRng)
             .await
             .context("constructing sweep plans")?;
         if plans.is_empty() {

@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_proto::{DomainType as _, StateReadProto, StateWriteProto};
-use penumbra_tct as tct;
+use penumbra_sdk_proto::{DomainType as _, StateReadProto, StateWriteProto};
+use penumbra_sdk_tct as tct;
 use tct::builder::{block, epoch};
 use tracing::instrument;
 

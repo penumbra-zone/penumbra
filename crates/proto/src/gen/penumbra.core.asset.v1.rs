@@ -87,7 +87,7 @@ pub struct Metadata {
     pub symbol: ::prost::alloc::string::String,
     /// the asset ID on Penumbra for this denomination.
     #[prost(message, optional, tag = "1984")]
-    pub penumbra_asset_id: ::core::option::Option<AssetId>,
+    pub penumbra_sdk_asset_id: ::core::option::Option<AssetId>,
     #[prost(message, repeated, tag = "1985")]
     pub images: ::prost::alloc::vec::Vec<AssetImage>,
     /// An optional "score" used to prioritize token lists.

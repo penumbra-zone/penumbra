@@ -1,5 +1,5 @@
-use penumbra_asset::asset;
-use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use regex::Regex;
 
 use super::position::{Id, State};
@@ -150,7 +150,7 @@ impl From<LpNft> for pb::LpNft {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use penumbra_asset::STAKING_TOKEN_ASSET_ID;
+    use penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID;
 
     use super::super::{super::DirectedTradingPair, position::*};
 

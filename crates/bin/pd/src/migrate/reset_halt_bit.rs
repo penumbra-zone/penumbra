@@ -2,7 +2,7 @@
 
 use anyhow;
 use cnidarium::{StateDelta, Storage};
-use penumbra_governance::StateWriteExt as _;
+use penumbra_sdk_governance::StateWriteExt as _;
 use std::path::PathBuf;
 
 pub async fn migrate(

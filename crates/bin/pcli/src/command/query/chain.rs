@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
-use penumbra_app::params::AppParameters;
-use penumbra_proto::{
+use penumbra_sdk_app::params::AppParameters;
+use penumbra_sdk_proto::{
     core::{
         app::v1::{
             query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
@@ -24,7 +24,7 @@ use penumbra_proto::{
     },
     Message,
 };
-use penumbra_stake::validator;
+use penumbra_sdk_stake::validator;
 
 use crate::App;
 

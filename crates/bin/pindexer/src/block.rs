@@ -1,5 +1,5 @@
 use cometindex::{async_trait, index::EventBatch, sqlx, AppView, PgTransaction};
-use penumbra_proto::{core::component::sct::v1 as pb, event::ProtoEvent};
+use penumbra_sdk_proto::{core::component::sct::v1 as pb, event::ProtoEvent};
 use sqlx::types::chrono::DateTime;
 
 #[derive(Debug)]

@@ -3,14 +3,14 @@ use crate::WitnessData;
 use anyhow::{anyhow, Context, Result};
 use ark_ff::Zero;
 use decaf377::Fr;
-use penumbra_asset::Balance;
-use penumbra_auction::auction::dutch::actions::ActionDutchAuctionEnd;
-use penumbra_auction::auction::dutch::actions::ActionDutchAuctionSchedule;
-use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
-use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_asset::Balance;
+use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionEnd;
+use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionSchedule;
+use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
+use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 
-use penumbra_dex::{
+use penumbra_sdk_dex::{
     lp::{
         action::{PositionClose, PositionOpen},
         plan::PositionWithdrawPlan,
@@ -18,16 +18,16 @@ use penumbra_dex::{
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
 };
-use penumbra_governance::{
+use penumbra_sdk_governance::{
     delegator_vote::DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
     ValidatorVote,
 };
 
-use penumbra_ibc::IbcRelay;
-use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
-use penumbra_proto::{core::transaction::v1 as pb_t, DomainType};
-use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
-use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
+use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_keys::{symmetric::PayloadKey, FullViewingKey};
+use penumbra_sdk_proto::{core::transaction::v1 as pb_t, DomainType};
+use penumbra_sdk_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
+use penumbra_sdk_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
@@ -50,7 +50,7 @@ pub enum ActionPlan {
     /// because we don't yet use flow encryption.
     Undelegate(Undelegate),
     UndelegateClaim(UndelegateClaimPlan),
-    ValidatorDefinition(penumbra_stake::validator::Definition),
+    ValidatorDefinition(penumbra_sdk_stake::validator::Definition),
     /// Describes a proposed swap.
     Swap(SwapPlan),
     /// Describes a swap claim.
@@ -337,8 +337,8 @@ impl From<UndelegateClaimPlan> for ActionPlan {
     }
 }
 
-impl From<penumbra_stake::validator::Definition> for ActionPlan {
-    fn from(inner: penumbra_stake::validator::Definition) -> ActionPlan {
+impl From<penumbra_sdk_stake::validator::Definition> for ActionPlan {
+    fn from(inner: penumbra_sdk_stake::validator::Definition) -> ActionPlan {
         ActionPlan::ValidatorDefinition(inner)
     }
 }
@@ -498,7 +498,7 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             },
             ActionPlan::PositionWithdraw(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionWithdraw(Into::<
-                    penumbra_proto::core::component::dex::v1::PositionWithdrawPlan,
+                    penumbra_sdk_proto::core::component::dex::v1::PositionWithdrawPlan,
                 >::into(
                     inner
                 ))),

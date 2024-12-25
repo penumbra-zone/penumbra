@@ -6,7 +6,7 @@
 
 use assert_cmd::Command;
 use http::StatusCode;
-use penumbra_proto::FILE_DESCRIPTOR_SET;
+use penumbra_sdk_proto::FILE_DESCRIPTOR_SET;
 use predicates::prelude::*;
 use prost_reflect::{DescriptorPool, ServiceDescriptor};
 use url::Url;
@@ -19,7 +19,7 @@ use url::Url;
 async fn check_cors_headers() -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let pd_url =
-        std::env::var("PENUMBRA_NODE_PD_URL").unwrap_or("http://localhost:8080".to_string());
+        std::env::var("penumbra_sdk_NODE_PD_URL").unwrap_or("http://localhost:8080".to_string());
     let r = client.get(pd_url).send().await?;
     assert_eq!(r.headers().get("access-control-allow-origin").unwrap(), "*");
     assert_eq!(
@@ -39,7 +39,7 @@ async fn check_cors_headers() -> anyhow::Result<()> {
 async fn check_minifront_http_ok() -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let pd_url =
-        std::env::var("PENUMBRA_NODE_PD_URL").unwrap_or("http://localhost:8080".to_string());
+        std::env::var("penumbra_sdk_NODE_PD_URL").unwrap_or("http://localhost:8080".to_string());
     let r = client.get(pd_url).send().await?;
     assert_eq!(r.status(), StatusCode::OK);
     Ok(())
@@ -50,7 +50,7 @@ async fn check_minifront_http_ok() -> anyhow::Result<()> {
 /// Validate that gRPC server reflection is enabled and working, by calling out
 /// to `grpcurl` and verifying that it can view methods. See GH4392 for context.
 async fn check_grpc_server_reflection() -> anyhow::Result<()> {
-    let pd_url: Url = std::env::var("PENUMBRA_NODE_PD_URL")
+    let pd_url: Url = std::env::var("penumbra_sdk_NODE_PD_URL")
         .unwrap_or("http://localhost:8080".to_string())
         .parse()
         .unwrap();
@@ -102,7 +102,7 @@ async fn check_grpc_server_reflection() -> anyhow::Result<()> {
 ///   - penumbra.view.v1.ViewService
 ///   - penumbra.core.component.dex.v1.SimulationService
 ///
-/// The gRPC service names are read from the [penumbra_proto] crate's [FILE_DESCRIPTOR_SET],
+/// The gRPC service names are read from the [penumbra_sdk_proto] crate's [FILE_DESCRIPTOR_SET],
 /// which is exported at build time.
 fn get_all_grpc_services() -> anyhow::Result<Vec<String>> {
     // Intentionally verbose to be explicit.

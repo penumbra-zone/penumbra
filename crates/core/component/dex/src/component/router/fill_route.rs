@@ -7,8 +7,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateDelta, StateRead, StateWrite};
 use futures::{Stream, StreamExt};
-use penumbra_asset::{asset, Value};
-use penumbra_num::{
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_num::{
     fixpoint::{Error, U128x128},
     Amount,
 };

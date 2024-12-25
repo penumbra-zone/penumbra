@@ -1,8 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_proto::StateWriteProto as _;
-use penumbra_shielded_pool::component::AssetRegistry;
+use penumbra_sdk_proto::StateWriteProto as _;
+use penumbra_sdk_shielded_pool::component::AssetRegistry;
 
 use crate::action_handler::ActionHandler;
 use crate::component::{StateReadExt as _, StateWriteExt as _};
