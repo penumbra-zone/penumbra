@@ -33,8 +33,8 @@ pub(crate) trait AssetByLiquidityIndex: StateWrite {
     /// There are then two possible amounts to consider for an asset B: amount of A that
     /// can be sold for B and amount of A that can be bought with B
     ///
-    /// (1), amount that can be sold (“outbound”) is the wrong thing to use
-    /// (2), amount that can be bought, is intuitively the “opposite” of what we want,
+    /// (1), amount that can be sold ("outbound") is the wrong thing to use
+    /// (2), amount that can be bought, is intuitively the "opposite" of what we want,
     ///      since it’s the reverse direction, but is actually the right thing to use as
     ///      a rough proxy for liquidity
     ///

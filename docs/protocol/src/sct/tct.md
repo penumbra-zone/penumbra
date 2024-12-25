@@ -15,7 +15,7 @@ means too many expensive hash operations, whereas an octal tree means too large
 proofs.
 
 * *Sparse:* A client’s version of the tree need only represent the state
-commitments pertinent to that client’s state, with all other “forgotten”
+commitments pertinent to that client’s state, with all other "forgotten"
 commitments and internal hashes related to them pruned to a single summary hash.
 
 * *Semi-Lazy:* The internal hashes along the frontier of the tree are only
