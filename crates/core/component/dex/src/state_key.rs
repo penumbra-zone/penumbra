@@ -1,6 +1,6 @@
-use std::string::String;
-use penumbra_sdk_asset::asset;
 use crate::{lp::position, DirectedTradingPair, TradingPair};
+use penumbra_sdk_asset::asset;
+use std::string::String;
 
 pub mod config {
     pub fn dex_params() -> &'static str {
