@@ -144,7 +144,7 @@ impl Position {
     /// Get the ID of this position.
     pub fn id(&self) -> Id {
         let mut state = blake2b_simd::Params::default()
-            .personal(b"penumbra_sdk_lp_id")
+            .personal(b"penumbra_lp_id")
             .to_state();
 
         state.update(&self.nonce);

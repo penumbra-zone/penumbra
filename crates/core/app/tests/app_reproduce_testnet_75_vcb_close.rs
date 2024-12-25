@@ -54,12 +54,12 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
     let guard = {
         let filter = EnvFilter::default()
             .add_directive(
-                "penumbra_sdk_auction=trace"
+                "penumbra_auction=trace"
                     .parse()
                     .expect("we only write valid code :)"),
             )
             .add_directive(
-                "penumbra_sdk_dex=debug"
+                "penumbra_dex=debug"
                     .parse()
                     .expect("we only write valid code :)"),
             );

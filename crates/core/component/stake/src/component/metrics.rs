@@ -22,4 +22,4 @@ pub fn register_metrics() {
     );
 }
 
-pub const MISSED_BLOCKS: &str = "penumbra_sdk_stake_missed_blocks";
+pub const MISSED_BLOCKS: &str = "penumbra_stake_missed_blocks";

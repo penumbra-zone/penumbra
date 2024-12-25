@@ -47,7 +47,7 @@ impl PayloadKey {
     /// Use Blake2b-256 to derive a `PayloadKey`.
     pub fn derive(shared_secret: &ka::SharedSecret, epk: &ka::Public) -> Self {
         let mut kdf_params = blake2b_simd::Params::new();
-        kdf_params.personal(b"penumbra_sdk_Payload");
+        kdf_params.personal(b"Penumbra_Payload");
         kdf_params.hash_length(32);
         let mut kdf = kdf_params.to_state();
         kdf.update(&shared_secret.0);
@@ -96,7 +96,7 @@ impl PayloadKey {
         let cm_bytes: [u8; 32] = cm.into();
 
         let mut kdf_params = blake2b_simd::Params::new();
-        kdf_params.personal(b"penumbra_sdk_Payswap");
+        kdf_params.personal(b"Penumbra_Payswap");
         kdf_params.hash_length(32);
         let mut kdf = kdf_params.to_state();
         kdf.update(&ovk.to_bytes());
@@ -189,7 +189,7 @@ impl OutgoingCipherKey {
 
         let mut kdf_params = blake2b_simd::Params::new();
         kdf_params.hash_length(32);
-        kdf_params.personal(b"penumbra_sdk_OutCiph");
+        kdf_params.personal(b"Penumbra_OutCiph");
         let mut kdf = kdf_params.to_state();
         kdf.update(&ovk.to_bytes());
         kdf.update(&cv_bytes);
@@ -351,7 +351,7 @@ pub struct BackreferenceKey(pub Key);
 impl BackreferenceKey {
     pub fn derive(ovk: &OutgoingViewingKey) -> Self {
         let mut kdf_params = blake2b_simd::Params::new();
-        kdf_params.personal(b"penumbra_sdk_Backref");
+        kdf_params.personal(b"Penumbra_Backref");
         kdf_params.hash_length(32);
         let mut kdf = kdf_params.to_state();
         kdf.update(&ovk.to_bytes());

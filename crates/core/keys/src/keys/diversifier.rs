@@ -26,7 +26,7 @@ impl Diversifier {
     /// Generate the diversified basepoint associated to this diversifier.
     pub fn diversified_generator(&self) -> decaf377::Element {
         let hash = blake2b_simd::Params::new()
-            .personal(b"penumbra_sdk_Divrsfy")
+            .personal(b"Penumbra_Divrsfy")
             .hash(&self.0);
 
         decaf377::Element::encode_to_curve(&Fq::from_le_bytes_mod_order(hash.as_bytes()))

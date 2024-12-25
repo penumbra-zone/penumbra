@@ -233,7 +233,7 @@ pub enum NetworkCommand {
         /// Public URL to advertise for this node's Tendermint P2P service.
         /// Setting this option will instruct other nodes on the network to connect
         /// to yours. Must be in the form of a socket, e.g. "1.2.3.4:26656".
-        #[clap(long, env = "penumbra_sdk_PD_TM_EXTERNAL_ADDR")]
+        #[clap(long, env = "PENUMBRA_PD_TM_EXTERNAL_ADDR")]
         external_address: Option<SocketAddr>,
         /// When generating Tendermint config, use this socket to bind the Tendermint RPC service.
         #[clap(long, env = "PENUMBRA_PD_TM_RPC_BIND", default_value = "0.0.0.0:26657")]

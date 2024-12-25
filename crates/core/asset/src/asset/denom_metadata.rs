@@ -225,7 +225,7 @@ impl Inner {
         let id = Id(Fq::from_le_bytes_mod_order(
             // XXX choice of hash function?
             blake2b_simd::Params::default()
-                .personal(b"penumbra_sdk_AssetID")
+                .personal(b"Penumbra_AssetID")
                 .hash(base_denom.as_bytes())
                 .as_bytes(),
         ));

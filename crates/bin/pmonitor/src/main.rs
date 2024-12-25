@@ -112,7 +112,7 @@ pub struct Opt {
     #[clap(subcommand)]
     pub cmd: Command,
     /// The path used to store pmonitor state.
-    #[clap(long, default_value_t = default_home(), env = "penumbra_sdk_PMONITOR_HOME")]
+    #[clap(long, default_value_t = default_home(), env = "PENUMBRA_PMONITOR_HOME")]
     pub home: Utf8PathBuf,
 }
 

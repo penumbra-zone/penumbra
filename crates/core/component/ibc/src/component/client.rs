@@ -216,7 +216,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
             format!(
                 // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
                 // it's not in the same path namespace.
-                "penumbra_sdk_verified_heights/{client_id}/verified_heights"
+                "penumbra_verified_heights/{client_id}/verified_heights"
             ),
             verified_heights,
         );
@@ -231,7 +231,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
         self.put(
-            format!("penumbra_sdk_consensus_states/{height}"),
+            format!("penumbra_consensus_states/{height}"),
             consensus_state,
         );
     }
@@ -324,7 +324,7 @@ pub trait StateReadExt: StateRead {
         self.get(&format!(
             // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
             // it's not in the same path namespace.
-            "penumbra_sdk_verified_heights/{client_id}/verified_heights"
+            "penumbra_verified_heights/{client_id}/verified_heights"
         ))
         .await
     }
@@ -336,7 +336,7 @@ pub trait StateReadExt: StateRead {
     ) -> Result<TendermintConsensusState> {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
-        self.get(&format!("penumbra_sdk_consensus_states/{height}"))
+        self.get(&format!("penumbra_consensus_states/{height}"))
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!("penumbra consensus state not found for height {height}")
