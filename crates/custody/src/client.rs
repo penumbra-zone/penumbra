@@ -14,8 +14,8 @@ use crate::AuthorizeRequest;
 /// a transaction they’ve constructed.
 ///
 /// Modeling transaction authorization as an asynchronous RPC call encourages
-/// software to be written in a way that has a compatible data flow with a “soft
-/// HSM”, threshold signing, a hardware wallet, etc.
+/// software to be written in a way that has a compatible data flow with a "soft
+/// HSM", threshold signing, a hardware wallet, etc.
 ///
 /// The custody protocol does not trust the client to authorize spends, so
 /// custody requests must contain sufficient information for the custodian to
