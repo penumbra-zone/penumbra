@@ -1,7 +1,7 @@
 [toolchain]
 # We set a specific version of rust so that CI workflows use the same
 # version development environments do.
-channel = "1.80"
+channel = "1.83"
 components = [ "rustfmt", "rust-analyzer" ]
 # Include wasm toolchain, for CI tests to check wasm32 build targets still work,
 # to avoid downstream breakage in `penumbra-wasm` crate, in the web repo.

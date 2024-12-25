@@ -220,11 +220,11 @@ sha2                             = { version = "0.10" }
 sqlx                             = { version = "0.8", features = ["bigdecimal", "postgres", "runtime-tokio", "tls-rustls"] }
 tap                              = "1.0.1"
 tempfile                         = { version = "3.3.0" }
-tendermint                       = { default-features = false, version = "0.40.0" }
-tendermint-config                = { version = "0.40.0" }
-tendermint-light-client-verifier = { version = "0.40.0" }
-tendermint-proto                 = { version = "0.40.0" }
-tendermint-rpc                   = { version = "0.40.0" }
+tendermint                       = { default-features = false, version = "0.40.1" }
+tendermint-config                = { version = "0.40.1" }
+tendermint-light-client-verifier = { version = "0.40.1" }
+tendermint-proto                 = { version = "0.40.1" }
+tendermint-rpc                   = { version = "0.40.1" }
 termion                          = { version = "3" }
 thiserror                        = { version = "1.0" }
 time                             = { version = "0.3" }
@@ -242,11 +242,3 @@ tracing                          = { version = "0.1" }
 tracing-subscriber               = { version = "0.3.17", features = ["env-filter"] }
 url                              = { version = "2.2" }
 getrandom                        = { version = "0.2", default-features = false }
-
-# TODO: cut 41 in trs
-[patch.crates-io]
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs/", rev = "refs/pull/1480/head" }
-tendermint-config = { git = "https://github.com/informalsystems/tendermint-rs/", rev = "refs/pull/1480/head" }
-tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs/", rev = "refs/pull/1480/head" }
-tendermint-proto = { git = "https://github.com/informalsystems/tendermint-rs/", rev = "refs/pull/1480/head" }
-tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs/", rev = "refs/pull/1480/head" }

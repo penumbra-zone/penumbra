@@ -8078,8 +8078,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.40.0"
-source = "git+https://github.com/informalsystems/tendermint-rs/?rev=refs/pull/1480/head#adc8b44f1559df7445b6ec67ced7c554eab189b4"
+version = "0.40.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9703e34d940c2a293804752555107f8dbe2b84ec4c6dd5203831235868105d2"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -8105,8 +8106,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.40.0"
-source = "git+https://github.com/informalsystems/tendermint-rs/?rev=refs/pull/1480/head#adc8b44f1559df7445b6ec67ced7c554eab189b4"
+version = "0.40.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "89cc3ea9a39b7ee34eefcff771cc067ecaa0c988c1c5ac08defd878471a06f76"
 dependencies = [
  "flex-error",
  "serde",
@@ -8118,8 +8120,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-verifier"
-version = "0.40.0"
-source = "git+https://github.com/informalsystems/tendermint-rs/?rev=refs/pull/1480/head#adc8b44f1559df7445b6ec67ced7c554eab189b4"
+version = "0.40.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0cda4a449fc70985a95f892a67286f13afa4e048d90b8d04a2bf6341e88d1c2"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -8130,8 +8133,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.40.0"
-source = "git+https://github.com/informalsystems/tendermint-rs/?rev=refs/pull/1480/head#adc8b44f1559df7445b6ec67ced7c554eab189b4"
+version = "0.40.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ae9e1705aa0fa5ecb2c6aa7fb78c2313c4a31158ea5f02048bf318f849352eb"
 dependencies = [
  "bytes",
  "flex-error",
@@ -8144,8 +8148,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.40.0"
-source = "git+https://github.com/informalsystems/tendermint-rs/?rev=refs/pull/1480/head#adc8b44f1559df7445b6ec67ced7c554eab189b4"
+version = "0.40.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "835a52aa504c63ec05519e31348d3f4ba2fe79493c588e2cad5323d5e81b161a"
 dependencies = [
  "async-trait",
  "bytes",
