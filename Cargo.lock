@@ -1287,9 +1287,9 @@ dependencies = [
 
 [[package]]
 name = "cnidarium"
-version = "0.81.0"
+version = "0.82.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f77ae2f37b1ca16db2524f7d1f1a14416372dc2594635d18a6357b609c4164c8"
+checksum = "f93ab30a485dceb9aca3210c03fbbecadd14837a94aef19deb594eef9cb5ced1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4372,6 +4372,7 @@ dependencies = [
  "bytes",
  "camino",
  "clap",
+ "cnidarium",
  "colored",
  "colored_json",
  "comfy-table",
