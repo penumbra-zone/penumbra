@@ -33,6 +33,7 @@ ibc-types = {workspace = true, default-features = false}
 metrics = {workspace = true}
 once_cell = {workspace = true}
 parking_lot = {workspace = true}
+cnidarium = {workspace = true, features = ["rpc"]}
 penumbra-sdk-app = {workspace = true, default-features = false}
 penumbra-sdk-asset = {workspace = true, default-features = true}
 penumbra-sdk-community-pool = {workspace = true, default-features = false}

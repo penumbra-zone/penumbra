@@ -5846,6 +5846,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "camino",
+ "cnidarium",
  "decaf377",
  "digest 0.9.0",
  "ed25519-consensus",

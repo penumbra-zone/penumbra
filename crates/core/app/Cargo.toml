@@ -132,4 +132,3 @@ features = [
     "bundled-proving-keys",
     "download-proving-keys",
 ]
-package = "penumbra-sdk-proof-params"

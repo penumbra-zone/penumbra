@@ -1,7 +1,5 @@
 use std::string::String;
-
 use penumbra_sdk_asset::asset;
-
 use crate::{lp::position, DirectedTradingPair, TradingPair};
 
 pub mod config {
