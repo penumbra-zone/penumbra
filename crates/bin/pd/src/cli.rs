@@ -236,18 +236,10 @@ pub enum NetworkCommand {
         #[clap(long, env = "penumbra_sdk_PD_TM_EXTERNAL_ADDR")]
         external_address: Option<SocketAddr>,
         /// When generating Tendermint config, use this socket to bind the Tendermint RPC service.
-        #[clap(
-            long,
-            env = "PENUMBRA_PD_TM_RPC_BIND",
-            default_value = "0.0.0.0:26657"
-        )]
+        #[clap(long, env = "PENUMBRA_PD_TM_RPC_BIND", default_value = "0.0.0.0:26657")]
         tendermint_rpc_bind: SocketAddr,
         /// When generating Tendermint config, use this socket to bind the Tendermint P2P service.
-        #[clap(
-            long,
-            env = "PENUMBRA_PD_TM_P2P_BIND",
-            default_value = "0.0.0.0:26656"
-        )]
+        #[clap(long, env = "PENUMBRA_PD_TM_P2P_BIND", default_value = "0.0.0.0:26656")]
         tendermint_p2p_bind: SocketAddr,
         /// Leave the downloaded archive file on disk after extraction.
         #[clap(long, env = "PENUMBRA_PD_LEAVE_ARCHIVE", action)]

@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
 pub trait IndexerExt: Sized {
-    fn with_default_penumbra_sdk_app_views(self) -> Self;
+    fn with_default_penumbra_app_views(self) -> Self;
 }
 
 impl IndexerExt for cometindex::Indexer {
-    fn with_default_penumbra_sdk_app_views(self) -> Self {
+    fn with_default_penumbra_app_views(self) -> Self {
         self.with_index(Box::new(crate::block::Block {}))
             .with_index(Box::new(crate::stake::ValidatorSet {}))
             .with_index(Box::new(crate::stake::Slashings {}))
