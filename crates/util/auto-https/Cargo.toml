@@ -7,7 +7,7 @@ description = "Automatic HTTPS management for Penumbra"
 repository = {workspace = true}
 homepage = {workspace = true}
 license = {workspace = true}
-publish = false
+publish = true
 
 [dependencies]
 anyhow = {workspace = true}

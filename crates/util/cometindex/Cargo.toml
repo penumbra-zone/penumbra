@@ -7,7 +7,7 @@ description = "A library for building indexers for CometBFT events"
 repository = {workspace = true}
 homepage = {workspace = true}
 license = {workspace = true}
-publish = false
+publish = true
 
 [dependencies]
 tokio = {workspace = true, features = ["full"]}

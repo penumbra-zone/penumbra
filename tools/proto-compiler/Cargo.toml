@@ -2,7 +2,7 @@
 name = "penumbra-proto-compiler"
 version = "0.1.0"
 edition = "2021"
-publish = false
+publish = true
 
 [dependencies]
 anyhow = "1"

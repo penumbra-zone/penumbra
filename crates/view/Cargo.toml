@@ -7,7 +7,7 @@ description = "The view RPC library for the Penumbra Zone"
 repository = {workspace = true}
 homepage = {workspace = true}
 license = {workspace = true}
-publish = false
+publish = true
 
 [features]
 default = ["std"]
