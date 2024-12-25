@@ -201,8 +201,8 @@ penumbra-wallet                  = { path = "crates/wallet" }
 pin-project                      = { version = "1.0.12" }
 pin-project-lite                 = { version = "0.2.9" }
 poseidon377                      = { version = "1.2.0" }
-proptest                         = { version = "1" }
-proptest-derive                  = { version = "0.3" }
+proptest                         = { version = "1.6" }
+proptest-derive                  = { version = "0.5.1" }
 prost                            = { version = "0.13.4" }
 prost-types                      = { version = "0.13.4" }
 r2d2                             = { version = "0.8" }
