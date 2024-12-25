@@ -214,7 +214,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
         for denom in msg.denoms {
             denoms.insert(
                 denom
-                    .penumbra_sdk_asset_id
+                    .penumbra_asset_id
                     .clone()
                     .ok_or_else(|| anyhow!("missing penumbra asset ID in denom"))?
                     .try_into()?,
