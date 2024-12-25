@@ -5,7 +5,7 @@ edition = {workspace = true}
 
 [build-dependencies]
 regex = { version = "1", optional = true }
-reqwest = { version = "0.11.14", optional = true, features = [
+reqwest = { version = "0.12.9", optional = true, features = [
     "blocking",
     "json",
 ] }

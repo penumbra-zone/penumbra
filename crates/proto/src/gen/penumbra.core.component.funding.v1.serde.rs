@@ -21,6 +21,7 @@ impl serde::Serialize for EventFundingStreamReward {
         }
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
         if let Some(v) = self.reward_amount.as_ref() {

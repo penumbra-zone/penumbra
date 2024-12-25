@@ -60,16 +60,10 @@ impl From<tendermint::abci::types::ExecTxResult> for penumbra_pb::TxResult {
 }
 
 impl From<tendermint::abci::EventAttribute> for penumbra_pb::Tag {
-    fn from(
-        tendermint::abci::EventAttribute {
-            key,
-            value,
-            index: _,
-        }: tendermint::abci::EventAttribute,
-    ) -> Self {
+    fn from(event_attr: tendermint::abci::EventAttribute) -> Self {
         Self {
-            key: key.into_bytes(),
-            value: value.into_bytes(),
+            key: event_attr.key_bytes().into(),
+            value: event_attr.value_bytes().into(),
             // TODO(kate): this was set to false previously, but it should probably use the
             // index field from the tendermint object. for now, carry out a refactor and avoid
             // changing behavior while doing so.
@@ -77,6 +71,25 @@ impl From<tendermint::abci::EventAttribute> for penumbra_pb::Tag {
         }
     }
 }
+
+// impl From<tendermint::abci::event::v0_37::EventAttribute> for penumbra_pb::Tag {
+//     fn from(
+//         tendermint::abci::event::v0_37::EventAttribute {
+//             key,
+//             value,
+//             index: _,
+//         }: tendermint::abci::EventAttribute,
+//     ) -> Self {
+//         Self {
+//             key: key.into_bytes(),
+//             value: value.into_bytes(),
+//             // TODO(kate): this was set to false previously, but it should probably use the
+//             // index field from the tendermint object. for now, carry out a refactor and avoid
+//             // changing behavior while doing so.
+//             index: false,
+//         }
+//     }
+// }
 
 // === broadcast_tx_async ===
 
@@ -89,6 +102,7 @@ impl From<tendermint_rpc::endpoint::broadcast::tx_async::Response>
             data,
             log,
             hash,
+            ..
         }: tendermint_rpc::endpoint::broadcast::tx_async::Response,
     ) -> Self {
         Self {
@@ -111,6 +125,7 @@ impl From<tendermint_rpc::endpoint::broadcast::tx_sync::Response>
             data,
             log,
             hash,
+            ..
         }: tendermint_rpc::endpoint::broadcast::tx_sync::Response,
     ) -> Self {
         Self {

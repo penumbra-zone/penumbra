@@ -12,6 +12,7 @@ impl serde::Serialize for AllTalliedDelegatorVotesForProposalRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.AllTalliedDelegatorVotesForProposalRequest", len)?;
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
         }
         struct_ser.end()
@@ -1062,10 +1063,12 @@ impl serde::Serialize for DelegatorVoteBody {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.DelegatorVoteBody", len)?;
         if self.proposal != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if self.start_position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         if let Some(v) = self.vote.as_ref() {
@@ -1273,10 +1276,12 @@ impl serde::Serialize for DelegatorVotePlan {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.DelegatorVotePlan", len)?;
         if self.proposal != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if self.start_position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         if let Some(v) = self.vote.as_ref() {
@@ -1287,6 +1292,7 @@ impl serde::Serialize for DelegatorVotePlan {
         }
         if self.staked_note_position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("stakedNotePosition", ToString::to_string(&self.staked_note_position).as_str())?;
         }
         if let Some(v) = self.unbonded_amount.as_ref() {
@@ -1294,14 +1300,17 @@ impl serde::Serialize for DelegatorVotePlan {
         }
         if !self.randomizer.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("randomizer", pbjson::private::base64::encode(&self.randomizer).as_str())?;
         }
         if !self.proof_blinding_r.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
         }
         if !self.proof_blinding_s.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
         struct_ser.end()
@@ -2458,10 +2467,12 @@ impl serde::Serialize for EventProposalSubmit {
         }
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         if self.end_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("endHeight", ToString::to_string(&self.end_height).as_str())?;
         }
         struct_ser.end()
@@ -2687,6 +2698,7 @@ impl serde::Serialize for EventValidatorVote {
         }
         if self.voting_power != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("votingPower", ToString::to_string(&self.voting_power).as_str())?;
         }
         struct_ser.end()
@@ -2905,6 +2917,7 @@ impl serde::Serialize for GovernanceParameters {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.GovernanceParameters", len)?;
         if self.proposal_voting_blocks != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposalVotingBlocks", ToString::to_string(&self.proposal_voting_blocks).as_str())?;
         }
         if let Some(v) = self.proposal_deposit_amount.as_ref() {
@@ -3136,6 +3149,7 @@ impl serde::Serialize for NextProposalIdResponse {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.NextProposalIdResponse", len)?;
         if self.next_proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("nextProposalId", ToString::to_string(&self.next_proposal_id).as_str())?;
         }
         struct_ser.end()
@@ -3244,6 +3258,7 @@ impl serde::Serialize for Proposal {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.Proposal", len)?;
         if self.id != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("id", ToString::to_string(&self.id).as_str())?;
         }
         if !self.title.is_empty() {
@@ -4099,6 +4114,7 @@ impl serde::Serialize for proposal::UpgradePlan {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.Proposal.UpgradePlan", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()
@@ -4197,6 +4213,7 @@ impl serde::Serialize for ProposalDataRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.ProposalDataRequest", len)?;
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
         }
         struct_ser.end()
@@ -4314,14 +4331,17 @@ impl serde::Serialize for ProposalDataResponse {
         }
         if self.start_block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startBlockHeight", ToString::to_string(&self.start_block_height).as_str())?;
         }
         if self.end_block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("endBlockHeight", ToString::to_string(&self.end_block_height).as_str())?;
         }
         if self.start_position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         if let Some(v) = self.state.as_ref() {
@@ -4495,6 +4515,7 @@ impl serde::Serialize for ProposalDepositClaim {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.ProposalDepositClaim", len)?;
         if self.proposal != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if let Some(v) = self.deposit_amount.as_ref() {
@@ -4622,6 +4643,7 @@ impl serde::Serialize for ProposalInfoRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.ProposalInfoRequest", len)?;
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
         }
         struct_ser.end()
@@ -4724,10 +4746,12 @@ impl serde::Serialize for ProposalInfoResponse {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.ProposalInfoResponse", len)?;
         if self.start_block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startBlockHeight", ToString::to_string(&self.start_block_height).as_str())?;
         }
         if self.start_position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         struct_ser.end()
@@ -5040,14 +5064,17 @@ impl serde::Serialize for ProposalListResponse {
         }
         if self.start_block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startBlockHeight", ToString::to_string(&self.start_block_height).as_str())?;
         }
         if self.end_block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("endBlockHeight", ToString::to_string(&self.end_block_height).as_str())?;
         }
         if self.start_position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         if let Some(v) = self.state.as_ref() {
@@ -5683,6 +5710,7 @@ impl serde::Serialize for ProposalRateDataRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.ProposalRateDataRequest", len)?;
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
         }
         struct_ser.end()
@@ -6490,6 +6518,7 @@ impl serde::Serialize for ProposalWithdraw {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.ProposalWithdraw", len)?;
         if self.proposal != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if !self.reason.is_empty() {
@@ -6605,10 +6634,12 @@ impl serde::Serialize for Ratio {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.Ratio", len)?;
         if self.numerator != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("numerator", ToString::to_string(&self.numerator).as_str())?;
         }
         if self.denominator != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("denominator", ToString::to_string(&self.denominator).as_str())?;
         }
         struct_ser.end()
@@ -6726,14 +6757,17 @@ impl serde::Serialize for Tally {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.Tally", len)?;
         if self.yes != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("yes", ToString::to_string(&self.yes).as_str())?;
         }
         if self.no != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("no", ToString::to_string(&self.no).as_str())?;
         }
         if self.abstain != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("abstain", ToString::to_string(&self.abstain).as_str())?;
         }
         struct_ser.end()
@@ -6983,6 +7017,7 @@ impl serde::Serialize for ValidatorVoteBody {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.ValidatorVoteBody", len)?;
         if self.proposal != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if let Some(v) = self.vote.as_ref() {
@@ -7234,6 +7269,7 @@ impl serde::Serialize for ValidatorVotesRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.ValidatorVotesRequest", len)?;
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
         }
         struct_ser.end()
@@ -7623,6 +7659,7 @@ impl serde::Serialize for VotingPowerAtProposalStartRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.VotingPowerAtProposalStartRequest", len)?;
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
         }
         if let Some(v) = self.identity_key.as_ref() {
@@ -7737,6 +7774,7 @@ impl serde::Serialize for VotingPowerAtProposalStartResponse {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.VotingPowerAtProposalStartResponse", len)?;
         if self.voting_power != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("votingPower", ToString::to_string(&self.voting_power).as_str())?;
         }
         struct_ser.end()
@@ -7836,6 +7874,7 @@ impl serde::Serialize for ZkDelegatorVoteProof {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.ZKDelegatorVoteProof", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()

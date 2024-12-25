@@ -55,6 +55,7 @@ hex = {workspace = true}
 im = {workspace = true, optional = true}
 metrics = {workspace = true}
 once_cell = {workspace = true}
+pbjson-types = { workspace = true }
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
@@ -76,7 +77,6 @@ tendermint = {workspace = true, default-features = true}
 tokio = {workspace = true, features = ["full", "tracing"], optional = true}
 tonic = {workspace = true, optional = true}
 tracing = {workspace = true}
-pbjson-types = "0.6.0"
 
 [dev-dependencies]
 ed25519-consensus = {workspace = true}

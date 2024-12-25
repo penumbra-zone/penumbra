@@ -15,10 +15,12 @@ impl serde::Serialize for Amount {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.num.v1.Amount", len)?;
         if self.lo != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("lo", ToString::to_string(&self.lo).as_str())?;
         }
         if self.hi != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("hi", ToString::to_string(&self.hi).as_str())?;
         }
         struct_ser.end()
