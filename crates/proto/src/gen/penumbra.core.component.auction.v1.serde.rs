@@ -361,6 +361,7 @@ impl serde::Serialize for ActionDutchAuctionWithdraw {
         }
         if self.seq != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("seq", ToString::to_string(&self.seq).as_str())?;
         }
         if let Some(v) = self.reserves_commitment.as_ref() {
@@ -498,6 +499,7 @@ impl serde::Serialize for ActionDutchAuctionWithdrawPlan {
         }
         if self.seq != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("seq", ToString::to_string(&self.seq).as_str())?;
         }
         if let Some(v) = self.reserves_input.as_ref() {
@@ -750,6 +752,7 @@ impl serde::Serialize for AuctionId {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.auction.v1.AuctionId", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -854,6 +857,7 @@ impl serde::Serialize for AuctionNft {
         }
         if self.seq != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("seq", ToString::to_string(&self.seq).as_str())?;
         }
         struct_ser.end()
@@ -1611,18 +1615,22 @@ impl serde::Serialize for DutchAuctionDescription {
         }
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         if self.end_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("endHeight", ToString::to_string(&self.end_height).as_str())?;
         }
         if self.step_count != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("stepCount", ToString::to_string(&self.step_count).as_str())?;
         }
         if !self.nonce.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("nonce", pbjson::private::base64::encode(&self.nonce).as_str())?;
         }
         struct_ser.end()
@@ -1822,6 +1830,7 @@ impl serde::Serialize for DutchAuctionState {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.auction.v1.DutchAuctionState", len)?;
         if self.seq != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("seq", ToString::to_string(&self.seq).as_str())?;
         }
         if let Some(v) = self.current_position.as_ref() {
@@ -1829,6 +1838,7 @@ impl serde::Serialize for DutchAuctionState {
         }
         if self.next_trigger != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("nextTrigger", ToString::to_string(&self.next_trigger).as_str())?;
         }
         if let Some(v) = self.input_reserves.as_ref() {

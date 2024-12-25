@@ -1102,10 +1102,12 @@ impl serde::Serialize for pre_authorization::Ed25519 {
         let mut struct_ser = serializer.serialize_struct("penumbra.custody.v1.PreAuthorization.Ed25519", len)?;
         if !self.vk.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("vk", pbjson::private::base64::encode(&self.vk).as_str())?;
         }
         if !self.sig.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sig", pbjson::private::base64::encode(&self.sig).as_str())?;
         }
         struct_ser.end()

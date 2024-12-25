@@ -18,6 +18,7 @@ impl serde::Serialize for AssetId {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1.AssetId", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         if !self.alt_bech32m.is_empty() {
@@ -613,6 +614,7 @@ impl serde::Serialize for BalanceCommitment {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1.BalanceCommitment", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -949,6 +951,7 @@ impl serde::Serialize for EquivalentValue {
         }
         if self.as_of_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("asOfHeight", ToString::to_string(&self.as_of_height).as_str())?;
         }
         struct_ser.end()
@@ -1089,6 +1092,7 @@ impl serde::Serialize for EstimatedPrice {
         }
         if self.as_of_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("asOfHeight", ToString::to_string(&self.as_of_height).as_str())?;
         }
         struct_ser.end()
@@ -1276,6 +1280,7 @@ impl serde::Serialize for Metadata {
         }
         if self.priority_score != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("priorityScore", ToString::to_string(&self.priority_score).as_str())?;
         }
         if !self.badges.is_empty() {

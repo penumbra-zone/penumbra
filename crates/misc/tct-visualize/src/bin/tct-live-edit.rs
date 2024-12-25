@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
-use axum::{headers::ContentType, routing::get, Router, TypedHeader};
+use axum::{routing::get, Router};
+use axum_extra::{headers::ContentType, TypedHeader};
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
 use include_flate::flate;
@@ -79,8 +80,8 @@ async fn main() -> anyhow::Result<()> {
                 .unwrap()
         }
         (None, None) => {
-            axum::Server::bind(&address)
-                .serve(app.into_make_service())
+            let listener = tokio::net::TcpListener::bind(&address).await.unwrap();
+            axum::serve(listener, app.into_make_service())
                 .await
                 .unwrap();
         }

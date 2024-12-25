@@ -45,6 +45,7 @@ impl serde::Serialize for CompactBlock {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.compact_block.v1.CompactBlock", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if !self.state_payloads.is_empty() {
@@ -79,6 +80,7 @@ impl serde::Serialize for CompactBlock {
         }
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
         struct_ser.end()
@@ -316,10 +318,12 @@ impl serde::Serialize for CompactBlockRangeRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.compact_block.v1.CompactBlockRangeRequest", len)?;
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         if self.end_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("endHeight", ToString::to_string(&self.end_height).as_str())?;
         }
         if self.keep_alive {
@@ -544,6 +548,7 @@ impl serde::Serialize for CompactBlockRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.compact_block.v1.CompactBlockRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()

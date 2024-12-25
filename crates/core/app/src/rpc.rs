@@ -10,16 +10,18 @@ use {
     self::query::AppQueryServer,
     crate::PenumbraHost,
     anyhow::Context,
-    cnidarium::rpc::{
-        proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer,
-        Server as StorageServer,
-    },
-    ibc_proto::cosmos::bank::v1beta1::query_server::QueryServer as TransferQueryServer,
-    ibc_proto::ibc::applications::transfer::v1::query_server::QueryServer as BankQueryServer,
-    ibc_proto::ibc::core::{
-        channel::v1::query_server::QueryServer as ChannelQueryServer,
-        client::v1::query_server::QueryServer as ClientQueryServer,
-        connection::v1::query_server::QueryServer as ConnectionQueryServer,
+    cnidarium::proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer,
+    cnidarium::rpc::Server as StorageServer,
+    ibc_proto::{
+        cosmos::bank::v1beta1::query_server::QueryServer as TransferQueryServer,
+        ibc::{
+            applications::transfer::v1::query_server::QueryServer as BankQueryServer,
+            core::{
+                channel::v1::query_server::QueryServer as ChannelQueryServer,
+                client::v1::query_server::QueryServer as ClientQueryServer,
+                connection::v1::query_server::QueryServer as ConnectionQueryServer,
+            },
+        },
     },
     penumbra_auction::component::rpc::Server as AuctionServer,
     penumbra_compact_block::component::rpc::Server as CompactBlockServer,
@@ -50,28 +52,19 @@ use {
     penumbra_sct::component::rpc::Server as SctServer,
     penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer,
     penumbra_stake::component::rpc::Server as StakeServer,
-    penumbra_tower_trace::remote_addr,
+    tonic::service::Routes,
     tonic_web::enable as we,
 };
 
-pub fn router(
+pub fn routes(
     storage: &cnidarium::Storage,
     tm_proxy: impl TendermintProxyService,
     _enable_expensive_rpc: bool,
-) -> anyhow::Result<tonic::transport::server::Router> {
+) -> anyhow::Result<tonic::service::Routes> {
     let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
-    let grpc_server = tonic::transport::server::Server::builder()
-        .trace_fn(|req| match remote_addr(req) {
-            Some(remote_addr) => {
-                tracing::error_span!("grpc", ?remote_addr)
-            }
-            None => tracing::error_span!("grpc"),
-        })
-        // Allow HTTP/1, which will be used by grpc-web connections.
-        // This is particularly important when running locally, as gRPC
-        // typically uses HTTP/2, which requires HTTPS. Accepting HTTP/2
-        // allows local applications such as web browsers to talk to pd.
-        .accept_http1(true)
+
+    let mut builder = Routes::builder();
+    builder
         // As part of #2932, we are disabling all timeouts until we circle back to our
         // performance story.
         // Sets a timeout for all gRPC requests, but note that in the case of streaming
@@ -125,8 +118,7 @@ pub fn router(
         ))))
         .add_service(we(tonic_reflection::server::Builder::configure()
             .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
-            .build()
+            .build_v1()
             .with_context(|| "could not configure grpc reflection service")?));
-
-    Ok(grpc_server)
+    Ok(builder.routes().prepare())
 }

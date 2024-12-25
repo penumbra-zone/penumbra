@@ -65,6 +65,7 @@ impl MsgHandler for MsgChannelOpenConfirm {
             remote: expected_counterparty,
             connection_hops: expected_connection_hops,
             version: channel.version.clone(),
+            ..ChannelEnd::default()
         };
 
         state

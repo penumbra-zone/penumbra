@@ -344,7 +344,7 @@ impl Opt {
                             .register_encoded_file_descriptor_set(
                                 penumbra_proto::FILE_DESCRIPTOR_SET,
                             )
-                            .build()
+                            .build_v1()
                             .with_context(|| "could not configure grpc reflection service")?,
                     ))
                     .serve(config.bind_addr);
