@@ -1241,7 +1241,7 @@ impl serde::Serialize for Metadata {
         if !self.symbol.is_empty() {
             len += 1;
         }
-        if self.penumbra_sdk_asset_id.is_some() {
+        if self.penumbra_asset_id.is_some() {
             len += 1;
         }
         if !self.images.is_empty() {
@@ -1272,7 +1272,7 @@ impl serde::Serialize for Metadata {
         if !self.symbol.is_empty() {
             struct_ser.serialize_field("symbol", &self.symbol)?;
         }
-        if let Some(v) = self.penumbra_sdk_asset_id.as_ref() {
+        if let Some(v) = self.penumbra_asset_id.as_ref() {
             struct_ser.serialize_field("penumbraAssetId", v)?;
         }
         if !self.images.is_empty() {
@@ -1303,7 +1303,7 @@ impl<'de> serde::Deserialize<'de> for Metadata {
             "display",
             "name",
             "symbol",
-            "penumbra_sdk_asset_id",
+            "penumbra_asset_id",
             "penumbraAssetId",
             "images",
             "priority_score",
@@ -1351,7 +1351,7 @@ impl<'de> serde::Deserialize<'de> for Metadata {
                             "display" => Ok(GeneratedField::Display),
                             "name" => Ok(GeneratedField::Name),
                             "symbol" => Ok(GeneratedField::Symbol),
-                            "penumbraAssetId" | "penumbra_sdk_asset_id" => Ok(GeneratedField::PenumbraAssetId),
+                            "penumbraAssetId" | "penumbra_asset_id" => Ok(GeneratedField::PenumbraAssetId),
                             "images" => Ok(GeneratedField::Images),
                             "priorityScore" | "priority_score" => Ok(GeneratedField::PriorityScore),
                             "badges" => Ok(GeneratedField::Badges),
@@ -1380,7 +1380,7 @@ impl<'de> serde::Deserialize<'de> for Metadata {
                 let mut display__ = None;
                 let mut name__ = None;
                 let mut symbol__ = None;
-                let mut penumbra_sdk_asset_id__ = None;
+                let mut penumbra_asset_id__ = None;
                 let mut images__ = None;
                 let mut priority_score__ = None;
                 let mut badges__ = None;
@@ -1423,10 +1423,10 @@ impl<'de> serde::Deserialize<'de> for Metadata {
                             symbol__ = Some(map_.next_value()?);
                         }
                         GeneratedField::PenumbraAssetId => {
-                            if penumbra_sdk_asset_id__.is_some() {
+                            if penumbra_asset_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("penumbraAssetId"));
                             }
-                            penumbra_sdk_asset_id__ = map_.next_value()?;
+                            penumbra_asset_id__ = map_.next_value()?;
                         }
                         GeneratedField::Images => {
                             if images__.is_some() {
@@ -1460,7 +1460,7 @@ impl<'de> serde::Deserialize<'de> for Metadata {
                     display: display__.unwrap_or_default(),
                     name: name__.unwrap_or_default(),
                     symbol: symbol__.unwrap_or_default(),
-                    penumbra_sdk_asset_id: penumbra_sdk_asset_id__,
+                    penumbra_asset_id: penumbra_asset_id__,
                     images: images__.unwrap_or_default(),
                     priority_score: priority_score__.unwrap_or_default(),
                     badges: badges__.unwrap_or_default(),
