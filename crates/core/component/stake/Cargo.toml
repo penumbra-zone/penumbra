@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-stake"
+name = "penumbra-sdk-stake"
 version = {workspace = true}
 edition = {workspace = true}
 
@@ -7,11 +7,11 @@ edition = {workspace = true}
 component = [
     "cnidarium-component",
     "cnidarium",
-    "penumbra-proto/cnidarium",
-    "penumbra-proto/rpc",
-    "penumbra-sct/component",
-    "penumbra-shielded-pool/component",
-    "penumbra-distributions/component",
+    "penumbra-sdk-proto/cnidarium",
+    "penumbra-sdk-proto/rpc",
+    "penumbra-sdk-sct/component",
+    "penumbra-sdk-shielded-pool/component",
+    "penumbra-sdk-distributions/component",
     "tokio",
     "im",
     "futures",
@@ -20,11 +20,11 @@ component = [
     "tonic",
     "metrics",
 ]
-# proving-keys = ["penumbra-proof-params/proving-keys"]
+# proving-keys = ["penumbra-sdk-proof-params/proving-keys"]
 default = ["component"]
 docsrs = []
 parallel = [
-    "penumbra-tct/parallel",
+    "penumbra-sdk-tct/parallel",
     "ark-ff/parallel",
     "decaf377-rdsa/parallel",
     "ark-groth16/parallel",
@@ -54,16 +54,16 @@ hex = {workspace = true}
 im = {workspace = true, optional = true}
 metrics = {workspace = true, optional = true}
 once_cell = {workspace = true}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-distributions = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-proof-params = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = true}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-txhash = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-distributions = {workspace = true, default-features = false}
+penumbra-sdk-keys = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proof-params = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = true}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = true}
+penumbra-sdk-txhash = {workspace = true, default-features = false}
 rand_chacha = {workspace = true}
 rand_core = {workspace = true}
 regex = {workspace = true}

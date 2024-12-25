@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-community-pool"
+name = "penumbra-sdk-community-pool"
 version = {workspace = true}
 edition = {workspace = true}
 
@@ -7,8 +7,8 @@ edition = {workspace = true}
 component = [
     "cnidarium-component",
     "cnidarium",
-    "penumbra-proto/cnidarium",
-    "penumbra-shielded-pool/component",
+    "penumbra-sdk-proto/cnidarium",
+    "penumbra-sdk-shielded-pool/component",
 ]
 default = ["component"]
 docsrs = []
@@ -26,13 +26,13 @@ hex = {workspace = true}
 metrics = {workspace = true}
 once_cell = {workspace = true}
 pbjson-types = {workspace = true}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-txhash = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-keys = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
+penumbra-sdk-txhash = {workspace = true, default-features = false}
 prost = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 sha2 = {workspace = true}

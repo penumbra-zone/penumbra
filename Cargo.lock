@@ -1758,7 +1758,7 @@ dependencies = [
  "decaf377-rdsa",
  "frost-core",
  "frost-rerandomized",
- "penumbra-proto",
+ "penumbra-sdk-proto",
  "rand_core",
 ]
 
@@ -4391,27 +4391,27 @@ dependencies = [
  "ndarray",
  "once_cell",
  "pbjson-types",
- "penumbra-app",
- "penumbra-asset",
- "penumbra-auction",
- "penumbra-community-pool",
- "penumbra-compact-block",
- "penumbra-custody",
- "penumbra-dex",
- "penumbra-fee",
- "penumbra-governance",
- "penumbra-ibc",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-stake",
- "penumbra-tct",
- "penumbra-transaction",
- "penumbra-view",
- "penumbra-wallet",
+ "penumbra-sdk-app",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-auction",
+ "penumbra-sdk-community-pool",
+ "penumbra-sdk-compact-block",
+ "penumbra-sdk-custody",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-ibc",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-transaction",
+ "penumbra-sdk-view",
+ "penumbra-sdk-wallet",
  "pin-project",
  "predicates 2.1.5",
  "rand",
@@ -4461,15 +4461,15 @@ dependencies = [
  "ibc-types",
  "metrics 0.24.1",
  "parking_lot",
- "penumbra-app",
- "penumbra-asset",
- "penumbra-custody",
- "penumbra-keys",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-tct",
- "penumbra-transaction",
- "penumbra-view",
+ "penumbra-sdk-app",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-custody",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-transaction",
+ "penumbra-sdk-view",
  "prost",
  "rand",
  "rand_core",
@@ -4531,27 +4531,27 @@ dependencies = [
  "mime_guess",
  "once_cell",
  "pbjson-types",
- "penumbra-app",
- "penumbra-asset",
- "penumbra-auction",
- "penumbra-auto-https",
- "penumbra-compact-block",
- "penumbra-custody",
- "penumbra-dex",
- "penumbra-fee",
- "penumbra-governance",
- "penumbra-ibc",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-stake",
- "penumbra-tct",
- "penumbra-tendermint-proxy",
- "penumbra-tower-trace",
- "penumbra-transaction",
+ "penumbra-sdk-app",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-auction",
+ "penumbra-sdk-auto-https",
+ "penumbra-sdk-compact-block",
+ "penumbra-sdk-custody",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-ibc",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-tendermint-proxy",
+ "penumbra-sdk-tower-trace",
+ "penumbra-sdk-transaction",
  "pin-project",
  "pin-project-lite",
  "predicates 2.1.5",
@@ -4646,7 +4646,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-app"
+name = "penumbra-sdk-app"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -4676,33 +4676,33 @@ dependencies = [
  "metrics 0.24.1",
  "once_cell",
  "parking_lot",
- "penumbra-asset",
- "penumbra-auction",
- "penumbra-community-pool",
- "penumbra-compact-block",
- "penumbra-dex",
- "penumbra-distributions",
- "penumbra-fee",
- "penumbra-funding",
- "penumbra-governance",
- "penumbra-ibc",
- "penumbra-keys",
- "penumbra-mock-client",
- "penumbra-mock-consensus",
- "penumbra-mock-tendermint-proxy",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-stake",
- "penumbra-tct",
- "penumbra-test-subscriber",
- "penumbra-tower-trace",
- "penumbra-transaction",
- "penumbra-txhash",
- "penumbra-view",
- "penumbra-wallet",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-auction",
+ "penumbra-sdk-community-pool",
+ "penumbra-sdk-compact-block",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-distributions",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-funding",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-ibc",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-mock-client",
+ "penumbra-sdk-mock-consensus",
+ "penumbra-sdk-mock-tendermint-proxy",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-test-subscriber",
+ "penumbra-sdk-tower-trace",
+ "penumbra-sdk-transaction",
+ "penumbra-sdk-txhash",
+ "penumbra-sdk-view",
+ "penumbra-sdk-wallet",
  "prost",
  "rand",
  "rand_chacha",
@@ -4735,7 +4735,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-asset"
+name = "penumbra-sdk-asset"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -4759,8 +4759,8 @@ dependencies = [
  "num-bigint",
  "once_cell",
  "pbjson-types",
- "penumbra-num",
- "penumbra-proto",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
  "poseidon377",
  "proptest",
  "rand",
@@ -4775,7 +4775,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-auction"
+name = "penumbra-sdk-auction"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -4802,16 +4802,16 @@ dependencies = [
  "metrics 0.24.1",
  "once_cell",
  "pbjson-types",
- "penumbra-asset",
- "penumbra-dex",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-tct",
- "penumbra-txhash",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-txhash",
  "proptest",
  "prost",
  "prost-types",
@@ -4830,7 +4830,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-auto-https"
+name = "penumbra-sdk-auto-https"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -4842,7 +4842,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-bench"
+name = "penumbra-sdk-bench"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -4864,17 +4864,17 @@ dependencies = [
  "hex",
  "num-bigint",
  "once_cell",
- "penumbra-asset",
- "penumbra-dex",
- "penumbra-fee",
- "penumbra-governance",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-stake",
- "penumbra-tct",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-tct",
  "rand",
  "rand_core",
  "regex",
@@ -4886,7 +4886,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-community-pool"
+name = "penumbra-sdk-community-pool"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -4901,13 +4901,13 @@ dependencies = [
  "metrics 0.24.1",
  "once_cell",
  "pbjson-types",
- "penumbra-asset",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-txhash",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-txhash",
  "prost",
  "serde",
  "sha2 0.10.8",
@@ -4918,7 +4918,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-compact-block"
+name = "penumbra-sdk-compact-block"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -4932,16 +4932,16 @@ dependencies = [
  "futures",
  "im",
  "metrics 0.24.1",
- "penumbra-dex",
- "penumbra-fee",
- "penumbra-governance",
- "penumbra-ibc",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-stake",
- "penumbra-tct",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-ibc",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-tct",
  "rand",
  "rand_core",
  "serde",
@@ -4953,7 +4953,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-custody"
+name = "penumbra-sdk-custody"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -4971,12 +4971,12 @@ dependencies = [
  "ed25519-consensus",
  "futures",
  "hex",
- "penumbra-governance",
- "penumbra-keys",
- "penumbra-proto",
- "penumbra-stake",
- "penumbra-transaction",
- "penumbra-txhash",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-transaction",
+ "penumbra-sdk-txhash",
  "prost",
  "rand_core",
  "serde",
@@ -4989,7 +4989,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-dex"
+name = "penumbra-sdk-dex"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5019,16 +5019,16 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "pbjson-types",
- "penumbra-asset",
- "penumbra-fee",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-tct",
- "penumbra-txhash",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-txhash",
  "poseidon377",
  "proptest",
  "prost",
@@ -5051,7 +5051,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-distributions"
+name = "penumbra-sdk-distributions"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5059,17 +5059,17 @@ dependencies = [
  "cnidarium",
  "cnidarium-component",
  "getrandom",
- "penumbra-asset",
- "penumbra-num",
- "penumbra-proto",
- "penumbra-sct",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
  "serde",
  "tendermint",
  "tracing",
 ]
 
 [[package]]
-name = "penumbra-eddy"
+name = "penumbra-sdk-eddy"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5087,7 +5087,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-fee"
+name = "penumbra-sdk-fee"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5102,9 +5102,9 @@ dependencies = [
  "getrandom",
  "im",
  "metrics 0.24.1",
- "penumbra-asset",
- "penumbra-num",
- "penumbra-proto",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
  "rand",
  "rand_core",
  "serde",
@@ -5114,7 +5114,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-funding"
+name = "penumbra-sdk-funding"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5123,21 +5123,21 @@ dependencies = [
  "cnidarium-component",
  "futures",
  "metrics 0.24.1",
- "penumbra-asset",
- "penumbra-community-pool",
- "penumbra-distributions",
- "penumbra-num",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-stake",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-community-pool",
+ "penumbra-sdk-distributions",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
  "serde",
  "tendermint",
  "tracing",
 ]
 
 [[package]]
-name = "penumbra-governance"
+name = "penumbra-sdk-governance"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5162,18 +5162,18 @@ dependencies = [
  "metrics 0.24.1",
  "once_cell",
  "pbjson-types",
- "penumbra-asset",
- "penumbra-distributions",
- "penumbra-ibc",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-stake",
- "penumbra-tct",
- "penumbra-txhash",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-distributions",
+ "penumbra-sdk-ibc",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-txhash",
  "proptest",
  "proptest-derive",
  "rand",
@@ -5191,7 +5191,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-ibc"
+name = "penumbra-sdk-ibc"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5209,11 +5209,11 @@ dependencies = [
  "num-traits",
  "once_cell",
  "pbjson-types",
- "penumbra-asset",
- "penumbra-num",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-txhash",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-txhash",
  "prost",
  "serde",
  "serde_json",
@@ -5228,7 +5228,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-keys"
+name = "penumbra-sdk-keys"
 version = "0.81.0"
 dependencies = [
  "aes",
@@ -5259,9 +5259,9 @@ dependencies = [
  "num-traits",
  "once_cell",
  "pbkdf2 0.12.2",
- "penumbra-asset",
- "penumbra-proto",
- "penumbra-tct",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-tct",
  "poseidon377",
  "proptest",
  "rand",
@@ -5275,15 +5275,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-measure"
+name = "penumbra-sdk-measure"
 version = "0.81.0"
 dependencies = [
  "anyhow",
  "bytesize",
  "clap",
  "indicatif",
- "penumbra-compact-block",
- "penumbra-proto",
+ "penumbra-sdk-compact-block",
+ "penumbra-sdk-proto",
  "serde_json",
  "tokio",
  "tonic",
@@ -5293,24 +5293,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-mock-client"
+name = "penumbra-sdk-mock-client"
 version = "0.81.0"
 dependencies = [
  "anyhow",
  "cnidarium",
- "penumbra-asset",
- "penumbra-compact-block",
- "penumbra-dex",
- "penumbra-keys",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-tct",
- "penumbra-transaction",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-compact-block",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-transaction",
  "rand_core",
 ]
 
 [[package]]
-name = "penumbra-mock-consensus"
+name = "penumbra-sdk-mock-consensus"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5330,13 +5330,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-mock-tendermint-proxy"
+name = "penumbra-sdk-mock-tendermint-proxy"
 version = "0.81.0"
 dependencies = [
  "hex",
  "pbjson-types",
- "penumbra-mock-consensus",
- "penumbra-proto",
+ "penumbra-sdk-mock-consensus",
+ "penumbra-sdk-proto",
  "tap",
  "tendermint",
  "tendermint-proto",
@@ -5345,7 +5345,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-num"
+name = "penumbra-sdk-num"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5369,7 +5369,7 @@ dependencies = [
  "ibig",
  "num-bigint",
  "once_cell",
- "penumbra-proto",
+ "penumbra-sdk-proto",
  "proptest",
  "rand",
  "rand_core",
@@ -5382,24 +5382,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-parameter-setup"
+name = "penumbra-sdk-parameter-setup"
 version = "0.81.0"
 dependencies = [
  "ark-groth16",
  "ark-serialize",
  "decaf377",
- "penumbra-community-pool",
- "penumbra-dex",
- "penumbra-governance",
- "penumbra-proof-params",
- "penumbra-proof-setup",
- "penumbra-shielded-pool",
- "penumbra-stake",
+ "penumbra-sdk-community-pool",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proof-setup",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
  "rand_core",
 ]
 
 [[package]]
-name = "penumbra-proof-params"
+name = "penumbra-sdk-proof-params"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5427,7 +5427,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-proof-setup"
+name = "penumbra-sdk-proof-setup"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5442,19 +5442,19 @@ dependencies = [
  "blake2b_simd 1.0.2",
  "criterion",
  "decaf377",
- "penumbra-dex",
- "penumbra-governance",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-shielded-pool",
- "penumbra-stake",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
  "rand_chacha",
  "rand_core",
  "rayon",
 ]
 
 [[package]]
-name = "penumbra-proto"
+name = "penumbra-sdk-proto"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5489,7 +5489,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-sct"
+name = "penumbra-sdk-sct"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5512,9 +5512,9 @@ dependencies = [
  "metrics 0.24.1",
  "once_cell",
  "pbjson-types",
- "penumbra-keys",
- "penumbra-proto",
- "penumbra-tct",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-tct",
  "poseidon377",
  "rand",
  "rand_core",
@@ -5525,7 +5525,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-shielded-pool"
+name = "penumbra-sdk-shielded-pool"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5554,15 +5554,15 @@ dependencies = [
  "im",
  "metrics 0.24.1",
  "once_cell",
- "penumbra-asset",
- "penumbra-ibc",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-tct",
- "penumbra-txhash",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-ibc",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-txhash",
  "poseidon377",
  "proptest",
  "prost",
@@ -5579,7 +5579,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-stake"
+name = "penumbra-sdk-stake"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5605,16 +5605,16 @@ dependencies = [
  "im",
  "metrics 0.24.1",
  "once_cell",
- "penumbra-asset",
- "penumbra-distributions",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-tct",
- "penumbra-txhash",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-distributions",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-txhash",
  "proptest",
  "rand_chacha",
  "rand_core",
@@ -5632,7 +5632,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-tct"
+name = "penumbra-sdk-tct"
 version = "0.81.0"
 dependencies = [
  "ark-ed-on-bls12-377",
@@ -5651,7 +5651,7 @@ dependencies = [
  "im",
  "once_cell",
  "parking_lot",
- "penumbra-proto",
+ "penumbra-sdk-proto",
  "poseidon377",
  "proptest",
  "proptest-derive",
@@ -5664,19 +5664,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-tct-property-test"
+name = "penumbra-sdk-tct-property-test"
 version = "0.81.0"
 dependencies = [
  "anyhow",
  "futures",
- "penumbra-tct",
+ "penumbra-sdk-tct",
  "proptest",
  "proptest-derive",
  "tokio",
 ]
 
 [[package]]
-name = "penumbra-tct-visualize"
+name = "penumbra-sdk-tct-visualize"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5690,7 +5690,7 @@ dependencies = [
  "hex",
  "include-flate",
  "parking_lot",
- "penumbra-tct",
+ "penumbra-sdk-tct",
  "prost",
  "rand",
  "rand_chacha",
@@ -5707,7 +5707,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-tendermint-proxy"
+name = "penumbra-sdk-tendermint-proxy"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5717,8 +5717,8 @@ dependencies = [
  "http 1.2.0",
  "metrics 0.24.1",
  "pbjson-types",
- "penumbra-proto",
- "penumbra-transaction",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-transaction",
  "pin-project",
  "pin-project-lite",
  "sha2 0.10.8",
@@ -5739,7 +5739,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-test-subscriber"
+name = "penumbra-sdk-test-subscriber"
 version = "0.81.0"
 dependencies = [
  "tracing",
@@ -5747,7 +5747,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-tower-trace"
+name = "penumbra-sdk-tower-trace"
 version = "0.81.0"
 dependencies = [
  "futures",
@@ -5768,7 +5768,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-transaction"
+name = "penumbra-sdk-transaction"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5791,22 +5791,22 @@ dependencies = [
  "num-bigint",
  "once_cell",
  "pbjson-types",
- "penumbra-asset",
- "penumbra-auction",
- "penumbra-community-pool",
- "penumbra-dex",
- "penumbra-fee",
- "penumbra-governance",
- "penumbra-ibc",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-stake",
- "penumbra-tct",
- "penumbra-txhash",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-auction",
+ "penumbra-sdk-community-pool",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-ibc",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-txhash",
  "poseidon377",
  "proptest",
  "proptest-derive",
@@ -5823,20 +5823,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-txhash"
+name = "penumbra-sdk-txhash"
 version = "0.81.0"
 dependencies = [
  "anyhow",
  "blake2b_simd 1.0.2",
  "getrandom",
  "hex",
- "penumbra-proto",
- "penumbra-tct",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-tct",
  "serde",
 ]
 
 [[package]]
-name = "penumbra-view"
+name = "penumbra-sdk-view"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5856,25 +5856,25 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "pbjson-types",
- "penumbra-app",
- "penumbra-asset",
- "penumbra-auction",
- "penumbra-community-pool",
- "penumbra-compact-block",
- "penumbra-dex",
- "penumbra-distributions",
- "penumbra-fee",
- "penumbra-funding",
- "penumbra-governance",
- "penumbra-ibc",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-stake",
- "penumbra-tct",
- "penumbra-transaction",
+ "penumbra-sdk-app",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-auction",
+ "penumbra-sdk-community-pool",
+ "penumbra-sdk-compact-block",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-distributions",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-funding",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-ibc",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-transaction",
  "prost",
  "r2d2",
  "r2d2_sqlite",
@@ -5894,7 +5894,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-wallet"
+name = "penumbra-sdk-wallet"
 version = "0.81.0"
 dependencies = [
  "anyhow",
@@ -5904,20 +5904,20 @@ dependencies = [
  "decaf377",
  "hex",
  "once_cell",
- "penumbra-app",
- "penumbra-asset",
- "penumbra-custody",
- "penumbra-dex",
- "penumbra-fee",
- "penumbra-governance",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-stake",
- "penumbra-tct",
- "penumbra-transaction",
- "penumbra-view",
+ "penumbra-sdk-app",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-custody",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-transaction",
+ "penumbra-sdk-view",
  "pin-project",
  "proptest",
  "proptest-derive",
@@ -5988,19 +5988,19 @@ dependencies = [
  "clap",
  "cometindex",
  "num-bigint",
- "penumbra-app",
- "penumbra-asset",
- "penumbra-auction",
- "penumbra-dex",
- "penumbra-fee",
- "penumbra-funding",
- "penumbra-governance",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proto",
- "penumbra-sct",
- "penumbra-shielded-pool",
- "penumbra-stake",
+ "penumbra-sdk-app",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-auction",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-funding",
+ "penumbra-sdk-governance",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-sct",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
  "prost",
  "serde_json",
  "sqlx",
@@ -6088,16 +6088,16 @@ dependencies = [
  "indicatif",
  "once_cell",
  "pcli",
- "penumbra-app",
- "penumbra-asset",
- "penumbra-compact-block",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proto",
- "penumbra-shielded-pool",
- "penumbra-stake",
- "penumbra-tct",
- "penumbra-view",
+ "penumbra-sdk-app",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-compact-block",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-shielded-pool",
+ "penumbra-sdk-stake",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-view",
  "regex",
  "serde",
  "serde_json",
@@ -7885,13 +7885,13 @@ dependencies = [
  "hex",
  "http-body 1.0.1",
  "metrics-tracing-context",
- "penumbra-asset",
- "penumbra-keys",
- "penumbra-num",
- "penumbra-proof-params",
- "penumbra-proof-setup",
- "penumbra-proto",
- "penumbra-view",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proof-params",
+ "penumbra-sdk-proof-setup",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-view",
  "r2d2",
  "r2d2_sqlite",
  "rand",

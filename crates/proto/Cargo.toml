@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-proto"
+name = "penumbra-sdk-proto"
 version = {workspace = true}
 edition = {workspace = true}
 

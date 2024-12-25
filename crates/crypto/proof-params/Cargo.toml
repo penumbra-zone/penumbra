@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-proof-params"
+name = "penumbra-sdk-proof-params"
 version = {workspace = true}
 edition = {workspace = true}
 

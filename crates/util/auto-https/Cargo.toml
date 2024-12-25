@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-auto-https"
+name = "penumbra-sdk-auto-https"
 version = {workspace = true}
 authors = {workspace = true}
 edition = {workspace = true}

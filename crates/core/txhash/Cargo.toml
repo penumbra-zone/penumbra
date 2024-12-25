@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-txhash"
+name = "penumbra-sdk-txhash"
 version = {workspace = true}
 edition = {workspace = true}
 
@@ -7,7 +7,7 @@ edition = {workspace = true}
 anyhow = {workspace = true}
 blake2b_simd = {workspace = true}
 hex = {workspace = true}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = true}
 serde = {workspace = true}
 getrandom = {workspace = true}

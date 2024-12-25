@@ -12,4 +12,4 @@ decaf377-rdsa = {workspace = true}
 frost-core = "0.7"
 frost-rerandomized = "0.7"
 rand_core = {workspace = true, features = ["getrandom"]}
-penumbra-proto = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = true}
