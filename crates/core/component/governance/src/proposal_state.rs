@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
 
 use crate::MAX_VALIDATOR_VOTE_REASON_LENGTH;
 

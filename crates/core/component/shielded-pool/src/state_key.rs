@@ -1,5 +1,5 @@
 pub mod denom_metadata_by_asset {
-    use penumbra_asset::asset;
+    use penumbra_sdk_asset::asset;
     use std::string::String;
 
     pub fn prefix() -> &'static str {

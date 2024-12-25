@@ -1,4 +1,4 @@
-use penumbra_proto::{
+use penumbra_sdk_proto::{
     core::component::stake::v1::ValidatorInfoResponse, penumbra::core::component::stake::v1 as pb,
     DomainType,
 };

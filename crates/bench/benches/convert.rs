@@ -2,10 +2,10 @@ use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::{Fq, Fr};
-use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proof_params::{DummyWitness, CONVERT_PROOF_PROVING_KEY};
-use penumbra_shielded_pool::{
+use penumbra_sdk_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_num::{fixpoint::U128x128, Amount};
+use penumbra_sdk_proof_params::{DummyWitness, CONVERT_PROOF_PROVING_KEY};
+use penumbra_sdk_shielded_pool::{
     ConvertCircuit, ConvertProof, ConvertProofPrivate, ConvertProofPublic,
 };
 

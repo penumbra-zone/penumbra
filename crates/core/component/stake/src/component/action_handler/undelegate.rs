@@ -1,9 +1,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_proto::{DomainType as _, StateWriteProto};
-use penumbra_sct::component::clock::EpochRead;
-use penumbra_shielded_pool::component::AssetRegistry;
+use penumbra_sdk_proto::{DomainType as _, StateWriteProto};
+use penumbra_sdk_sct::component::clock::EpochRead;
+use penumbra_sdk_shielded_pool::component::AssetRegistry;
 
 use crate::{
     component::action_handler::ActionHandler,

@@ -5,9 +5,9 @@ use ::metrics::{gauge, histogram};
 pub use metrics::register_metrics;
 
 /* Component implementation */
-use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_proto::{DomainType, StateWriteProto};
-use penumbra_stake::component::validator_handler::ValidatorDataRead;
+use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_proto::{DomainType, StateWriteProto};
+use penumbra_sdk_stake::component::validator_handler::ValidatorDataRead;
 pub use view::{StateReadExt, StateWriteExt};
 
 use std::sync::Arc;
@@ -56,12 +56,12 @@ impl Component for Funding {
         // TODO(erwan): scoping these strictly will make it easy to refactor
         // this code when we introduce additional funding processing logic
         // e.g. for proposer tips.
-        use penumbra_community_pool::StateWriteExt as _;
-        use penumbra_distributions::component::StateReadExt as _;
-        use penumbra_sct::CommitmentSource;
-        use penumbra_shielded_pool::component::NoteManager;
-        use penumbra_stake::funding_stream::Recipient;
-        use penumbra_stake::StateReadExt as _;
+        use penumbra_sdk_community_pool::StateWriteExt as _;
+        use penumbra_sdk_distributions::component::StateReadExt as _;
+        use penumbra_sdk_sct::CommitmentSource;
+        use penumbra_sdk_shielded_pool::component::NoteManager;
+        use penumbra_sdk_stake::funding_stream::Recipient;
+        use penumbra_sdk_stake::StateReadExt as _;
 
         let state = Arc::get_mut(state).expect("state should be unique");
         let funding_execution_start = std::time::Instant::now();

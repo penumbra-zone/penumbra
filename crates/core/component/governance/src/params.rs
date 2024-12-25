@@ -1,7 +1,7 @@
 use anyhow::Context;
-use penumbra_num::Amount;
-use penumbra_proto::core::component::governance::v1 as pb;
-use penumbra_proto::DomainType;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::core::component::governance::v1 as pb;
+use penumbra_sdk_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 use crate::tally::Ratio;

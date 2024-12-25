@@ -96,7 +96,7 @@ impl<T: StateWrite + ?Sized> Inner for T {}
 #[allow(unused_imports)]
 mod tests {
     use cnidarium::{StateDelta, StateWrite, TempStorage};
-    use penumbra_asset::{asset::REGISTRY, Value};
+    use penumbra_sdk_asset::{asset::REGISTRY, Value};
 
     use crate::component::position_manager::counter::{
         Inner, PositionCounter, PositionCounterRead,

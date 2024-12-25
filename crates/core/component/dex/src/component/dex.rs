@@ -5,12 +5,12 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
-use penumbra_asset::asset;
-use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_fee::component::StateWriteExt as _;
-use penumbra_fee::Fee;
-use penumbra_num::Amount;
-use penumbra_proto::{DomainType as _, StateReadProto, StateWriteProto};
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_fee::component::StateWriteExt as _;
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{DomainType as _, StateReadProto, StateWriteProto};
 use tendermint::v0_37::abci;
 use tracing::instrument;
 

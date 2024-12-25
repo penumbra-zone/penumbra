@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use penumbra_tct::{
+use penumbra_sdk_tct::{
     structure::{Kind, Node, Place},
     Position, Tree,
 };

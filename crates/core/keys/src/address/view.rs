@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::keys::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::keys::v1 as pb, DomainType};
 
 use crate::keys::{AddressIndex, WalletId};
 

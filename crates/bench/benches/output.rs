@@ -6,10 +6,10 @@ use ark_relations::r1cs::{
 use decaf377::{Fq, Fr};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
-use penumbra_asset::{Balance, Value};
-use penumbra_keys::{keys::Diversifier, Address};
-use penumbra_proof_params::{DummyWitness, OUTPUT_PROOF_PROVING_KEY};
-use penumbra_shielded_pool::{
+use penumbra_sdk_asset::{Balance, Value};
+use penumbra_sdk_keys::{keys::Diversifier, Address};
+use penumbra_sdk_proof_params::{DummyWitness, OUTPUT_PROOF_PROVING_KEY};
+use penumbra_sdk_shielded_pool::{
     output::{OutputProofPrivate, OutputProofPublic},
     Note, OutputCircuit, OutputProof, Rseed,
 };

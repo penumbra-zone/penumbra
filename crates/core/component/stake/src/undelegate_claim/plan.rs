@@ -1,8 +1,8 @@
 use decaf377::{Fq, Fr};
-use penumbra_asset::{asset, balance, Balance};
-use penumbra_num::Amount;
-use penumbra_proof_params::CONVERT_PROOF_PROVING_KEY;
-use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
+use penumbra_sdk_asset::{asset, balance, Balance};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proof_params::CONVERT_PROOF_PROVING_KEY;
+use penumbra_sdk_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 
 use serde::{Deserialize, Serialize};
 

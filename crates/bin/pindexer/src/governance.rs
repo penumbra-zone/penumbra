@@ -2,16 +2,16 @@ use anyhow::{anyhow, Context, Result};
 use cometindex::{
     async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
 };
-use penumbra_governance::{
+use penumbra_sdk_governance::{
     proposal::ProposalPayloadToml, proposal_state, DelegatorVote, Proposal, ProposalDepositClaim,
     ProposalWithdraw, ValidatorVote,
 };
-use penumbra_num::Amount;
-use penumbra_proto::{
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{
     core::component::governance::v1::{self as pb},
     event::ProtoEvent,
 };
-use penumbra_stake::IdentityKey;
+use penumbra_sdk_stake::IdentityKey;
 
 #[derive(Debug)]
 pub struct GovernanceProposals {}

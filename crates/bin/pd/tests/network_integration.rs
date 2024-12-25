@@ -6,7 +6,7 @@
 
 use assert_cmd::Command;
 use http::StatusCode;
-use penumbra_proto::FILE_DESCRIPTOR_SET;
+use penumbra_sdk_proto::FILE_DESCRIPTOR_SET;
 use predicates::prelude::*;
 use prost_reflect::{DescriptorPool, ServiceDescriptor};
 use url::Url;
@@ -102,7 +102,7 @@ async fn check_grpc_server_reflection() -> anyhow::Result<()> {
 ///   - penumbra.view.v1.ViewService
 ///   - penumbra.core.component.dex.v1.SimulationService
 ///
-/// The gRPC service names are read from the [penumbra_proto] crate's [FILE_DESCRIPTOR_SET],
+/// The gRPC service names are read from the [penumbra_sdk_proto] crate's [FILE_DESCRIPTOR_SET],
 /// which is exported at build time.
 fn get_all_grpc_services() -> anyhow::Result<Vec<String>> {
     // Intentionally verbose to be explicit.

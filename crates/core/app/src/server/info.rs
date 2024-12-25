@@ -28,10 +28,10 @@ use ibc_types::core::channel::{ChannelId, PortId};
 use ibc_types::core::client::ClientId;
 use ibc_types::core::connection::ConnectionId;
 use ibc_types::core::connection::IdentifiedConnectionEnd;
-use penumbra_ibc::component::ChannelStateReadExt as _;
-use penumbra_ibc::component::ClientStateReadExt as _;
-use penumbra_ibc::component::ConnectionStateReadExt as _;
-use penumbra_ibc::component::HostInterface;
+use penumbra_sdk_ibc::component::ChannelStateReadExt as _;
+use penumbra_sdk_ibc::component::ClientStateReadExt as _;
+use penumbra_sdk_ibc::component::ConnectionStateReadExt as _;
+use penumbra_sdk_ibc::component::HostInterface;
 use prost::Message;
 use std::str::FromStr;
 use tendermint::v0_37::abci::{
@@ -42,7 +42,7 @@ use tendermint::v0_37::abci::{
 use tower_abci::BoxError;
 use tracing::Instrument;
 
-use penumbra_tower_trace::v037::RequestExt;
+use penumbra_sdk_tower_trace::v037::RequestExt;
 
 const ABCI_INFO_VERSION: &str = env!("CARGO_PKG_VERSION");
 

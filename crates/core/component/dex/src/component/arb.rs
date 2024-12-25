@@ -4,9 +4,9 @@ use crate::component::{metrics, StateReadExt};
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateDelta, StateWrite};
-use penumbra_asset::{asset, Value};
-use penumbra_proto::{DomainType as _, StateWriteProto as _};
-use penumbra_sct::component::clock::EpochRead;
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_proto::{DomainType as _, StateWriteProto as _};
+use penumbra_sdk_sct::component::clock::EpochRead;
 use tracing::instrument;
 
 use crate::{

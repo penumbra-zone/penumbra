@@ -1,12 +1,12 @@
 use decaf377::{Fq, Fr};
 use decaf377_ka as ka;
-use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_keys::{
+use penumbra_sdk_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_keys::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
     symmetric::WrappedMemoKey,
     Address, PayloadKey,
 };
-use penumbra_proto::{core::component::shielded_pool::v1 as pb, DomainType};
+use penumbra_sdk_proto::{core::component::shielded_pool::v1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -80,7 +80,7 @@ impl OutputPlan {
         OutputProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
-            &penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY,
+            &penumbra_sdk_proof_params::OUTPUT_PROOF_PROVING_KEY,
             OutputProofPublic {
                 balance_commitment,
                 note_commitment,
@@ -174,16 +174,16 @@ mod test {
     use crate::output::OutputProofPublic;
 
     use super::OutputPlan;
-    use penumbra_asset::Value;
-    use penumbra_keys::{
+    use penumbra_sdk_asset::Value;
+    use penumbra_sdk_keys::{
         keys::{Bip44Path, SeedPhrase, SpendKey},
         PayloadKey,
     };
-    use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
+    use penumbra_sdk_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
     use rand_core::OsRng;
 
     #[test]
-    /// Check that a valid output proof passes the `penumbra_crypto` integrity checks successfully.
+    /// Check that a valid output proof passes the `penumbra_sdk_crypto` integrity checks successfully.
     /// This test serves to anchor how an `OutputPlan` prepares its `OutputProof`, in particular
     /// the balance and note commitments.
     fn check_output_proof_verification() {

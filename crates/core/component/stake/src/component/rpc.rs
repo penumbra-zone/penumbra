@@ -2,7 +2,7 @@ use std::pin::Pin;
 
 use cnidarium::Storage;
 use futures::StreamExt;
-use penumbra_proto::{
+use penumbra_sdk_proto::{
     core::component::stake::v1::{
         query_service_server::QueryService, CurrentValidatorRateRequest,
         CurrentValidatorRateResponse, GetValidatorInfoRequest, GetValidatorInfoResponse,

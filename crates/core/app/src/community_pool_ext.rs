@@ -3,17 +3,17 @@ use async_trait::async_trait;
 
 use cnidarium::{StateRead, StateWrite};
 use futures::{StreamExt, TryStreamExt};
-use penumbra_governance::state_key;
-use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_sct::component::clock::EpochRead;
-use penumbra_transaction::Transaction;
+use penumbra_sdk_governance::state_key;
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_sct::component::clock::EpochRead;
+use penumbra_sdk_transaction::Transaction;
 
 // Note: These should live in `penumbra-governance` in the `StateReadExt` and `StateWriteExt`
 // traits, however that would result in a circular dependency since the below methods
 // require use of `penumbra-transaction::Transaction`, which has `penumbra-governance` as a
 // dependency.
 #[async_trait]
-pub trait CommunityPoolStateReadExt: StateRead + penumbra_stake::StateReadExt {
+pub trait CommunityPoolStateReadExt: StateRead + penumbra_sdk_stake::StateReadExt {
     /// Get all the transactions set to be delivered in this block (scheduled in last block).
     async fn pending_community_pool_transactions(&self) -> Result<Vec<Transaction>> {
         // Get the proposal IDs of the Community Pool transactions we are about to deliver.
@@ -41,7 +41,7 @@ pub trait CommunityPoolStateReadExt: StateRead + penumbra_stake::StateReadExt {
     }
 }
 
-impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> CommunityPoolStateReadExt for T {}
+impl<T: StateRead + penumbra_sdk_stake::StateReadExt + ?Sized> CommunityPoolStateReadExt for T {}
 
 #[async_trait]
 pub trait CommunityPoolStateWriteExt: StateWrite {

@@ -1,5 +1,5 @@
-use penumbra_proto::{core::component::governance::v1 as pbt, DomainType};
-use penumbra_shielded_pool::NoteView;
+use penumbra_sdk_proto::{core::component::governance::v1 as pbt, DomainType};
+use penumbra_sdk_shielded_pool::NoteView;
 use serde::{Deserialize, Serialize};
 
 use crate::DelegatorVote;

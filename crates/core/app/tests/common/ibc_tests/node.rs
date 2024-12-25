@@ -20,15 +20,15 @@ use {
             consensus_state::ConsensusState, header::Header as TendermintHeader,
         },
     },
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_ibc::{component::ClientStateReadExt as _, IBC_COMMITMENT_PREFIX},
-    penumbra_keys::test_keys,
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_proto::util::tendermint_proxy::v1::{
+    penumbra_sdk_ibc::{component::ClientStateReadExt as _, IBC_COMMITMENT_PREFIX},
+    penumbra_sdk_keys::test_keys,
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_proto::util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
     },
     std::error::Error,
@@ -80,7 +80,7 @@ impl TestNodeWithIBC {
         // Use the correct substores
         let storage = TempStorage::new_with_penumbra_prefixes().await?;
         // Instantiate a mock tendermint proxy, which we will connect to the test node.
-        let proxy = penumbra_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
+        let proxy = penumbra_sdk_mock_tendermint_proxy::TestNodeProxy::new::<Consensus>();
 
         let node = {
             let app_state =
@@ -112,7 +112,7 @@ impl TestNodeWithIBC {
         tracing::info!("spawning gRPC...");
         // Spawn the node's RPC server.
         let _rpc_server = {
-            let make_svc = penumbra_app::rpc::routes(
+            let make_svc = penumbra_sdk_app::rpc::routes(
                 storage.as_ref(),
                 proxy,
                 false, /*enable_expensive_rpc*/
@@ -193,7 +193,7 @@ impl TestNodeWithIBC {
     }
 
     pub async fn get_latest_height(&mut self) -> Result<Height, anyhow::Error> {
-        let status: penumbra_proto::util::tendermint_proxy::v1::GetStatusResponse = self
+        let status: penumbra_sdk_proto::util::tendermint_proxy::v1::GetStatusResponse = self
             .tendermint_proxy_service_client
             .get_status(GetStatusRequest {})
             .await?
@@ -212,7 +212,10 @@ impl TestNodeWithIBC {
     pub fn create_tendermint_header(
         &self,
         trusted_height: Option<Height>,
-        penumbra_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse{block_id: _, block}: penumbra_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse,
+        penumbra_sdk_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse {
+            block_id: _,
+            block,
+        }: penumbra_sdk_proto::util::tendermint_proxy::v1::GetBlockByHeightResponse,
     ) -> Result<TendermintHeader> {
         let pk = self
             .node

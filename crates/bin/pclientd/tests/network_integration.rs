@@ -16,10 +16,10 @@ use tempfile::tempdir;
 use tokio::process::Command as TokioCommand;
 
 use pclientd::PclientdConfig;
-use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_custody::soft_kms;
-use penumbra_keys::test_keys;
-use penumbra_proto::{
+use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_custody::soft_kms;
+use penumbra_sdk_keys::test_keys;
+use penumbra_sdk_proto::{
     core::{component::fee::v1::Fee, component::ibc::v1::IbcRelay},
     custody::v1::{custody_service_client::CustodyServiceClient, AuthorizeRequest},
     penumbra::view::v1::view_service_client::ViewServiceClient,
@@ -29,7 +29,7 @@ use penumbra_proto::{
         TransactionPlannerRequest, WitnessAndBuildRequest,
     },
 };
-use penumbra_view::ViewClient;
+use penumbra_sdk_view::ViewClient;
 
 fn generate_config() -> anyhow::Result<PclientdConfig> {
     Ok(PclientdConfig {
@@ -97,7 +97,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     // Here we don't want to use the Penumbra Rust libraries much, because
     // we're executing as if we were a Go program that had to construct all these
     // protos manually, with no access to Penumbra crypto.
-    use penumbra_proto::view::v1::transaction_planner_request as tpr;
+    use penumbra_sdk_proto::view::v1::transaction_planner_request as tpr;
 
     // Specifically, pretend we're relaying IBC messages, so pull one in:
 
@@ -279,8 +279,8 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     // Here we don't want to use the Penumbra Rust libraries much, because
     // we're executing as if we were a Go program that had to construct all these
     // protos manually, with no access to Penumbra crypto.
-    use penumbra_proto::core::num::v1 as num;
-    use penumbra_proto::view::v1::transaction_planner_request as tpr;
+    use penumbra_sdk_proto::core::num::v1 as num;
+    use penumbra_sdk_proto::view::v1::transaction_planner_request as tpr;
 
     // 5.1. Generate a transaction plan performing a swap. Since there are no liquidity positions
     // on this test network, we'll expect to get all our inputs back.
@@ -314,12 +314,13 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("TransactionPlannerResponse missing plan"))?;
 
     // Hold on to the swap plaintext to be able to claim.
-    let swap_plaintext = TryInto::<penumbra_transaction::TransactionPlan>::try_into(plan.clone())?
-        .swap_plans()
-        .next()
-        .expect("swap plan must be present")
-        .swap_plaintext
-        .clone();
+    let swap_plaintext =
+        TryInto::<penumbra_sdk_transaction::TransactionPlan>::try_into(plan.clone())?
+            .swap_plans()
+            .next()
+            .expect("swap plan must be present")
+            .swap_plaintext
+            .clone();
 
     // 5.2. Get authorization data for the transaction from pclientd (signing).
     let auth_data = custody_client

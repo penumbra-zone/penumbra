@@ -3,17 +3,17 @@ use std::io::{IsTerminal, Read, Write};
 use anyhow::Result;
 use decaf377::{Element, Fq};
 use decaf377_rdsa::{Domain, Signature, VerificationKey};
-use penumbra_asset::{asset::Cache, balance::Commitment};
-use penumbra_custody::threshold::{SigningRequest, Terminal};
-use penumbra_keys::{
+use penumbra_sdk_asset::{asset::Cache, balance::Commitment};
+use penumbra_sdk_custody::threshold::{SigningRequest, Terminal};
+use penumbra_sdk_keys::{
     symmetric::{OvkWrappedKey, WrappedMemoKey},
     FullViewingKey, PayloadKey,
 };
-use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
-use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{EncryptedBackref, Note, NoteView};
-use penumbra_tct::structure::Hash;
-use penumbra_transaction::{view, ActionPlan, ActionView, TransactionPlan, TransactionView};
+use penumbra_sdk_proof_params::GROTH16_PROOF_LENGTH_BYTES;
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_shielded_pool::{EncryptedBackref, Note, NoteView};
+use penumbra_sdk_tct::structure::Hash;
+use penumbra_sdk_transaction::{view, ActionPlan, ActionView, TransactionPlan, TransactionView};
 use termion::{color, input::TermRead};
 use tonic::async_trait;
 
@@ -43,7 +43,7 @@ fn pretty_print_transaction_plan(
     fvk: Option<FullViewingKey>,
     plan: &TransactionPlan,
 ) -> anyhow::Result<()> {
-    use penumbra_shielded_pool::{output, spend};
+    use penumbra_sdk_shielded_pool::{output, spend};
 
     fn dummy_sig<D: Domain>() -> Signature<D> {
         Signature::from([0u8; 64])
@@ -60,7 +60,7 @@ fn pretty_print_transaction_plan(
 
     fn dummy_proof_spend() -> spend::SpendProof {
         spend::SpendProof::try_from(
-            penumbra_proto::penumbra::core::component::shielded_pool::v1::ZkSpendProof {
+            penumbra_sdk_proto::penumbra::core::component::shielded_pool::v1::ZkSpendProof {
                 inner: vec![0u8; GROTH16_PROOF_LENGTH_BYTES],
             },
         )
@@ -69,7 +69,7 @@ fn pretty_print_transaction_plan(
 
     fn dummy_proof_output() -> output::OutputProof {
         output::OutputProof::try_from(
-            penumbra_proto::penumbra::core::component::shielded_pool::v1::ZkOutputProof {
+            penumbra_sdk_proto::penumbra::core::component::shielded_pool::v1::ZkOutputProof {
                 inner: vec![0u8; GROTH16_PROOF_LENGTH_BYTES],
             },
         )
@@ -93,13 +93,15 @@ fn pretty_print_transaction_plan(
     fn dummy_output() -> output::Output {
         output::Output {
             body: output::Body {
-                note_payload: penumbra_shielded_pool::NotePayload {
-                    note_commitment: penumbra_shielded_pool::note::StateCommitment(Fq::default()),
+                note_payload: penumbra_sdk_shielded_pool::NotePayload {
+                    note_commitment: penumbra_sdk_shielded_pool::note::StateCommitment(
+                        Fq::default(),
+                    ),
                     ephemeral_key: [0u8; 32]
                         .as_slice()
                         .try_into()
                         .expect("can create dummy ephemeral key"),
-                    encrypted_note: penumbra_shielded_pool::NoteCiphertext([0u8; 176]),
+                    encrypted_note: penumbra_sdk_shielded_pool::NoteCiphertext([0u8; 176]),
                 },
                 balance_commitment: dummy_commitment(),
                 ovk_wrapped_key: OvkWrappedKey([0u8; 48]),
@@ -126,7 +128,7 @@ fn pretty_print_transaction_plan(
 
         match action {
             ActionPlan::Output(x) => Some(ActionView::Output(
-                penumbra_shielded_pool::OutputView::Visible {
+                penumbra_sdk_shielded_pool::OutputView::Visible {
                     output: dummy_output(),
                     note: convert_note(cache, fvk, &x.output_note()),
                     payload_key: PayloadKey::from([0u8; 32]),
@@ -175,7 +177,7 @@ fn pretty_print_transaction_plan(
     let cache = Cache::with_known_assets();
 
     let view = TransactionView {
-        anchor: penumbra_tct::Root(Hash::zero()),
+        anchor: penumbra_sdk_tct::Root(Hash::zero()),
         binding_sig: dummy_sig(),
         body_view: view::TransactionBodyView {
             action_views: plan

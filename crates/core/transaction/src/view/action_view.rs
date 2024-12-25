@@ -1,23 +1,25 @@
-use penumbra_auction::auction::dutch::{
+use penumbra_sdk_auction::auction::dutch::{
     actions::view::{ActionDutchAuctionScheduleView, ActionDutchAuctionWithdrawView},
     ActionDutchAuctionEnd,
 };
-use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_dex::{
+use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_dex::{
     lp::action::{PositionClose, PositionOpen, PositionWithdraw},
     swap::SwapView,
     swap_claim::SwapClaimView,
 };
-use penumbra_governance::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
-use penumbra_ibc::IbcRelay;
-use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
-use penumbra_shielded_pool::Ics20Withdrawal;
-use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
+use penumbra_sdk_governance::{
+    ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
+};
+use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_proto::{core::transaction::v1 as pbt, DomainType};
+use penumbra_sdk_shielded_pool::Ics20Withdrawal;
+use penumbra_sdk_stake::{Delegate, Undelegate, UndelegateClaim};
 use serde::{Deserialize, Serialize};
 
-pub use penumbra_governance::DelegatorVoteView;
-pub use penumbra_shielded_pool::OutputView;
-pub use penumbra_shielded_pool::SpendView;
+pub use penumbra_sdk_governance::DelegatorVoteView;
+pub use penumbra_sdk_shielded_pool::OutputView;
+pub use penumbra_sdk_shielded_pool::SpendView;
 
 use crate::Action;
 
@@ -32,7 +34,7 @@ pub enum ActionView {
     SwapClaim(SwapClaimView),
     DelegatorVote(DelegatorVoteView),
     // Action types with transparent contents
-    ValidatorDefinition(penumbra_stake::validator::Definition),
+    ValidatorDefinition(penumbra_sdk_stake::validator::Definition),
     IbcRelay(IbcRelay),
     ProposalSubmit(ProposalSubmit),
     ProposalWithdraw(ProposalWithdraw),

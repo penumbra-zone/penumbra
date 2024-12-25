@@ -3,22 +3,22 @@
 
 use anyhow::Result;
 use decaf377_fmd::Precision;
-use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_dex::{
+use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_dex::{
     lp::action::{PositionClose, PositionOpen},
     lp::plan::PositionWithdrawPlan,
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
 };
-use penumbra_governance::{
+use penumbra_sdk_governance::{
     DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
-use penumbra_ibc::IbcRelay;
-use penumbra_keys::{Address, FullViewingKey, PayloadKey};
-use penumbra_proto::{core::transaction::v1 as pb, DomainType};
-use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
-use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_keys::{Address, FullViewingKey, PayloadKey};
+use penumbra_sdk_proto::{core::transaction::v1 as pb, DomainType};
+use penumbra_sdk_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
+use penumbra_sdk_stake::{Delegate, Undelegate, UndelegateClaimPlan};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -173,7 +173,7 @@ impl TransactionPlan {
 
     pub fn validator_definitions(
         &self,
-    ) -> impl Iterator<Item = &penumbra_stake::validator::Definition> {
+    ) -> impl Iterator<Item = &penumbra_sdk_stake::validator::Definition> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::ValidatorDefinition(d) = action {
                 Some(d)
@@ -436,17 +436,17 @@ impl TryFrom<pb::TransactionPlan> for TransactionPlan {
 
 #[cfg(test)]
 mod tests {
-    use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
-    use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, TradingPair};
-    use penumbra_fee::Fee;
-    use penumbra_keys::{
+    use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
+    use penumbra_sdk_dex::{swap::SwapPlaintext, swap::SwapPlan, TradingPair};
+    use penumbra_sdk_fee::Fee;
+    use penumbra_sdk_keys::{
         keys::{Bip44Path, SeedPhrase, SpendKey},
         Address,
     };
-    use penumbra_shielded_pool::Note;
-    use penumbra_shielded_pool::{OutputPlan, SpendPlan};
-    use penumbra_tct as tct;
-    use penumbra_txhash::EffectingData as _;
+    use penumbra_sdk_shielded_pool::Note;
+    use penumbra_sdk_shielded_pool::{OutputPlan, SpendPlan};
+    use penumbra_sdk_tct as tct;
+    use penumbra_sdk_txhash::EffectingData as _;
     use rand_core::OsRng;
 
     use crate::{

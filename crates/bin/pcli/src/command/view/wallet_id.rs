@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use penumbra_keys::FullViewingKey;
+use penumbra_sdk_keys::FullViewingKey;
 
 #[derive(Debug, clap::Parser)]
 pub struct WalletIdCmd {}

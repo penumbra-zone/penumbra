@@ -5,19 +5,19 @@ use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_asset::Value;
-use penumbra_compact_block::component::CompactBlockManager;
-use penumbra_keys::{keys::NullifierKey, test_keys};
-use penumbra_mock_client::MockClient;
-use penumbra_num::Amount;
-use penumbra_sct::{
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_compact_block::component::CompactBlockManager;
+use penumbra_sdk_keys::{keys::NullifierKey, test_keys};
+use penumbra_sdk_mock_client::MockClient;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_sct::{
     component::{clock::EpochManager, source::SourceContext},
     epoch::Epoch,
 };
-use penumbra_shielded_pool::{
+use penumbra_sdk_shielded_pool::{
     component::ShieldedPool, Note, SpendPlan, SpendProof, SpendProofPrivate, SpendProofPublic,
 };
-use penumbra_txhash::{EffectHash, TransactionContext};
+use penumbra_sdk_txhash::{EffectHash, TransactionContext};
 use rand_core::{OsRng, SeedableRng};
 use std::{ops::Deref, sync::Arc};
 use tendermint::abci;
@@ -178,7 +178,7 @@ async fn invalid_dummy_spend() {
     let bad_proof = SpendProof::prove(
         Fq::rand(&mut OsRng),
         Fq::rand(&mut OsRng),
-        &penumbra_proof_params::SPEND_PROOF_PROVING_KEY,
+        &penumbra_sdk_proof_params::SPEND_PROOF_PROVING_KEY,
         public,
         private,
     )
@@ -354,7 +354,7 @@ async fn spend_duplicate_nullifier_same_transaction() {
         asset_id: note.asset_id(),
     };
     let output_plan =
-        penumbra_shielded_pool::OutputPlan::new(&mut rng, value, *test_keys::ADDRESS_1);
+        penumbra_sdk_shielded_pool::OutputPlan::new(&mut rng, value, *test_keys::ADDRESS_1);
     let fvk = &test_keys::FULL_VIEWING_KEY;
     let memo_key = PayloadKey::random_key(&mut rng);
     let output = output_plan.output(fvk.outgoing(), &memo_key);
@@ -363,9 +363,9 @@ async fn spend_duplicate_nullifier_same_transaction() {
     // 5. Construct a transaction with both spends that use the same note/nullifier.
     let transaction_body = TransactionBody {
         actions: vec![
-            penumbra_transaction::Action::Spend(spend_1),
-            penumbra_transaction::Action::Spend(spend_2),
-            penumbra_transaction::Action::Output(output),
+            penumbra_sdk_transaction::Action::Spend(spend_1),
+            penumbra_sdk_transaction::Action::Spend(spend_2),
+            penumbra_sdk_transaction::Action::Output(output),
         ],
         transaction_parameters: TransactionParameters::default(),
         detection_data: None,

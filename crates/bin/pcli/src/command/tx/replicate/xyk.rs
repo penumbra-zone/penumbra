@@ -5,12 +5,12 @@ use anyhow::{anyhow, Context};
 use dialoguer::Confirm;
 use rand_core::OsRng;
 
-use penumbra_asset::Value;
-use penumbra_dex::{lp::position::Position, DirectedUnitPair};
-use penumbra_keys::keys::AddressIndex;
-use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::view::v1::GasPricesRequest;
-use penumbra_view::{Planner, ViewClient};
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_dex::{lp::position::Position, DirectedUnitPair};
+use penumbra_sdk_keys::keys::AddressIndex;
+use penumbra_sdk_num::{fixpoint::U128x128, Amount};
+use penumbra_sdk_proto::view::v1::GasPricesRequest;
+use penumbra_sdk_view::{Planner, ViewClient};
 
 use crate::dex_utils;
 use crate::dex_utils::replicate::debug;

@@ -3,15 +3,15 @@ use {
     cnidarium::TempStorage,
     common::TempStorageExt as _,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_keys::test_keys,
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_proto::DomainType,
-    penumbra_stake::{validator::Validator, FundingStreams, GovernanceKey, IdentityKey},
+    penumbra_sdk_keys::test_keys,
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_proto::DomainType,
+    penumbra_sdk_stake::{validator::Validator, FundingStreams, GovernanceKey, IdentityKey},
     rand_core::OsRng,
     tap::Tap,
     tracing::{error_span, info, Instrument},
@@ -92,8 +92,8 @@ async fn app_rejects_validator_definitions_with_invalid_auth_sigs() -> anyhow::R
     // Make a transaction that defines a new validator, providing an invalid signature.
     let plan = {
         use {
-            penumbra_stake::validator,
-            penumbra_transaction::{ActionPlan, TransactionParameters, TransactionPlan},
+            penumbra_sdk_stake::validator,
+            penumbra_sdk_transaction::{ActionPlan, TransactionParameters, TransactionPlan},
             rand_core::OsRng,
         };
         let bytes = new_validator.encode_to_vec();

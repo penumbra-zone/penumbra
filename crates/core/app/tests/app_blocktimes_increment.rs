@@ -1,11 +1,11 @@
 use {
     self::common::BuilderExt,
     cnidarium::TempStorage,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_mock_consensus::TestNode,
+    penumbra_sdk_mock_consensus::TestNode,
     std::time::Duration,
     tap::{Tap, TapFallible},
 };

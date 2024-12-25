@@ -1,6 +1,6 @@
 use clap::ArgEnum;
-use penumbra_asset::Value;
-use penumbra_auction::auction::dutch::DutchAuctionDescription;
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_auction::auction::dutch::DutchAuctionDescription;
 use rand::Rng;
 use rand::RngCore;
 use rand_core::OsRng;

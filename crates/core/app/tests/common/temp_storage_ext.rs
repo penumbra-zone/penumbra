@@ -1,7 +1,7 @@
 use {
     async_trait::async_trait,
     cnidarium::TempStorage,
-    penumbra_app::{app::App, genesis::AppState, SUBSTORE_PREFIXES},
+    penumbra_sdk_app::{app::App, genesis::AppState, SUBSTORE_PREFIXES},
     std::ops::Deref,
 };
 

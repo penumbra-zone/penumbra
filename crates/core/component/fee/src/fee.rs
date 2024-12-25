@@ -1,11 +1,11 @@
 use anyhow::Context;
-use penumbra_proto::{penumbra::core::component::fee::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::component::fee::v1 as pb, DomainType};
 use std::fmt;
 use std::str::FromStr;
 
 use decaf377::Fr;
-use penumbra_asset::{asset, balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_num::Amount;
+use penumbra_sdk_asset::{asset, balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_num::Amount;
 
 // Each fee tier multiplier has an implicit 100 denominator.
 pub static FEE_TIER_LOW_MULTIPLIER: u32 = 105;

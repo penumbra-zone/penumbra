@@ -1,7 +1,7 @@
 use ark_ff::Zero;
 use decaf377::Fr;
-use penumbra_asset::{balance, Balance, Value};
-use penumbra_proto::{penumbra::core::component::auction::v1 as pb, DomainType};
+use penumbra_sdk_asset::{balance, Balance, Value};
+use penumbra_sdk_proto::{penumbra::core::component::auction::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::auction::{dutch::ActionDutchAuctionWithdraw, AuctionId, AuctionNft};

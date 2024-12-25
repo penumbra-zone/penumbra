@@ -3,12 +3,12 @@ use {
     anyhow::anyhow,
     cnidarium::TempStorage,
     common::TempStorageExt as _,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID},
-    penumbra_auction::{
+    penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID},
+    penumbra_sdk_auction::{
         auction::{
             dutch::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule, DutchAuctionDescription},
             AuctionNft,
@@ -16,12 +16,12 @@ use {
         component::AuctionStoreRead,
         StateReadExt as _,
     },
-    penumbra_keys::test_keys,
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_proto::DomainType,
-    penumbra_shielded_pool::{Note, OutputPlan, SpendPlan},
-    penumbra_transaction::{
+    penumbra_sdk_keys::test_keys,
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_proto::DomainType,
+    penumbra_sdk_shielded_pool::{Note, OutputPlan, SpendPlan},
+    penumbra_sdk_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, ActionPlan, TransactionParameters, TransactionPlan,
     },
     rand_core::OsRng,

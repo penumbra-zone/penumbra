@@ -4,18 +4,20 @@ use {
     cnidarium::TempStorage,
     common::TempStorageExt as _,
     decaf377_fmd::Precision,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_keys::test_keys,
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_num::fixpoint::U128x128,
-    penumbra_proto::DomainType,
-    penumbra_sct::component::clock::EpochRead as _,
-    penumbra_stake::{component::validator_handler::ValidatorDataRead as _, UndelegateClaimPlan},
-    penumbra_transaction::{
+    penumbra_sdk_keys::test_keys,
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_num::fixpoint::U128x128,
+    penumbra_sdk_proto::DomainType,
+    penumbra_sdk_sct::component::clock::EpochRead as _,
+    penumbra_sdk_stake::{
+        component::validator_handler::ValidatorDataRead as _, UndelegateClaimPlan,
+    },
+    penumbra_sdk_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
     },
     rand_core::OsRng,
@@ -26,12 +28,12 @@ use {
 
 mod common;
 
-/// The length of the [`penumbra_sct`] epoch.
+/// The length of the [`penumbra_sdk_sct`] epoch.
 ///
 /// This test relies on many epochs turning over, so we will work with a shorter epoch duration.
 const EPOCH_DURATION: u64 = 3;
 
-/// The length of the [`penumbra_stake`] unbonding_delay.
+/// The length of the [`penumbra_sdk_stake`] unbonding_delay.
 const UNBONDING_DELAY: u64 = 4;
 
 #[tokio::test]
@@ -83,7 +85,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         .await?
         .try_into()
         .map_err(|keys| anyhow::anyhow!("expected one key, got: {keys:?}"))?;
-    let delegate_token_id = penumbra_stake::DelegationToken::new(identity_key).id();
+    let delegate_token_id = penumbra_sdk_stake::DelegationToken::new(identity_key).id();
 
     // Sync the mock client, using the test wallet's spend key, to the latest snapshot.
     let mut client = MockClient::new(test_keys::SPEND_KEY.clone())
@@ -110,13 +112,13 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         .tap(|rate| tracing::info!(?rate, "got validator rate"));
     let (plan, staking_note, staking_note_nullifier) = {
         use {
-            penumbra_shielded_pool::{OutputPlan, SpendPlan},
-            penumbra_transaction::{
+            penumbra_sdk_shielded_pool::{OutputPlan, SpendPlan},
+            penumbra_sdk_transaction::{
                 memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
             },
         };
         let note = client
-            .notes_by_asset(*penumbra_asset::STAKING_TOKEN_ASSET_ID)
+            .notes_by_asset(*penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID)
             .cloned()
             .next()
             .expect("should get staking note");
@@ -174,7 +176,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         .await?;
 
     // Show that the client now has a single note for some delegation tokens.
-    let delegate_note: penumbra_shielded_pool::Note = {
+    let delegate_note: penumbra_sdk_shielded_pool::Note = {
         let mut notes: Vec<_> = client.notes_by_asset(delegate_token_id).cloned().collect();
         assert_eq!(notes.len(), 1, "client should now have delegation tokens");
         notes.pop().unwrap()
@@ -182,7 +184,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
 
     // Show that the staking note has a nullifier that has now been spent.
     {
-        use penumbra_sct::component::tree::VerificationExt;
+        use penumbra_sdk_sct::component::tree::VerificationExt;
         let snapshot = storage.latest_snapshot();
         let Err(_) = snapshot
             .check_nullifier_unspent(staking_note_nullifier)
@@ -204,9 +206,9 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         .tap(|rate| tracing::info!(?rate, "got new validator rate"));
     let (plan, undelegate_token_id) = {
         use {
-            penumbra_shielded_pool::{OutputPlan, SpendPlan},
-            penumbra_stake::DelegationToken,
-            penumbra_transaction::{
+            penumbra_sdk_shielded_pool::{OutputPlan, SpendPlan},
+            penumbra_sdk_stake::DelegationToken,
+            penumbra_sdk_transaction::{
                 memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
             },
         };
@@ -274,7 +276,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         .expect("snapshot should have a block height");
 
     // Show that we immediately receive unbonding tokens after undelegating.
-    let undelegate_note: penumbra_shielded_pool::Note = {
+    let undelegate_note: penumbra_sdk_shielded_pool::Note = {
         client.sync_to_latest(post_undelegate_snapshot).await?;
         let mut undelegate_notes: Vec<_> = client
             .notes_by_asset(undelegate_token_id)
@@ -304,7 +306,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     // Build a transaction that will now reclaim staking tokens from the validator.
     let plan = {
         client.sync_to_latest(storage.latest_snapshot()).await?;
-        let penalty = penumbra_stake::Penalty::from_percent(0);
+        let penalty = penumbra_sdk_stake::Penalty::from_percent(0);
         let note = client
             .notes
             .values()
@@ -350,7 +352,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     {
         client.sync_to_latest(post_claim_snapshot.clone()).await?;
         let notes: Vec<_> = client
-            .notes_by_asset(*penumbra_asset::STAKING_TOKEN_ASSET_ID)
+            .notes_by_asset(*penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID)
             .cloned()
             .collect();
         assert_eq!(notes.len(), 1, "client should still have staking notes");
@@ -368,7 +370,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
 
     // Lets make some assertions that the note amounts respect the validator rates.
     {
-        use penumbra_stake::BPS_SQUARED_SCALING_FACTOR;
+        use penumbra_sdk_stake::BPS_SQUARED_SCALING_FACTOR;
         use std::ops::Deref;
 
         let staking_note_amount: U128x128 = staking_note.amount().into();
@@ -382,7 +384,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
             (undelegate_exchange_rate / BPS_SQUARED_SCALING_FACTOR.deref())?;
 
         // Compute the expected amount of delegation tokens we should have received.
-        let expected: penumbra_num::Amount = staking_note_amount
+        let expected: penumbra_sdk_num::Amount = staking_note_amount
             .checked_div(&scaled_delegate_rate)?
             .round_down()
             .try_into()?;
@@ -394,7 +396,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         );
 
         // Compute the expected amount of undelegation tokens we should have received.
-        let expected: penumbra_num::Amount = delegate_note_amount
+        let expected: penumbra_sdk_num::Amount = delegate_note_amount
             .checked_mul(&scaled_undelegate_rate)?
             .round_down()
             .try_into()?;

@@ -1,8 +1,8 @@
 use anyhow::anyhow;
 use cometindex::{async_trait, index::EventBatch, AppView, ContextualizedEvent, PgTransaction};
-use penumbra_asset::Value;
-use penumbra_keys::Address;
-use penumbra_proto::{
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_proto::{
     core::component::shielded_pool::v1::{
         self as pb, event_outbound_fungible_token_refund::Reason as RefundReason,
     },

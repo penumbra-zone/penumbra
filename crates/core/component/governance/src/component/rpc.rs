@@ -5,14 +5,14 @@ use anyhow::Context;
 use async_stream::try_stream;
 use cnidarium::Storage;
 use futures::{StreamExt, TryStreamExt};
-use penumbra_num::Amount;
-use penumbra_proto::core::component::governance::v1::AllTalliedDelegatorVotesForProposalRequest;
-use penumbra_proto::core::component::governance::v1::AllTalliedDelegatorVotesForProposalResponse;
-use penumbra_proto::core::component::governance::v1::NextProposalIdRequest;
-use penumbra_proto::core::component::governance::v1::NextProposalIdResponse;
-use penumbra_proto::core::component::governance::v1::VotingPowerAtProposalStartRequest;
-use penumbra_proto::core::component::governance::v1::VotingPowerAtProposalStartResponse;
-use penumbra_proto::{
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::core::component::governance::v1::AllTalliedDelegatorVotesForProposalRequest;
+use penumbra_sdk_proto::core::component::governance::v1::AllTalliedDelegatorVotesForProposalResponse;
+use penumbra_sdk_proto::core::component::governance::v1::NextProposalIdRequest;
+use penumbra_sdk_proto::core::component::governance::v1::NextProposalIdResponse;
+use penumbra_sdk_proto::core::component::governance::v1::VotingPowerAtProposalStartRequest;
+use penumbra_sdk_proto::core::component::governance::v1::VotingPowerAtProposalStartResponse;
+use penumbra_sdk_proto::{
     core::component::governance::v1::{
         query_service_server::QueryService, ProposalDataRequest, ProposalDataResponse,
         ProposalInfoRequest, ProposalInfoResponse, ProposalListRequest, ProposalListResponse,
@@ -21,8 +21,8 @@ use penumbra_proto::{
     },
     StateReadProto,
 };
-use penumbra_stake::rate::RateData;
-use penumbra_stake::IdentityKey;
+use penumbra_sdk_stake::rate::RateData;
+use penumbra_sdk_stake::IdentityKey;
 use tonic::Status;
 use tracing::instrument;
 

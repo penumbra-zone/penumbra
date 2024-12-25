@@ -1,5 +1,5 @@
-use penumbra_sct::Nullifier;
-use penumbra_stake::IdentityKey;
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_stake::IdentityKey;
 
 pub fn governance_params() -> &'static str {
     "governance/params"

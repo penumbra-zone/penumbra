@@ -6,7 +6,7 @@ use std::{
     str::FromStr,
 };
 
-use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
 
 use crate::{
     params::GovernanceParameters,

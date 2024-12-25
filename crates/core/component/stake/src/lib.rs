@@ -29,7 +29,7 @@ pub mod component;
 #[cfg(feature = "component")]
 pub use component::{StateReadExt, StateWriteExt};
 
-pub static BPS_SQUARED_SCALING_FACTOR: once_cell::sync::Lazy<penumbra_num::fixpoint::U128x128> =
+pub static BPS_SQUARED_SCALING_FACTOR: once_cell::sync::Lazy<penumbra_sdk_num::fixpoint::U128x128> =
     once_cell::sync::Lazy::new(|| 1_0000_0000u128.into());
 
 pub use self::delegate::Delegate;

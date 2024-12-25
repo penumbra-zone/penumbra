@@ -2,7 +2,7 @@ use crate::{epoch::Epoch, state_key};
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 use std::str::FromStr;
 
 #[async_trait]

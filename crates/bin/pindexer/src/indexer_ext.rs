@@ -13,7 +13,7 @@ impl IndexerExt for cometindex::Indexer {
             .with_index(Box::new(crate::stake::UndelegationTxs {}))
             .with_index(Box::new(crate::governance::GovernanceProposals {}))
             .with_index(Box::new(crate::dex_ex::Component::new(
-                penumbra_asset::asset::Id::from_str(
+                penumbra_sdk_asset::asset::Id::from_str(
                     // USDC
                     "passet1w6e7fvgxsy6ccy3m8q0eqcuyw6mh3yzqu3uq9h58nu8m8mku359spvulf6",
                 )
@@ -23,7 +23,7 @@ impl IndexerExt for cometindex::Indexer {
             .with_index(Box::new(crate::supply::Component::new()))
             .with_index(Box::new(crate::ibc::Component::new()))
             .with_index(Box::new(crate::insights::Component::new(
-                penumbra_asset::asset::Id::from_str(
+                penumbra_sdk_asset::asset::Id::from_str(
                     // USDC
                     "passet1w6e7fvgxsy6ccy3m8q0eqcuyw6mh3yzqu3uq9h58nu8m8mku359spvulf6",
                 )

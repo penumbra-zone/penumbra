@@ -5,14 +5,14 @@ use std::{
 
 use anyhow::{Context, Result};
 use futures::TryStreamExt;
-use penumbra_governance::Vote;
-use penumbra_proto::core::component::governance::v1::{
+use penumbra_sdk_governance::Vote;
+use penumbra_sdk_proto::core::component::governance::v1::{
     query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
     AllTalliedDelegatorVotesForProposalRequest, ProposalDataRequest, ProposalListRequest,
     ProposalListResponse, ValidatorVotesRequest, ValidatorVotesResponse,
     VotingPowerAtProposalStartRequest,
 };
-use penumbra_stake::IdentityKey;
+use penumbra_sdk_stake::IdentityKey;
 use serde::Serialize;
 use serde_json::json;
 
@@ -169,7 +169,7 @@ impl GovernanceCmd {
 
                         let mut delegator_tallies: BTreeMap<
                             IdentityKey,
-                            penumbra_governance::Tally,
+                            penumbra_sdk_governance::Tally,
                         > = client
                             .all_tallied_delegator_votes_for_proposal(
                                 AllTalliedDelegatorVotesForProposalRequest {
@@ -184,14 +184,13 @@ impl GovernanceCmd {
                                     .identity_key
                                     .expect("identity key must be set for vote response")
                                     .try_into()?;
-                                let tally: penumbra_governance::Tally = response
+                                let tally: penumbra_sdk_governance::Tally = response
                                     .tally
                                     .expect("tally must be set for vote response")
                                     .try_into()?;
-                                Ok::<(IdentityKey, penumbra_governance::Tally), anyhow::Error>((
-                                    identity_key,
-                                    tally,
-                                ))
+                                Ok::<(IdentityKey, penumbra_sdk_governance::Tally), anyhow::Error>(
+                                    (identity_key, tally),
+                                )
                             })
                             // TODO: double iterator here is suboptimal but trying to collect
                             // `Result<Vec<_>>` was annoying
@@ -201,7 +200,7 @@ impl GovernanceCmd {
                             .collect::<Result<BTreeMap<_, _>>>()?;
 
                         // Combine the two mappings
-                        let mut total = penumbra_governance::Tally::default();
+                        let mut total = penumbra_sdk_governance::Tally::default();
                         let mut all_votes_and_power: BTreeMap<String, serde_json::Value> =
                             BTreeMap::new();
                         for (identity_key, (vote, power)) in validator_votes_and_power.into_iter() {
@@ -222,7 +221,7 @@ impl GovernanceCmd {
                                     };
                                 // Subtract delegator total from validator power, then add delegator
                                 // tally in to get the total tally for this validator:
-                                let sub_total = penumbra_governance::Tally::from((
+                                let sub_total = penumbra_sdk_governance::Tally::from((
                                     vote,
                                     power - delegator_tally.total(),
                                 )) + delegator_tally;
@@ -261,7 +260,7 @@ fn json<T: Serialize>(value: &T) -> Result<()> {
     Ok(())
 }
 
-fn json_tally(tally: &penumbra_governance::Tally) -> serde_json::Value {
+fn json_tally(tally: &penumbra_sdk_governance::Tally) -> serde_json::Value {
     let mut map = serde_json::Map::new();
     if tally.yes() > 0 {
         map.insert("yes".to_string(), tally.yes().into());

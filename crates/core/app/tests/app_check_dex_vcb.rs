@@ -3,16 +3,16 @@ mod common;
 use self::common::TempStorageExt;
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::ActionHandler;
-use penumbra_asset::asset;
-use penumbra_dex::{
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_dex::{
     component::ValueCircuitBreakerRead,
     swap::{SwapPlaintext, SwapPlan},
     TradingPair,
 };
-use penumbra_fee::Fee;
-use penumbra_keys::{test_keys, Address};
-use penumbra_num::Amount;
-use penumbra_sct::component::source::SourceContext;
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_keys::{test_keys, Address};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_sct::component::source::SourceContext;
 use rand_core::SeedableRng;
 use std::{ops::Deref, sync::Arc};
 

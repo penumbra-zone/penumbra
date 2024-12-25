@@ -1,7 +1,7 @@
 use decaf377_rdsa::{Signature, SpendAuth};
 
-use penumbra_proto::{core::transaction::v1 as pb, DomainType};
-use penumbra_txhash::EffectHash;
+use penumbra_sdk_proto::{core::transaction::v1 as pb, DomainType};
+use penumbra_sdk_txhash::EffectHash;
 
 /// Authorization data returned in response to a
 /// [`TransactionDescription`](crate::TransactionDescription).

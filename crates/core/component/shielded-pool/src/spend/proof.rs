@@ -19,22 +19,22 @@ use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
-use penumbra_tct as tct;
-use penumbra_tct::r1cs::StateCommitmentVar;
+use penumbra_sdk_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
+use penumbra_sdk_tct as tct;
+use penumbra_sdk_tct::r1cs::StateCommitmentVar;
 
 use crate::{note, Note, Rseed};
-use penumbra_asset::{
+use penumbra_sdk_asset::{
     balance::commitment::BalanceCommitmentVar,
     balance::{self, Commitment},
     Value,
 };
-use penumbra_keys::keys::{
+use penumbra_sdk_keys::keys::{
     AuthorizationKeyVar, Bip44Path, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
-use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
-use penumbra_sct::{Nullifier, NullifierVar};
+use penumbra_sdk_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_sdk_sct::{Nullifier, NullifierVar};
 use tap::Tap;
 
 /// The public input for a [`SpendProof`].
@@ -69,7 +69,7 @@ pub struct SpendProofPrivate {
 
 #[cfg(test)]
 fn check_satisfaction(public: &SpendProofPublic, private: &SpendProofPrivate) -> Result<()> {
-    use penumbra_keys::keys::FullViewingKey;
+    use penumbra_sdk_keys::keys::FullViewingKey;
 
     let note_commitment = private.note.commit();
     if note_commitment != private.state_commitment_proof.commitment() {
@@ -387,20 +387,20 @@ mod tests {
     use super::*;
     use ark_r1cs_std::prelude::Boolean;
     use decaf377::{Fq, Fr};
-    use penumbra_asset::{asset, Value};
-    use penumbra_keys::{
+    use penumbra_sdk_asset::{asset, Value};
+    use penumbra_sdk_keys::{
         keys::{Bip44Path, SeedPhrase, SpendKey},
         Address,
     };
-    use penumbra_num::Amount;
-    use penumbra_proof_params::generate_prepared_test_parameters;
-    use penumbra_sct::Nullifier;
-    use penumbra_tct::StateCommitment;
+    use penumbra_sdk_num::Amount;
+    use penumbra_sdk_proof_params::generate_prepared_test_parameters;
+    use penumbra_sdk_sct::Nullifier;
+    use penumbra_sdk_tct::StateCommitment;
     use proptest::prelude::*;
 
     use crate::Note;
     use decaf377_rdsa::{SpendAuth, VerificationKey};
-    use penumbra_tct as tct;
+    use penumbra_sdk_tct as tct;
     use rand_core::OsRng;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {

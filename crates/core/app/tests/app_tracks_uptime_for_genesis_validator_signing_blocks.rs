@@ -3,12 +3,12 @@ use {
     anyhow::Context,
     cnidarium::TempStorage,
     common::TempStorageExt as _,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_mock_consensus::TestNode,
-    penumbra_stake::component::validator_handler::validator_store::ValidatorDataRead,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_stake::component::validator_handler::validator_store::ValidatorDataRead,
     tap::Tap,
     tracing::{error_span, Instrument},
 };

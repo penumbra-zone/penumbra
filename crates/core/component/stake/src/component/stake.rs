@@ -14,9 +14,9 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
 use futures::{StreamExt, TryStreamExt};
-use penumbra_num::Amount;
-use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
-use penumbra_sct::component::clock::EpochRead;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{DomainType, StateReadProto, StateWriteProto};
+use penumbra_sdk_sct::component::clock::EpochRead;
 use std::pin::Pin;
 use std::str::FromStr;
 use std::{collections::BTreeMap, sync::Arc};
@@ -42,7 +42,7 @@ impl Staking {}
 impl Component for Staking {
     type AppState = (
         crate::genesis::Content,
-        penumbra_shielded_pool::genesis::Content,
+        penumbra_sdk_shielded_pool::genesis::Content,
     );
 
     #[instrument(name = "staking", skip(state, app_state))]

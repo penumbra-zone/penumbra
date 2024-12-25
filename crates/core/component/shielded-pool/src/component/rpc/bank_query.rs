@@ -17,10 +17,10 @@ use ibc_proto::cosmos::bank::v1beta1::{
     QuerySpendableBalanceByDenomResponse, QuerySpendableBalancesRequest,
     QuerySpendableBalancesResponse, QuerySupplyOfRequest, QuerySupplyOfResponse,
 };
-use penumbra_asset::asset::{self, Metadata};
-use penumbra_ibc::component::state_key as ibc_state_key;
-use penumbra_num::Amount;
-use penumbra_proto::StateReadProto as _;
+use penumbra_sdk_asset::asset::{self, Metadata};
+use penumbra_sdk_ibc::component::state_key as ibc_state_key;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::StateReadProto as _;
 use tracing::instrument;
 
 use crate::component::AssetRegistryRead as _;

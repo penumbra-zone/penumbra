@@ -1,8 +1,8 @@
 use std::pin::Pin;
 
 use cnidarium::Storage;
-use penumbra_asset::asset::{self};
-use penumbra_proto::core::component::shielded_pool::v1::{
+use penumbra_sdk_asset::asset::{self};
+use penumbra_sdk_proto::core::component::shielded_pool::v1::{
     query_service_server::QueryService, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
     AssetMetadataByIdsRequest, AssetMetadataByIdsResponse,
 };

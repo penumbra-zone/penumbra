@@ -3,7 +3,7 @@
 
 use anyhow::{Context, Result};
 use assert_cmd::Command as AssertCommand;
-use penumbra_keys::{address::Address, FullViewingKey};
+use penumbra_sdk_keys::{address::Address, FullViewingKey};
 use std::path::PathBuf;
 use std::str::FromStr;
 

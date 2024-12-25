@@ -18,15 +18,15 @@ use std::{path::PathBuf, time::Duration};
 use assert_cmd::Command;
 use directories::UserDirs;
 use once_cell::sync::Lazy;
-use penumbra_stake::validator::ValidatorToml;
+use penumbra_sdk_stake::validator::ValidatorToml;
 use predicates::prelude::*;
 use regex::Regex;
 use serde_json::Value;
 use tempfile::{tempdir, NamedTempFile, TempDir};
 
-use penumbra_keys::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
-use penumbra_proto::core::transaction::v1::TransactionView as ProtoTransactionView;
-use penumbra_transaction::view::TransactionView;
+use penumbra_sdk_keys::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
+use penumbra_sdk_proto::core::transaction::v1::TransactionView as ProtoTransactionView;
+use penumbra_sdk_transaction::view::TransactionView;
 
 // The number "1020" is chosen so that this is bigger than u64::MAX
 // when accounting for the 10e18 scaling factor from the base denom.
@@ -175,7 +175,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
 
     assert!(matches!(
         &tv.body_view.action_views[0],
-        penumbra_transaction::ActionView::Spend(_)
+        penumbra_sdk_transaction::ActionView::Spend(_)
     ));
 
     // Inspect the TransactionView and ensure that we can read the memo text.
@@ -184,12 +184,12 @@ fn transaction_send_from_addr_0_to_addr_1() {
         .memo_view
         .expect("can find MemoView in TransactionView");
     match mv {
-        penumbra_transaction::MemoView::Visible { plaintext, .. } => {
+        penumbra_sdk_transaction::MemoView::Visible { plaintext, .. } => {
             tracing::info!(?plaintext, "plaintext memo");
             tracing::info!(?memo_text, "expected memo text");
             assert!(plaintext.text == memo_text);
         }
-        penumbra_transaction::MemoView::Opaque { .. } => {
+        penumbra_sdk_transaction::MemoView::Opaque { .. } => {
             panic!("MemoView for transaction was Opaque! We should be able to read this memo.");
         }
     }

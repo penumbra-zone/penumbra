@@ -4,9 +4,9 @@ use cometindex::{
     index::{BlockEvents, EventBatch},
     AppView, PgTransaction,
 };
-use penumbra_asset::asset;
-use penumbra_dex::lp::position::{Id as PositionId, Position};
-use penumbra_dex::{
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_dex::lp::position::{Id as PositionId, Position};
+use penumbra_sdk_dex::{
     event::{
         EventCandlestickData, EventPositionClose, EventPositionExecution, EventPositionOpen,
         EventPositionWithdraw, EventQueuePositionClose,
@@ -14,10 +14,10 @@ use penumbra_dex::{
     lp::Reserves,
     DirectedTradingPair, TradingPair,
 };
-use penumbra_num::Amount;
-use penumbra_proto::event::EventDomainType;
-use penumbra_proto::DomainType;
-use penumbra_sct::event::EventBlockRoot;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::event::EventDomainType;
+use penumbra_sdk_proto::DomainType;
+use penumbra_sdk_sct::event::EventBlockRoot;
 use sqlx::types::BigDecimal;
 use sqlx::Row;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -27,7 +27,7 @@ type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
 mod candle {
     use super::DateTime;
     use chrono::{Datelike as _, Days, TimeDelta, TimeZone as _, Timelike as _, Utc};
-    use penumbra_dex::CandlestickData;
+    use penumbra_sdk_dex::CandlestickData;
     use std::fmt::Display;
 
     fn geo_mean(a: f64, b: f64) -> f64 {
@@ -365,7 +365,7 @@ use price_chart::Context as PriceChartContext;
 
 mod summary {
     use cometindex::PgTransaction;
-    use penumbra_asset::asset;
+    use penumbra_sdk_asset::asset;
 
     use super::{Candle, DateTime, PairMetrics, Window};
 

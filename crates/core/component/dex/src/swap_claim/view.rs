@@ -1,6 +1,6 @@
-use penumbra_proto::{penumbra::core::component::dex::v1 as pbd, DomainType};
-use penumbra_shielded_pool::NoteView;
-use penumbra_txhash::TransactionId;
+use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pbd, DomainType};
+use penumbra_sdk_shielded_pool::NoteView;
+use penumbra_sdk_txhash::TransactionId;
 use serde::{Deserialize, Serialize};
 
 use super::SwapClaim;

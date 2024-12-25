@@ -2,12 +2,12 @@ use {
     self::common::BuilderExt,
     cnidarium::TempStorage,
     common::TempStorageExt as _,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_mock_consensus::TestNode,
-    penumbra_sct::component::clock::EpochRead as _,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_sct::component::clock::EpochRead as _,
     tap::TapFallible,
 };
 

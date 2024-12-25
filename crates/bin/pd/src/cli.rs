@@ -174,7 +174,7 @@ pub enum NetworkCommand {
         /// generate a wallet, view its address, then generate a devnet
         /// with that address included in the base allocations.
         #[clap(long)]
-        allocation_address: Option<penumbra_keys::Address>,
+        allocation_address: Option<penumbra_sdk_keys::Address>,
         #[clap(long, parse(from_os_str))]
         /// Path to JSON file containing initial validator configs [default: latest testnet].
         validators_input_file: Option<PathBuf>,
@@ -228,7 +228,7 @@ pub enum NetworkCommand {
         archive_url: Option<Url>,
         /// Human-readable name to identify node on network
         // Default: 'node-#'
-        #[clap(long, env = "PENUMBRA_PD_TM_MONIKER")]
+        #[clap(long, env = "PENUMBRA_PD_TM_EXTERNAL_ADDR")]
         moniker: Option<String>,
         /// Public URL to advertise for this node's Tendermint P2P service.
         /// Setting this option will instruct other nodes on the network to connect

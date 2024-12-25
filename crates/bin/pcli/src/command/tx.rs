@@ -26,13 +26,15 @@ use rand_core::OsRng;
 use regex::Regex;
 
 use liquidity_position::PositionCmd;
-use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
-use penumbra_fee::FeeTier;
-use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
-use penumbra_keys::{keys::AddressIndex, Address};
-use penumbra_num::Amount;
-use penumbra_proto::{
+use penumbra_sdk_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_dex::{lp::position, swap_claim::SwapClaimPlan};
+use penumbra_sdk_fee::FeeTier;
+use penumbra_sdk_governance::{
+    proposal::ProposalToml, proposal_state::State as ProposalState, Vote,
+};
+use penumbra_sdk_keys::{keys::AddressIndex, Address};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{
     core::component::{
         dex::v1::{
             query_service_client::QueryServiceClient as DexQueryServiceClient,
@@ -62,12 +64,14 @@ use penumbra_proto::{
     view::v1::GasPricesRequest,
     Message, Name as _,
 };
-use penumbra_shielded_pool::Ics20Withdrawal;
-use penumbra_stake::rate::RateData;
-use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
-use penumbra_transaction::{gas::swap_claim_gas_cost, Transaction};
-use penumbra_view::{SpendableNoteRecord, ViewClient};
-use penumbra_wallet::plan::{self, Planner};
+use penumbra_sdk_shielded_pool::Ics20Withdrawal;
+use penumbra_sdk_stake::rate::RateData;
+use penumbra_sdk_stake::{
+    DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan,
+};
+use penumbra_sdk_transaction::{gas::swap_claim_gas_cost, Transaction};
+use penumbra_sdk_view::{SpendableNoteRecord, ViewClient};
+use penumbra_sdk_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
 use tonic::transport::{Channel, ClientTlsConfig};
 use url::Url;

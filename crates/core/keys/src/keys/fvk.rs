@@ -6,7 +6,7 @@ use poseidon377::hash_2;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str, DomainType};
+use penumbra_sdk_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str, DomainType};
 
 use crate::keys::wallet_id::WalletId;
 use crate::{

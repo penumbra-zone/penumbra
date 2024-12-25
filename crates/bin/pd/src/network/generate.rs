@@ -3,21 +3,21 @@
 //! for Penumbra.
 use crate::network::config::{get_network_dir, NetworkTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
-use penumbra_app::{
+use penumbra_sdk_app::{
     app::{MAX_BLOCK_TXS_PAYLOAD_BYTES, MAX_EVIDENCE_SIZE_BYTES},
     params::AppParameters,
 };
-use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
-use penumbra_fee::genesis::Content as FeeContent;
-use penumbra_governance::genesis::Content as GovernanceContent;
-use penumbra_keys::{keys::SpendKey, Address};
-use penumbra_sct::genesis::Content as SctContent;
-use penumbra_sct::params::SctParameters;
-use penumbra_shielded_pool::{
+use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_fee::genesis::Content as FeeContent;
+use penumbra_sdk_governance::genesis::Content as GovernanceContent;
+use penumbra_sdk_keys::{keys::SpendKey, Address};
+use penumbra_sdk_sct::genesis::Content as SctContent;
+use penumbra_sdk_sct::params::SctParameters;
+use penumbra_sdk_shielded_pool::{
     genesis::{self as shielded_pool_genesis, Allocation, Content as ShieldedPoolContent},
     params::ShieldedPoolParameters,
 };
-use penumbra_stake::{
+use penumbra_sdk_stake::{
     genesis::Content as StakeContent, params::StakeParameters, validator::Validator,
     DelegationToken, FundingStream, FundingStreams, GovernanceKey, IdentityKey,
 };
@@ -40,7 +40,7 @@ pub struct NetworkConfig {
     /// The name of the network
     pub name: String,
     /// The Tendermint genesis for initial chain state.
-    pub genesis: Genesis<penumbra_app::genesis::AppState>,
+    pub genesis: Genesis<penumbra_sdk_app::genesis::AppState>,
     /// Path to local directory where config files will be written to
     pub network_dir: PathBuf,
     /// Set of validators at genesis. Uses the convenient wrapper type
@@ -200,10 +200,10 @@ impl NetworkConfig {
         unbonding_delay: Option<u64>,
         proposal_voting_blocks: Option<u64>,
         gas_price_simple: Option<u64>,
-    ) -> anyhow::Result<penumbra_app::genesis::Content> {
-        let default_gov_params = penumbra_governance::params::GovernanceParameters::default();
+    ) -> anyhow::Result<penumbra_sdk_app::genesis::Content> {
+        let default_gov_params = penumbra_sdk_governance::params::GovernanceParameters::default();
 
-        let gov_params = penumbra_governance::params::GovernanceParameters {
+        let gov_params = penumbra_sdk_governance::params::GovernanceParameters {
             proposal_voting_blocks: proposal_voting_blocks
                 .unwrap_or(default_gov_params.proposal_voting_blocks),
             ..default_gov_params
@@ -214,7 +214,7 @@ impl NetworkConfig {
 
         let gas_price_simple = gas_price_simple.unwrap_or_default();
 
-        let app_state = penumbra_app::genesis::Content {
+        let app_state = penumbra_sdk_app::genesis::Content {
             chain_id: chain_id.to_string(),
             stake_content: StakeContent {
                 validators: validators.into_iter().map(Into::into).collect(),
@@ -227,8 +227,8 @@ impl NetworkConfig {
                 },
             },
             fee_content: FeeContent {
-                fee_params: penumbra_fee::params::FeeParameters {
-                    fixed_gas_prices: penumbra_fee::GasPrices {
+                fee_params: penumbra_sdk_fee::params::FeeParameters {
+                    fixed_gas_prices: penumbra_sdk_fee::GasPrices {
                         block_space_price: gas_price_simple,
                         compact_block_space_price: gas_price_simple,
                         verification_price: gas_price_simple,
@@ -236,14 +236,14 @@ impl NetworkConfig {
                         asset_id: *STAKING_TOKEN_ASSET_ID,
                     },
                     fixed_alt_gas_prices: vec![
-                        penumbra_fee::GasPrices {
+                        penumbra_sdk_fee::GasPrices {
                             block_space_price: 10 * gas_price_simple,
                             compact_block_space_price: 10 * gas_price_simple,
                             verification_price: 10 * gas_price_simple,
                             execution_price: 10 * gas_price_simple,
                             asset_id: asset::REGISTRY.parse_unit("gm").id(),
                         },
-                        penumbra_fee::GasPrices {
+                        penumbra_sdk_fee::GasPrices {
                             block_space_price: 10 * gas_price_simple,
                             compact_block_space_price: 10 * gas_price_simple,
                             verification_price: 10 * gas_price_simple,
@@ -273,8 +273,8 @@ impl NetworkConfig {
 
     /// Build Tendermint genesis data, based on Penumbra initial application state.
     pub(crate) fn make_genesis(
-        app_state: penumbra_app::genesis::Content,
-    ) -> anyhow::Result<Genesis<penumbra_app::genesis::AppState>> {
+        app_state: penumbra_sdk_app::genesis::Content,
+    ) -> anyhow::Result<Genesis<penumbra_sdk_app::genesis::AppState>> {
         // Use now as genesis time
         let genesis_time = Time::from_unix_timestamp(
             SystemTime::now()
@@ -320,7 +320,7 @@ impl NetworkConfig {
             },
             // always empty in genesis json
             app_hash: tendermint::AppHash::default(),
-            app_state: penumbra_app::genesis::AppState::Content(app_state),
+            app_state: penumbra_sdk_app::genesis::AppState::Content(app_state),
             // Set empty validator set for Tendermint config, which falls back to reading
             // validators from the AppState, via ResponseInitChain:
             // https://docs.tendermint.com/v0.32/tendermint-core/using-tendermint.html
@@ -330,12 +330,12 @@ impl NetworkConfig {
     }
 
     pub(crate) fn make_checkpoint(
-        genesis: Genesis<penumbra_app::genesis::AppState>,
+        genesis: Genesis<penumbra_sdk_app::genesis::AppState>,
         checkpoint: Option<Vec<u8>>,
-    ) -> Genesis<penumbra_app::genesis::AppState> {
+    ) -> Genesis<penumbra_sdk_app::genesis::AppState> {
         match checkpoint {
             Some(checkpoint) => Genesis {
-                app_state: penumbra_app::genesis::AppState::Checkpoint(checkpoint),
+                app_state: penumbra_sdk_app::genesis::AppState::Checkpoint(checkpoint),
                 ..genesis
             },
             None => genesis,
@@ -773,7 +773,8 @@ mod tests {
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
         // No external address template was given, so only 1 validator will be present.
-        let penumbra_app::genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
+        let penumbra_sdk_app::genesis::AppState::Content(app_state) =
+            testnet_config.genesis.app_state
         else {
             unimplemented!("TODO: support checkpointed app state")
         };
@@ -803,7 +804,8 @@ mod tests {
         )?;
         assert_eq!(testnet_config.name, "test-chain-4567");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
-        let penumbra_app::genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
+        let penumbra_sdk_app::genesis::AppState::Content(app_state) =
+            testnet_config.genesis.app_state
         else {
             unimplemented!("TODO: support checkpointed app state")
         };

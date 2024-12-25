@@ -19,11 +19,11 @@ use ark_groth16::ProvingKey;
 use ark_relations::r1cs::ConstraintMatrices;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Validate};
 use decaf377::Bls12_377;
-use penumbra_dex::{swap::proof::SwapCircuit, swap_claim::proof::SwapClaimCircuit};
-use penumbra_governance::DelegatorVoteCircuit;
-use penumbra_proof_params::generate_constraint_matrices;
-use penumbra_proto::tools::summoning::v1::{self as pb};
-use penumbra_shielded_pool::{
+use penumbra_sdk_dex::{swap::proof::SwapCircuit, swap_claim::proof::SwapClaimCircuit};
+use penumbra_sdk_governance::DelegatorVoteCircuit;
+use penumbra_sdk_proof_params::generate_constraint_matrices;
+use penumbra_sdk_proto::tools::summoning::v1::{self as pb};
+use penumbra_sdk_shielded_pool::{
     ConvertCircuit, NullifierDerivationCircuit, OutputCircuit, SpendCircuit,
 };
 

@@ -61,7 +61,7 @@ impl Ibc {
         )
         .expect("block height cannot be zero");
 
-        state.put_penumbra_consensus_state(height, cs);
+        state.put_penumbra_sdk_consensus_state(height, cs);
     }
 
     #[instrument(name = "ibc", skip(_state, _end_block))]

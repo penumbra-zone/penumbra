@@ -7,7 +7,9 @@ pub use {
         temp_storage_ext::TempStorageExt, test_node_builder_ext::BuilderExt,
         test_node_ext::TestNodeExt, validator_read_ext::ValidatorDataReadExt,
     },
-    penumbra_test_subscriber::{set_tracing_subscriber, set_tracing_subscriber_with_env_filter},
+    penumbra_sdk_test_subscriber::{
+        set_tracing_subscriber, set_tracing_subscriber_with_env_filter,
+    },
 };
 
 /// Penumbra-specific extensions to the mock consensus builder.
@@ -25,7 +27,7 @@ mod test_node_ext;
 
 /// Helpful additions for reading validator information.
 ///
-/// See [`ValidatorDataRead`][penumbra_stake::component::validator_handler::ValidatorDataRead],
+/// See [`ValidatorDataRead`][penumbra_sdk_stake::component::validator_handler::ValidatorDataRead],
 /// and [`ValidatorDataReadExt`].
 mod validator_read_ext;
 

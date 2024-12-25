@@ -7,7 +7,7 @@
 //!
 //! ```ascii
 //! ┌───────┐          ┌──────────────┐               ┌──────────────┐
-//! │encoded│ protobuf │penumbra_proto│ TryFrom/Into  │ domain types │
+//! │encoded│ protobuf │penumbra_sdk_proto│ TryFrom/Into  │ domain types │
 //! │ bytes │<──wire ─>│    types     │<─validation ─>│(other crates)│
 //! └───────┘  format  └──────────────┘   boundary    └──────────────┘
 //! ```
@@ -222,13 +222,6 @@ pub mod penumbra {
         pub mod v1 {
             include!("gen/penumbra.custody.v1.rs");
             include!("gen/penumbra.custody.v1.serde.rs");
-        }
-    }
-
-    pub mod cnidarium {
-        pub mod v1 {
-            include!("gen/penumbra.cnidarium.v1.rs");
-            include!("gen/penumbra.cnidarium.v1.serde.rs");
         }
     }
 

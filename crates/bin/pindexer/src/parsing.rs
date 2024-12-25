@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context as _};
-use penumbra_app::genesis::{AppState, Content};
+use penumbra_sdk_app::genesis::{AppState, Content};
 use serde_json::Value;
 
 const GENESIS_NO_CONTENT_ERROR: &'static str = r#"

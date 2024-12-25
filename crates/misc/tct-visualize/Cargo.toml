@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-tct-visualize"
+name = "penumbra-sdk-tct-visualize"
 version = {workspace = true}
 edition = {workspace = true}
 
@@ -14,7 +14,7 @@ name = "tct-live-edit"
 
 
 [dependencies]
-penumbra-tct = {workspace = true, features = ["arbitrary"], default-features = true}
+penumbra-sdk-tct = {workspace = true, features = ["arbitrary"], default-features = true}
 decaf377 = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 tokio-util = {workspace = true, features = ["full"]}

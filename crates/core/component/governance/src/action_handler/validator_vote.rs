@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_proto::{DomainType, StateWriteProto as _};
+use penumbra_sdk_proto::{DomainType, StateWriteProto as _};
 
 use crate::component::StateWriteExt;
 use crate::event;

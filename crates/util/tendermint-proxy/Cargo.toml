@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-tendermint-proxy"
+name = "penumbra-sdk-tendermint-proxy"
 authors.workspace    = true
 edition.workspace    = true
 version.workspace    = true
@@ -15,8 +15,8 @@ hex                              = { workspace = true }
 http                             = { workspace = true }
 metrics                          = { workspace = true }
 pbjson-types                     = { workspace = true }
-penumbra-proto                   = { workspace = true, features = ["rpc", "tendermint"] }
-penumbra-transaction             = { workspace = true }
+penumbra-sdk-proto                   = { workspace = true, features = ["rpc", "tendermint"] }
+penumbra-sdk-transaction             = { workspace = true }
 pin-project                      = { workspace = true }
 pin-project-lite                 = { workspace = true }
 sha2                             = { workspace = true }

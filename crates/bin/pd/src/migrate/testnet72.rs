@@ -4,14 +4,14 @@ use anyhow;
 use cnidarium::{Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use futures::StreamExt as _;
 use jmt::RootHash;
-use penumbra_app::app::StateReadExt as _;
-use penumbra_app::SUBSTORE_PREFIXES;
-use penumbra_proto::core::component::sct::v1::query_service_server::QueryService;
-use penumbra_proto::penumbra::core::component as pb;
-use penumbra_proto::StateWriteProto;
-use penumbra_sct::component::clock::{EpochManager, EpochRead};
-use penumbra_sct::component::rpc::Server as SctServer;
-use penumbra_tct::Position;
+use penumbra_sdk_app::app::StateReadExt as _;
+use penumbra_sdk_app::SUBSTORE_PREFIXES;
+use penumbra_sdk_proto::core::component::sct::v1::query_service_server::QueryService;
+use penumbra_sdk_proto::penumbra::core::component as pb;
+use penumbra_sdk_proto::StateWriteProto;
+use penumbra_sdk_sct::component::clock::{EpochManager, EpochRead};
+use penumbra_sdk_sct::component::rpc::Server as SctServer;
+use penumbra_sdk_tct::Position;
 use prost::Message;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -169,7 +169,7 @@ pub async fn migrate(
     // to lookup a validator view from the chain, and specify the post-upgrade app hash and
     // initial height.
     let chain_id = migrated_state.get_chain_id().await?;
-    let app_state = penumbra_app::genesis::Content {
+    let app_state = penumbra_sdk_app::genesis::Content {
         chain_id,
         ..Default::default()
     };

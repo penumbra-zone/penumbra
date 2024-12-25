@@ -1,6 +1,6 @@
 use crate::Fee;
 use anyhow::{anyhow, Context};
-use penumbra_proto::{core::component::fee::v1 as pb, DomainType, Name as _};
+use penumbra_sdk_proto::{core::component::fee::v1 as pb, DomainType, Name as _};
 
 #[derive(Clone, Debug)]
 pub struct EventBlockFees {

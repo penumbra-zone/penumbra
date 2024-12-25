@@ -3,15 +3,15 @@ use {anyhow::Result, std::time::Duration};
 mod relayer;
 use anyhow::Context as _;
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
-use penumbra_app::{
+use penumbra_sdk_app::{
     app::{MAX_BLOCK_TXS_PAYLOAD_BYTES, MAX_EVIDENCE_SIZE_BYTES},
     genesis,
 };
-use penumbra_keys::keys::{SpendKey, SpendKeyBytes};
-use penumbra_mock_consensus::TestNode;
-use penumbra_proto::core::component::stake::v1::Validator;
-use penumbra_shielded_pool::genesis::Allocation;
-use penumbra_stake::{DelegationToken, GovernanceKey, IdentityKey};
+use penumbra_sdk_keys::keys::{SpendKey, SpendKeyBytes};
+use penumbra_sdk_mock_consensus::TestNode;
+use penumbra_sdk_proto::core::component::stake::v1::Validator;
+use penumbra_sdk_shielded_pool::genesis::Allocation;
+use penumbra_sdk_stake::{DelegationToken, GovernanceKey, IdentityKey};
 #[allow(unused_imports)]
 pub use relayer::MockRelayer;
 
@@ -179,7 +179,7 @@ pub fn get_verified_genesis() -> Result<Genesis> {
         // always empty in genesis json
         app_hash: tendermint::AppHash::default(),
         // app_state: genesis_contents.into(),
-        app_state: serde_json::value::to_value(penumbra_app::genesis::AppState::Content(
+        app_state: serde_json::value::to_value(penumbra_sdk_app::genesis::AppState::Content(
             genesis_contents,
         ))
         .unwrap(),

@@ -3,17 +3,17 @@ use {
     anyhow::anyhow,
     cnidarium::TempStorage,
     common::TempStorageExt as _,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    penumbra_keys::test_keys,
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_proto::DomainType,
-    penumbra_sct::component::tree::SctRead as _,
-    penumbra_shielded_pool::{OutputPlan, SpendPlan},
-    penumbra_transaction::{
+    penumbra_sdk_keys::test_keys,
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_proto::DomainType,
+    penumbra_sdk_sct::component::tree::SctRead as _,
+    penumbra_sdk_shielded_pool::{OutputPlan, SpendPlan},
+    penumbra_sdk_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
     },
     rand_core::OsRng,

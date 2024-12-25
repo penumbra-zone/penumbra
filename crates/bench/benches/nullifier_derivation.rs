@@ -4,15 +4,15 @@ use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::Fq;
-use penumbra_asset::Value;
-use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-use penumbra_proof_params::{DummyWitness, NULLIFIER_DERIVATION_PROOF_PROVING_KEY};
-use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_sdk_proof_params::{DummyWitness, NULLIFIER_DERIVATION_PROOF_PROVING_KEY};
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_shielded_pool::{
     Note, NullifierDerivationProofPrivate, NullifierDerivationProofPublic, Rseed,
 };
-use penumbra_shielded_pool::{NullifierDerivationCircuit, NullifierDerivationProof};
-use penumbra_tct as tct;
+use penumbra_sdk_shielded_pool::{NullifierDerivationCircuit, NullifierDerivationProof};
+use penumbra_sdk_tct as tct;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;

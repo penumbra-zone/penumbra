@@ -8,16 +8,16 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use base64::prelude::*;
 use decaf377::{Bls12_377, Fq, Fr};
-use penumbra_asset::{
+use penumbra_sdk_asset::{
     asset::{self, AssetIdVar},
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
     Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_num::{
+use penumbra_sdk_num::{
     fixpoint::{U128x128, U128x128Var},
     Amount, AmountVar,
 };
-use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_sdk_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
 /// The public input for a [`ConvertProof`].
 #[derive(Clone, Debug)]

@@ -8,7 +8,7 @@
 
 use anyhow::anyhow;
 use frost_core::frost;
-use penumbra_proto::crypto::decaf377_frost::v1 as pb;
+use penumbra_sdk_proto::crypto::decaf377_frost::v1 as pb;
 use std::collections::{BTreeMap, HashMap};
 
 /// A FROST-related error.
@@ -33,7 +33,7 @@ pub type Identifier = frost::Identifier<E>;
 
 /// Signing round 1 functionality and types.
 pub mod round1 {
-    use penumbra_proto::DomainType;
+    use penumbra_sdk_proto::DomainType;
 
     use crate::keys::SigningShare;
 
@@ -138,7 +138,7 @@ impl SigningPackage {
 /// Signing Round 2 functionality and types.
 pub mod round2 {
     use frost_rerandomized::Randomizer;
-    use penumbra_proto::DomainType;
+    use penumbra_sdk_proto::DomainType;
 
     use super::*;
 

@@ -1,7 +1,7 @@
 #![allow(unused)] // TODO: remove this when filling in the RPCs
 
-use penumbra_dex::{component::PositionRead, lp::position};
-use penumbra_proto::{
+use penumbra_sdk_dex::{component::PositionRead, lp::position};
+use penumbra_sdk_proto::{
     core::component::auction::v1 as pb,
     core::component::auction::v1::{
         query_service_server::QueryService, AuctionStateByIdRequest, AuctionStateByIdResponse,
@@ -12,7 +12,7 @@ use penumbra_proto::{
 
 use async_stream::try_stream;
 use futures::{StreamExt, TryStreamExt};
-use penumbra_proto::Message;
+use penumbra_sdk_proto::Message;
 use prost::Name;
 use std::pin::Pin;
 use tonic::Status;

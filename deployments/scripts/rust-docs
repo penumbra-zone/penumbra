@@ -32,32 +32,32 @@ cargo +nightly doc --no-deps \
   -p pclientd \
   -p pd \
   -p pmonitor \
-  -p penumbra-app \
-  -p penumbra-asset \
-  -p penumbra-community-pool \
-  -p penumbra-custody \
-  -p penumbra-dex \
-  -p penumbra-distributions \
-  -p penumbra-fee \
-  -p penumbra-governance \
-  -p penumbra-ibc \
-  -p penumbra-keys \
-  -p penumbra-measure \
-  -p penumbra-mock-consensus \
-  -p penumbra-mock-tendermint-proxy \
-  -p penumbra-mock-client \
-  -p penumbra-num \
-  -p penumbra-proof-params \
-  -p penumbra-proof-setup \
-  -p penumbra-proto \
-  -p penumbra-sct \
-  -p penumbra-shielded-pool \
-  -p penumbra-stake \
-  -p penumbra-tct \
-  -p penumbra-transaction \
-  -p penumbra-txhash \
-  -p penumbra-view \
-  -p penumbra-wallet \
+  -p penumbra-sdk-app \
+  -p penumbra-sdk-asset \
+  -p penumbra-sdk-community-pool \
+  -p penumbra-sdk-custody \
+  -p penumbra-sdk-dex \
+  -p penumbra-sdk-distributions \
+  -p penumbra-sdk-fee \
+  -p penumbra-sdk-governance \
+  -p penumbra-sdk-ibc \
+  -p penumbra-sdk-keys \
+  -p penumbra-sdk-measure \
+  -p penumbra-sdk-mock-consensus \
+  -p penumbra-sdk-mock-tendermint-proxy \
+  -p penumbra-sdk-mock-client \
+  -p penumbra-sdk-num \
+  -p penumbra-sdk-proof-params \
+  -p penumbra-sdk-proof-setup \
+  -p penumbra-sdk-proto \
+  -p penumbra-sdk-sct \
+  -p penumbra-sdk-shielded-pool \
+  -p penumbra-sdk-stake \
+  -p penumbra-sdk-tct \
+  -p penumbra-sdk-transaction \
+  -p penumbra-sdk-txhash \
+  -p penumbra-sdk-view \
+  -p penumbra-sdk-wallet \
   -p poseidon-permutation \
   -p poseidon377 \
   -p tendermint \

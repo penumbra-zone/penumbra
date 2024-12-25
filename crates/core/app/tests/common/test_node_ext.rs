@@ -2,8 +2,8 @@
 #![allow(dead_code)]
 
 use {
-    async_trait::async_trait, cnidarium::TempStorage, penumbra_mock_consensus::TestNode,
-    penumbra_sct::component::clock::EpochRead as _, tap::Tap,
+    async_trait::async_trait, cnidarium::TempStorage, penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_sct::component::clock::EpochRead as _, tap::Tap,
 };
 
 #[async_trait]
@@ -11,7 +11,7 @@ pub trait TestNodeExt: Sized {
     async fn fast_forward_to_next_epoch(
         &mut self,
         storage: &TempStorage,
-    ) -> anyhow::Result<penumbra_sct::epoch::Epoch>;
+    ) -> anyhow::Result<penumbra_sdk_sct::epoch::Epoch>;
 }
 
 #[async_trait]
@@ -30,7 +30,7 @@ where
     async fn fast_forward_to_next_epoch(
         &mut self,
         storage: &TempStorage,
-    ) -> Result<penumbra_sct::epoch::Epoch, anyhow::Error> {
+    ) -> Result<penumbra_sdk_sct::epoch::Epoch, anyhow::Error> {
         let get_epoch = || async { storage.latest_snapshot().get_current_epoch().await };
         let start = get_epoch()
             .await?

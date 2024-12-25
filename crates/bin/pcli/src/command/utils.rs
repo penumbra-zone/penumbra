@@ -1,6 +1,6 @@
 use comfy_table::{presets, Table};
-use penumbra_asset::{asset, Value};
-use penumbra_dex::lp::position::Position;
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_dex::lp::position::Position;
 
 pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position]) -> String {
     let mut table = Table::new();

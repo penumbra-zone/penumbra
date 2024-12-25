@@ -3,17 +3,17 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium_component::ActionHandler;
-use penumbra_txhash::TransactionContext;
+use penumbra_sdk_txhash::TransactionContext;
 
 use cnidarium::{StateRead, StateWrite};
-use penumbra_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
-use penumbra_proto::{DomainType as _, StateWriteProto};
-use penumbra_sct::component::{
+use penumbra_sdk_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
+use penumbra_sdk_proto::{DomainType as _, StateWriteProto};
+use penumbra_sdk_sct::component::{
     source::SourceContext,
     tree::{SctManager, VerificationExt},
     StateReadExt as _,
 };
-use penumbra_shielded_pool::component::NoteManager;
+use penumbra_sdk_shielded_pool::component::NoteManager;
 
 use crate::{
     component::StateReadExt,

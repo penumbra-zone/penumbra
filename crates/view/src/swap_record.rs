@@ -1,7 +1,7 @@
-use penumbra_dex::{swap::SwapPlaintext, BatchSwapOutputData};
-use penumbra_proto::{view::v1 as pb, DomainType};
-use penumbra_sct::{CommitmentSource, Nullifier};
-use penumbra_tct as tct;
+use penumbra_sdk_dex::{swap::SwapPlaintext, BatchSwapOutputData};
+use penumbra_sdk_proto::{view::v1 as pb, DomainType};
+use penumbra_sdk_sct::{CommitmentSource, Nullifier};
+use penumbra_sdk_tct as tct;
 
 use r2d2_sqlite::rusqlite::Row;
 use serde::{Deserialize, Serialize};

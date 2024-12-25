@@ -1,9 +1,9 @@
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_asset::Value;
-use penumbra_proto::core::component::fee::v1 as pb;
-use penumbra_proto::state::StateWriteProto as _;
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_proto::core::component::fee::v1 as pb;
+use penumbra_sdk_proto::state::StateWriteProto as _;
 
 use crate::{Fee, Gas};
 
@@ -14,7 +14,7 @@ use super::view::{StateReadExt, StateWriteExt};
 pub trait FeePay: StateWrite {
     /// Uses the provided `fee` to pay for `gas_used`, erroring if the fee is insufficient.
     async fn pay_fee(&mut self, gas_used: Gas, fee: Fee) -> Result<()> {
-        let current_gas_prices = if fee.asset_id() == *penumbra_asset::STAKING_TOKEN_ASSET_ID {
+        let current_gas_prices = if fee.asset_id() == *penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID {
             self.get_gas_prices()
                 .await
                 .expect("gas prices must be present in state")

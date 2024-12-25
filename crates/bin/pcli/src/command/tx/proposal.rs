@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 
-use penumbra_app::params::AppParameters;
-use penumbra_governance::{change::ParameterChange, Proposal, ProposalPayload};
-use penumbra_proto::DomainType;
-use penumbra_transaction::TransactionPlan;
+use penumbra_sdk_app::params::AppParameters;
+use penumbra_sdk_governance::{change::ParameterChange, Proposal, ProposalPayload};
+use penumbra_sdk_proto::DomainType;
+use penumbra_sdk_transaction::TransactionPlan;
 
 use super::FeeTier;
 

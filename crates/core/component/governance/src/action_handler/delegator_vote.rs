@@ -3,9 +3,9 @@ use ark_ff::Zero;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use decaf377::Fr;
-use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
-use penumbra_proto::StateWriteProto as _;
-use penumbra_txhash::TransactionContext;
+use penumbra_sdk_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
+use penumbra_sdk_proto::StateWriteProto as _;
+use penumbra_sdk_txhash::TransactionContext;
 
 use crate::{
     event, DelegatorVote, DelegatorVoteBody, DelegatorVoteProofPublic,

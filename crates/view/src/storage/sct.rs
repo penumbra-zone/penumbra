@@ -5,7 +5,7 @@ use genawaiter::{rc::gen, yield_};
 use r2d2_sqlite::rusqlite::Transaction;
 
 use core::fmt::Debug;
-use penumbra_tct::{
+use penumbra_sdk_tct::{
     storage::{Read, StoredPosition, Write},
     structure::Hash,
     Forgotten, Position, StateCommitment,
@@ -291,7 +291,7 @@ impl Write for TreeStore<'_, '_> {
 mod test {
     use super::*;
 
-    use penumbra_tct::{StateCommitment, Witness};
+    use penumbra_sdk_tct::{StateCommitment, Witness};
 
     #[test]
     fn tree_store_spot_check() {
@@ -304,11 +304,11 @@ mod test {
         let mut store = TreeStore(&mut tx);
 
         // Check that the currently stored tree is the empty tree:
-        let deserialized = penumbra_tct::Tree::from_reader(&mut store).unwrap();
-        assert_eq!(deserialized, penumbra_tct::Tree::new());
+        let deserialized = penumbra_sdk_tct::Tree::from_reader(&mut store).unwrap();
+        assert_eq!(deserialized, penumbra_sdk_tct::Tree::new());
 
         // Make some kind of tree:
-        let mut tree = penumbra_tct::Tree::new();
+        let mut tree = penumbra_sdk_tct::Tree::new();
         tree.insert(Witness::Keep, StateCommitment::try_from([0; 32]).unwrap())
             .unwrap();
         tree.end_block().unwrap();
@@ -322,7 +322,7 @@ mod test {
         tree.to_writer(&mut store).unwrap();
 
         // Read the tree back from the database:
-        let deserialized = penumbra_tct::Tree::from_reader(&mut store).unwrap();
+        let deserialized = penumbra_sdk_tct::Tree::from_reader(&mut store).unwrap();
 
         assert_eq!(tree, deserialized);
     }

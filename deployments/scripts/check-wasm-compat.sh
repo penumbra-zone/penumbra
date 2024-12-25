@@ -17,23 +17,23 @@ set -euo pipefail
 # to make sure at least all of those crates are tracked here.
 
 packages=(
-    penumbra-asset
-    penumbra-community-pool
-    penumbra-compact-block
-    penumbra-auction
-    penumbra-dex
-    penumbra-distributions
-    penumbra-fee
-    penumbra-funding
-    penumbra-governance
-    penumbra-ibc
-    penumbra-keys
-    penumbra-sct
-    penumbra-shielded-pool
-    penumbra-stake
-    penumbra-tct
-    penumbra-transaction
-    penumbra-txhash
+    penumbra-sdk-asset
+    penumbra-sdk-community-pool
+    penumbra-sdk-compact-block
+    penumbra-sdk-auction
+    penumbra-sdk-dex
+    penumbra-sdk-distributions
+    penumbra-sdk-fee
+    penumbra-sdk-funding
+    penumbra-sdk-governance
+    penumbra-sdk-ibc
+    penumbra-sdk-keys
+    penumbra-sdk-sct
+    penumbra-sdk-shielded-pool
+    penumbra-sdk-stake
+    penumbra-sdk-tct
+    penumbra-sdk-transaction
+    penumbra-sdk-txhash
     # N.B. we can't include those ones because they rely on `getrandom`,
     # but there's a `js` feature...
     # decaf377-fmd

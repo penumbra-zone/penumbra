@@ -8,8 +8,8 @@ use include_flate::flate;
 use tokio::sync::watch;
 use tower_http::trace::TraceLayer;
 
-use penumbra_tct::Tree;
-use penumbra_tct_visualize::live::{self, ViewExtensions};
+use penumbra_sdk_tct::Tree;
+use penumbra_sdk_tct_visualize::live::{self, ViewExtensions};
 
 /// Visualize the structure of the Tiered Commitment Tree.
 #[derive(Parser, Debug)]

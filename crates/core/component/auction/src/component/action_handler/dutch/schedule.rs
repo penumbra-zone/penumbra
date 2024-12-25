@@ -5,8 +5,8 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
-use penumbra_num::Amount;
-use penumbra_sct::component::clock::EpochRead;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_sct::component::clock::EpochRead;
 
 use crate::auction::dutch::ActionDutchAuctionSchedule;
 use crate::component::DutchAuctionManager;

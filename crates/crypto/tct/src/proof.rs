@@ -121,7 +121,7 @@ impl Proof {
     }
 }
 
-use penumbra_proto::penumbra::crypto::tct::v1 as pb;
+use penumbra_sdk_proto::penumbra::crypto::tct::v1 as pb;
 use rand::Rng;
 
 impl From<Proof> for pb::StateCommitmentProof {
@@ -138,6 +138,6 @@ impl TryFrom<pb::StateCommitmentProof> for Proof {
     }
 }
 
-impl penumbra_proto::DomainType for Proof {
+impl penumbra_sdk_proto::DomainType for Proof {
     type Proto = pb::StateCommitmentProof;
 }

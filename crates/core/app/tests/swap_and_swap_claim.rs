@@ -4,24 +4,24 @@ use self::common::TempStorageExt;
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler, Component};
 use decaf377::Fq;
-use penumbra_asset::asset;
-use penumbra_compact_block::component::CompactBlockManager as _;
-use penumbra_dex::{
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_compact_block::component::CompactBlockManager as _;
+use penumbra_sdk_dex::{
     component::{Dex, StateReadExt as _},
     swap::{SwapPlaintext, SwapPlan},
     swap_claim::SwapClaimPlan,
     TradingPair,
 };
-use penumbra_fee::Fee;
-use penumbra_keys::{test_keys, Address};
-use penumbra_mock_client::MockClient;
-use penumbra_num::Amount;
-use penumbra_sct::{
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_keys::{test_keys, Address};
+use penumbra_sdk_mock_client::MockClient;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_sct::{
     component::{clock::EpochManager, source::SourceContext as _, StateReadExt as _},
     epoch::Epoch,
 };
-use penumbra_shielded_pool::component::ShieldedPool;
-use penumbra_transaction::Transaction;
+use penumbra_sdk_shielded_pool::component::ShieldedPool;
+use penumbra_sdk_transaction::Transaction;
 use rand_core::SeedableRng;
 use std::{ops::Deref, sync::Arc};
 use tendermint::abci;

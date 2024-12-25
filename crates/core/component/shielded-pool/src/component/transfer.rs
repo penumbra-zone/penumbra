@@ -21,17 +21,17 @@ use ibc_types::{
     },
     transfer::acknowledgement::TokenTransferAcknowledgement,
 };
-use penumbra_asset::{asset, asset::Metadata, Value};
-use penumbra_ibc::component::ChannelStateReadExt;
-use penumbra_keys::Address;
-use penumbra_num::Amount;
-use penumbra_proto::{
+use penumbra_sdk_asset::{asset, asset::Metadata, Value};
+use penumbra_sdk_ibc::component::ChannelStateReadExt;
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{
     penumbra::core::component::ibc::v1::FungibleTokenPacketData, DomainType as _, StateReadProto,
     StateWriteProto,
 };
-use penumbra_sct::CommitmentSource;
+use penumbra_sdk_sct::CommitmentSource;
 
-use penumbra_ibc::component::{
+use penumbra_sdk_ibc::component::{
     app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
     packet::{
         IBCPacket, SendPacketRead as _, SendPacketWrite as _, Unchecked, WriteAcknowledgement as _,

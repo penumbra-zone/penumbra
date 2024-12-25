@@ -13,7 +13,7 @@ use cnidarium::{StateRead, StateWrite};
 ///
 /// The `ActionHandler` trait has a top-level implementation on [`Transaction`],
 /// which performs any transaction-wide checks and then calls the
-/// `ActionHandler` implementation for each [`Action`](penumbra_transaction::Action).
+/// `ActionHandler` implementation for each [`Action`](penumbra_sdk_transaction::Action).
 ///
 /// The validation logic in the `ActionHandler` trait is split into three phases:
 ///

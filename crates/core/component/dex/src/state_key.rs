@@ -1,8 +1,6 @@
-use std::string::String;
-
-use penumbra_asset::asset;
-
 use crate::{lp::position, DirectedTradingPair, TradingPair};
+use penumbra_sdk_asset::asset;
+use std::string::String;
 
 pub mod config {
     pub fn dex_params() -> &'static str {
@@ -146,8 +144,8 @@ pub(crate) mod engine {
     }
 
     pub(crate) mod routable_assets {
-        use penumbra_asset::asset;
-        use penumbra_num::Amount;
+        use penumbra_sdk_asset::asset;
+        use penumbra_sdk_num::Amount;
 
         use super::*;
 
@@ -224,7 +222,7 @@ pub(crate) mod eviction_queue {
         use crate::lp::position;
         use crate::DirectedTradingPair;
         use anyhow::ensure;
-        use penumbra_num::Amount;
+        use penumbra_sdk_num::Amount;
 
         pub(crate) fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 107] {
             let mut prefix = [0u8; 107];

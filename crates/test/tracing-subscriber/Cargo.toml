@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-test-subscriber"
+name = "penumbra-sdk-test-subscriber"
 authors.workspace = true
 edition.workspace = true
 version.workspace = true

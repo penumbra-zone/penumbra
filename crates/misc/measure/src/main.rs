@@ -7,8 +7,8 @@ use clap::Parser;
 use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
 
-use penumbra_compact_block::CompactBlock;
-use penumbra_proto::{
+use penumbra_sdk_compact_block::CompactBlock;
+use penumbra_sdk_proto::{
     core::component::compact_block::v1::CompactBlockRequest,
     penumbra::{
         core::component::compact_block::v1::{
@@ -249,7 +249,7 @@ impl Opt {
                 let mut sp_note_count = 0;
                 let mut sp_swap_count = 0;
 
-                use penumbra_compact_block::StatePayload;
+                use penumbra_sdk_compact_block::StatePayload;
 
                 while let Some(block_rsp) = stream.message().await? {
                     cb_count += 1;

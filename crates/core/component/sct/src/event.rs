@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Context as _};
 use pbjson_types::Timestamp;
-use penumbra_tct as tct;
+use penumbra_sdk_tct as tct;
 use tct::builder::{block, epoch};
 
-use penumbra_proto::{
+use penumbra_sdk_proto::{
     core::component::sct::v1::{self as pb},
     DomainType, Name as _,
 };

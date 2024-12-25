@@ -1,15 +1,15 @@
 use anyhow::Error;
 use cnidarium::StateRead;
-use penumbra_compact_block::{component::StateReadExt as _, CompactBlock, StatePayload};
-use penumbra_dex::{swap::SwapPlaintext, swap_claim::SwapClaimPlan};
-use penumbra_keys::{keys::SpendKey, FullViewingKey};
-use penumbra_sct::{
+use penumbra_sdk_compact_block::{component::StateReadExt as _, CompactBlock, StatePayload};
+use penumbra_sdk_dex::{swap::SwapPlaintext, swap_claim::SwapClaimPlan};
+use penumbra_sdk_keys::{keys::SpendKey, FullViewingKey};
+use penumbra_sdk_sct::{
     component::{clock::EpochRead, tree::SctRead},
     Nullifier,
 };
-use penumbra_shielded_pool::{note, Note, SpendPlan};
-use penumbra_tct as tct;
-use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
+use penumbra_sdk_shielded_pool::{note, Note, SpendPlan};
+use penumbra_sdk_tct as tct;
+use penumbra_sdk_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
 use rand_core::OsRng;
 use std::collections::BTreeMap;
 
@@ -24,7 +24,7 @@ pub struct MockClient {
     /// Whether a note was spent or not.
     pub spent_notes: BTreeMap<note::StateCommitment, ()>,
     swaps: BTreeMap<tct::StateCommitment, SwapPlaintext>,
-    pub sct: penumbra_tct::Tree,
+    pub sct: penumbra_sdk_tct::Tree,
 }
 
 impl MockClient {
@@ -97,7 +97,7 @@ impl MockClient {
     }
 
     pub fn scan_block(&mut self, block: CompactBlock) -> anyhow::Result<()> {
-        use penumbra_tct::Witness::*;
+        use penumbra_sdk_tct::Witness::*;
 
         if self.latest_height.wrapping_add(1) != block.height {
             anyhow::bail!(
@@ -198,7 +198,7 @@ impl MockClient {
         Ok(())
     }
 
-    pub fn latest_height_and_sct_root(&self) -> (u64, penumbra_tct::Root) {
+    pub fn latest_height_and_sct_root(&self) -> (u64, penumbra_sdk_tct::Root) {
         (self.latest_height, self.sct.root())
     }
 
@@ -210,7 +210,10 @@ impl MockClient {
         self.swaps.get(commitment).cloned()
     }
 
-    pub fn position(&self, commitment: note::StateCommitment) -> Option<penumbra_tct::Position> {
+    pub fn position(
+        &self,
+        commitment: note::StateCommitment,
+    ) -> Option<penumbra_sdk_tct::Position> {
         self.sct.witness(commitment).map(|proof| proof.position())
     }
 
@@ -228,7 +231,7 @@ impl MockClient {
     pub fn witness_commitment(
         &self,
         commitment: note::StateCommitment,
-    ) -> Option<penumbra_tct::Proof> {
+    ) -> Option<penumbra_sdk_tct::Proof> {
         self.sct.witness(commitment)
     }
 
@@ -270,7 +273,7 @@ impl MockClient {
 
     pub fn notes_by_asset(
         &self,
-        asset_id: penumbra_asset::asset::Id,
+        asset_id: penumbra_sdk_asset::asset::Id,
     ) -> impl Iterator<Item = &Note> + '_ {
         self.notes
             .values()
@@ -283,7 +286,7 @@ impl MockClient {
 
     pub fn spendable_notes_by_asset(
         &self,
-        asset_id: penumbra_asset::asset::Id,
+        asset_id: penumbra_sdk_asset::asset::Id,
     ) -> impl Iterator<Item = &Note> + '_ {
         self.notes
             .values()

@@ -4,34 +4,34 @@ use {
     cnidarium::TempStorage,
     common::TempStorageExt as _,
     decaf377_rdsa::VerificationKey,
-    penumbra_app::{
+    penumbra_sdk_app::{
         genesis::{AppState, Content},
         server::consensus::Consensus,
         CommunityPoolStateReadExt as _,
     },
-    penumbra_asset::STAKING_TOKEN_ASSET_ID,
-    penumbra_community_pool::{
+    penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID,
+    penumbra_sdk_community_pool::{
         CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend, StateReadExt as _,
     },
-    penumbra_governance::{
+    penumbra_sdk_governance::{
         Proposal, ProposalSubmit, StateReadExt as _, ValidatorVote, ValidatorVoteBody,
         ValidatorVoteReason,
     },
-    penumbra_keys::{
+    penumbra_sdk_keys::{
         keys::{SpendKey, SpendKeyBytes},
         test_keys,
     },
-    penumbra_mock_client::MockClient,
-    penumbra_mock_consensus::TestNode,
-    penumbra_num::Amount,
-    penumbra_proto::{
+    penumbra_sdk_mock_client::MockClient,
+    penumbra_sdk_mock_consensus::TestNode,
+    penumbra_sdk_num::Amount,
+    penumbra_sdk_proto::{
         core::keys::v1::{GovernanceKey, IdentityKey},
         penumbra::core::component::stake::v1::Validator as PenumbraValidator,
         DomainType,
     },
-    penumbra_shielded_pool::{genesis::Allocation, OutputPlan, SpendPlan},
-    penumbra_stake::DelegationToken,
-    penumbra_transaction::{
+    penumbra_sdk_shielded_pool::{genesis::Allocation, OutputPlan, SpendPlan},
+    penumbra_sdk_stake::DelegationToken,
+    penumbra_sdk_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, ActionPlan, TransactionParameters, TransactionPlan,
     },
     rand::Rng,
@@ -99,7 +99,7 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
             .incoming()
             .payment_address(0u32.into());
 
-        let ik = penumbra_stake::IdentityKey(identity_vk.into());
+        let ik = penumbra_sdk_stake::IdentityKey(identity_vk.into());
         let delegation_denom = DelegationToken::from(ik).denom();
 
         let allocation = Allocation {
@@ -115,8 +115,8 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
     let mut test_node = {
         let mut content = Content {
             chain_id: TestNode::<()>::CHAIN_ID.to_string(),
-            governance_content: penumbra_governance::genesis::Content {
-                governance_params: penumbra_governance::params::GovernanceParameters {
+            governance_content: penumbra_sdk_governance::genesis::Content {
+                governance_params: penumbra_sdk_governance::params::GovernanceParameters {
                     proposal_deposit_amount: 0_u32.into(),
                     proposal_voting_blocks: PROPOSAL_VOTING_BLOCKS,
                     ..Default::default()
@@ -218,7 +218,7 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
                 id: 0_u64,
                 title: "return test deposit".to_owned(),
                 description: "a proposal to return the community pool deposit".to_owned(),
-                payload: penumbra_governance::ProposalPayload::CommunityPoolSpend {
+                payload: penumbra_sdk_governance::ProposalPayload::CommunityPoolSpend {
                     transaction_plan: proposed_tx_plan.encode_to_vec(),
                     // transaction_plan: TransactionPlan::default().encode_to_vec(),
                 },
@@ -268,9 +268,9 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
     let mut plan = {
         let body = ValidatorVoteBody {
             proposal: 0_u64,
-            vote: penumbra_governance::Vote::Yes,
-            identity_key: penumbra_stake::IdentityKey(identity_vk.to_bytes().into()),
-            governance_key: penumbra_stake::GovernanceKey(governance_vk),
+            vote: penumbra_sdk_governance::Vote::Yes,
+            identity_key: penumbra_sdk_stake::IdentityKey(identity_vk.to_bytes().into()),
+            governance_key: penumbra_sdk_stake::GovernanceKey(governance_vk),
             reason: ValidatorVoteReason("test reason".to_owned()),
         };
         let auth_sig = governance_sk.sign(OsRng, body.encode_to_vec().as_slice());
@@ -338,7 +338,7 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
     );
     assert_eq!(
         post_proposal_state,
-        Some(penumbra_governance::proposal_state::State::Voting),
+        Some(penumbra_sdk_governance::proposal_state::State::Voting),
         "a new proposal should be in the voting phase"
     );
     assert_eq!(
@@ -354,7 +354,7 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
     );
     assert_eq!(
         post_vote_state,
-        Some(penumbra_governance::proposal_state::State::Voting),
+        Some(penumbra_sdk_governance::proposal_state::State::Voting),
         "a proposal should remain in the voting phase"
     );
     assert_eq!(
@@ -373,8 +373,8 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
     );
     assert_eq!(
         post_voting_period_state,
-        Some(penumbra_governance::proposal_state::State::Finished {
-            outcome: penumbra_governance::proposal_state::Outcome::Passed,
+        Some(penumbra_sdk_governance::proposal_state::State::Finished {
+            outcome: penumbra_sdk_governance::proposal_state::Outcome::Passed,
         }),
         "a proposal should be finished after the voting period completes"
     );

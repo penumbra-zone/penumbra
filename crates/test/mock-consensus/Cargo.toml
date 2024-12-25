@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-mock-consensus"
+name = "penumbra-sdk-mock-consensus"
 authors.workspace = true
 edition.workspace = true
 version.workspace = true

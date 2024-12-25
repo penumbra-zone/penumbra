@@ -1,10 +1,10 @@
 //! Staking reward and delegation token exchange rates.
 
-use penumbra_num::fixpoint::U128x128;
-use penumbra_num::Amount;
-use penumbra_proto::core::component::stake::v1::CurrentValidatorRateResponse;
-use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
-use penumbra_sct::epoch::Epoch;
+use penumbra_sdk_num::fixpoint::U128x128;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::core::component::stake::v1::CurrentValidatorRateResponse;
+use penumbra_sdk_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
+use penumbra_sdk_sct::epoch::Epoch;
 use serde::{Deserialize, Serialize};
 
 use crate::{validator::State, FundingStream, IdentityKey};

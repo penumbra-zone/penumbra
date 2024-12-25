@@ -1,6 +1,6 @@
 use anyhow::anyhow;
-use penumbra_keys::FullViewingKey;
-use penumbra_proto::penumbra::core::component::dex::v1 as pb;
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_proto::penumbra::core::component::dex::v1 as pb;
 use serde::{Deserialize, Serialize};
 
 use super::{SwapCiphertext, SwapPlaintext};
@@ -8,7 +8,7 @@ use super::{SwapCiphertext, SwapPlaintext};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::SwapPayload", into = "pb::SwapPayload")]
 pub struct SwapPayload {
-    pub commitment: penumbra_tct::StateCommitment,
+    pub commitment: penumbra_sdk_tct::StateCommitment,
     pub encrypted_swap: SwapCiphertext,
 }
 

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_asset::asset::{self, Metadata};
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_asset::asset::{self, Metadata};
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 
 use tracing::instrument;
 
