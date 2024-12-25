@@ -1287,9 +1287,9 @@ dependencies = [
 
 [[package]]
 name = "cnidarium"
-version = "0.82.0"
+version = "0.82.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f93ab30a485dceb9aca3210c03fbbecadd14837a94aef19deb594eef9cb5ced1"
+checksum = "7f0060de634f1f7411ab7464f1021f48ffdeb72fd63cf19553035fa766563828"
 dependencies = [
  "anyhow",
  "async-trait",

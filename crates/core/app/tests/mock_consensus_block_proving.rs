@@ -1,5 +1,8 @@
 use {
     anyhow::Context as _,
+    cnidarium::proto::v1::{
+        query_service_client::QueryServiceClient as CnidariumQueryServiceClient, KeyValueRequest,
+    },
     cnidarium::{StateRead as _, TempStorage},
     common::{BuilderExt as _, TempStorageExt as _},
     ibc_proto::ibc::core::client::v1::{
@@ -23,10 +26,6 @@ use {
     penumbra_sdk_mock_client::MockClient,
     penumbra_sdk_mock_consensus::TestNode,
     penumbra_sdk_proto::{
-        cnidarium::v1::{
-            query_service_client::QueryServiceClient as CnidariumQueryServiceClient,
-            KeyValueRequest,
-        },
         util::tendermint_proxy::v1::{
             tendermint_proxy_service_client::TendermintProxyServiceClient, GetBlockByHeightRequest,
         },

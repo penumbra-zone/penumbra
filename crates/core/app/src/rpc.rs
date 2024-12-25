@@ -10,10 +10,8 @@ use {
     self::query::AppQueryServer,
     crate::PenumbraHost,
     anyhow::Context,
-    cnidarium::rpc::{
-        proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer,
-        Server as StorageServer,
-    },
+    cnidarium::proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer,
+    cnidarium::rpc::Server as StorageServer,
     ibc_proto::{
         cosmos::bank::v1beta1::query_server::QueryServer as TransferQueryServer,
         ibc::{
