@@ -109,7 +109,7 @@ impl TryFrom<&ContextualizedEvent> for Event {
 /// The database's view of a transfer.
 #[derive(Debug)]
 struct DatabaseTransfer {
-    penumbra_sdk_addr: Address,
+    penumbra_addr: Address,
     foreign_addr: String,
     negate: bool,
     value: Value,
@@ -124,7 +124,7 @@ impl Event {
                 sender,
                 value,
             } => DatabaseTransfer {
-                penumbra_sdk_addr: receiver,
+                penumbra_addr: receiver,
                 foreign_addr: sender,
                 negate: false,
                 value,
@@ -135,7 +135,7 @@ impl Event {
                 receiver,
                 value,
             } => DatabaseTransfer {
-                penumbra_sdk_addr: sender,
+                penumbra_addr: sender,
                 foreign_addr: receiver,
                 negate: true,
                 value,
@@ -147,7 +147,7 @@ impl Event {
                 value,
                 reason,
             } => DatabaseTransfer {
-                penumbra_sdk_addr: sender,
+                penumbra_addr: sender,
                 foreign_addr: receiver,
                 negate: false,
                 value,
@@ -176,7 +176,7 @@ async fn create_transfer(
     sqlx::query("INSERT INTO ibc_transfer VALUES (DEFAULT, $7, $1, $6::NUMERIC(39, 0) * $2::NUMERIC(39, 0), $3, $4, $5)")
         .bind(transfer.value.asset_id.to_bytes())
         .bind(transfer.value.amount.to_string())
-        .bind(transfer.penumbra_sdk_addr.to_vec())
+        .bind(transfer.penumbra_addr.to_vec())
         .bind(transfer.foreign_addr)
         .bind(transfer.kind)
         .bind(if transfer.negate { -1i32 } else { 1i32 })

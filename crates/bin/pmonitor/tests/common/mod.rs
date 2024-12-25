@@ -124,8 +124,8 @@ impl PmonitorTestRunner {
         let mut results = Vec::<Address>::new();
         for i in 0..self.num_wallets - 1 {
             let pcli_home = self.wallets_dir()?.join(format!("wallet-{}", i));
-            let penumbra_sdk_address = pcli_view_address(&pcli_home)?;
-            results.push(penumbra_sdk_address);
+            let penumbra_address = pcli_view_address(&pcli_home)?;
+            results.push(penumbra_address);
         }
         Ok(results)
     }
