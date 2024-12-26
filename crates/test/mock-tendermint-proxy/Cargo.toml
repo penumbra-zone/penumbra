@@ -3,10 +3,8 @@ name = "penumbra-sdk-mock-tendermint-proxy"
 authors = {workspace = true}
 repository = {workspace = true}
 description = "Mock the tendermint proxy crate for e2e tests"
-authors.workspace    = true
 edition.workspace    = true
 version.workspace    = true
-repository.workspace = true
 homepage.workspace   = true
 license.workspace    = true
 

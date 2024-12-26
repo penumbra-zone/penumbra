@@ -3,10 +3,8 @@ name = "penumbra-sdk-test-subscriber"
 authors = {workspace = true}
 repository = {workspace = true}
 description = "Subscriber for Penumbra app tests"
-authors.workspace = true
 edition.workspace = true
 version.workspace = true
-repository.workspace = true
 homepage.workspace = true
 license.workspace = true
 publish = true

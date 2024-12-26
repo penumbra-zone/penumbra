@@ -3,10 +3,8 @@ name = "penumbra-sdk-tendermint-proxy"
 authors = {workspace = true}
 repository = {workspace = true}
 description = "A gRPC proxy for Tendermint/CometBFT APIs"
-authors.workspace    = true
 edition.workspace    = true
 version.workspace    = true
-repository.workspace = true
 homepage.workspace   = true
 license.workspace    = true
 
