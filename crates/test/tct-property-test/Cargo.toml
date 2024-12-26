@@ -4,6 +4,7 @@ authors = {workspace = true}
 repository = {workspace = true}
 description = "Property testing for the TCT, as a library"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [dev-dependencies]

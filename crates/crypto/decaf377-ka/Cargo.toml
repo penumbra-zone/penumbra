@@ -4,6 +4,7 @@ authors = {workspace = true}
 repository = {workspace = true}
 description = "Key-agreement over Decaf377"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]

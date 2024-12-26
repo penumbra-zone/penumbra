@@ -4,6 +4,7 @@ authors = {workspace = true}
 repository = {workspace = true}
 description = "A production implementation of the IBC protocol"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]

@@ -4,6 +4,7 @@ authors = {workspace = true}
 repository = {workspace = true}
 description = "Penumbra view server daemon"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]

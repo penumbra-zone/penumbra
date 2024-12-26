@@ -4,6 +4,7 @@ authors = {workspace = true}
 repository = {workspace = true}
 description = "The Penumbra Protobuf Compilation Helper"
 version = "0.1.0"
+license = {workspace = true}
 edition = "2021"
 publish = true
 

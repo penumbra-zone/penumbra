@@ -4,6 +4,7 @@ authors = {workspace = true}
 repository = {workspace = true}
 description = "Numerical data structures and implementations used by Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
