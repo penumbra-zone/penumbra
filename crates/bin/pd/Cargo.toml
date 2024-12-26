@@ -7,7 +7,7 @@ description = "The node software for the Penumbra Zone"
 repository = { workspace = true }
 homepage = { workspace = true }
 license = { workspace = true }
-publish = false
+publish = true
 rust-version = "1.75"
 
 [package.metadata.dist]

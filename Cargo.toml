@@ -95,7 +95,7 @@ tag-name = "v{{version}}"
 tag-message                = "Penumbra version {{version}}"
 pre-release-commit-message = "chore: release version {{version}}"
 # Don't push to crates.io; we're still using git branches for velocity.
-publish = false
+publish = true
 # Do commit, tag, and push the version bump, triggering a new release.
 tag = true
 # Don't push, since we're still evaluating the new release workflow.
@@ -104,7 +104,7 @@ push = false
 [workspace.package]
 authors    = ["Penumbra Labs <team@penumbralabs.xyz"]
 edition    = "2021"
-version    = "0.81.0"
+version    = "0.82.0-alpha.0"
 repository = "https://github.com/penumbra-zone/penumbra"
 homepage   = "https://penumbra.zone"
 license    = "MIT OR Apache-2.0"
