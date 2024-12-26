@@ -10,7 +10,7 @@ edition = {workspace = true}
 name = "penumbra-sdk-dex-integration-tests"
 authors = {workspace = true}
 repository = {workspace = true}
-version = "0.82.0-alpha.0", path = "tests/integration/mod.rs"
+path = "tests/integration/mod.rs"
 
 [features]
 component = [
