@@ -1,7 +1,11 @@
 [package]
 name = "decaf377-fmd"
+license = {workspace = true}
 version = {workspace = true}
 edition = {workspace = true}
+authors = {workspace = true}
+repository = {workspace = true}
+description = "An implementation of Fuzzy Message Detection (FMD)."
 
 [[bench]]
 name = "fmd"
