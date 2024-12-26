@@ -6,7 +6,7 @@ edition     = { workspace = true}
 repository  = { workspace = true }
 homepage    = { workspace = true }
 license     = { workspace = true }
-publish     = false
+publish     = true
 
 [features]
 component = [
