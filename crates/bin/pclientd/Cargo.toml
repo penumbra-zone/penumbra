@@ -1,5 +1,8 @@
 [package]
 name = "pclientd"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Penumbra view server daemon"
 version = {workspace = true}
 edition = {workspace = true}
 

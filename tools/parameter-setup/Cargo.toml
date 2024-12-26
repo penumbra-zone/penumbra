@@ -1,5 +1,6 @@
 [package]
 name = "penumbra-sdk-parameter-setup"
+description = "Penumbra proof parameters setup utilities"
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

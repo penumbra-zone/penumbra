@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-auction"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Auction component implementation for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

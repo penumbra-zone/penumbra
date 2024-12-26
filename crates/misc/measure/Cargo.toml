@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-measure"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "A benchmark tool for Penumbra RPCs"
 version = {workspace = true}
 edition = {workspace = true}
 
@@ -8,6 +11,8 @@ dist = false
 
 [[bin]]
 name = "measure"
+authors = {workspace = true}
+repository = {workspace = true}
 path = "src/main.rs"
 
 [dependencies]

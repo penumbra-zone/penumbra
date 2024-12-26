@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-sct"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "SCT component implementation for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

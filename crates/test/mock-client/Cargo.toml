@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-mock-client"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Mock a client to build end-to-end tests"
 authors.workspace = true
 edition.workspace = true
 version.workspace = true

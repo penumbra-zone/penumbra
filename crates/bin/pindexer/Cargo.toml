@@ -1,5 +1,6 @@
 [package]
 name = "pindexer"
+description = "An indexer implementation for Penumbra"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }

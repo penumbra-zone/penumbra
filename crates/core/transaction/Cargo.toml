@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-transaction"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Core transaction data structures for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

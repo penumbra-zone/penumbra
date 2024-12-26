@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-compact-block"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Compact block component implementation for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

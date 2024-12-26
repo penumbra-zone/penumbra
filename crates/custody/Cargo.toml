@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-custody"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Modular custody for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

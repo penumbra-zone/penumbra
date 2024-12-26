@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-txhash"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Produce Penumbra tx effecting data and authorization hashes"
 version = {workspace = true}
 edition = {workspace = true}
 

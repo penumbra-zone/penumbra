@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-shielded-pool"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Multi-asset shielded pool implementation for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

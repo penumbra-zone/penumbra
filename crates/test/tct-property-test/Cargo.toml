@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-tct-property-test"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Property testing for the TCT, as a library"
 version = {workspace = true}
 edition = {workspace = true}
 

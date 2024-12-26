@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-fee"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Multidimensional fee implementation for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

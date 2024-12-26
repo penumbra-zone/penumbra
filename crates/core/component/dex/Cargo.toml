@@ -1,10 +1,15 @@
 [package]
 name = "penumbra-sdk-dex"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "DEX engine component implementation for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 
 [[test]]
 name = "penumbra-sdk-dex-integration-tests"
+authors = {workspace = true}
+repository = {workspace = true}
 path = "tests/integration/mod.rs"
 
 [features]

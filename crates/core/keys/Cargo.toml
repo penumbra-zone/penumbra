@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-keys"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Key data structures and core utilities for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

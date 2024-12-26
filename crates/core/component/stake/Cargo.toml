@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-stake"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "A tokenized/delegated staking implementation for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

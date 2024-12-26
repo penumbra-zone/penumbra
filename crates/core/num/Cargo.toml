@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-num"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Numerical data structures and implementations used by Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

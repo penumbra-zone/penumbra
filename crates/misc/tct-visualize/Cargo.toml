@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-tct-visualize"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Visualize a TCT in action"
 version = {workspace = true}
 edition = {workspace = true}
 
@@ -8,9 +11,13 @@ dist = false
 
 [[bin]]
 name = "tct-visualize"
+authors = {workspace = true}
+repository = {workspace = true}
 
 [[bin]]
 name = "tct-live-edit"
+authors = {workspace = true}
+repository = {workspace = true}
 
 
 [dependencies]

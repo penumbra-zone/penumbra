@@ -1,5 +1,8 @@
 [package]
 name = "cnidarium-component"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Extension traits for cnidarium"
 version = {workspace = true}
 edition = {workspace = true}
 

@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-ibc"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "A production implementation of the IBC protocol"
 version = {workspace = true}
 edition = {workspace = true}
 

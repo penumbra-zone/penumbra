@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-bench"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Benchmarks for Penumbra crates"
 version = {workspace = true}
 edition = {workspace = true}
 

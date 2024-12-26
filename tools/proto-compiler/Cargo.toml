@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-proto-compiler"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "The Penumbra Protobuf Compilation Helper"
 version = "0.1.0"
 edition = "2021"
 publish = true

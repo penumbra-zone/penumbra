@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-tct"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "The tiered commitment tree for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

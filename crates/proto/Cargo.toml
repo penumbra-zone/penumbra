@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-proto"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Bindings and extension traits for Penumbra protobufs"
 version = {workspace = true}
 edition = {workspace = true}
 

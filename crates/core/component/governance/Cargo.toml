@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-governance"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Governance component implementation for Penumbra"
 version = {workspace = true}
 edition = {workspace = true}
 

@@ -1,5 +1,8 @@
 [package]
 name = "penumbra-sdk-proof-params"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Penumbra Proof parameters"
 version = {workspace = true}
 edition = {workspace = true}
 
