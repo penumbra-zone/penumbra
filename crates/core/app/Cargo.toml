@@ -6,6 +6,7 @@ edition     = { workspace = true}
 repository  = { workspace = true }
 homepage    = { workspace = true }
 license     = { workspace = true }
+description = "A stack of components implementing the Penumbra protocol"
 publish     = true
 
 [features]
