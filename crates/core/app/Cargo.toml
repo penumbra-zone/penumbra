@@ -113,7 +113,6 @@ penumbra-sdk-mock-consensus          = { workspace = true }
 penumbra-sdk-proto                   = { workspace = true, features = ["box-grpc"] }
 penumbra-sdk-test-subscriber         = { workspace = true }
 penumbra-sdk-mock-tendermint-proxy   = { workspace = true }
-penumbra-sdk-view                    = { workspace = true }
 penumbra-sdk-wallet                  = { workspace = true }
 rand                             = { workspace = true }
 rand_chacha                      = { workspace = true }
