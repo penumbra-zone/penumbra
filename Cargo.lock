@@ -4702,7 +4702,6 @@ dependencies = [
  "penumbra-sdk-tower-trace",
  "penumbra-sdk-transaction",
  "penumbra-sdk-txhash",
- "penumbra-sdk-wallet",
  "prost",
  "rand",
  "rand_chacha",
