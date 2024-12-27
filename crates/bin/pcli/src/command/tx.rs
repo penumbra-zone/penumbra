@@ -51,16 +51,7 @@ use penumbra_proto::{
             ValidatorPenaltyRequest,
         },
     },
-    cosmos::tx::v1beta1::{
-        mode_info::{Single, Sum},
-        service_client::ServiceClient as CosmosServiceClient,
-        AuthInfo as CosmosAuthInfo, BroadcastTxRequest as CosmosBroadcastTxRequest,
-        Fee as CosmosFee, ModeInfo, SignerInfo as CosmosSignerInfo, Tx as CosmosTx,
-        TxBody as CosmosTxBody,
-    },
-    noble::forwarding::v1::{ForwardingPubKey, MsgRegisterAccount},
     view::v1::GasPricesRequest,
-    Message, Name as _,
 };
 use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::rate::RateData;
@@ -69,8 +60,6 @@ use penumbra_transaction::{gas::swap_claim_gas_cost, Transaction};
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use penumbra_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
-use tonic::transport::{Channel, ClientTlsConfig};
-use url::Url;
 
 use crate::command::tx::auction::AuctionCmd;
 use crate::App;
@@ -270,22 +259,6 @@ pub enum TxCmd {
         #[clap(long)]
         use_transparent_address: bool,
     },
-    #[clap(display_order = 970)]
-    /// Register a Noble forwarding account.
-    RegisterForwardingAccount {
-        /// The Noble node to submit the registration transaction to.
-        #[clap(long)]
-        noble_node: Url,
-        /// The Noble IBC channel to use for forwarding.
-        #[clap(long)]
-        channel: String,
-        /// The Penumbra address or address index to receive forwarded funds.
-        #[clap(long)]
-        address_or_index: String,
-        /// Whether or not to use an ephemeral address.
-        #[clap(long)]
-        ephemeral: bool,
-    },
     /// Broadcast a saved transaction to the network
     #[clap(display_order = 1000)]
     Broadcast {
@@ -347,7 +320,6 @@ impl TxCmd {
             TxCmd::Withdraw { .. } => false,
             TxCmd::Auction(_) => false,
             TxCmd::Broadcast { .. } => false,
-            TxCmd::RegisterForwardingAccount { .. } => false,
         }
     }
 
@@ -1373,107 +1345,6 @@ impl TxCmd {
             TxCmd::Broadcast { transaction } => {
                 let transaction: Transaction = serde_json::from_slice(&fs::read(transaction)?)?;
                 app.submit_transaction(transaction).await?;
-            }
-            TxCmd::RegisterForwardingAccount {
-                noble_node,
-                channel,
-                address_or_index,
-                ephemeral,
-            } => {
-                let index: Result<u32, _> = address_or_index.parse();
-                let fvk = app.config.full_viewing_key.clone();
-
-                let address = if let Ok(index) = index {
-                    // address index provided
-                    let (address, _dtk) = match ephemeral {
-                        false => fvk.incoming().payment_address(index.into()),
-                        true => fvk.incoming().ephemeral_address(OsRng, index.into()),
-                    };
-
-                    address
-                } else {
-                    // address or nothing provided
-                    let address: Address = address_or_index
-                        .parse()
-                        .map_err(|_| anyhow::anyhow!("Provided address is invalid."))?;
-
-                    address
-                };
-
-                let noble_address = address.noble_forwarding_address(channel);
-
-                println!(
-                    "registering Noble forwarding account with address {} to forward to Penumbra address {}...",
-                    noble_address, address
-                );
-
-                let mut noble_client = CosmosServiceClient::new(
-                    Channel::from_shared(noble_node.to_string())?
-                        .tls_config(ClientTlsConfig::new())?
-                        .connect()
-                        .await?,
-                );
-
-                let tx = CosmosTx {
-                    body: Some(CosmosTxBody {
-                        messages: vec![pbjson_types::Any {
-                            type_url: MsgRegisterAccount::type_url(),
-                            value: MsgRegisterAccount {
-                                signer: noble_address.to_string(),
-                                recipient: address.to_string(),
-                                channel: channel.to_string(),
-                            }
-                            .encode_to_vec()
-                            .into(),
-                        }],
-                        memo: "".to_string(),
-                        timeout_height: 0,
-                        extension_options: vec![],
-                        non_critical_extension_options: vec![],
-                    }),
-                    auth_info: Some(CosmosAuthInfo {
-                        signer_infos: vec![CosmosSignerInfo {
-                            public_key: Some(pbjson_types::Any {
-                                type_url: ForwardingPubKey::type_url(),
-                                value: ForwardingPubKey {
-                                    key: noble_address.bytes(),
-                                }
-                                .encode_to_vec()
-                                .into(),
-                            }),
-                            mode_info: Some(ModeInfo {
-                                // SIGN_MODE_DIRECT
-                                sum: Some(Sum::Single(Single { mode: 1 })),
-                            }),
-                            sequence: 0,
-                        }],
-                        fee: Some(CosmosFee {
-                            amount: vec![],
-                            gas_limit: 200000u64,
-                            payer: "".to_string(),
-                            granter: "".to_string(),
-                        }),
-                        tip: None,
-                    }),
-                    signatures: vec![vec![]],
-                };
-                let r = noble_client
-                    .broadcast_tx(CosmosBroadcastTxRequest {
-                        tx_bytes: tx.encode_to_vec().into(),
-                        // sync
-                        mode: 2,
-                    })
-                    .await?;
-
-                // let r = noble_client
-                //     .register_account(MsgRegisterAccount {
-                //         signer: noble_address,
-                //         recipient: address.to_string(),
-                //         channel: channel.to_string(),
-                //     })
-                //     .await?;
-
-                println!("Noble response: {:?}", r);
             }
         }
 
