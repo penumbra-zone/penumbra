@@ -38,7 +38,7 @@ impl ::prost::Name for ModuleAccount {
         ::prost::alloc::format!("cosmos.auth.v1beta1.{}", Self::NAME)
     }
 }
-/// ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
+/// ModuleCredential represents an unclaimable pubkey for base accounts controlled by modules.
 ///
 /// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
