@@ -12,7 +12,7 @@ impl ToConstraintField<Fq> for Position {
         // The variable created in AllocVar<Position, Fq> is a UInt64, which is a
         // Vec of 64 Boolean<Fq> constraints. To construct the corresponding
         // public input, we need to convert the u64 into 64 bits, and then
-        // convert each bit into a individual Fq element.
+        // convert each bit into an individual Fq element.
         let mut field_elements = Vec::<Fq>::new();
         let value: u64 = u64::from(*self);
         for i in 0..64 {

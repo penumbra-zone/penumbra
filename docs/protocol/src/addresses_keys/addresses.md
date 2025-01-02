@@ -62,7 +62,7 @@ Each payment address has three components:
 * the *transmission key* $\mathsf{pk_d}$, a `decaf377` element;
 * the *clue key* $\mathsf{ck_d}$, a `decaf377` element.
 
-The diversifier is derived from a address index as described above.  The
+The diversifier is derived from an address index as described above.  The
 diversifier $d_0$ with index $0$ is the *default diversifier*, and corresponds
 to the *default payment address*.
 

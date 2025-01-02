@@ -19,7 +19,7 @@ impl ::prost::Name for Coin {
 }
 /// DecCoin defines a token with a denomination and a decimal amount.
 ///
-/// NOTE: The amount field is an Dec which implements the custom method
+/// NOTE: The amount field is a Dec which implements the custom method
 /// signatures required by gogoproto.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

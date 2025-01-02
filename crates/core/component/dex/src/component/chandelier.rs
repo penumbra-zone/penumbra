@@ -116,7 +116,7 @@ pub trait Chandelier: StateWrite {
     #[tracing::instrument(level = "debug", skip(self))]
     async fn record_swap_execution(&mut self, swap: &SwapExecution) {
         // Don't record a swap execution if the output amount was zero.
-        // This is not an superfluous check, as the swap execution could really
+        // This is not a superfluous check, as the swap execution could really
         // have zero output e.g. in the case of a dust swap.
         if swap.output.amount == 0u32.into() || swap.input.amount == 0u32.into() {
             tracing::debug!(?swap, "skipping swap execution");
