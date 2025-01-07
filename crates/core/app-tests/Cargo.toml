@@ -81,7 +81,7 @@ penumbra-sdk-shielded-pool           = { workspace = true, default-features = fa
 penumbra-sdk-stake                   = { workspace = true, default-features = false }
 penumbra-sdk-tct                     = { workspace = true, default-features = true }
 penumbra-sdk-test-subscriber         = { workspace = true }
-penumbra-sdk-tower-trace             = {  path = "../../util/tower-trace"  }
+penumbra-sdk-tower-trace             = { workspace = true }
 penumbra-sdk-transaction             = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-sdk-txhash                  = { workspace = true, default-features = true }
 prost                            = { workspace = true }

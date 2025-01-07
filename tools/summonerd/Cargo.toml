@@ -7,8 +7,11 @@ description = "Coordination node for summoning ceremony"
 repository = {workspace = true}
 homepage = {workspace = true}
 license = {workspace = true}
-publish = true
+publish = false
 rust-version = "1.65"
+
+[package.metadata.dist]
+dist = true
 
 [dependencies]
 anyhow = {workspace = true}

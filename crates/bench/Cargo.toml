@@ -6,6 +6,7 @@ description = "Benchmarks for Penumbra crates"
 version = {workspace = true}
 license = {workspace = true}
 edition = {workspace = true}
+publish = false
 
 [build-dependencies]
 regex = { version = "1", optional = true }

@@ -6,6 +6,10 @@ description = "Penumbra view server daemon"
 version = {workspace = true}
 license = {workspace = true}
 edition = {workspace = true}
+publish = false
+
+[package.metadata.dist]
+dist = true
 
 [features]
 default = ["std", "download-proving-keys"]

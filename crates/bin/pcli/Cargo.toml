@@ -7,7 +7,7 @@ description = "The command-line interface for the Penumbra Zone"
 repository = {workspace = true}
 homepage = {workspace = true}
 license = {workspace = true}
-publish = true
+publish = false
 
 [package.metadata.dist]
 dist = true

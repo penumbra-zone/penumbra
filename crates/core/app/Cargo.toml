@@ -76,8 +76,7 @@ penumbra-sdk-sct                     = { workspace = true, default-features = fa
 penumbra-sdk-shielded-pool           = { workspace = true, default-features = false }
 penumbra-sdk-stake                   = { workspace = true, default-features = false }
 penumbra-sdk-tct                     = { workspace = true, default-features = true }
-penumbra-sdk-test-subscriber         = { workspace = true }
-penumbra-sdk-tower-trace             = {  version = "0.82.0-alpha.0", path = "../../util/tower-trace"  }
+penumbra-sdk-tower-trace             = { workspace = true }
 penumbra-sdk-transaction             = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-sdk-txhash                  = { workspace = true, default-features = true }
 prost                            = { workspace = true }
@@ -105,15 +104,9 @@ tracing                          = { workspace = true }
 url                              = { workspace = true }
 
 [dev-dependencies]
-axum-server                      = { workspace = true }
-camino                           = { workspace = true }
 decaf377-fmd                     = { workspace = true, default-features = true }
 ed25519-consensus                = { workspace = true }
-penumbra-sdk-mock-client             = { workspace = true }
-penumbra-sdk-mock-consensus          = { workspace = true }
-penumbra-sdk-proto                   = { workspace = true, features = ["box-grpc"] }
-penumbra-sdk-test-subscriber         = { workspace = true }
-penumbra-sdk-mock-tendermint-proxy   = { workspace = true }
+penumbra-sdk-proto               = { workspace = true, features = ["box-grpc"] }
 rand                             = { workspace = true }
 rand_chacha                      = { workspace = true }
 rand_core                        = { workspace = true }
