@@ -14,6 +14,7 @@ members = [
   "crates/bin/pmonitor",
   "crates/cnidarium-component",
   "crates/core/app",
+  "crates/core/app-tests",
   "crates/core/asset",
   "crates/core/component/community-pool",
   "crates/core/component/compact-block",
