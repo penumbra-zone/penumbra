@@ -17,7 +17,7 @@ blake2b_simd = {workspace = true}
 bytes = {workspace = true, features = ["serde"]}
 chacha20poly1305 = {workspace = true}
 decaf377 = {workspace = true}
-decaf377-frost = { version = "0.82.0-alpha.0", path = "../crypto/decaf377-frost" }
+decaf377-frost = { version = "0.82.0-alpha.15", path = "../crypto/decaf377-frost" }
 decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
 ed25519-consensus = {workspace = true}

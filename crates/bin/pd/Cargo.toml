@@ -7,7 +7,7 @@ description = "The node software for the Penumbra Zone"
 repository = { workspace = true }
 homepage = { workspace = true }
 license = { workspace = true }
-publish = true
+publish = false
 rust-version = "1.75"
 
 [package.metadata.dist]
@@ -61,7 +61,7 @@ once_cell                        = { workspace = true }
 pbjson-types                     = { workspace = true }
 penumbra-sdk-app                     = { workspace = true, default-features = true }
 penumbra-sdk-asset                   = { workspace = true, default-features = true }
-penumbra-sdk-auto-https              = { version = "0.82.0-alpha.0", path = "../../util/auto-https" }
+penumbra-sdk-auto-https              = { version = "0.82.0-alpha.15", path = "../../util/auto-https" }
 penumbra-sdk-compact-block           = { workspace = true, default-features = true }
 penumbra-sdk-custody                 = { workspace = true }
 penumbra-sdk-auction                 = { workspace = true, features = ["parallel"], default-features = true }
@@ -76,8 +76,8 @@ penumbra-sdk-sct                     = { workspace = true, default-features = tr
 penumbra-sdk-shielded-pool           = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-sdk-stake                   = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-sdk-tct                     = { workspace = true, default-features = true }
-penumbra-sdk-tendermint-proxy        = { version = "0.82.0-alpha.0", path = "../../util/tendermint-proxy" }
-penumbra-sdk-tower-trace             = { version = "0.82.0-alpha.0", path = "../../util/tower-trace" }
+penumbra-sdk-tendermint-proxy        = { version = "0.82.0-alpha.15", path = "../../util/tendermint-proxy" }
+penumbra-sdk-tower-trace             = { workspace = true }
 penumbra-sdk-transaction             = { workspace = true, default-features = true }
 pin-project                      = { workspace = true }
 pin-project-lite                 = { workspace = true }

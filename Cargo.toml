@@ -95,17 +95,22 @@ tag-name = "v{{version}}"
 # The message is required for an annotated tag to be created.
 tag-message                = "Penumbra version {{version}}"
 pre-release-commit-message = "chore: release version {{version}}"
-# Don't push to crates.io; we're still using git branches for velocity.
+# Permit publishing to crates.io; local developers should run `cargo release --no-publish`
+# to prepare the git info, then pushing to remote with tag will trigger crates.io publication.
 publish = true
 # Do commit, tag, and push the version bump, triggering a new release.
 tag = true
 # Don't push, since we're still evaluating the new release workflow.
 push = false
+# Edit each crate's Cargo.toml, bumping versions for other workspace crates.
+dependent-version = "upgrade"
+# Increase default ratelimit on publishing packages
+rate-limit = { existing-packages = 50 }
 
 [workspace.package]
 authors    = ["Penumbra Labs <team@penumbralabs.xyz"]
 edition    = "2021"
-version    = "0.82.0-alpha.3"
+version    = "0.82.0-alpha.15"
 repository = "https://github.com/penumbra-zone/penumbra"
 homepage   = "https://penumbra.zone"
 license    = "MIT OR Apache-2.0"
@@ -137,12 +142,12 @@ chacha20poly1305                 = { version = "0.9.0" }
 chrono                           = { default-features = false, version = "0.4" }
 clap                             = { version = "3.2" }
 cnidarium                        = { version = "0.82.1", default-features = false}
-cnidarium-component              = { default-features = false, version = "0.82.0-alpha.0", path = "crates/cnidarium-component" }
-cometindex                       = { version = "0.82.0-alpha.0", path = "crates/util/cometindex" }
+cnidarium-component              = { default-features = false, version = "0.82.0-alpha.15", path = "crates/cnidarium-component" }
+cometindex                       = { version = "0.82.0-alpha.15", path = "crates/util/cometindex" }
 criterion                        = { version = "0.4" }
 decaf377                         = { default-features = false, version = "0.10.1" }
-decaf377-fmd                     = { version = "0.82.0-alpha.0", path = "crates/crypto/decaf377-fmd" }
-decaf377-ka                      = { version = "0.82.0-alpha.0", path = "crates/crypto/decaf377-ka" }
+decaf377-fmd                     = { version = "0.82.0-alpha.15", path = "crates/crypto/decaf377-fmd" }
+decaf377-ka                      = { version = "0.82.0-alpha.15", path = "crates/crypto/decaf377-ka" }
 decaf377-rdsa                    = { version = "0.11.0" }
 derivative                       = { version = "2.2" }
 directories                      = { version = "4.0.1" }
@@ -170,35 +175,36 @@ once_cell                        = { version = "1.8" }
 parking_lot                      = { version = "0.12.1" }
 pbjson                           = { version = "0.7.0" }
 pbjson-types                     = { version = "0.7.0" }
-penumbra-sdk-app                     = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/app" }
-penumbra-sdk-asset                   = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/asset" }
-penumbra-sdk-community-pool          = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/community-pool" }
-penumbra-sdk-compact-block           = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/compact-block" }
-penumbra-sdk-custody                 = { version = "0.82.0-alpha.0", path = "crates/custody" }
-penumbra-sdk-auction                 = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/auction" }
-penumbra-sdk-dex                     = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/dex" }
-penumbra-sdk-distributions           = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/distributions" }
-penumbra-sdk-fee                     = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/fee" }
-penumbra-sdk-funding                 = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/funding" }
-penumbra-sdk-governance              = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/governance" }
-penumbra-sdk-ibc                     = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/ibc" }
-penumbra-sdk-keys                    = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/keys" }
-penumbra-sdk-mock-client             = { version = "0.82.0-alpha.0", path = "crates/test/mock-client" }
-penumbra-sdk-mock-consensus          = { version = "0.82.0-alpha.0", path = "crates/test/mock-consensus" }
-penumbra-sdk-mock-tendermint-proxy   = { version = "0.82.0-alpha.0", path = "crates/test/mock-tendermint-proxy" }
-penumbra-sdk-num                     = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/num" }
-penumbra-sdk-proof-params            = { default-features = false, version = "0.82.0-alpha.0", path = "crates/crypto/proof-params" }
-penumbra-sdk-proof-setup             = { version = "0.82.0-alpha.0", path = "crates/crypto/proof-setup" }
-penumbra-sdk-proto                   = { default-features = false, version = "0.82.0-alpha.0", path = "crates/proto" }
-penumbra-sdk-sct                     = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/sct" }
-penumbra-sdk-shielded-pool           = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/shielded-pool" }
-penumbra-sdk-stake                   = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/component/stake" }
-penumbra-sdk-tct                     = { default-features = false, version = "0.82.0-alpha.0", path = "crates/crypto/tct" }
-penumbra-sdk-test-subscriber         = { version = "0.82.0-alpha.0", path = "crates/test/tracing-subscriber" }
-penumbra-sdk-transaction             = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/transaction" }
-penumbra-sdk-txhash                  = { default-features = false, version = "0.82.0-alpha.0", path = "crates/core/txhash" }
-penumbra-sdk-view                    = { version = "0.82.0-alpha.0", path = "crates/view" }
-penumbra-sdk-wallet                  = { version = "0.82.0-alpha.0", path = "crates/wallet" }
+penumbra-sdk-app                     = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/app" }
+penumbra-sdk-asset                   = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/asset" }
+penumbra-sdk-community-pool          = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/community-pool" }
+penumbra-sdk-compact-block           = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/compact-block" }
+penumbra-sdk-custody                 = { version = "0.82.0-alpha.15", path = "crates/custody" }
+penumbra-sdk-auction                 = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/auction" }
+penumbra-sdk-dex                     = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/dex" }
+penumbra-sdk-distributions           = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/distributions" }
+penumbra-sdk-fee                     = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/fee" }
+penumbra-sdk-funding                 = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/funding" }
+penumbra-sdk-governance              = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/governance" }
+penumbra-sdk-ibc                     = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/ibc" }
+penumbra-sdk-keys                    = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/keys" }
+penumbra-sdk-mock-client             = { version = "0.82.0-alpha.15", path = "crates/test/mock-client" }
+penumbra-sdk-mock-consensus          = { version = "0.82.0-alpha.15", path = "crates/test/mock-consensus" }
+penumbra-sdk-mock-tendermint-proxy   = { version = "0.82.0-alpha.15", path = "crates/test/mock-tendermint-proxy" }
+penumbra-sdk-num                     = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/num" }
+penumbra-sdk-proof-params            = { default-features = false, version = "0.82.0-alpha.15", path = "crates/crypto/proof-params" }
+penumbra-sdk-proof-setup             = { version = "0.82.0-alpha.15", path = "crates/crypto/proof-setup" }
+penumbra-sdk-proto                   = { default-features = false, version = "0.82.0-alpha.15", path = "crates/proto" }
+penumbra-sdk-sct                     = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/sct" }
+penumbra-sdk-shielded-pool           = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/shielded-pool" }
+penumbra-sdk-stake                   = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/component/stake" }
+penumbra-sdk-tct                     = { default-features = false, version = "0.82.0-alpha.15", path = "crates/crypto/tct" }
+penumbra-sdk-test-subscriber         = { version = "0.82.0-alpha.15", path = "crates/test/tracing-subscriber" }
+penumbra-sdk-tower-trace             = { version = "0.82.0-alpha.15", path = "crates/util/tower-trace" }
+penumbra-sdk-transaction             = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/transaction" }
+penumbra-sdk-txhash                  = { default-features = false, version = "0.82.0-alpha.15", path = "crates/core/txhash" }
+penumbra-sdk-view                    = { version = "0.82.0-alpha.15", path = "crates/view" }
+penumbra-sdk-wallet                  = { version = "0.82.0-alpha.15", path = "crates/wallet" }
 pin-project                      = { version = "1.0.12" }
 pin-project-lite                 = { version = "0.2.9" }
 poseidon377                      = { version = "1.2.0" }

@@ -1,6 +1,12 @@
-#[cfg(feature = "bundled-proving-keys")]
+//! The Penumbra proving and verification key files are binary
+//! data that must be provided at build time, so that the key material
+//! can be injected into Rust types. The key material is too large, however,
+//! for uploading to crates.io (with the keys the crate weights ~100MB).
+//!
+//! Instead, we'll upload just git raw git-lfs pointer files when publishing to crates.io,
+//! then use the build.rs logic to fetch the assets ahead of compilation. Use the feature
+//! `download-proving-keys` to enable the auto-download behavior.
 use anyhow::Context;
-#[cfg(feature = "bundled-proving-keys")]
 use std::io::Read;
 
 fn main() {
@@ -29,59 +35,116 @@ fn main() {
         println!("cargo:rerun-if-changed={file}");
     }
 
-    #[cfg(feature = "bundled-proving-keys")]
-    {
-        for file in proving_parameter_files {
-            check_proving_key(file)
-                .map_err(|e| format!("error downloading proving key: {e:#}"))
-                .unwrap()
+    for file in proving_parameter_files {
+        handle_proving_key(file).expect("failed while handling proving keys");
+    }
+}
+
+/// Inspect keyfiles, to figure out whether they're git-lfs pointers.
+/// If so, and if the `download-proving-keys` feature is set, then fetch
+/// the key material over the network via Github API. Otherwise, error
+/// out with an informative message.
+fn handle_proving_key(file: &str) -> anyhow::Result<()> {
+    let r = ProvingKeyFilepath::new(file);
+    match r {
+        ProvingKeyFilepath::Present(_f) => {}
+        ProvingKeyFilepath::Absent(f) => {
+            println!(
+                "cargo:warning=proving key file is missing: {} this should not happen",
+                f
+            );
+            anyhow::bail!(
+                "proving key file not found; at least lfs pointers were expected; path={}",
+                f
+            );
+        }
+        ProvingKeyFilepath::Pointer(f) => {
+            #[cfg(feature = "download-proving-keys")]
+            download_proving_key(&f)?;
+            #[cfg(not(feature = "download-proving-keys"))]
+            println!(
+                "cargo:warning=proving key file is lfs pointer: {} enable 'download-proving-keys' feature to obtain key files",
+                f
+            );
+        }
+    }
+    Ok(())
+}
+
+/// The states that a proving key filepath can be in.
+enum ProvingKeyFilepath {
+    /// The filepath does not exist.
+    ///
+    /// `Absent` is the expected state when building from crates.io,
+    /// because the binary keyfiles are excluded from the crate manifest, due to filesize.
+    /// If the keyfiles were bundled into the crate, it'd be ~100MB, far too large for crates.io.
+    Absent(String),
+
+    /// The filepath was found, but appears to be a git-lfs pointer.
+    ///
+    /// `Pointer` is the expected state when:
+    ///
+    ///   * building from source, via a local git checkout, but without git-lfs being configured;
+    ///   * building from crates.io, because only the git-lfs pointers were uploaded
+    ///
+    /// If the `download-proving-keys` feature is set, then the proving keys will be fetched
+    /// via the Github LFS API and written in place in the source checkout. Otherwise,
+    /// an error is thrown.
+    Pointer(String),
+
+    /// The filepath was found, and appears to be a fully-fleged binary key file.
+    ///
+    /// `Present` is the expected state when building from source, via a local git checkout,
+    /// with git-lfs properly configured.
+    Present(String),
+}
+
+impl ProvingKeyFilepath {
+    fn new(filepath: &str) -> Self {
+        if std::fs::metadata(filepath).is_ok() {
+            let bytes = file_to_bytes(filepath).expect("failed to read filepath as bytes");
+            // If the file is smaller than 500 bytes, we'll assume it's an LFS pointer.
+            if bytes.len() < 500 {
+                ProvingKeyFilepath::Pointer(filepath.into())
+            } else {
+                ProvingKeyFilepath::Present(filepath.into())
+            }
+        } else {
+            ProvingKeyFilepath::Absent(filepath.into())
         }
     }
 }
 
-#[cfg(feature = "bundled-proving-keys")]
-/// Check that the proving key is not a Git LFS pointer.
-pub fn check_proving_key(file: &str) -> anyhow::Result<()> {
+/// Read filepath to byte array.
+fn file_to_bytes(filepath: &str) -> anyhow::Result<Vec<u8>> {
     let mut bytes = Vec::new();
-    {
-        let f = std::fs::File::open(file).with_context(|| "can open proving key file")?;
-        let mut reader = std::io::BufReader::new(f);
-        reader
-            .read_to_end(&mut bytes)
-            .with_context(|| "can read proving key file")?;
-    }
+    let f = std::fs::File::open(filepath)
+        .with_context(|| "can open proving key file from local source")?;
+    let mut reader = std::io::BufReader::new(f);
+    reader
+        .read_to_end(&mut bytes)
+        .with_context(|| "can read proving key file")?;
+    Ok(bytes)
+}
 
-    // At build time, we check that the Git LFS pointers to proving keys are resolved.
-    // If the system does _not_ have Git LFS installed, then the files will
-    // exist but they will be tiny pointers. We want to detect this and either
-    // resolve the Git LFS pointers OR panic to alert the user they should install
-    // Git LFS.
-    if bytes.len() < 500 {
-        #[cfg(feature = "download-proving-keys")]
-        {
-            use std::io::Write;
+#[cfg(feature = "download-proving-keys")]
+pub fn download_proving_key(filepath: &str) -> anyhow::Result<()> {
+    use std::io::Write;
 
-            let pointer =
-                downloads::GitLFSPointer::parse(&bytes[..]).with_context(|| "can parse pointer")?;
-            let downloaded_bytes = pointer
-                .resolve()
-                .with_context(|| "can download proving key")?;
+    let bytes = file_to_bytes(filepath)?;
+    let pointer =
+        downloads::GitLFSPointer::parse(&bytes[..]).with_context(|| "can parse pointer")?;
+    let downloaded_bytes = pointer
+        .resolve()
+        .with_context(|| "can download proving key from git-lfs")?;
 
-            // Save downloaded bytes to file.
-            let f = std::fs::File::create(file).with_context(|| "can open proving key file")?;
-            let mut writer = std::io::BufWriter::new(f);
-            writer
-                .write_all(&downloaded_bytes[..])
-                .with_context(|| "can write proving key file")?;
-        }
-        #[cfg(not(feature = "download-proving-keys"))]
-        {
-            anyhow::bail!(
-                "proving key is too small; please enable the download-proving-keys feature on the `penumbra-proof-params` crate, adding a direct dependency to enable the feature if necessary."
-            );
-        }
-    }
-
+    // Save downloaded bytes to file.
+    let f =
+        std::fs::File::create(filepath).with_context(|| "can open downloaded proving key file")?;
+    let mut writer = std::io::BufWriter::new(f);
+    writer
+        .write_all(&downloaded_bytes[..])
+        .with_context(|| "can write downloaded proving key to local file")?;
     Ok(())
 }
 

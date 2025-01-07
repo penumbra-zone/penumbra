@@ -7,7 +7,10 @@ edition = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
 license = { workspace = true }
-publish = true
+publish = false
+
+[package.metadata.dist]
+dist = true
 
 [features]
 integration-testnet = []
@@ -20,7 +23,7 @@ colored = "2.1.0"
 directories = {workspace = true}
 futures = {workspace = true}
 indicatif = {workspace = true}
-pcli = {version = "0.82.0-alpha.0", path = "../pcli", default-features = true}
+pcli = {version = "0.82.0-alpha.15", path = "../pcli", default-features = true}
 penumbra-sdk-app = {workspace = true}
 penumbra-sdk-asset = {workspace = true, default-features = false}
 penumbra-sdk-compact-block = {workspace = true, default-features = false}
