@@ -21,7 +21,7 @@ impl ::prost::Name for InterfaceDescriptor {
         ::prost::alloc::format!("cosmos_proto.{}", Self::NAME)
     }
 }
-/// ScalarDescriptor describes a scalar type to be used with
+/// ScalarDescriptor describes an scalar type to be used with
 /// the scalar field option and declared by declare_scalar.
 /// Scalars extend simple protobuf built-in types with additional
 /// syntax and semantics, for instance to represent big integers.
