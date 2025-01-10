@@ -15,6 +15,7 @@ dist = true
 [features]
 default = ["std", "parallel", "download-proving-keys"]
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
+integration-testnet = []
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 std = ["ark-ff/std", "ibc-types/std"]
 parallel = [
