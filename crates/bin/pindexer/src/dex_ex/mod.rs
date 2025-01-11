@@ -50,6 +50,9 @@ mod candle {
 
     impl Candle {
         pub fn from_candlestick_data(data: &CandlestickData) -> Self {
+            // The volume is tracked in terms of input asset.
+            // We can use the closing price (aka. the common clearing price) to convert
+            // the volume to the other direction i.e, the batch swap output.
             Self {
                 open: data.open,
                 close: data.close,
@@ -88,8 +91,8 @@ mod candle {
                 close: 1.0 / self.close,
                 low: 1.0 / self.low,
                 high: 1.0 / self.high,
-                direct_volume: self.direct_volume / self.close,
-                swap_volume: self.swap_volume / self.close,
+                direct_volume: self.direct_volume * self.close,
+                swap_volume: self.swap_volume * self.close,
             }
         }
     }
@@ -545,6 +548,7 @@ mod summary {
                 ON ed_end.asset = asset_end
                 JOIN eligible_denoms AS ed_start
                 ON ed_start.asset = asset_start
+                WHERE the_window = $3
             ),
             sums AS (
                 SELECT
