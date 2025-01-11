@@ -547,6 +547,7 @@ mod summary {
                 ON ed_end.asset = asset_end
                 JOIN eligible_denoms AS ed_start
                 ON ed_start.asset = asset_start
+                WHERE the_window = $3
             ),
             sums AS (
                 SELECT
