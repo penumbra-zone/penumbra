@@ -50,6 +50,8 @@ mod candle {
 
     impl Candle {
         pub fn from_candlestick_data(data: &CandlestickData) -> Self {
+            // We want the direct volume in the other direction, and we consistently
+            // use the closing price as a conversion for that.
             Self {
                 open: data.open,
                 close: data.close,
@@ -88,8 +90,8 @@ mod candle {
                 close: 1.0 / self.close,
                 low: 1.0 / self.low,
                 high: 1.0 / self.high,
-                direct_volume: self.direct_volume / self.close,
-                swap_volume: self.swap_volume / self.close,
+                direct_volume: self.direct_volume * self.close,
+                swap_volume: self.swap_volume * self.close,
             }
         }
     }
