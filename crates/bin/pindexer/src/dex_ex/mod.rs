@@ -50,8 +50,9 @@ mod candle {
 
     impl Candle {
         pub fn from_candlestick_data(data: &CandlestickData) -> Self {
-            // We want the direct volume in the other direction, and we consistently
-            // use the closing price as a conversion for that.
+            // The volume is tracked in terms of input asset.
+            // We can use the closing price (aka. the common clearing price) to convert
+            // the volume to the other direction i.e, the batch swap output.
             Self {
                 open: data.open,
                 close: data.close,
