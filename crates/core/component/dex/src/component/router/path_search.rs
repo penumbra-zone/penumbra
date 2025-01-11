@@ -67,7 +67,7 @@ pub trait PathSearch: StateRead + Clone + 'static {
             // Note: previously, this branch was a load-bearing termination condition, primarily
             // exercised by the arbitrage logic. However, during the course of testnet 53,  we
             // encountered two bugs that caused this predicate to not be exercised:
-            // 1. We treated the price limit as a inclusive bound, rather than an exclusive bound.
+            // 1. We treated the price limit as an inclusive bound, rather than an exclusive bound.
             // 2. We relied on an estimate of the end-to-end path price which was lossy (`path.price`).
             // The latter is an inherent information limitation, so we now have a redundant check in
             // `route_and_fill` which uses the exact price of the route.

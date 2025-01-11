@@ -38,4 +38,4 @@ A consensus rule verifies that clues in transactions have been generated using
 the appropriate precision, within a grace period of 10 blocks[^1]. Transactions
 with clues generated using the incorrect precision are rejected by the network.
 
-[^1]: This imposes an bound on the latency of signing workflows.
+[^1]: This imposes a bound on the latency of signing workflows.
