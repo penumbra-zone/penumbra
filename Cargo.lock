@@ -5847,6 +5847,7 @@ dependencies = [
  "chrono",
  "clap",
  "cometindex",
+ "ethnum",
  "num-bigint",
  "penumbra-app",
  "penumbra-asset",
