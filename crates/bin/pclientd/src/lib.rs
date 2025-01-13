@@ -298,11 +298,7 @@ impl Opt {
                     .load_or_init_sqlite(&config.full_viewing_key, &config.grpc_url)
                     .await?;
 
-                let proxy_channel =
-                    tonic::transport::Channel::from_shared(config.grpc_url.to_string())
-                        .expect("this is a valid address")
-                        .connect()
-                        .await?;
+                let proxy_channel = ViewServer::get_pd_channel(config.grpc_url.clone()).await?;
 
                 let app_query_proxy = AppQueryProxy(proxy_channel.clone());
                 let governance_query_proxy = GovernanceQueryProxy(proxy_channel.clone());

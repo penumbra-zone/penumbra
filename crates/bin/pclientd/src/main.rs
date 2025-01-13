@@ -3,6 +3,7 @@ use std::io::IsTerminal as _;
 
 use anyhow::Result;
 use clap::Parser;
+use rustls::crypto::aws_lc_rs;
 use tracing_subscriber::{prelude::*, EnvFilter};
 
 use pclientd::Opt;
@@ -23,6 +24,12 @@ async fn main() -> Result<()> {
     registry.init();
 
     let opt = Opt::parse();
+
+    // Initialize HTTPS support
+    // rustls::crypto::aws_lc_rs::default_provider().install_default();
+    aws_lc_rs::default_provider()
+        .install_default()
+        .expect("failed to initialize rustls support, via aws-lc-rs");
 
     opt.exec().await
 }

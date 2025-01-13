@@ -24,6 +24,7 @@ use penumbra_app::{APP_VERSION, SUBSTORE_PREFIXES};
 use penumbra_tower_trace::remote_addr;
 use rand::Rng;
 use rand_core::OsRng;
+use rustls::crypto::aws_lc_rs;
 use tendermint_config::net::Address as TendermintAddress;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -53,6 +54,11 @@ async fn main() -> anyhow::Result<()> {
         .with(fmt_layer)
         .with(metrics_layer);
     registry.init();
+
+    // Initialize HTTPS support
+    aws_lc_rs::default_provider()
+        .install_default()
+        .expect("failed to initialize rustls support, via aws-lc-rs");
 
     tracing::info!(?cmd, version = env!("CARGO_PKG_VERSION"), "running command");
     match cmd {

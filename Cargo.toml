@@ -212,6 +212,7 @@ rand_chacha                      = { version = "0.3.1" }
 rand_core                        = { version = "0.6.4" }
 regex                            = { version = "1.8.1" }
 rocksdb                          = { version = "0.21.0" }
+rustls                           = { version = "0.23.21" }
 serde                            = { version = "1.0.186" }
 serde_json                       = { version = "1.0.96" }
 serde_unit_struct                = { version = "0.1" }

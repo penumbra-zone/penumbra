@@ -89,6 +89,7 @@ rand_core                        = { workspace = true, features = ["getrandom"] 
 regex                            = { workspace = true }
 reqwest                          = { version = "0.12.9", features = ["json", "stream"] }
 rocksdb                          = { workspace = true }
+rustls                           = { workspace = true }
 serde                            = { workspace = true, features = ["derive"] }
 serde_json                       = { workspace = true }
 serde_with                       = { workspace = true, features = ["hex"] }

@@ -65,7 +65,7 @@ tap = {workspace = true}
 tendermint = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 tokio-stream = {workspace = true, features = ["sync"]}
-tonic = {workspace = true}
+tonic = {workspace = true, features = ["tls", "tls-webpki-roots"]}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true}
 url = {workspace = true}
