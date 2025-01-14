@@ -30,30 +30,37 @@ impl serde::Serialize for CeremonyCrs {
         let mut struct_ser = serializer.serialize_struct("penumbra.tools.summoning.v1.CeremonyCrs", len)?;
         if !self.spend.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("spend", pbjson::private::base64::encode(&self.spend).as_str())?;
         }
         if !self.output.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("output", pbjson::private::base64::encode(&self.output).as_str())?;
         }
         if !self.delegator_vote.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("delegatorVote", pbjson::private::base64::encode(&self.delegator_vote).as_str())?;
         }
         if !self.undelegate_claim.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("undelegateClaim", pbjson::private::base64::encode(&self.undelegate_claim).as_str())?;
         }
         if !self.swap.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("swap", pbjson::private::base64::encode(&self.swap).as_str())?;
         }
         if !self.swap_claim.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("swapClaim", pbjson::private::base64::encode(&self.swap_claim).as_str())?;
         }
         if !self.nullifer_derivation_crs.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("nulliferDerivationCrs", pbjson::private::base64::encode(&self.nullifer_derivation_crs).as_str())?;
         }
         struct_ser.end()
@@ -252,30 +259,37 @@ impl serde::Serialize for CeremonyLinkingProof {
         let mut struct_ser = serializer.serialize_struct("penumbra.tools.summoning.v1.CeremonyLinkingProof", len)?;
         if !self.spend.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("spend", pbjson::private::base64::encode(&self.spend).as_str())?;
         }
         if !self.output.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("output", pbjson::private::base64::encode(&self.output).as_str())?;
         }
         if !self.delegator_vote.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("delegatorVote", pbjson::private::base64::encode(&self.delegator_vote).as_str())?;
         }
         if !self.undelegate_claim.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("undelegateClaim", pbjson::private::base64::encode(&self.undelegate_claim).as_str())?;
         }
         if !self.swap.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("swap", pbjson::private::base64::encode(&self.swap).as_str())?;
         }
         if !self.swap_claim.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("swapClaim", pbjson::private::base64::encode(&self.swap_claim).as_str())?;
         }
         if !self.nullifer_derivation_crs.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("nulliferDerivationCrs", pbjson::private::base64::encode(&self.nullifer_derivation_crs).as_str())?;
         }
         struct_ser.end()
@@ -474,30 +488,37 @@ impl serde::Serialize for CeremonyParentHashes {
         let mut struct_ser = serializer.serialize_struct("penumbra.tools.summoning.v1.CeremonyParentHashes", len)?;
         if !self.spend.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("spend", pbjson::private::base64::encode(&self.spend).as_str())?;
         }
         if !self.output.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("output", pbjson::private::base64::encode(&self.output).as_str())?;
         }
         if !self.delegator_vote.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("delegatorVote", pbjson::private::base64::encode(&self.delegator_vote).as_str())?;
         }
         if !self.undelegate_claim.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("undelegateClaim", pbjson::private::base64::encode(&self.undelegate_claim).as_str())?;
         }
         if !self.swap.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("swap", pbjson::private::base64::encode(&self.swap).as_str())?;
         }
         if !self.swap_claim.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("swapClaim", pbjson::private::base64::encode(&self.swap_claim).as_str())?;
         }
         if !self.nullifer_derivation_crs.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("nulliferDerivationCrs", pbjson::private::base64::encode(&self.nullifer_derivation_crs).as_str())?;
         }
         struct_ser.end()
@@ -1144,6 +1165,7 @@ impl serde::Serialize for participate_response::Confirm {
         let mut struct_ser = serializer.serialize_struct("penumbra.tools.summoning.v1.ParticipateResponse.Confirm", len)?;
         if self.slot != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("slot", ToString::to_string(&self.slot).as_str())?;
         }
         struct_ser.end()

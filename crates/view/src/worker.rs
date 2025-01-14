@@ -485,14 +485,15 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use penumbra_proto::{cnidarium::v1::query_service_client::QueryServiceClient, DomainType};
+    use cnidarium::proto::v1::query_service_client::QueryServiceClient;
+    use penumbra_proto::DomainType;
     use penumbra_sct::state_key as sct_state_key;
 
     let mut client = QueryServiceClient::new(channel);
     tracing::info!(?height, "fetching anchor @ height");
 
     let value = client
-        .key_value(penumbra_proto::cnidarium::v1::KeyValueRequest {
+        .key_value(cnidarium::proto::v1::KeyValueRequest {
             key: sct_state_key::tree::anchor_by_height(height),
             proof: false,
             ..Default::default()

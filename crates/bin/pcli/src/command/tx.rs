@@ -1409,7 +1409,7 @@ impl TxCmd {
 
                 let mut noble_client = CosmosServiceClient::new(
                     Channel::from_shared(noble_node.to_string())?
-                        .tls_config(ClientTlsConfig::new())?
+                        .tls_config(ClientTlsConfig::new().with_webpki_roots())?
                         .connect()
                         .await?,
                 );

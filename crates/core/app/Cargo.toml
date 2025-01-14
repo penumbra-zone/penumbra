@@ -97,7 +97,7 @@ tonic                            = { workspace = true, optional = true }
 tonic-reflection                 = { workspace = true, optional = true }
 tonic-web                        = { workspace = true, optional = true }
 tower                            = { workspace = true, features = ["full"] }
-tower-abci                       = "0.11"
+tower-abci                       = "0.18"
 tower-actor                      = "0.1.0"
 tower-service                    = { workspace = true }
 tracing                          = { workspace = true }
@@ -121,7 +121,7 @@ rand_core                        = { workspace = true }
 tap                              = { workspace = true }
 tempfile                         = { workspace = true }
 tendermint-config                = { workspace = true }
-tower-http                       = { workspace = true }
+tower-http                       = { workspace = true, features = ["cors"] }
 tracing-subscriber               = { workspace = true }
 url                              = { workspace = true }
 

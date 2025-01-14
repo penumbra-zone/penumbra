@@ -18,6 +18,7 @@ impl serde::Serialize for BaseRateData {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.BaseRateData", len)?;
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
         if let Some(v) = self.base_reward_rate.as_ref() {
@@ -158,10 +159,12 @@ impl serde::Serialize for BondingState {
         }
         if self.unbonds_at_epoch != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("unbondsAtEpoch", ToString::to_string(&self.unbonds_at_epoch).as_str())?;
         }
         if self.unbonds_at_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("unbondsAtHeight", ToString::to_string(&self.unbonds_at_height).as_str())?;
         }
         struct_ser.end()
@@ -662,6 +665,7 @@ impl serde::Serialize for Delegate {
         }
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
         if let Some(v) = self.unbonded_amount.as_ref() {
@@ -1151,6 +1155,7 @@ impl serde::Serialize for EventSlashingPenaltyApplied {
         }
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
         if let Some(v) = self.new_penalty.as_ref() {
@@ -1289,10 +1294,12 @@ impl serde::Serialize for EventTombstoneValidator {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventTombstoneValidator", len)?;
         if self.evidence_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("evidenceHeight", ToString::to_string(&self.evidence_height).as_str())?;
         }
         if self.current_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("currentHeight", ToString::to_string(&self.current_height).as_str())?;
         }
         if let Some(v) = self.identity_key.as_ref() {
@@ -1300,10 +1307,12 @@ impl serde::Serialize for EventTombstoneValidator {
         }
         if !self.address.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("address", pbjson::private::base64::encode(&self.address).as_str())?;
         }
         if self.voting_power != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("votingPower", ToString::to_string(&self.voting_power).as_str())?;
         }
         struct_ser.end()
@@ -2734,6 +2743,7 @@ impl serde::Serialize for Penalty {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.Penalty", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -2844,6 +2854,7 @@ impl serde::Serialize for RateData {
         }
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
         if let Some(v) = self.validator_reward_rate.as_ref() {
@@ -3009,30 +3020,37 @@ impl serde::Serialize for StakeParameters {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.StakeParameters", len)?;
         if self.unbonding_epochs != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("unbondingEpochs", ToString::to_string(&self.unbonding_epochs).as_str())?;
         }
         if self.active_validator_limit != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("activeValidatorLimit", ToString::to_string(&self.active_validator_limit).as_str())?;
         }
         if self.base_reward_rate != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("baseRewardRate", ToString::to_string(&self.base_reward_rate).as_str())?;
         }
         if self.slashing_penalty_misbehavior != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("slashingPenaltyMisbehavior", ToString::to_string(&self.slashing_penalty_misbehavior).as_str())?;
         }
         if self.slashing_penalty_downtime != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("slashingPenaltyDowntime", ToString::to_string(&self.slashing_penalty_downtime).as_str())?;
         }
         if self.signed_blocks_window_len != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("signedBlocksWindowLen", ToString::to_string(&self.signed_blocks_window_len).as_str())?;
         }
         if self.missed_blocks_maximum != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("missedBlocksMaximum", ToString::to_string(&self.missed_blocks_maximum).as_str())?;
         }
         if let Some(v) = self.min_validator_stake.as_ref() {
@@ -3040,6 +3058,7 @@ impl serde::Serialize for StakeParameters {
         }
         if self.unbonding_delay != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("unbondingDelay", ToString::to_string(&self.unbonding_delay).as_str())?;
         }
         struct_ser.end()
@@ -3264,6 +3283,7 @@ impl serde::Serialize for Undelegate {
         }
         if self.start_epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
         }
         if let Some(v) = self.unbonded_amount.as_ref() {
@@ -3426,6 +3446,7 @@ impl serde::Serialize for UndelegateClaim {
         }
         if !self.proof.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proof", pbjson::private::base64::encode(&self.proof).as_str())?;
         }
         struct_ser.end()
@@ -3550,6 +3571,7 @@ impl serde::Serialize for UndelegateClaimBody {
         }
         if self.start_epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
         }
         if let Some(v) = self.penalty.as_ref() {
@@ -3560,6 +3582,7 @@ impl serde::Serialize for UndelegateClaimBody {
         }
         if self.unbonding_start_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("unbondingStartHeight", ToString::to_string(&self.unbonding_start_height).as_str())?;
         }
         struct_ser.end()
@@ -3732,6 +3755,7 @@ impl serde::Serialize for UndelegateClaimPlan {
         }
         if self.start_epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
         }
         if let Some(v) = self.penalty.as_ref() {
@@ -3742,18 +3766,22 @@ impl serde::Serialize for UndelegateClaimPlan {
         }
         if !self.balance_blinding.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("balanceBlinding", pbjson::private::base64::encode(&self.balance_blinding).as_str())?;
         }
         if !self.proof_blinding_r.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
         }
         if !self.proof_blinding_s.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
         if self.unbonding_start_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("unbondingStartHeight", ToString::to_string(&self.unbonding_start_height).as_str())?;
         }
         struct_ser.end()
@@ -3950,6 +3978,7 @@ impl serde::Serialize for Uptime {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.Uptime", len)?;
         if self.as_of_block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("asOfBlockHeight", ToString::to_string(&self.as_of_block_height).as_str())?;
         }
         if self.window_len != 0 {
@@ -3957,6 +3986,7 @@ impl serde::Serialize for Uptime {
         }
         if !self.bitvec.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("bitvec", pbjson::private::base64::encode(&self.bitvec).as_str())?;
         }
         struct_ser.end()
@@ -4110,6 +4140,7 @@ impl serde::Serialize for Validator {
         }
         if !self.consensus_key.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("consensusKey", pbjson::private::base64::encode(&self.consensus_key).as_str())?;
         }
         if !self.name.is_empty() {
@@ -4330,6 +4361,7 @@ impl serde::Serialize for ValidatorDefinition {
         }
         if !self.auth_sig.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("authSig", pbjson::private::base64::encode(&self.auth_sig).as_str())?;
         }
         struct_ser.end()
@@ -4867,10 +4899,12 @@ impl serde::Serialize for ValidatorPenaltyRequest {
         }
         if self.start_epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
         }
         if self.end_epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("endEpochIndex", ToString::to_string(&self.end_epoch_index).as_str())?;
         }
         struct_ser.end()
@@ -5805,6 +5839,7 @@ impl serde::Serialize for ZkUndelegateClaimProof {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.ZKUndelegateClaimProof", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()

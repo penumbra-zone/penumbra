@@ -1,10 +1,7 @@
 use bytes::Bytes;
-use http_body::{combinators::UnsyncBoxBody, Body};
-use tonic::{
-    body::BoxBody as ReqBody,
-    codegen::http as grpc,
-    transport::{self, Endpoint},
-};
+use http_body::Body;
+use http_body_util::{combinators::UnsyncBoxBody, BodyExt as _};
+use tonic::{body::BoxBody as ReqBody, codegen::http as grpc, transport::Endpoint};
 use tower::{util::BoxCloneService, Service, ServiceBuilder};
 
 /// A type-erased gRPC service.
@@ -20,7 +17,7 @@ pub type RspBody = UnsyncBoxBody<Bytes, BoxError>;
 pub async fn connect(ep: Endpoint) -> anyhow::Result<BoxGrpcService> {
     let conn = ep.connect().await?;
     let svc = ServiceBuilder::new()
-        .map_response(|rsp: grpc::Response<transport::Body>| rsp.map(box_rsp_body))
+        .map_response(|rsp: grpc::Response<tonic::body::BoxBody>| rsp.map(box_rsp_body))
         .map_err(BoxError::from)
         .service(conn);
     Ok(BoxCloneService::new(svc))

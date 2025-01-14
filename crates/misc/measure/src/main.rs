@@ -4,6 +4,7 @@ extern crate tracing;
 use std::path::PathBuf;
 
 use clap::Parser;
+use rustls::crypto::aws_lc_rs;
 use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
 
@@ -21,8 +22,9 @@ use penumbra_proto::{
     },
     DomainType, Message,
 };
+use penumbra_view::ViewServer;
 
-use tonic::transport::{Channel, ClientTlsConfig};
+use tonic::transport::Channel;
 use url::Url;
 
 // The expected maximum size of a compact block message.
@@ -215,9 +217,7 @@ impl Opt {
                 }
             }
             Command::StreamBlocks { skip_genesis } => {
-                let channel = Channel::from_shared(self.node.to_string())?
-                    .connect()
-                    .await?;
+                let channel = ViewServer::get_pd_channel(self.node.clone()).await?;
 
                 let mut cb_client = CompactBlockQueryServiceClient::new(channel.clone())
                     .max_decoding_message_size(MAX_CB_SIZE_BYTES);
@@ -306,25 +306,21 @@ impl Opt {
     }
 }
 
-// This code is ripped from the pcli code, and could be split out into something common.
+// Wrapper for the `get_pd_channel` method from the view crate.
 async fn get_tendermint_proxy_client(
     pd_url: Url,
 ) -> anyhow::Result<TendermintProxyServiceClient<Channel>> {
-    let pd_channel: Channel = match pd_url.scheme() {
-        "http" => Channel::from_shared(pd_url.to_string())?.connect().await?,
-        "https" => {
-            Channel::from_shared(pd_url.to_string())?
-                .tls_config(ClientTlsConfig::new())?
-                .connect()
-                .await?
-        }
-        other => anyhow::bail!(format!("unknown url scheme {other}")),
-    };
+    let pd_channel = ViewServer::get_pd_channel(pd_url).await?;
     Ok(TendermintProxyServiceClient::new(pd_channel))
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Initialize HTTPS support
+    aws_lc_rs::default_provider()
+        .install_default()
+        .expect("failed to initialize rustls support, via aws-lc-rs");
+
     let mut opt = Opt::parse();
     opt.init_tracing();
     opt.run().await?;

@@ -21,10 +21,14 @@ use pd::{
 };
 use penumbra_app::app_version::check_and_update_app_version;
 use penumbra_app::{APP_VERSION, SUBSTORE_PREFIXES};
+use penumbra_tower_trace::remote_addr;
 use rand::Rng;
 use rand_core::OsRng;
+use rustls::crypto::aws_lc_rs;
 use tendermint_config::net::Address as TendermintAddress;
+use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
+use tower_http::trace::TraceLayer;
 use tracing::Instrument as _;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
@@ -50,6 +54,12 @@ async fn main() -> anyhow::Result<()> {
         .with(fmt_layer)
         .with(metrics_layer);
     registry.init();
+
+    // Initialize HTTPS support
+    // We log the error and continue, so the node is operational.
+    if let Err(e) = aws_lc_rs::default_provider().install_default() {
+        tracing::error!("failed to initialize rustls support: {:?}", e);
+    }
 
     tracing::info!(?cmd, version = env!("CARGO_PKG_VERSION"), "running command");
     match cmd {
@@ -129,15 +139,26 @@ async fn main() -> anyhow::Result<()> {
             );
 
             let tm_proxy = penumbra_tendermint_proxy::TendermintProxy::new(cometbft_addr);
-            let grpc_server = penumbra_app::rpc::router(&storage, tm_proxy, enable_expensive_rpc)?;
+
+            let grpc_routes = penumbra_app::rpc::routes(&storage, tm_proxy, enable_expensive_rpc)?
+                .into_axum_router()
+                .layer(
+                    ServiceBuilder::new().layer(TraceLayer::new_for_grpc().make_span_with(
+                        |req: &http::Request<_>| match remote_addr(req) {
+                            Some(remote_addr) => {
+                                tracing::error_span!("grpc", ?remote_addr)
+                            }
+                            None => tracing::error_span!("grpc"),
+                        },
+                    )),
+                );
 
             // Create Axum routes for the frontend app.
             let frontend = pd::zipserve::router("/app/", pd::MINIFRONT_ARCHIVE_BYTES);
             let node_status = pd::zipserve::router("/", pd::NODE_STATUS_ARCHIVE_BYTES);
 
             // Now we drop down a layer of abstraction, from tonic to axum, and merge handlers.
-            let router = grpc_server
-                .into_router()
+            let router = grpc_routes
                 .merge(frontend)
                 .merge(node_status)
                 // Set rather permissive CORS headers for pd's gRPC: the service
@@ -150,6 +171,13 @@ async fn main() -> anyhow::Result<()> {
             // Now start the GRPC server, initializing an ACME client to use as a certificate
             // resolver if auto-https has been enabled. if auto-https is not enabled, we will
             // instead spawn a future that will never return.
+
+            // TODO(janis): Is `axum_server::bind` sufficient to accept http1 (for grpc-web) and
+            // http2 (for grpc) requests?
+            //
+            // See also this (about axum::serve, suggesting that it just works out of the box; does that
+            // apply to axum_server::bind as well?)
+            // https://github.com/tokio-rs/axum/blob/c596deafe48ed608775e312eef7d12ddbb0fd424/examples/websockets-http2/src/main.rs#L57-L59
             let grpc_server = axum_server::bind(grpc_bind);
             let (grpc_server, acme_worker) = match grpc_auto_https {
                 Some(domain) => {

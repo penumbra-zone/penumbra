@@ -49,6 +49,7 @@ impl MsgHandler for MsgChannelOpenTry {
                 .clone()
                 .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?],
             version: self.version_supported_on_a.clone(),
+            ..ChannelEnd::default()
         };
 
         tracing::debug!(?self, ?expected_channel_on_a);
@@ -81,6 +82,7 @@ impl MsgHandler for MsgChannelOpenTry {
             remote: Counterparty::new(self.port_id_on_a.clone(), Some(self.chan_id_on_a.clone())),
             connection_hops: self.connection_hops_on_b.clone(),
             version: self.version_supported_on_a.clone(),
+            ..ChannelEnd::default()
         };
 
         state.put_channel(&channel_id, &self.port_id_on_b, new_channel.clone());

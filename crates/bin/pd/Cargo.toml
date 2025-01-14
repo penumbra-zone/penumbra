@@ -28,7 +28,7 @@ anyhow                           = { workspace = true }
 ark-ff                           = { workspace = true, default-features = true }
 async-stream                     = { workspace = true }
 async-trait                      = { workspace = true }
-axum                             = "0.6"
+axum                             = { workspace = true, features = ["http2"] }
 axum-server                      = { workspace = true, features = ["tls-rustls"] }
 base64                           = { workspace = true }
 bincode                          = { workspace = true }
@@ -55,7 +55,7 @@ metrics                          = { workspace = true }
 metrics-exporter-prometheus      = { workspace = true }
 metrics-process                  = "2.0.0"
 metrics-tracing-context          = { workspace = true }
-metrics-util                     = "0.16.2"
+metrics-util                     = "0.18.0"
 mime_guess                       = "2"
 once_cell                        = { workspace = true }
 pbjson-types                     = { workspace = true }
@@ -87,8 +87,9 @@ rand                             = { workspace = true }
 rand_chacha                      = { workspace = true }
 rand_core                        = { workspace = true, features = ["getrandom"] }
 regex                            = { workspace = true }
-reqwest                          = { version = "0.11", features = ["json", "stream"] }
+reqwest                          = { version = "0.12.9", features = ["json", "stream"] }
 rocksdb                          = { workspace = true }
+rustls                           = { workspace = true }
 serde                            = { workspace = true, features = ["derive"] }
 serde_json                       = { workspace = true }
 serde_with                       = { workspace = true, features = ["hex"] }
@@ -108,9 +109,9 @@ tonic = { workspace = true }
 tonic-reflection = { workspace = true }
 tonic-web = { workspace = true }
 tower = { workspace = true, features = ["full"] }
-tower-abci = "0.11"
+tower-abci = "0.18"
 tower-actor = "0.1.0"
-tower-http = { workspace = true }
+tower-http = { workspace = true, features = ["cors", "trace"] }
 tower-service = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "ansi"] }
@@ -124,4 +125,4 @@ penumbra-proof-params = { workspace = true, features = [
 ], default-features = true }
 assert_cmd = { workspace = true }
 predicates = "2.1"
-prost-reflect = "0.13.1"
+prost-reflect = "0.14.3"

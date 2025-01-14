@@ -1233,6 +1233,7 @@ impl serde::Serialize for FmdMetaParameters {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParameters", len)?;
         if self.fmd_grace_period_blocks != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("fmdGracePeriodBlocks", ToString::to_string(&self.fmd_grace_period_blocks).as_str())?;
         }
         if let Some(v) = self.algorithm.as_ref() {
@@ -1773,6 +1774,7 @@ impl serde::Serialize for FmdParameters {
         }
         if self.as_of_block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("asOfBlockHeight", ToString::to_string(&self.as_of_block_height).as_str())?;
         }
         struct_ser.end()
@@ -1892,6 +1894,7 @@ impl serde::Serialize for FungibleTokenTransferPacketMetadata {
         }
         if self.sequence != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sequence", ToString::to_string(&self.sequence).as_str())?;
         }
         struct_ser.end()
@@ -2252,6 +2255,7 @@ impl serde::Serialize for Note {
         }
         if !self.rseed.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("rseed", pbjson::private::base64::encode(&self.rseed).as_str())?;
         }
         if let Some(v) = self.address.as_ref() {
@@ -2375,6 +2379,7 @@ impl serde::Serialize for NoteCiphertext {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.NoteCiphertext", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -2482,6 +2487,7 @@ impl serde::Serialize for NotePayload {
         }
         if !self.ephemeral_key.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("ephemeralKey", pbjson::private::base64::encode(&self.ephemeral_key).as_str())?;
         }
         if let Some(v) = self.encrypted_note.as_ref() {
@@ -2617,6 +2623,7 @@ impl serde::Serialize for NoteView {
         }
         if !self.rseed.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("rseed", pbjson::private::base64::encode(&self.rseed).as_str())?;
         }
         if let Some(v) = self.address.as_ref() {
@@ -2867,10 +2874,12 @@ impl serde::Serialize for OutputBody {
         }
         if !self.wrapped_memo_key.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("wrappedMemoKey", pbjson::private::base64::encode(&self.wrapped_memo_key).as_str())?;
         }
         if !self.ovk_wrapped_key.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("ovkWrappedKey", pbjson::private::base64::encode(&self.ovk_wrapped_key).as_str())?;
         }
         struct_ser.end()
@@ -3029,18 +3038,22 @@ impl serde::Serialize for OutputPlan {
         }
         if !self.rseed.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("rseed", pbjson::private::base64::encode(&self.rseed).as_str())?;
         }
         if !self.value_blinding.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("valueBlinding", pbjson::private::base64::encode(&self.value_blinding).as_str())?;
         }
         if !self.proof_blinding_r.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
         }
         if !self.proof_blinding_s.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
         struct_ser.end()
@@ -3804,6 +3817,7 @@ impl serde::Serialize for SpendBody {
         }
         if !self.encrypted_backref.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("encryptedBackref", pbjson::private::base64::encode(&self.encrypted_backref).as_str())?;
         }
         struct_ser.end()
@@ -3955,22 +3969,27 @@ impl serde::Serialize for SpendPlan {
         }
         if self.position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
         }
         if !self.randomizer.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("randomizer", pbjson::private::base64::encode(&self.randomizer).as_str())?;
         }
         if !self.value_blinding.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("valueBlinding", pbjson::private::base64::encode(&self.value_blinding).as_str())?;
         }
         if !self.proof_blinding_r.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
         }
         if !self.proof_blinding_s.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
         struct_ser.end()
@@ -4455,6 +4474,7 @@ impl serde::Serialize for ZkNullifierDerivationProof {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.ZKNullifierDerivationProof", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -4553,6 +4573,7 @@ impl serde::Serialize for ZkOutputProof {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.ZKOutputProof", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -4651,6 +4672,7 @@ impl serde::Serialize for ZkSpendProof {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.ZKSpendProof", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()

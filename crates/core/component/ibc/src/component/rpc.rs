@@ -1,5 +1,5 @@
 use cnidarium::Storage;
-use tonic::transport::server::Routes;
+use tonic::service::Routes;
 
 use super::HostInterface;
 

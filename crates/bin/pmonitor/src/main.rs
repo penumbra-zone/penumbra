@@ -20,10 +20,11 @@ use clap::{self, Parser};
 use directories::ProjectDirs;
 use futures::StreamExt;
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
+use rustls::crypto::aws_lc_rs;
 use std::fs;
 use std::io::IsTerminal as _;
 use std::str::FromStr;
-use tonic::transport::{Channel, ClientTlsConfig};
+use tonic::transport::Channel;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 use uuid::Uuid;
@@ -86,6 +87,12 @@ fn init_tracing() -> anyhow::Result<()> {
 async fn main() -> Result<()> {
     let opt = Opt::parse();
     init_tracing()?;
+
+    // Initialize HTTPS support
+    aws_lc_rs::default_provider()
+        .install_default()
+        .expect("failed to initialize rustls support, via aws-lc-rs");
+
     tracing::info!(?opt, version = env!("CARGO_PKG_VERSION"), "running command");
     opt.exec().await
 }
@@ -224,21 +231,6 @@ impl Opt {
             .compact_block
             .expect("response has compact block");
         compact_block.try_into()
-    }
-
-    /// Stolen from pcli
-    pub async fn pd_channel(&self, grpc_url: Url) -> anyhow::Result<Channel> {
-        match grpc_url.scheme() {
-            "http" => Ok(Channel::from_shared(grpc_url.to_string())?
-                .connect()
-                .await?),
-            "https" => Ok(Channel::from_shared(grpc_url.to_string())?
-                .tls_config(ClientTlsConfig::new())?
-                .connect()
-                .await?),
-            other => Err(anyhow::anyhow!("unknown url scheme {other}"))
-                .with_context(|| format!("could not connect to {}", grpc_url)),
-        }
     }
 
     /// Create wallet given a path and fvk
@@ -403,7 +395,7 @@ impl Opt {
                     ))?)?;
 
                 let mut stake_client = StakeQueryServiceClient::new(
-                    self.pd_channel(pmonitor_config.grpc_url()).await?,
+                    ViewServer::get_pd_channel(pmonitor_config.grpc_url()).await?,
                 );
 
                 // Sync each wallet to the latest block height, check for new migrations, and check the balance.

@@ -107,6 +107,7 @@ impl serde::Serialize for ClientCounter {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.ibc.v1.ClientCounter", len)?;
         if self.counter != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("counter", ToString::to_string(&self.counter).as_str())?;
         }
         struct_ser.end()
@@ -223,6 +224,7 @@ impl serde::Serialize for ClientData {
         }
         if self.processed_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("processedHeight", ToString::to_string(&self.processed_height).as_str())?;
         }
         struct_ser.end()
@@ -358,6 +360,7 @@ impl serde::Serialize for ConnectionCounter {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.ibc.v1.ConnectionCounter", len)?;
         if self.counter != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("counter", ToString::to_string(&self.counter).as_str())?;
         }
         struct_ser.end()
@@ -1081,6 +1084,7 @@ impl serde::Serialize for Ics20Withdrawal {
         }
         if self.timeout_time != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("timeoutTime", ToString::to_string(&self.timeout_time).as_str())?;
         }
         if !self.source_channel.is_empty() {

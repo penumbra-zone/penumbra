@@ -1,5 +1,8 @@
 use {
     anyhow::Context as _,
+    cnidarium::proto::v1::{
+        query_service_client::QueryServiceClient as CnidariumQueryServiceClient, KeyValueRequest,
+    },
     cnidarium::{StateRead as _, TempStorage},
     common::{BuilderExt as _, TempStorageExt as _},
     ibc_proto::ibc::core::client::v1::{
@@ -23,10 +26,6 @@ use {
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
     penumbra_proto::{
-        cnidarium::v1::{
-            query_service_client::QueryServiceClient as CnidariumQueryServiceClient,
-            KeyValueRequest,
-        },
         util::tendermint_proxy::v1::{
             tendermint_proxy_service_client::TendermintProxyServiceClient, GetBlockByHeightRequest,
         },
@@ -191,8 +190,8 @@ async fn verify_storage_proof_simple() -> anyhow::Result<()> {
     // Spawn the node's RPC server.
     let _rpc_server = {
         let make_svc =
-            penumbra_app::rpc::router(&storage, proxy, false /*enable_expensive_rpc*/)?
-                .into_router()
+            penumbra_app::rpc::routes(&storage, proxy, false /*enable_expensive_rpc*/)?
+                .into_axum_router()
                 .layer(tower_http::cors::CorsLayer::permissive())
                 .into_make_service()
                 .tap(|_| println!("initialized rpc service"));
