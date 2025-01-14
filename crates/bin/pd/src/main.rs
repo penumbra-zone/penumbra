@@ -56,9 +56,10 @@ async fn main() -> anyhow::Result<()> {
     registry.init();
 
     // Initialize HTTPS support
-    aws_lc_rs::default_provider()
-        .install_default()
-        .expect("failed to initialize rustls support, via aws-lc-rs");
+    // We log the error and continue, so the node is operational.
+    if let Err(e) = aws_lc_rs::default_provider().install_default() {
+        tracing::error!("failed to initialize rustls support: {:?}", e);
+    }
 
     tracing::info!(?cmd, version = env!("CARGO_PKG_VERSION"), "running command");
     match cmd {
