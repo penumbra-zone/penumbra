@@ -1543,6 +1543,9 @@ pub struct OwnedPositionIdsRequest {
     pub trading_pair: ::core::option::Option<
         super::super::core::component::dex::v1::TradingPair,
     >,
+    /// If present, return only positions for this subaccount index.
+    #[prost(message, optional, tag = "3")]
+    pub subaccount: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
 }
 impl ::prost::Name for OwnedPositionIdsRequest {
     const NAME: &'static str = "OwnedPositionIdsRequest";
@@ -1558,6 +1561,9 @@ pub struct OwnedPositionIdsResponse {
     pub position_id: ::core::option::Option<
         super::super::core::component::dex::v1::PositionId,
     >,
+    /// The subaccount this position belongs to.
+    #[prost(message, optional, tag = "2")]
+    pub subaccount: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
 }
 impl ::prost::Name for OwnedPositionIdsResponse {
     const NAME: &'static str = "OwnedPositionIdsResponse";
