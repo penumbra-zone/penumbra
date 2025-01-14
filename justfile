@@ -47,6 +47,10 @@ metrics:
 rustdocs:
     ./deployments/scripts/rust-docs
 
+# Run integration tests against the testnet, for validating HTTPS support
+integration-testnet:
+  cargo nextest run --release --features integration-testnet -E 'test(/_testnet$/)'
+
 # Run smoke test suite, via process-compose config.
 smoke:
     ./deployments/scripts/warn-about-pd-state

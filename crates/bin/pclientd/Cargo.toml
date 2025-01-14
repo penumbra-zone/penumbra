@@ -7,6 +7,7 @@ edition = {workspace = true}
 default = ["std", "download-proving-keys"]
 std = ["ibc-types/std"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
+integration-testnet = []
 # Enable to use rayon parallelism for crypto operations
 parallel = ["penumbra-transaction/parallel"]
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
