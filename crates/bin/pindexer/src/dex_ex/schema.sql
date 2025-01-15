@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS dex_ex_pairs_block_snapshot (
   liquidity FLOAT8 NOT NULL,
   direct_volume FLOAT8 NOT NULL,
   swap_volume FLOAT8 NOT NULL,
+  -- The most recent price of the start asset, in terms of the indexing denom.
+  start_price_indexing_denom FLOAT8 NOT NULL,
   trades FLOAT8 NOT NULL
 );
 
@@ -55,6 +57,8 @@ CREATE TABLE IF NOT EXISTS dex_ex_pairs_summary (
   liquidity_then FLOAT8 NOT NULL,
   direct_volume_over_window FLOAT8 NOT NULL,
   swap_volume_over_window FLOAT8 NOT NULL,
+  direct_volume_indexing_denom_over_window FLOAT8 NOT NULL,
+  swap_volume_indexing_denom_over_window FLOAT8 NOT NULL,
   trades_over_window FLOAT8 NOT NULL,
   PRIMARY KEY (asset_start, asset_end, the_window)
 );
