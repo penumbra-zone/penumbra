@@ -196,7 +196,7 @@ CREATE TABLE IF NOT EXISTS dex_ex_batch_swap_traces (
   -- Each hop in the list contains an asset id.
   asset_hops BYTEA[] NOT NULL,
   -- Each hop in the list contains an amount.
-  amount_hops BYTEA[] NOT NULL,
+  amount_hops NUMERIC(39)[] NOT NULL,
   -- Each hop in the list contains a position ID.
   position_id_hops BYTEA[] NOT NULL
 );
