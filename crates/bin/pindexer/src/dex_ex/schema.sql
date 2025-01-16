@@ -165,30 +165,40 @@ CREATE TABLE IF NOT EXISTS dex_ex_position_withdrawals (
 CREATE INDEX ON dex_ex_position_withdrawals (height);
 CREATE INDEX ON dex_ex_position_withdrawals (position_id, height);
 
+-- This table tracks individual execution traces for a directed batch swap.
 CREATE TABLE IF NOT EXISTS dex_ex_batch_swap_traces (
+  -- Primary key
   rowid SERIAL PRIMARY KEY,
+
+  -- The height of the block the batch swap was included in.
+  height INTEGER NOT NULL,
+  -- The time the batch swap was included in a block.
+  time TIMESTAMPTZ NOT NULL,
+
+  -- The amount of asset 1 consumed by the micro execution in raw denom.
+  input NUMERIC(39) NOT NULL,
+  -- The amount of asset 2 produced by the micro execution in raw denom.
+  output NUMERIC(39) NOT NULL,
+
+  -- The amount of asset 1 consumed by the macro execution.
+  batch_input NUMERIC(39) NOT NULL,
+  -- The amount of asset 2 produced by the macro execution.
+  batch_output NUMERIC(39) NOT NULL,
+  -- The price (output/input) as a float
+  price_float DOUBLE PRECISION NOT NULL,
+
+
   -- The directed start asset of the batch swap.
   asset_start BYTEA NOT NULL,
   -- The directed end asset of the batch swap.
   asset_end BYTEA NOT NULL,
-  -- The time the batch swap was included in a block.
-  time TIMESTAMPTZ NOT NULL,
-  -- The height of the block the batch swap was included in.
-  height INTEGER NOT NULL,
+
   -- Each hop in the list contains an asset id.
   asset_hops BYTEA[] NOT NULL,
   -- Each hop in the list contains an amount.
   amount_hops BYTEA[] NOT NULL,
   -- Each hop in the list contains a position ID.
-  position_id_hops BYTEA[] NOT NULL,
-  -- The amount of asset 1 consumed by the micro execution
-  input NUMERIC(39) NOT NULL,
-  -- The amount of asset 2 produced by the micro execution
-  output NUMERIC(39) NOT NULL,
-  -- The amount of asset 1 consumed by the macro execution
-  batch_input NUMERIC(39) NOT NULL,
-  -- The amount of asset 2 produced by the macro execution
-  batch_output NUMERIC(39) NOT NULL,
+  position_id_hops BYTEA[] NOT NULL
 );
 
 CREATE INDEX ON dex_ex_batch_swap_traces (time, height);
