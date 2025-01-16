@@ -1043,7 +1043,7 @@ impl Component {
                 asset_end,
                 asset_hops,
                 amount_hops,
-               position_id_hops, 
+               position_id_hops
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
             )
             .bind(height)
