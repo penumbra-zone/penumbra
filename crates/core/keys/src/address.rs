@@ -257,7 +257,7 @@ pub struct NobleForwardingAddress {
 
 impl NobleForwardingAddress {
     pub fn bytes(&self) -> Vec<u8> {
-        // Based on https://github.com/noble-assets/forwarding/blob/main/x/forwarding/types/account.go#L17
+        // Based on https://github.com/noble-assets/forwarding/blob/9d7657a89a5d4c68a082f28629e759b60b39b0fd/types/account.go#L17
         let channel = self.channel.clone();
         let recipient = self.recipient.clone();
         let bz = format!("{channel}{recipient}").as_bytes().to_owned();
