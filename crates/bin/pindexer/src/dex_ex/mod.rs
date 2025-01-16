@@ -1038,15 +1038,13 @@ impl Component {
                 output,
                 batch_input,
                 batch_output,
-                asset_start,
-                asset_end,
                 price_float,
                 asset_start,
                 asset_end,
                 asset_hops,
                 amount_hops,
                position_id_hops, 
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
             )
             .bind(height)
             .bind(time)
