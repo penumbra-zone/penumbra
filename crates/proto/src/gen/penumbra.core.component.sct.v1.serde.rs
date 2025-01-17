@@ -12,7 +12,6 @@ impl serde::Serialize for AnchorByHeightRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.AnchorByHeightRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()
@@ -433,7 +432,6 @@ impl serde::Serialize for commitment_source::FundingStreamReward {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.CommitmentSource.FundingStreamReward", len)?;
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
         struct_ser.end()
@@ -611,7 +609,6 @@ impl serde::Serialize for commitment_source::Ics20Transfer {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.CommitmentSource.Ics20Transfer", len)?;
         if self.packet_seq != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("packetSeq", ToString::to_string(&self.packet_seq).as_str())?;
         }
         if !self.channel_id.is_empty() {
@@ -740,7 +737,6 @@ impl serde::Serialize for commitment_source::Transaction {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.CommitmentSource.Transaction", len)?;
         if !self.id.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("id", pbjson::private::base64::encode(&self.id).as_str())?;
         }
         struct_ser.end()
@@ -842,12 +838,10 @@ impl serde::Serialize for Epoch {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.Epoch", len)?;
         if self.index != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("index", ToString::to_string(&self.index).as_str())?;
         }
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         struct_ser.end()
@@ -960,7 +954,6 @@ impl serde::Serialize for EpochByHeightRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.EpochByHeightRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()
@@ -1163,7 +1156,6 @@ impl serde::Serialize for EventAnchor {
         }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if let Some(v) = self.timestamp.as_ref() {
@@ -1296,7 +1288,6 @@ impl serde::Serialize for EventBlockRoot {
         }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if let Some(v) = self.timestamp.as_ref() {
@@ -1429,7 +1420,6 @@ impl serde::Serialize for EventCommitment {
         }
         if self.position != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
         }
         if let Some(v) = self.source.as_ref() {
@@ -1562,7 +1552,6 @@ impl serde::Serialize for EventEpochRoot {
         }
         if self.index != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("index", ToString::to_string(&self.index).as_str())?;
         }
         if let Some(v) = self.timestamp.as_ref() {
@@ -1785,12 +1774,10 @@ impl serde::Serialize for NullificationInfo {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.NullificationInfo", len)?;
         if !self.id.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("id", pbjson::private::base64::encode(&self.id).as_str())?;
         }
         if self.spend_height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("spendHeight", ToString::to_string(&self.spend_height).as_str())?;
         }
         struct_ser.end()
@@ -1903,7 +1890,6 @@ impl serde::Serialize for Nullifier {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.Nullifier", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -2002,7 +1988,6 @@ impl serde::Serialize for SctParameters {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.SctParameters", len)?;
         if self.epoch_duration != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochDuration", ToString::to_string(&self.epoch_duration).as_str())?;
         }
         struct_ser.end()
@@ -2102,7 +2087,6 @@ impl serde::Serialize for TimestampByHeightRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1.TimestampByHeightRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()

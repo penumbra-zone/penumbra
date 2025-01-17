@@ -13,12 +13,12 @@ mod validator;
 use auction::AuctionCmd;
 use base64::prelude::*;
 use chain::ChainCmd;
-use cnidarium::proto::v1::non_verifiable_key_value_request::Key as NVKey;
 use colored_json::ToColoredJson;
 use community_pool::CommunityPoolCmd;
 use dex::DexCmd;
 use governance::GovernanceCmd;
 use ibc_query::IbcCmd;
+use penumbra_proto::cnidarium::v1::non_verifiable_key_value_request::Key as NVKey;
 use shielded_pool::ShieldedPool;
 use tx::Tx;
 pub(super) use validator::ValidatorCmd;
@@ -177,7 +177,7 @@ impl QueryCmd {
             } => (key.clone(), storage_backend.clone()),
         };
 
-        use cnidarium::proto::v1::query_service_client::QueryServiceClient;
+        use penumbra_proto::cnidarium::v1::query_service_client::QueryServiceClient;
         let mut client = QueryServiceClient::new(app.pd_channel().await?);
 
         // Using an enum in the clap arguments was annoying; this is workable:
@@ -187,7 +187,7 @@ impl QueryCmd {
                     .decode(&key)
                     .map_err(|e| anyhow::anyhow!(format!("invalid base64: {}", e)))?;
 
-                let req = cnidarium::proto::v1::NonVerifiableKeyValueRequest {
+                let req = penumbra_proto::cnidarium::v1::NonVerifiableKeyValueRequest {
                     key: Some(NVKey { inner: key_bytes }),
                     ..Default::default()
                 };
@@ -205,7 +205,7 @@ impl QueryCmd {
             }
             // Default to JMT
             "jmt" | _ => {
-                let req = cnidarium::proto::v1::KeyValueRequest {
+                let req = penumbra_proto::cnidarium::v1::KeyValueRequest {
                     key: key.clone(),
                     // Command-line queries don't have a reason to include proofs as of now.
                     proof: false,
@@ -269,10 +269,12 @@ impl QueryCmd {
 // this code (not just this function, the whole module) is pretty shitty,
 // but that's maybe okay for the moment. it exists to consume the rpc.
 async fn watch(key_regex: String, nv_key_regex: String, app: &mut App) -> Result<()> {
-    use cnidarium::proto::v1::{query_service_client::QueryServiceClient, watch_response as wr};
+    use penumbra_proto::cnidarium::v1::{
+        query_service_client::QueryServiceClient, watch_response as wr,
+    };
     let mut client = QueryServiceClient::new(app.pd_channel().await?);
 
-    let req = cnidarium::proto::v1::WatchRequest {
+    let req = penumbra_proto::cnidarium::v1::WatchRequest {
         key_regex,
         nv_key_regex,
     };

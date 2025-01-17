@@ -15,7 +15,6 @@ impl serde::Serialize for Address {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1.Address", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         if !self.alt_bech32m.is_empty() {
@@ -135,7 +134,6 @@ impl serde::Serialize for AddressIndex {
         }
         if !self.randomizer.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("randomizer", pbjson::private::base64::encode(&self.randomizer).as_str())?;
         }
         struct_ser.end()
@@ -585,7 +583,6 @@ impl serde::Serialize for ConsensusKey {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1.ConsensusKey", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -684,7 +681,6 @@ impl serde::Serialize for Diversifier {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1.Diversifier", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -783,7 +779,6 @@ impl serde::Serialize for FullViewingKey {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1.FullViewingKey", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -882,7 +877,6 @@ impl serde::Serialize for GovernanceKey {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1.GovernanceKey", len)?;
         if !self.gk.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("gk", pbjson::private::base64::encode(&self.gk).as_str())?;
         }
         struct_ser.end()
@@ -981,7 +975,6 @@ impl serde::Serialize for IdentityKey {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1.IdentityKey", len)?;
         if !self.ik.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("ik", pbjson::private::base64::encode(&self.ik).as_str())?;
         }
         struct_ser.end()
@@ -1080,7 +1073,6 @@ impl serde::Serialize for PayloadKey {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1.PayloadKey", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -1179,7 +1171,6 @@ impl serde::Serialize for SpendKey {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1.SpendKey", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -1278,7 +1269,6 @@ impl serde::Serialize for WalletId {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1.WalletId", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()

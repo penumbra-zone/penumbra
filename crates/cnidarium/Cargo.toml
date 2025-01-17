@@ -1,0 +1,46 @@
+[package]
+name = "cnidarium"
+version = {workspace = true}
+edition = {workspace = true}
+
+[features]
+migration = []
+migration-proptests = ["migration"]
+default = ["metrics"]
+rpc = ["dep:tonic", "dep:prost", "dep:serde", "dep:pbjson", "dep:ibc-proto"]
+
+[dependencies]
+anyhow = {workspace = true}
+async-trait = {workspace = true}
+base64 = {workspace = true}
+borsh = { version = "1.3.0" , features = ["derive", "de_strict_order"]}
+futures = {workspace = true}
+hex = {workspace = true}
+ibc-proto = {workspace = true, default-features = false, features = ["serde"], optional = true}
+ibc-types = {workspace = true, default-features = false, features = ["std"]}
+ics23 = {workspace = true}
+jmt = {workspace = true}
+metrics = {workspace = true, optional = true}
+once_cell = {workspace = true}
+parking_lot = {workspace = true}
+pbjson = {workspace = true, optional = true}
+pin-project = {workspace = true}
+prost = {workspace = true, optional = true}
+regex = {workspace = true}
+rocksdb = {workspace = true}
+serde = {workspace = true, optional = true}
+sha2 = {workspace = true}
+smallvec = { version = "1.10", features = ["union", "const_generics"] }
+tempfile = {workspace = true}
+tendermint = {workspace = true, default-features = false}
+tokio = {workspace = true, features = ["full", "tracing"]}
+tokio-stream = {workspace = true}
+tonic = {workspace = true, optional = true}
+tracing = {workspace = true}
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tracing-subscriber = { workspace = true }
+tokio = { workspace = true, features = ["full", "rt-multi-thread"] }
+proptest = "1.3.1"
+test-strategy = "0.3.1"

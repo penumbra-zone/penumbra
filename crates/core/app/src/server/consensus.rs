@@ -25,10 +25,7 @@ fn trace_events(events: &[Event]) {
         let span = tracing::debug_span!("event", kind = ?event.kind);
         span.in_scope(|| {
             for attr in &event.attributes {
-                tracing::debug!(
-                    k = %String::from_utf8_lossy(attr.key_bytes()),
-                    v = %String::from_utf8_lossy(attr.value_bytes()),
-                );
+                tracing::debug!(k = ?attr.key, v=?attr.value);
             }
         })
     }

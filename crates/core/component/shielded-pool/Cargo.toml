@@ -12,7 +12,6 @@ component = [
     "penumbra-sct/component",
     "tonic",
     "ibc-proto/server",
-    "ibc-proto/transport",
 ]
 # proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["std", "component"]
