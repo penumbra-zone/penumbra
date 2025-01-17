@@ -11,7 +11,7 @@ use std::net::SocketAddr;
 // request level, but the hook available to do that gives us an http::Request
 // rather than a tonic::Request, so the tonic::Request::remote_addr method isn't
 // available.
-pub fn remote_addr(req: &http::Request<()>) -> Option<SocketAddr> {
+pub fn remote_addr<B>(req: &http::Request<B>) -> Option<SocketAddr> {
     use tonic::transport::server::TcpConnectInfo;
     // NOTE: needs to also check TlsConnectInfo if we use TLS
     req.extensions()

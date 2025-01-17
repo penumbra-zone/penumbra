@@ -12,6 +12,7 @@ impl serde::Serialize for Clue {
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.decaf377_fmd.v1.Clue", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()

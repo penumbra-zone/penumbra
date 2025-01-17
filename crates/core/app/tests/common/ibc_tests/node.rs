@@ -112,12 +112,12 @@ impl TestNodeWithIBC {
         tracing::info!("spawning gRPC...");
         // Spawn the node's RPC server.
         let _rpc_server = {
-            let make_svc = penumbra_app::rpc::router(
+            let make_svc = penumbra_app::rpc::routes(
                 storage.as_ref(),
                 proxy,
                 false, /*enable_expensive_rpc*/
             )?
-            .into_router()
+            .into_axum_router()
             .layer(tower_http::cors::CorsLayer::permissive())
             .into_make_service()
             .tap(|_| tracing::info!("initialized rpc service"));
@@ -125,6 +125,7 @@ impl TestNodeWithIBC {
                 .socket_addrs(|| None)?
                 .try_into()
                 .expect("grpc url can be turned into a socket address");
+
             let server = axum_server::bind(addr).serve(make_svc);
             tokio::spawn(async { server.await.expect("grpc server returned an error") })
                 .tap(|_| tracing::info!("grpc server is running"))

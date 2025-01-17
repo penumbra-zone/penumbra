@@ -239,6 +239,7 @@ impl serde::Serialize for coordinator_round2::IdentifiedCommitments {
         let mut struct_ser = serializer.serialize_struct("penumbra.custody.threshold.v1.CoordinatorRound2.IdentifiedCommitments", len)?;
         if !self.identifier.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("identifier", pbjson::private::base64::encode(&self.identifier).as_str())?;
         }
         if let Some(v) = self.commitments.as_ref() {
@@ -459,14 +460,17 @@ impl serde::Serialize for DkgRound1 {
         }
         if !self.nullifier_commitment.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("nullifierCommitment", pbjson::private::base64::encode(&self.nullifier_commitment).as_str())?;
         }
         if !self.epk.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epk", pbjson::private::base64::encode(&self.epk).as_str())?;
         }
         if !self.vk.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("vk", pbjson::private::base64::encode(&self.vk).as_str())?;
         }
         struct_ser.end()
@@ -612,10 +616,12 @@ impl serde::Serialize for DkgRound2 {
         }
         if !self.vk.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("vk", pbjson::private::base64::encode(&self.vk).as_str())?;
         }
         if !self.sig.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sig", pbjson::private::base64::encode(&self.sig).as_str())?;
         }
         struct_ser.end()
@@ -744,6 +750,7 @@ impl serde::Serialize for dkg_round2::Inner {
         }
         if !self.nullifier.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("nullifier", pbjson::private::base64::encode(&self.nullifier).as_str())?;
         }
         struct_ser.end()
@@ -857,10 +864,12 @@ impl serde::Serialize for dkg_round2::TargetedPackage {
         let mut struct_ser = serializer.serialize_struct("penumbra.custody.threshold.v1.DKGRound2.TargetedPackage", len)?;
         if !self.vk.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("vk", pbjson::private::base64::encode(&self.vk).as_str())?;
         }
         if !self.encrypted_package.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("encryptedPackage", pbjson::private::base64::encode(&self.encrypted_package).as_str())?;
         }
         struct_ser.end()
@@ -1421,6 +1430,7 @@ impl serde::Serialize for Signature {
         let mut struct_ser = serializer.serialize_struct("penumbra.custody.threshold.v1.Signature", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -1519,6 +1529,7 @@ impl serde::Serialize for VerificationKey {
         let mut struct_ser = serializer.serialize_struct("penumbra.custody.threshold.v1.VerificationKey", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()

@@ -40,6 +40,7 @@ bincode = {workspace = true}
 blake2b_simd = {workspace = true}
 bytes = {workspace = true}
 camino = {workspace = true}
+cnidarium = {workspace = true, features = ["rpc"] }
 clap = {workspace = true, features = ["derive", "env"]}
 colored = "2.1.0"
 colored_json = "4.1"
@@ -87,6 +88,7 @@ rand_chacha = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 regex = {workspace = true}
 rpassword = "7"
+rustls = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
 serde_with = {workspace = true, features = ["hex"]}

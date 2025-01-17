@@ -6,13 +6,13 @@ publish = false
 
 [dependencies]
 anyhow = "1"
-ibc-proto = { version = "0.40.0" }
-ics23 = "0.11.3"
-pbjson = "0.6"
-pbjson-build = "0.6"
-pbjson-types = "0.6"
-prost = "0.12.3"
-prost-build = "0.12.3"
-prost-types = "0.12"
+ibc-proto = { version = "0.51.1" }
+ics23 = "0.12.0"
+pbjson = "0.7.0"
+pbjson-build = "0.7.0"
+pbjson-types = "0.7.0"
+prost = "0.13.3"
+prost-build = "0.13.3"
+prost-types = "0.13.3"
 tempfile = "3"
-tonic-build = { version = "0.10.0", features = ["cleanup-markdown"] }
+tonic-build = { version = "0.12.3", features = ["cleanup-markdown"] }

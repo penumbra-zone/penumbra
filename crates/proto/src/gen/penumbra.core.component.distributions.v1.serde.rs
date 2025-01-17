@@ -12,6 +12,7 @@ impl serde::Serialize for DistributionsParameters {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.distributions.v1.DistributionsParameters", len)?;
         if self.staking_issuance_per_block != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("stakingIssuancePerBlock", ToString::to_string(&self.staking_issuance_per_block).as_str())?;
         }
         struct_ser.end()
