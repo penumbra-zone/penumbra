@@ -10,9 +10,9 @@ use penumbra_proto::{
 };
 use penumbra_stake::validator::Validator;
 use penumbra_transaction::{txhash::TransactionId, Transaction, TransactionPlan};
-use penumbra_view::{ViewClient, ViewServer};
+use penumbra_view::ViewClient;
 use std::{fs, future::Future};
-use tonic::transport::Channel;
+use tonic::transport::{Channel, ClientTlsConfig};
 use tracing::instrument;
 
 use crate::App;
@@ -177,12 +177,19 @@ impl App {
         Ok(())
     }
 
-    /// Convenience method for obtaining a `tonic::Channel` for the remote
-    /// `pd` endpoint, as configured for `pcli`.
+    // TODO: why do we need this here but not in the view crate?
     pub async fn pd_channel(&self) -> anyhow::Result<Channel> {
-        ViewServer::get_pd_channel(self.config.grpc_url.clone())
-            .await
-            .context(format!("could not connect to {}", self.config.grpc_url))
+        match self.config.grpc_url.scheme() {
+            "http" => Ok(Channel::from_shared(self.config.grpc_url.to_string())?
+                .connect()
+                .await?),
+            "https" => Ok(Channel::from_shared(self.config.grpc_url.to_string())?
+                .tls_config(ClientTlsConfig::new())?
+                .connect()
+                .await?),
+            other => Err(anyhow::anyhow!("unknown url scheme {other}"))
+                .with_context(|| format!("could not connect to {}", self.config.grpc_url)),
+        }
     }
 
     pub async fn tendermint_proxy_client(

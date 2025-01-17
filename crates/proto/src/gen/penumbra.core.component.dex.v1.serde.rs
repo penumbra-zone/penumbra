@@ -12,7 +12,6 @@ impl serde::Serialize for ArbExecutionRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.ArbExecutionRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()
@@ -117,7 +116,6 @@ impl serde::Serialize for ArbExecutionResponse {
         }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()
@@ -231,12 +229,10 @@ impl serde::Serialize for ArbExecutionsRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.ArbExecutionsRequest", len)?;
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         if self.end_height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("endHeight", ToString::to_string(&self.end_height).as_str())?;
         }
         struct_ser.end()
@@ -356,7 +352,6 @@ impl serde::Serialize for ArbExecutionsResponse {
         }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()
@@ -643,7 +638,6 @@ impl serde::Serialize for BatchSwapOutputData {
         }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if let Some(v) = self.trading_pair.as_ref() {
@@ -651,12 +645,10 @@ impl serde::Serialize for BatchSwapOutputData {
         }
         if self.epoch_starting_height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochStartingHeight", ToString::to_string(&self.epoch_starting_height).as_str())?;
         }
         if self.sct_position_prefix != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sctPositionPrefix", ToString::to_string(&self.sct_position_prefix).as_str())?;
         }
         struct_ser.end()
@@ -870,7 +862,6 @@ impl serde::Serialize for BatchSwapOutputDataRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.BatchSwapOutputDataRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if let Some(v) = self.trading_pair.as_ref() {
@@ -1097,7 +1088,6 @@ impl serde::Serialize for CandlestickData {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandlestickData", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if self.open != 0. {
@@ -1303,12 +1293,10 @@ impl serde::Serialize for CandlestickDataRequest {
         }
         if self.limit != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("limit", ToString::to_string(&self.limit).as_str())?;
         }
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         struct_ser.end()
@@ -2006,7 +1994,6 @@ impl serde::Serialize for EventArbExecution {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventArbExecution", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if let Some(v) = self.swap_execution.as_ref() {
@@ -2874,7 +2861,6 @@ impl serde::Serialize for EventPositionWithdraw {
         }
         if self.sequence != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sequence", ToString::to_string(&self.sequence).as_str())?;
         }
         struct_ser.end()
@@ -4164,7 +4150,6 @@ impl serde::Serialize for LiquidityPositionsByPriceRequest {
         }
         if self.limit != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("limit", ToString::to_string(&self.limit).as_str())?;
         }
         struct_ser.end()
@@ -4706,7 +4691,6 @@ impl serde::Serialize for Position {
         }
         if !self.nonce.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("nonce", pbjson::private::base64::encode(&self.nonce).as_str())?;
         }
         if let Some(v) = self.state.as_ref() {
@@ -4958,7 +4942,6 @@ impl serde::Serialize for PositionId {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.PositionId", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         if !self.alt_bech32m.is_empty() {
@@ -5384,7 +5367,6 @@ impl serde::Serialize for PositionState {
         }
         if self.sequence != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sequence", ToString::to_string(&self.sequence).as_str())?;
         }
         struct_ser.end()
@@ -5586,7 +5568,6 @@ impl serde::Serialize for PositionWithdraw {
         }
         if self.sequence != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sequence", ToString::to_string(&self.sequence).as_str())?;
         }
         struct_ser.end()
@@ -5730,7 +5711,6 @@ impl serde::Serialize for PositionWithdrawPlan {
         }
         if self.sequence != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sequence", ToString::to_string(&self.sequence).as_str())?;
         }
         if !self.rewards.is_empty() {
@@ -7029,7 +7009,6 @@ impl serde::Serialize for SwapClaim {
         }
         if self.epoch_duration != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochDuration", ToString::to_string(&self.epoch_duration).as_str())?;
         }
         struct_ser.end()
@@ -7335,7 +7314,6 @@ impl serde::Serialize for SwapClaimPlan {
         }
         if self.position != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
         }
         if let Some(v) = self.output_data.as_ref() {
@@ -7343,17 +7321,14 @@ impl serde::Serialize for SwapClaimPlan {
         }
         if self.epoch_duration != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochDuration", ToString::to_string(&self.epoch_duration).as_str())?;
         }
         if !self.proof_blinding_r.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
         }
         if !self.proof_blinding_s.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
         struct_ser.end()
@@ -8104,7 +8079,6 @@ impl serde::Serialize for SwapExecutionRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SwapExecutionRequest", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if let Some(v) = self.trading_pair.as_ref() {
@@ -8320,12 +8294,10 @@ impl serde::Serialize for SwapExecutionsRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SwapExecutionsRequest", len)?;
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         if self.end_height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("endHeight", ToString::to_string(&self.end_height).as_str())?;
         }
         if let Some(v) = self.trading_pair.as_ref() {
@@ -8463,7 +8435,6 @@ impl serde::Serialize for SwapExecutionsResponse {
         }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if let Some(v) = self.trading_pair.as_ref() {
@@ -8595,7 +8566,6 @@ impl serde::Serialize for SwapPayload {
         }
         if !self.encrypted_swap.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("encryptedSwap", pbjson::private::base64::encode(&self.encrypted_swap).as_str())?;
         }
         struct_ser.end()
@@ -8736,7 +8706,6 @@ impl serde::Serialize for SwapPlaintext {
         }
         if !self.rseed.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("rseed", pbjson::private::base64::encode(&self.rseed).as_str())?;
         }
         struct_ser.end()
@@ -8907,17 +8876,14 @@ impl serde::Serialize for SwapPlan {
         }
         if !self.fee_blinding.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("feeBlinding", pbjson::private::base64::encode(&self.fee_blinding).as_str())?;
         }
         if !self.proof_blinding_r.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
         }
         if !self.proof_blinding_s.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
         struct_ser.end()
@@ -9802,7 +9768,6 @@ impl serde::Serialize for ZkSwapClaimProof {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.ZKSwapClaimProof", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -9901,7 +9866,6 @@ impl serde::Serialize for ZkSwapProof {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.ZKSwapProof", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()

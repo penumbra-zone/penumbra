@@ -12,7 +12,6 @@ impl serde::Serialize for BindingSignature {
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.decaf377_rdsa.v1.BindingSignature", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -111,7 +110,6 @@ impl serde::Serialize for SpendAuthSignature {
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.decaf377_rdsa.v1.SpendAuthSignature", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -210,7 +208,6 @@ impl serde::Serialize for SpendVerificationKey {
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.decaf377_rdsa.v1.SpendVerificationKey", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()

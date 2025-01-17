@@ -225,6 +225,13 @@ pub mod penumbra {
         }
     }
 
+    pub mod cnidarium {
+        pub mod v1 {
+            include!("gen/penumbra.cnidarium.v1.rs");
+            include!("gen/penumbra.cnidarium.v1.serde.rs");
+        }
+    }
+
     pub mod util {
         pub mod tendermint_proxy {
             pub mod v1 {

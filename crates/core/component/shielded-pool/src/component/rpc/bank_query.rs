@@ -9,11 +9,9 @@ use ibc_proto::cosmos::bank::v1beta1::{
     QueryTotalSupplyRequest, QueryTotalSupplyResponse,
 };
 use ibc_proto::cosmos::bank::v1beta1::{
-    QueryDenomMetadataByQueryStringRequest, QueryDenomMetadataByQueryStringResponse,
-    QueryDenomMetadataRequest, QueryDenomMetadataResponse, QueryDenomOwnersByQueryRequest,
-    QueryDenomOwnersByQueryResponse, QueryDenomOwnersRequest, QueryDenomOwnersResponse,
-    QueryDenomsMetadataRequest, QueryDenomsMetadataResponse, QuerySendEnabledRequest,
-    QuerySendEnabledResponse, QuerySpendableBalanceByDenomRequest,
+    QueryDenomMetadataRequest, QueryDenomMetadataResponse, QueryDenomOwnersRequest,
+    QueryDenomOwnersResponse, QueryDenomsMetadataRequest, QueryDenomsMetadataResponse,
+    QuerySendEnabledRequest, QuerySendEnabledResponse, QuerySpendableBalanceByDenomRequest,
     QuerySpendableBalanceByDenomResponse, QuerySpendableBalancesRequest,
     QuerySpendableBalancesResponse, QuerySupplyOfRequest, QuerySupplyOfResponse,
 };
@@ -207,20 +205,6 @@ impl BankQuery for Server {
         &self,
         _: tonic::Request<QuerySendEnabledRequest>,
     ) -> std::result::Result<tonic::Response<QuerySendEnabledResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
-    }
-
-    async fn denom_metadata_by_query_string(
-        &self,
-        _: tonic::Request<QueryDenomMetadataByQueryStringRequest>,
-    ) -> Result<tonic::Response<QueryDenomMetadataByQueryStringResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
-    }
-
-    async fn denom_owners_by_query(
-        &self,
-        _: tonic::Request<QueryDenomOwnersByQueryRequest>,
-    ) -> Result<tonic::Response<QueryDenomOwnersByQueryResponse>, tonic::Status> {
         Err(tonic::Status::unimplemented("not implemented"))
     }
 }
