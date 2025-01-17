@@ -709,6 +709,7 @@ where
                 tonic::Request::new(pb::OwnedPositionIdsRequest {
                     trading_pair: trading_pair.map(TryInto::try_into).transpose()?,
                     position_state: position_state.map(TryInto::try_into).transpose()?,
+                    subaccount: None,
                 }),
             );
 

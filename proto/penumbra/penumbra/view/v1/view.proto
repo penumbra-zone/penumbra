@@ -153,8 +153,7 @@ service ViewService {
 
 // There's only one transparent address per wallet, so this request has no parameters;
 // the message exists to satisfy forward-compatibility properties.
-message TransparentAddressRequest {
-}
+message TransparentAddressRequest {}
 
 message TransparentAddressResponse {
   // The raw (binary) transparent address
@@ -700,10 +699,14 @@ message OwnedPositionIdsRequest {
   core.component.dex.v1.PositionState position_state = 1;
   // If present, return only positions for this trading pair.
   core.component.dex.v1.TradingPair trading_pair = 2;
+  // If present, return only positions for this subaccount index.
+  core.keys.v1.AddressIndex subaccount = 3;
 }
 
 message OwnedPositionIdsResponse {
   core.component.dex.v1.PositionId position_id = 1;
+  // The subaccount this position belongs to.
+  core.keys.v1.AddressIndex subaccount = 2;
 }
 
 // Requests information on an asset by asset id

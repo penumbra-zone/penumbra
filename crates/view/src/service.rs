@@ -1717,6 +1717,7 @@ impl ViewService for ViewServer {
         let pb::OwnedPositionIdsRequest {
             position_state,
             trading_pair,
+            subaccount: _,
         } = request.into_inner();
 
         let position_state: Option<position::State> = position_state
@@ -1741,6 +1742,9 @@ impl ViewService for ViewServer {
             for id in ids {
                 yield pb::OwnedPositionIdsResponse{
                     position_id: Some(id.into()),
+                    // The rust view server does not index positions by subaccount,
+                    // so this information is invisible to it.
+                    subaccount: None,
                 }
             }
         };
