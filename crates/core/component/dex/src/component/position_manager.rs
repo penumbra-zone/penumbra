@@ -211,10 +211,37 @@ pub trait PositionManager: StateWrite + PositionRead {
     }
 
     /// Queues a position to be closed at the end of the block, after batch execution.
-    fn queue_close_position(&mut self, id: position::Id) {
-        let mut to_close = self.pending_position_closures();
-        to_close.push_back(id);
-        self.object_put(state_key::pending_position_closures(), to_close);
+    async fn queue_close_position(&mut self, id: position::Id) -> Result<()> {
+        tracing::debug!(
+            ?id,
+            "checking current position state before queueing for closure"
+        );
+        let current_state = self
+            .position_by_id(&id)
+            .await
+            .expect("fetching position should not fail")
+            .ok_or_else(|| anyhow::anyhow!("could not find position {} to close", id))?
+            .tap(|lp| tracing::trace!(prev_state = ?lp, "retrieved previous lp state"));
+
+        if current_state.state == position::State::Opened {
+            tracing::debug!(
+                ?current_state.state,
+                "queueing opened position for closure"
+            );
+            let mut to_close = self.pending_position_closures();
+            to_close.push_back(id);
+            self.object_put(state_key::pending_position_closures(), to_close);
+
+            // queue position close you will...
+            self.record_proto(event::EventQueuePositionClose { position_id: id }.to_proto());
+        } else {
+            tracing::debug!(
+                ?current_state.state,
+                "skipping queueing for closure of non-opened position"
+            );
+        }
+
+        Ok(())
     }
 
     /// Close all positions that have been queued for closure.
