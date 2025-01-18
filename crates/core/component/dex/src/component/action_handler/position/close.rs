@@ -2,9 +2,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
-use penumbra_proto::{DomainType as _, StateWriteProto as _};
 
-use crate::{component::PositionManager, event, lp::action::PositionClose};
+use crate::{component::PositionManager, lp::action::PositionClose};
 
 #[async_trait]
 /// Debits an opened position NFT and credits a closed position NFT.
@@ -22,15 +21,7 @@ impl ActionHandler for PositionClose {
         // lose the ability to do block-scoped JIT liquidity, where a single
         // transaction opens and closes a position, keeping liquidity live only
         // during that block's batch swap execution.
-        state.queue_close_position(self.position_id);
-
-        // queue position close you will...
-        state.record_proto(
-            event::EventQueuePositionClose {
-                position_id: self.position_id,
-            }
-            .to_proto(),
-        );
+        state.queue_close_position(self.position_id).await?;
 
         Ok(())
     }
