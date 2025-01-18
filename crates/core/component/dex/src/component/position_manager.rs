@@ -162,7 +162,7 @@ impl<T: StateRead + ?Sized> PositionRead for T {}
 pub trait PositionManager: StateWrite + PositionRead {
     /// Close a position by id, removing it from the state.
     ///
-    /// If the position is already closed, this is a no-op.
+    /// If the position is not currently opened, this method is a no-op
     ///
     /// # Errors
     ///
@@ -177,35 +177,23 @@ pub trait PositionManager: StateWrite + PositionRead {
             .ok_or_else(|| anyhow::anyhow!("could not find position {} to close", id))?
             .tap(|lp| tracing::trace!(prev_state = ?lp, "retrieved previous lp state"));
 
-        anyhow::ensure!(
-            matches!(
-                prev_state.state,
-                position::State::Opened | position::State::Closed,
-            ),
-            "attempted to close a position with state {:?}, expected Opened or Closed",
-            prev_state.state
-        );
+        if prev_state.state == position::State::Opened {
+            let new_state = {
+                let mut new_state = prev_state.clone();
+                new_state.state = position::State::Closed;
+                new_state
+            };
 
-        // Optimization: skip state update if the position is already closed.
-        // This can happen if the position was queued for closure and premptively
-        // closed by the DEX engine during execution (e.g. auto-closing).
-        if prev_state.state == position::State::Closed {
+            self.update_position(id, Some(prev_state), new_state)
+                .await?;
+            self.record_proto(event::EventPositionClose { position_id: *id }.to_proto());
+        } else {
             tracing::debug!(
                 ?id,
-                "position is already closed so we can skip state updates"
+                ?prev_state.state,
+                "position is not currently open, skipping"
             );
-            return Ok(());
         }
-
-        let new_state = {
-            let mut new_state = prev_state.clone();
-            new_state.state = position::State::Closed;
-            new_state
-        };
-
-        self.update_position(id, Some(prev_state), new_state)
-            .await?;
-        self.record_proto(event::EventPositionClose { position_id: *id }.to_proto());
 
         Ok(())
     }
