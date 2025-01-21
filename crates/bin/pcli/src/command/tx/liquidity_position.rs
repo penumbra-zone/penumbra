@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use penumbra_asset::asset;
-use penumbra_dex::{
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_dex::{
     lp::{
         position::{self, Position},
         BuyOrder, SellOrder,

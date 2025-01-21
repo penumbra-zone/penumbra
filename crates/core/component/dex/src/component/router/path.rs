@@ -1,8 +1,8 @@
 use anyhow::Result;
 
 use cnidarium::{StateDelta, StateRead};
-use penumbra_asset::asset;
-use penumbra_num::fixpoint::U128x128;
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_num::fixpoint::U128x128;
 use std::cmp::Ordering;
 use tracing::Instrument;
 

@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use assert_cmd::Command as AssertCommand;
 use once_cell::sync::Lazy;
 use pcli::config::PcliConfig;
-use penumbra_keys::address::Address;
+use penumbra_sdk_keys::address::Address;
 use std::fs::{create_dir_all, remove_dir_all, File};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;

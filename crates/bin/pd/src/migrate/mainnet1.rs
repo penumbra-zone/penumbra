@@ -6,13 +6,13 @@ use cnidarium::{StateDelta, Storage};
 use ibc_types::core::channel::{Packet, PortId};
 use ibc_types::transfer::acknowledgement::TokenTransferAcknowledgement;
 use jmt::RootHash;
-use penumbra_app::app::StateReadExt as _;
-use penumbra_app::app_version::migrate_app_version;
-use penumbra_governance::StateWriteExt;
-use penumbra_ibc::{component::ChannelStateWriteExt as _, IbcRelay};
-use penumbra_sct::component::clock::EpochManager;
-use penumbra_sct::component::clock::EpochRead;
-use penumbra_transaction::{Action, Transaction};
+use penumbra_sdk_app::app::StateReadExt as _;
+use penumbra_sdk_app::app_version::migrate_app_version;
+use penumbra_sdk_governance::StateWriteExt;
+use penumbra_sdk_ibc::{component::ChannelStateWriteExt as _, IbcRelay};
+use penumbra_sdk_sct::component::clock::EpochManager;
+use penumbra_sdk_sct::component::clock::EpochRead;
+use penumbra_sdk_transaction::{Action, Transaction};
 use std::path::PathBuf;
 use tracing::instrument;
 
@@ -143,7 +143,7 @@ pub async fn migrate(
     // The migration is complete, now we need to generate a genesis file. To do this, we need
     // to lookup a validator view from the chain, and specify the post-upgrade app hash and
     // initial height.
-    let app_state = penumbra_app::genesis::Content {
+    let app_state = penumbra_sdk_app::genesis::Content {
         chain_id,
         ..Default::default()
     };

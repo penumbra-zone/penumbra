@@ -12,16 +12,16 @@ use ark_groth16::{
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
-use penumbra_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
-use penumbra_tct as tct;
+use penumbra_sdk_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
+use penumbra_sdk_tct as tct;
 use rand::{CryptoRng, Rng};
 use tct::StateCommitment;
 
 use crate::{Note, Rseed};
-use penumbra_asset::Value;
-use penumbra_keys::keys::{Bip44Path, NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
-use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
-use penumbra_sct::{Nullifier, NullifierVar};
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_keys::keys::{Bip44Path, NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
+use penumbra_sdk_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_sdk_sct::{Nullifier, NullifierVar};
 
 /// The public input for a ['NullifierDerivationProof'].
 #[derive(Clone, Debug)]
@@ -232,10 +232,10 @@ impl TryFrom<pb::ZkNullifierDerivationProof> for NullifierDerivationProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use penumbra_asset::{asset, Value};
-    use penumbra_keys::keys::{SeedPhrase, SpendKey};
-    use penumbra_num::Amount;
-    use penumbra_sct::Nullifier;
+    use penumbra_sdk_asset::{asset, Value};
+    use penumbra_sdk_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_sdk_num::Amount;
+    use penumbra_sdk_sct::Nullifier;
     use proptest::prelude::*;
 
     use crate::Note;

@@ -5,7 +5,7 @@ use std::collections::HashSet;
 
 use proptest::{arbitrary::*, prelude::*};
 
-use penumbra_tct::{validate, StateCommitment, Tree, Witness};
+use penumbra_sdk_tct::{validate, StateCommitment, Tree, Witness};
 
 const MAX_USED_COMMITMENTS: usize = 3;
 const MAX_TIER_ACTIONS: usize = 10;

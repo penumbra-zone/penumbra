@@ -5,8 +5,8 @@ use std::{
 
 use anyhow::Result;
 use camino::Utf8PathBuf;
-use penumbra_custody::threshold;
-use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_sdk_custody::threshold;
+use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use rand_core::OsRng;
 use termion::screen::IntoAlternateScreen;
 use url::Url;
@@ -310,9 +310,9 @@ impl InitCmd {
                     spend_key.full_viewing_key().clone(),
                     if self.encrypted {
                         let password = ActualTerminal::get_confirmed_password().await?;
-                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                        CustodyConfig::Encrypted(penumbra_sdk_custody::encrypted::Config::create(
                             &password,
-                            penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key.into()),
+                            penumbra_sdk_custody::encrypted::InnerConfig::SoftKms(spend_key.into()),
                         )?)
                     } else {
                         CustodyConfig::SoftKms(spend_key.into())
@@ -333,9 +333,9 @@ impl InitCmd {
                 let fvk = config.fvk().clone();
                 let custody_config = if self.encrypted {
                     let password = ActualTerminal::get_confirmed_password().await?;
-                    CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                    CustodyConfig::Encrypted(penumbra_sdk_custody::encrypted::Config::create(
                         &password,
-                        penumbra_custody::encrypted::InnerConfig::Threshold(config),
+                        penumbra_sdk_custody::encrypted::InnerConfig::Threshold(config),
                     )?)
                 } else {
                     CustodyConfig::Threshold(config)
@@ -373,16 +373,16 @@ impl InitCmd {
                     x @ CustodyConfig::Encrypted(_) => x,
                     CustodyConfig::SoftKms(spend_key) => {
                         let password = ActualTerminal::get_confirmed_password().await?;
-                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                        CustodyConfig::Encrypted(penumbra_sdk_custody::encrypted::Config::create(
                             &password,
-                            penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key),
+                            penumbra_sdk_custody::encrypted::InnerConfig::SoftKms(spend_key),
                         )?)
                     }
                     CustodyConfig::Threshold(c) => {
                         let password = ActualTerminal::get_confirmed_password().await?;
-                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                        CustodyConfig::Encrypted(penumbra_sdk_custody::encrypted::Config::create(
                             &password,
-                            penumbra_custody::encrypted::InnerConfig::Threshold(c),
+                            penumbra_sdk_custody::encrypted::InnerConfig::Threshold(c),
                         )?)
                     }
                 };

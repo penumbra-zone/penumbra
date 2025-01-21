@@ -3,9 +3,9 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_asset::{asset, Value};
-use penumbra_num::Amount;
-use penumbra_sct::component::clock::EpochRead;
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_sct::component::clock::EpochRead;
 use tracing::instrument;
 
 use crate::{

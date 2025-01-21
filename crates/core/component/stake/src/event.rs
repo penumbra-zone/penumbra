@@ -4,8 +4,8 @@ use crate::{
     Delegate, IdentityKey, Penalty, Undelegate,
 };
 use anyhow::{anyhow, Context as _};
-use penumbra_num::Amount;
-use penumbra_proto::{core::component::stake::v1 as pb, DomainType, Name as _};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{core::component::stake::v1 as pb, DomainType, Name as _};
 use tendermint::abci::types::Misbehavior;
 
 #[derive(Clone, Debug)]

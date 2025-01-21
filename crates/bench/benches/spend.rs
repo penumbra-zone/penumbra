@@ -5,12 +5,14 @@ use ark_relations::r1cs::{
 };
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_asset::Value;
-use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-use penumbra_proof_params::{DummyWitness, SPEND_PROOF_PROVING_KEY};
-use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{Note, SpendCircuit, SpendProof, SpendProofPrivate, SpendProofPublic};
-use penumbra_tct as tct;
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_sdk_proof_params::{DummyWitness, SPEND_PROOF_PROVING_KEY};
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_shielded_pool::{
+    Note, SpendCircuit, SpendProof, SpendProofPrivate, SpendProofPublic,
+};
+use penumbra_sdk_tct as tct;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;

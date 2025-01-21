@@ -1,12 +1,13 @@
 [package]
-name = "penumbra-test-subscriber"
-authors.workspace = true
+name = "penumbra-sdk-test-subscriber"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Subscriber for Penumbra app tests"
 edition.workspace = true
 version.workspace = true
-repository.workspace = true
 homepage.workspace = true
 license.workspace = true
-publish = false
+publish = true
 
 [dependencies]
 tracing = { workspace = true }

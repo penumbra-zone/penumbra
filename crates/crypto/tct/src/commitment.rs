@@ -1,5 +1,5 @@
 use decaf377::Fq;
-use penumbra_proto::{penumbra::crypto::tct::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::crypto::tct::v1 as pb, DomainType};
 
 /// A commitment to a note or swap.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]

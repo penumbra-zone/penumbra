@@ -1,20 +1,24 @@
 [package]
-name = "penumbra-compact-block"
+name = "penumbra-sdk-compact-block"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Compact block component implementation for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
 component = [
     "cnidarium-component",
     "cnidarium",
-    "penumbra-proto/cnidarium",
+    "penumbra-sdk-proto/cnidarium",
     "tonic",
     "tokio-stream",
     "tokio",
-    "penumbra-governance/component",
-    "penumbra-dex/component",
+    "penumbra-sdk-governance/component",
+    "penumbra-sdk-dex/component",
 ]
-# proving-keys = ["penumbra-proof-params/proving-keys"]
+# proving-keys = ["penumbra-sdk-proof-params/proving-keys"]
 default = ["std", "component"]
 std = ["ark-ff/std"]
 docsrs = []
@@ -31,16 +35,16 @@ decaf377-rdsa = {workspace = true}
 futures = {workspace = true}
 im = {workspace = true}
 metrics = {workspace = true}
-penumbra-dex = {workspace = true, default-features = false}
-penumbra-fee = {workspace = true, default-features = false}
-penumbra-governance = {workspace = true, default-features = false}
-penumbra-ibc = {workspace = true, default-features = false}
-penumbra-proof-params = {workspace = true, default-features = false}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
+penumbra-sdk-dex = {workspace = true, default-features = false}
+penumbra-sdk-fee = {workspace = true, default-features = false}
+penumbra-sdk-governance = {workspace = true, default-features = false}
+penumbra-sdk-ibc = {workspace = true, default-features = false}
+penumbra-sdk-proof-params = {workspace = true, default-features = false}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
+penumbra-sdk-stake = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = true}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 serde = {workspace = true, features = ["derive"]}

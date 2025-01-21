@@ -1,12 +1,12 @@
 use ark_ff::Zero;
 use decaf377::Fr;
-use penumbra_asset::{balance, Value};
-use penumbra_auction::auction::dutch::actions::{
+use penumbra_sdk_asset::{balance, Value};
+use penumbra_sdk_auction::auction::dutch::actions::{
     view::{ActionDutchAuctionScheduleView, ActionDutchAuctionWithdrawView},
     ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
 };
-use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_dex::{
+use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_dex::{
     lp::{
         action::{PositionClose, PositionOpen, PositionWithdraw},
         position, LpNft,
@@ -14,13 +14,13 @@ use penumbra_dex::{
     swap::{Swap, SwapCiphertext, SwapView},
     swap_claim::{SwapClaim, SwapClaimView},
 };
-use penumbra_governance::{
+use penumbra_sdk_governance::{
     DelegatorVote, DelegatorVoteView, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
     ValidatorVote, VotingReceiptToken,
 };
-use penumbra_ibc::IbcRelay;
-use penumbra_shielded_pool::{Ics20Withdrawal, Note, Output, OutputView, Spend, SpendView};
-use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
+use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Note, Output, OutputView, Spend, SpendView};
+use penumbra_sdk_stake::{Delegate, Undelegate, UndelegateClaim};
 
 use crate::{Action, ActionView, TransactionPerspective};
 

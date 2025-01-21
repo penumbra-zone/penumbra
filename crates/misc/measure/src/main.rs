@@ -8,8 +8,8 @@ use rustls::crypto::aws_lc_rs;
 use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
 
-use penumbra_compact_block::CompactBlock;
-use penumbra_proto::{
+use penumbra_sdk_compact_block::CompactBlock;
+use penumbra_sdk_proto::{
     core::component::compact_block::v1::CompactBlockRequest,
     penumbra::{
         core::component::compact_block::v1::{
@@ -22,7 +22,7 @@ use penumbra_proto::{
     },
     DomainType, Message,
 };
-use penumbra_view::ViewServer;
+use penumbra_sdk_view::ViewServer;
 
 use tonic::transport::Channel;
 use url::Url;
@@ -249,7 +249,7 @@ impl Opt {
                 let mut sp_note_count = 0;
                 let mut sp_swap_count = 0;
 
-                use penumbra_compact_block::StatePayload;
+                use penumbra_sdk_compact_block::StatePayload;
 
                 while let Some(block_rsp) = stream.message().await? {
                     cb_count += 1;

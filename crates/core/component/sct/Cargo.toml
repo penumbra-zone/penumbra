@@ -1,14 +1,18 @@
 [package]
-name = "penumbra-sct"
+name = "penumbra-sdk-sct"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "SCT component implementation for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
 component = [
     "cnidarium",
     "cnidarium-component",
-    "penumbra-proto/cnidarium",
-    "penumbra-proto/rpc",
+    "penumbra-sdk-proto/cnidarium",
+    "penumbra-sdk-proto/rpc",
     "tonic",
 ]
 default = ["std", "component"]
@@ -34,9 +38,9 @@ im = {workspace = true}
 metrics = {workspace = true}
 once_cell = {workspace = true}
 pbjson-types = {workspace = true}
-penumbra-keys = {workspace = true, default-features = false}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
+penumbra-sdk-keys = {workspace = true, default-features = false}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = true}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}

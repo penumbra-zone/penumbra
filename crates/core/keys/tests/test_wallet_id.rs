@@ -2,8 +2,8 @@ extern crate core;
 
 use std::str::FromStr;
 
-use penumbra_keys::keys::{SeedPhrase, SpendKey};
-use penumbra_proto::serializers::bech32str;
+use penumbra_sdk_keys::keys::{SeedPhrase, SpendKey};
+use penumbra_sdk_proto::serializers::bech32str;
 
 #[test]
 fn wallet_id_to_bech32() {

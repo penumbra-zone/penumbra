@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-wallet"
+name = "penumbra-sdk-wallet"
 version = {workspace = true}
 authors = {workspace = true}
 edition = {workspace = true}
@@ -7,11 +7,11 @@ description = "The wallet software for the Penumbra Zone"
 repository = {workspace = true}
 homepage = {workspace = true}
 license = {workspace = true}
-publish = false
+publish = true
 
 [features]
 default = []
-parallel = ["penumbra-transaction/parallel"]
+parallel = ["penumbra-sdk-transaction/parallel"]
 
 [dependencies]
 anyhow = {workspace = true}
@@ -20,20 +20,20 @@ bincode = {workspace = true}
 bytes = {workspace = true}
 decaf377 = {workspace = true, default-features = true}
 hex = {workspace = true}
-penumbra-app = {workspace = true, default-features = false}
-penumbra-asset = {workspace = true, default-features = true}
-penumbra-custody = {workspace = true}
-penumbra-dex = {workspace = true, default-features = false}
-penumbra-fee = {workspace = true, default-features = false}
-penumbra-governance = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-num = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = true}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-transaction = {workspace = true, default-features = true}
-penumbra-view = {workspace = true}
+penumbra-sdk-app = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = true}
+penumbra-sdk-custody = {workspace = true}
+penumbra-sdk-dex = {workspace = true, default-features = false}
+penumbra-sdk-fee = {workspace = true, default-features = false}
+penumbra-sdk-governance = {workspace = true, default-features = false}
+penumbra-sdk-keys = {workspace = true, default-features = true}
+penumbra-sdk-num = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = true}
+penumbra-sdk-stake = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = true}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-transaction = {workspace = true, default-features = true}
+penumbra-sdk-view = {workspace = true}
 pin-project = {workspace = true}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}

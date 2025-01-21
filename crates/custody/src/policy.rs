@@ -2,8 +2,8 @@
 
 use std::collections::HashSet;
 
-use penumbra_keys::Address;
-use penumbra_proto::{
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_proto::{
     core::{
         component::{
             governance::v1::ValidatorVoteBody as ProtoValidatorVoteBody,
@@ -13,7 +13,7 @@ use penumbra_proto::{
     },
     Message as _,
 };
-use penumbra_transaction::plan::ActionPlan;
+use penumbra_sdk_transaction::plan::ActionPlan;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -59,7 +59,7 @@ pub enum AuthPolicy {
     /// This policy should be combined with an `AllowList` to prevent sending
     /// funds outside of the relayer account.
     OnlyIbcRelay,
-    /// Require specific pre-authorizations for submitted [`TransactionPlan`](penumbra_transaction::TransactionPlan)s.
+    /// Require specific pre-authorizations for submitted [`TransactionPlan`](penumbra_sdk_transaction::TransactionPlan)s.
     PreAuthorization(PreAuthorizationPolicy),
 }
 
@@ -132,7 +132,7 @@ impl PreAuthorizationPolicy {
 mod address_as_string {
     use std::str::FromStr;
 
-    use penumbra_keys::Address;
+    use penumbra_sdk_keys::Address;
 
     pub fn serialize<S: serde::Serializer>(
         addresses: &[Address],

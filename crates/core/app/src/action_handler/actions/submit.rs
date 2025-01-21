@@ -8,22 +8,22 @@ use ibc_types::core::client::ClientId;
 use once_cell::sync::Lazy;
 
 use cnidarium::StateWrite;
-use penumbra_asset::STAKING_TOKEN_DENOM;
-use penumbra_community_pool::component::StateReadExt as _;
-use penumbra_governance::{
+use penumbra_sdk_asset::STAKING_TOKEN_DENOM;
+use penumbra_sdk_community_pool::component::StateReadExt as _;
+use penumbra_sdk_governance::{
     component::{StateReadExt as _, StateWriteExt as _},
     event,
     proposal::{Proposal, ProposalPayload},
     proposal_state::State as ProposalState,
     ProposalNft, ProposalSubmit, VotingReceiptToken,
 };
-use penumbra_ibc::component::ClientStateReadExt;
-use penumbra_keys::keys::{FullViewingKey, NullifierKey};
-use penumbra_proto::{DomainType, StateWriteProto as _};
-use penumbra_sct::component::clock::EpochRead;
-use penumbra_sct::component::tree::SctRead;
-use penumbra_shielded_pool::component::AssetRegistry;
-use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
+use penumbra_sdk_ibc::component::ClientStateReadExt;
+use penumbra_sdk_keys::keys::{FullViewingKey, NullifierKey};
+use penumbra_sdk_proto::{DomainType, StateWriteProto as _};
+use penumbra_sdk_sct::component::clock::EpochRead;
+use penumbra_sdk_sct::component::tree::SctRead;
+use penumbra_sdk_shielded_pool::component::AssetRegistry;
+use penumbra_sdk_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
 
 use crate::app::StateReadExt;
 use crate::community_pool_ext::CommunityPoolStateWriteExt;
@@ -67,7 +67,7 @@ impl AppActionHandler for ProposalSubmit {
             );
         }
 
-        use penumbra_governance::ProposalPayload::*;
+        use penumbra_sdk_governance::ProposalPayload::*;
         match payload {
             Signaling { commit: _ } => { /* all signaling proposals are valid */ }
             Emergency { halt_chain: _ } => { /* all emergency proposals are valid */ }
@@ -75,7 +75,7 @@ impl AppActionHandler for ProposalSubmit {
             CommunityPoolSpend { transaction_plan } => {
                 // Check to make sure that the transaction plan contains only valid actions for the
                 // Community Pool (none of them should require proving to build):
-                use penumbra_transaction::plan::ActionPlan::*;
+                use penumbra_sdk_transaction::plan::ActionPlan::*;
 
                 let parsed_transaction_plan = TransactionPlan::decode(&transaction_plan[..])
                     .context("transaction plan was malformed")?;
@@ -349,7 +349,7 @@ async fn build_community_pool_transaction(
     transaction_plan.build(
         &COMMUNITY_POOL_FULL_VIEWING_KEY,
         &WitnessData {
-            anchor: penumbra_tct::Tree::new().root(),
+            anchor: penumbra_sdk_tct::Tree::new().root(),
             state_commitment_proofs: Default::default(),
         },
         &AuthorizationData {

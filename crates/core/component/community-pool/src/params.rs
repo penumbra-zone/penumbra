@@ -1,5 +1,5 @@
-use penumbra_proto::core::component::community_pool::v1 as pb;
-use penumbra_proto::DomainType;
+use penumbra_sdk_proto::core::component::community_pool::v1 as pb;
+use penumbra_sdk_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]

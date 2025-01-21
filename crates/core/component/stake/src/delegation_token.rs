@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-use penumbra_asset::asset;
+use penumbra_sdk_asset::asset;
 
 use super::IdentityKey;
 

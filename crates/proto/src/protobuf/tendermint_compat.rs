@@ -4,12 +4,12 @@
 //  this is not an exhaustive pass at providing compatibility between all of the types in either
 //  library. accordingly, it is grouped by conversions needed for each RPC endpoint.
 
-use crate::util::tendermint_proxy::v1 as penumbra_pb;
+use crate::util::tendermint_proxy::v1 as penumbra_sdk_pb;
 use anyhow::anyhow;
 
 // === get_tx ===
 
-impl From<tendermint_rpc::endpoint::tx::Response> for penumbra_pb::GetTxResponse {
+impl From<tendermint_rpc::endpoint::tx::Response> for penumbra_sdk_pb::GetTxResponse {
     fn from(
         tendermint_rpc::endpoint::tx::Response {
             hash,
@@ -30,7 +30,7 @@ impl From<tendermint_rpc::endpoint::tx::Response> for penumbra_pb::GetTxResponse
     }
 }
 
-impl From<tendermint::abci::types::ExecTxResult> for penumbra_pb::TxResult {
+impl From<tendermint::abci::types::ExecTxResult> for penumbra_sdk_pb::TxResult {
     fn from(
         tendermint::abci::types::ExecTxResult {
             log,
@@ -52,14 +52,14 @@ impl From<tendermint::abci::types::ExecTxResult> for penumbra_pb::TxResult {
             tags: events
                 .into_iter()
                 .flat_map(|Event { attributes, .. }: Event| {
-                    attributes.into_iter().map(penumbra_pb::Tag::from)
+                    attributes.into_iter().map(penumbra_sdk_pb::Tag::from)
                 })
                 .collect(),
         }
     }
 }
 
-impl From<tendermint::abci::EventAttribute> for penumbra_pb::Tag {
+impl From<tendermint::abci::EventAttribute> for penumbra_sdk_pb::Tag {
     fn from(event_attr: tendermint::abci::EventAttribute) -> Self {
         Self {
             key: event_attr.key_bytes().into(),
@@ -72,7 +72,7 @@ impl From<tendermint::abci::EventAttribute> for penumbra_pb::Tag {
     }
 }
 
-// impl From<tendermint::abci::event::v0_37::EventAttribute> for penumbra_pb::Tag {
+// impl From<tendermint::abci::event::v0_37::EventAttribute> for penumbra_sdk_pb::Tag {
 //     fn from(
 //         tendermint::abci::event::v0_37::EventAttribute {
 //             key,
@@ -94,7 +94,7 @@ impl From<tendermint::abci::EventAttribute> for penumbra_pb::Tag {
 // === broadcast_tx_async ===
 
 impl From<tendermint_rpc::endpoint::broadcast::tx_async::Response>
-    for penumbra_pb::BroadcastTxAsyncResponse
+    for penumbra_sdk_pb::BroadcastTxAsyncResponse
 {
     fn from(
         tendermint_rpc::endpoint::broadcast::tx_async::Response {
@@ -117,7 +117,7 @@ impl From<tendermint_rpc::endpoint::broadcast::tx_async::Response>
 // === broadcast_tx_sync ===
 
 impl From<tendermint_rpc::endpoint::broadcast::tx_sync::Response>
-    for penumbra_pb::BroadcastTxSyncResponse
+    for penumbra_sdk_pb::BroadcastTxSyncResponse
 {
     fn from(
         tendermint_rpc::endpoint::broadcast::tx_sync::Response {
@@ -139,7 +139,7 @@ impl From<tendermint_rpc::endpoint::broadcast::tx_sync::Response>
 
 // === get_status ===
 
-impl From<tendermint_rpc::endpoint::status::Response> for penumbra_pb::GetStatusResponse {
+impl From<tendermint_rpc::endpoint::status::Response> for penumbra_sdk_pb::GetStatusResponse {
     fn from(
         tendermint_rpc::endpoint::status::Response {
             node_info,
@@ -187,7 +187,7 @@ impl From<tendermint::node::Info> for crate::tendermint::p2p::DefaultNodeInfo {
     }
 }
 
-impl From<tendermint_rpc::endpoint::status::SyncInfo> for penumbra_pb::SyncInfo {
+impl From<tendermint_rpc::endpoint::status::SyncInfo> for penumbra_sdk_pb::SyncInfo {
     fn from(
         tendermint_rpc::endpoint::status::SyncInfo {
             latest_block_hash,
@@ -273,7 +273,9 @@ pub struct HeightOverflowError {
     source: <i64 as TryFrom<u64>>::Error,
 }
 
-impl TryFrom<tendermint_rpc::endpoint::abci_query::AbciQuery> for penumbra_pb::AbciQueryResponse {
+impl TryFrom<tendermint_rpc::endpoint::abci_query::AbciQuery>
+    for penumbra_sdk_pb::AbciQueryResponse
+{
     type Error = HeightOverflowError;
     fn try_from(
         tendermint_rpc::endpoint::abci_query::AbciQuery {
@@ -338,7 +340,9 @@ impl From<tendermint::merkle::proof::ProofOp> for crate::tendermint::crypto::Pro
 
 // === get_block_by_height ===
 
-impl TryFrom<tendermint_rpc::endpoint::block::Response> for penumbra_pb::GetBlockByHeightResponse {
+impl TryFrom<tendermint_rpc::endpoint::block::Response>
+    for penumbra_sdk_pb::GetBlockByHeightResponse
+{
     type Error = anyhow::Error;
     fn try_from(
         tendermint_rpc::endpoint::block::Response {

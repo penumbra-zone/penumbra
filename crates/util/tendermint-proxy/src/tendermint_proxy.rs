@@ -1,5 +1,5 @@
 use crate::TendermintProxy;
-use penumbra_proto::{
+use penumbra_sdk_proto::{
     util::tendermint_proxy::v1::{
         tendermint_proxy_service_server::TendermintProxyService, AbciQueryRequest,
         AbciQueryResponse, BroadcastTxAsyncRequest, BroadcastTxAsyncResponse,
@@ -8,7 +8,7 @@ use penumbra_proto::{
     },
     DomainType,
 };
-use penumbra_transaction::Transaction;
+use penumbra_sdk_transaction::Transaction;
 use tap::TapFallible;
 use tendermint::{abci::Code, block::Height};
 use tendermint_rpc::{Client, HttpClient};

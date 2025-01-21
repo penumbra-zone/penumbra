@@ -3,20 +3,20 @@
 
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
-use penumbra_asset::{asset, Balance, Value};
-use penumbra_dex::swap::proof::{SwapProofPrivate, SwapProofPublic};
-use penumbra_dex::swap_claim::{SwapClaimProofPrivate, SwapClaimProofPublic};
-use penumbra_dex::{
+use penumbra_sdk_asset::{asset, Balance, Value};
+use penumbra_sdk_dex::swap::proof::{SwapProofPrivate, SwapProofPublic};
+use penumbra_sdk_dex::swap_claim::{SwapClaimProofPrivate, SwapClaimProofPublic};
+use penumbra_sdk_dex::{
     swap::proof::SwapProof, swap::SwapPlaintext, swap_claim::proof::SwapClaimProof,
     BatchSwapOutputData, TradingPair,
 };
-use penumbra_fee::Fee;
-use penumbra_governance::{
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_governance::{
     DelegatorVoteProof, DelegatorVoteProofPrivate, DelegatorVoteProofPublic,
 };
-use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-use penumbra_num::Amount;
-use penumbra_proof_params::{
+use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proof_params::{
     CONVERT_PROOF_PROVING_KEY, CONVERT_PROOF_VERIFICATION_KEY, DELEGATOR_VOTE_PROOF_PROVING_KEY,
     DELEGATOR_VOTE_PROOF_VERIFICATION_KEY, NULLIFIER_DERIVATION_PROOF_PROVING_KEY,
     NULLIFIER_DERIVATION_PROOF_VERIFICATION_KEY, OUTPUT_PROOF_PROVING_KEY,
@@ -24,16 +24,18 @@ use penumbra_proof_params::{
     SWAPCLAIM_PROOF_PROVING_KEY, SWAPCLAIM_PROOF_VERIFICATION_KEY, SWAP_PROOF_PROVING_KEY,
     SWAP_PROOF_VERIFICATION_KEY,
 };
-use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::output::{OutputProofPrivate, OutputProofPublic};
-use penumbra_shielded_pool::Note;
-use penumbra_shielded_pool::{
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_shielded_pool::output::{OutputProofPrivate, OutputProofPublic};
+use penumbra_sdk_shielded_pool::Note;
+use penumbra_sdk_shielded_pool::{
     NullifierDerivationProof, NullifierDerivationProofPrivate, NullifierDerivationProofPublic,
     OutputProof, SpendProof, SpendProofPrivate, SpendProofPublic,
 };
-use penumbra_stake::undelegate_claim::{UndelegateClaimProofPrivate, UndelegateClaimProofPublic};
-use penumbra_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
-use penumbra_tct as tct;
+use penumbra_sdk_stake::undelegate_claim::{
+    UndelegateClaimProofPrivate, UndelegateClaimProofPublic,
+};
+use penumbra_sdk_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
+use penumbra_sdk_tct as tct;
 use rand_core::OsRng;
 
 #[test]

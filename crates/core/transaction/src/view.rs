@@ -1,17 +1,17 @@
 use anyhow::Context;
 use decaf377_rdsa::{Binding, Signature};
-use penumbra_asset::{Balance, Value};
-use penumbra_dex::{swap::SwapView, swap_claim::SwapClaimView};
-use penumbra_keys::AddressView;
-use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
-use penumbra_shielded_pool::{OutputView, SpendView};
+use penumbra_sdk_asset::{Balance, Value};
+use penumbra_sdk_dex::{swap::SwapView, swap_claim::SwapClaimView};
+use penumbra_sdk_keys::AddressView;
+use penumbra_sdk_proto::{core::transaction::v1 as pbt, DomainType};
+use penumbra_sdk_shielded_pool::{OutputView, SpendView};
 use serde::{Deserialize, Serialize};
 
 pub mod action_view;
 mod transaction_perspective;
 
 pub use action_view::ActionView;
-use penumbra_tct as tct;
+use penumbra_sdk_tct as tct;
 pub use transaction_perspective::TransactionPerspective;
 
 use crate::{
@@ -435,32 +435,32 @@ mod test {
     use decaf377::Fr;
     use decaf377::{Element, Fq};
     use decaf377_rdsa::{Domain, VerificationKey};
-    use penumbra_asset::{
+    use penumbra_sdk_asset::{
         asset::{self, Cache, Id},
         balance::Commitment,
         STAKING_TOKEN_ASSET_ID,
     };
-    use penumbra_dex::swap::proof::SwapProof;
-    use penumbra_dex::swap::{SwapCiphertext, SwapPayload};
-    use penumbra_dex::Swap;
-    use penumbra_dex::{
+    use penumbra_sdk_dex::swap::proof::SwapProof;
+    use penumbra_sdk_dex::swap::{SwapCiphertext, SwapPayload};
+    use penumbra_sdk_dex::Swap;
+    use penumbra_sdk_dex::{
         swap::{SwapPlaintext, SwapPlan},
         TradingPair,
     };
-    use penumbra_fee::Fee;
-    use penumbra_keys::keys::Bip44Path;
-    use penumbra_keys::keys::{SeedPhrase, SpendKey};
-    use penumbra_keys::{
+    use penumbra_sdk_fee::Fee;
+    use penumbra_sdk_keys::keys::Bip44Path;
+    use penumbra_sdk_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_sdk_keys::{
         symmetric::{OvkWrappedKey, WrappedMemoKey},
         test_keys, Address, FullViewingKey, PayloadKey,
     };
-    use penumbra_num::Amount;
-    use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
-    use penumbra_sct::Nullifier;
-    use penumbra_shielded_pool::Rseed;
-    use penumbra_shielded_pool::{output, spend, Note, NoteView, OutputPlan, SpendPlan};
-    use penumbra_tct::structure::Hash;
-    use penumbra_tct::StateCommitment;
+    use penumbra_sdk_num::Amount;
+    use penumbra_sdk_proof_params::GROTH16_PROOF_LENGTH_BYTES;
+    use penumbra_sdk_sct::Nullifier;
+    use penumbra_sdk_shielded_pool::Rseed;
+    use penumbra_sdk_shielded_pool::{output, spend, Note, NoteView, OutputPlan, SpendPlan};
+    use penumbra_sdk_tct::structure::Hash;
+    use penumbra_sdk_tct::StateCommitment;
     use rand_core::OsRng;
     use std::ops::Deref;
 
@@ -488,7 +488,7 @@ mod test {
     #[cfg(test)]
     fn dummy_proof_spend() -> spend::SpendProof {
         spend::SpendProof::try_from(
-            penumbra_proto::penumbra::core::component::shielded_pool::v1::ZkSpendProof {
+            penumbra_sdk_proto::penumbra::core::component::shielded_pool::v1::ZkSpendProof {
                 inner: vec![0u8; GROTH16_PROOF_LENGTH_BYTES],
             },
         )
@@ -498,7 +498,7 @@ mod test {
     #[cfg(test)]
     fn dummy_proof_output() -> output::OutputProof {
         output::OutputProof::try_from(
-            penumbra_proto::penumbra::core::component::shielded_pool::v1::ZkOutputProof {
+            penumbra_sdk_proto::penumbra::core::component::shielded_pool::v1::ZkOutputProof {
                 inner: vec![0u8; GROTH16_PROOF_LENGTH_BYTES],
             },
         )
@@ -508,7 +508,7 @@ mod test {
     #[cfg(test)]
     fn dummy_proof_swap() -> SwapProof {
         SwapProof::try_from(
-            penumbra_proto::penumbra::core::component::dex::v1::ZkSwapProof {
+            penumbra_sdk_proto::penumbra::core::component::dex::v1::ZkSwapProof {
                 inner: vec![0u8; GROTH16_PROOF_LENGTH_BYTES],
             },
         )
@@ -517,7 +517,7 @@ mod test {
 
     #[cfg(test)]
     fn dummy_spend() -> spend::Spend {
-        use penumbra_shielded_pool::EncryptedBackref;
+        use penumbra_sdk_shielded_pool::EncryptedBackref;
 
         spend::Spend {
             body: spend::Body {
@@ -535,13 +535,15 @@ mod test {
     fn dummy_output() -> output::Output {
         output::Output {
             body: output::Body {
-                note_payload: penumbra_shielded_pool::NotePayload {
-                    note_commitment: penumbra_shielded_pool::note::StateCommitment(Fq::default()),
+                note_payload: penumbra_sdk_shielded_pool::NotePayload {
+                    note_commitment: penumbra_sdk_shielded_pool::note::StateCommitment(
+                        Fq::default(),
+                    ),
                     ephemeral_key: [0u8; 32]
                         .as_slice()
                         .try_into()
                         .expect("can create dummy ephemeral key"),
-                    encrypted_note: penumbra_shielded_pool::NoteCiphertext([0u8; 176]),
+                    encrypted_note: penumbra_sdk_shielded_pool::NoteCiphertext([0u8; 176]),
                 },
                 balance_commitment: dummy_commitment(),
                 ovk_wrapped_key: OvkWrappedKey([0u8; 48]),
@@ -581,7 +583,7 @@ mod test {
 
     #[cfg(test)]
     fn dummy_swap() -> Swap {
-        use penumbra_dex::swap::Body;
+        use penumbra_sdk_dex::swap::Body;
 
         let seed_phrase = SeedPhrase::generate(OsRng);
         let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
@@ -662,7 +664,7 @@ mod test {
 
         match action {
             ActionPlan::Output(x) => Some(ActionView::Output(
-                penumbra_shielded_pool::OutputView::Visible {
+                penumbra_sdk_shielded_pool::OutputView::Visible {
                     output: dummy_output(),
                     note: convert_note(cache, fvk, &x.output_note()),
                     payload_key: PayloadKey::from([0u8; 32]),
@@ -768,7 +770,7 @@ mod test {
         };
 
         let transaction_view = TransactionView {
-            anchor: penumbra_tct::Root(Hash::zero()),
+            anchor: penumbra_sdk_tct::Root(Hash::zero()),
             binding_sig: Signature::from([0u8; 64]),
             body_view: TransactionBodyView {
                 action_views: plan
@@ -864,7 +866,7 @@ mod test {
         };
 
         let transaction_view = TransactionView {
-            anchor: penumbra_tct::Root(Hash::zero()),
+            anchor: penumbra_sdk_tct::Root(Hash::zero()),
             binding_sig: Signature::from([0u8; 64]),
             body_view: TransactionBodyView {
                 action_views: plan

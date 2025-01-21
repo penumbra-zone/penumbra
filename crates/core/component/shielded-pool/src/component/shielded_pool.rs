@@ -9,9 +9,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
-use penumbra_proto::StateReadProto as _;
-use penumbra_proto::StateWriteProto as _;
-use penumbra_sct::CommitmentSource;
+use penumbra_sdk_proto::StateReadProto as _;
+use penumbra_sdk_proto::StateWriteProto as _;
+use penumbra_sdk_sct::CommitmentSource;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 

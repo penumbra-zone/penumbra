@@ -14,20 +14,20 @@ dist = true
 
 [features]
 default = ["std", "parallel", "download-proving-keys"]
-download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 integration-testnet = []
-sct-divergence-check = ["penumbra-view/sct-divergence-check"]
+download-proving-keys = ["penumbra-sdk-proof-params/download-proving-keys"]
+sct-divergence-check = ["penumbra-sdk-view/sct-divergence-check"]
 std = ["ark-ff/std", "ibc-types/std"]
 parallel = [
-    "penumbra-proof-params/parallel",
+    "penumbra-sdk-proof-params/parallel",
     "decaf377/parallel",
-    "penumbra-shielded-pool/parallel",
-    "penumbra-auction/parallel",
-    "penumbra-dex/parallel",
-    "penumbra-governance/parallel",
-    "penumbra-stake/parallel",
-    "penumbra-transaction/parallel",
-    "penumbra-wallet/parallel",
+    "penumbra-sdk-shielded-pool/parallel",
+    "penumbra-sdk-auction/parallel",
+    "penumbra-sdk-dex/parallel",
+    "penumbra-sdk-governance/parallel",
+    "penumbra-sdk-stake/parallel",
+    "penumbra-sdk-transaction/parallel",
+    "penumbra-sdk-wallet/parallel",
 ]
 
 [dependencies]
@@ -61,27 +61,27 @@ indicatif = {workspace = true}
 jmt = {workspace = true}
 ndarray = "0.15.6"
 once_cell = {workspace = true}
-penumbra-app = {workspace = true, default-features = false}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-community-pool = {workspace = true, default-features = false}
-penumbra-compact-block = {workspace = true, default-features = false}
-penumbra-custody = {workspace = true}
-penumbra-auction = {workspace = true, default-features = false}
-penumbra-dex = {workspace = true, default-features = false}
-penumbra-fee = {workspace = true, default-features = false}
-penumbra-governance = {workspace = true, default-features = false}
-penumbra-ibc = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-proof-params = { workspace = true, default-features = true }
-penumbra-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-transaction = {workspace = true, default-features = true}
-penumbra-view = {workspace = true}
-penumbra-wallet = {workspace = true}
+penumbra-sdk-app = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-community-pool = {workspace = true, default-features = false}
+penumbra-sdk-compact-block = {workspace = true, default-features = false}
+penumbra-sdk-custody = {workspace = true}
+penumbra-sdk-auction = {workspace = true, default-features = false}
+penumbra-sdk-dex = {workspace = true, default-features = false}
+penumbra-sdk-fee = {workspace = true, default-features = false}
+penumbra-sdk-governance = {workspace = true, default-features = false}
+penumbra-sdk-ibc = {workspace = true, default-features = false}
+penumbra-sdk-keys = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proof-params = { workspace = true, default-features = true }
+penumbra-sdk-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
+penumbra-sdk-stake = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = true}
+penumbra-sdk-transaction = {workspace = true, default-features = true}
+penumbra-sdk-view = {workspace = true}
+penumbra-sdk-wallet = {workspace = true}
 pin-project = {workspace = true}
 rand = {workspace = true}
 rand_chacha = {workspace = true}
@@ -108,12 +108,12 @@ url = {workspace = true, features = ["serde"]}
 
 [dev-dependencies]
 assert_cmd = {workspace = true}
-penumbra-governance = {workspace = true, default-features = false}
+penumbra-sdk-governance = {workspace = true, default-features = false}
 predicates = "2.1"
 regex = {workspace = true}
 tempfile = {workspace = true}
 
-[dev-dependencies.penumbra-proof-params]
+[dev-dependencies.penumbra-sdk-proof-params]
 default-features = true
 workspace = true
 features = [

@@ -1,7 +1,7 @@
-use penumbra_governance::ValidatorVoteBody;
-use penumbra_proto::{custody::v1 as pb, DomainType};
-use penumbra_stake::validator::Validator;
-use penumbra_transaction::TransactionPlan;
+use penumbra_sdk_governance::ValidatorVoteBody;
+use penumbra_sdk_proto::{custody::v1 as pb, DomainType};
+use penumbra_sdk_stake::validator::Validator;
+use penumbra_sdk_transaction::TransactionPlan;
 
 use crate::PreAuthorization;
 

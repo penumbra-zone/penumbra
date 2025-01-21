@@ -12,7 +12,7 @@ use rand::{seq::SliceRandom, Rng};
 use serde_json::json;
 use tokio::{sync::watch, task::spawn_blocking};
 
-use penumbra_tct::{
+use penumbra_sdk_tct::{
     builder::{block, epoch},
     StateCommitment, Tree, Witness,
 };

@@ -2,9 +2,9 @@ use crate::auction::{id::AuctionId, AuctionNft};
 use anyhow::anyhow;
 use ark_ff::Zero;
 use decaf377_rdsa::Fr;
-use penumbra_asset::{balance, Balance, Value};
-use penumbra_proto::{core::component::auction::v1 as pb, DomainType};
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_asset::{balance, Balance, Value};
+use penumbra_sdk_proto::{core::component::auction::v1 as pb, DomainType};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

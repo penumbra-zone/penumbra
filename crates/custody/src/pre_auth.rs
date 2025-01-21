@@ -1,4 +1,4 @@
-use penumbra_proto::{custody::v1 as pb, DomainType};
+use penumbra_sdk_proto::{custody::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// A pre-authorization packet.  This allows a custodian to delegate (partial)

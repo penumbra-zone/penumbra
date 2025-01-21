@@ -8,8 +8,8 @@
 //! The outcome consists of the remaining reserves for each position, and the output for each swapper.
 use cnidarium::{Snapshot, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler, Component};
-use penumbra_asset::asset;
-use penumbra_dex::{
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_dex::{
     component::{Dex, PositionRead, StateReadExt},
     lp::{
         position::{self, Position},
@@ -19,10 +19,10 @@ use penumbra_dex::{
     BatchSwapOutputData, DirectedTradingPair, PositionClose, PositionOpen, PositionWithdraw, Swap,
     TradingPair,
 };
-use penumbra_keys::test_keys;
-use penumbra_num::Amount;
-use penumbra_proto::core::component::dex::v1::ZkSwapProof;
-use penumbra_sct::{
+use penumbra_sdk_keys::test_keys;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::core::component::dex::v1::ZkSwapProof;
+use penumbra_sdk_sct::{
     component::{clock::EpochManager, source::SourceContext},
     epoch::Epoch,
 };

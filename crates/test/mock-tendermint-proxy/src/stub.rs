@@ -1,5 +1,5 @@
 use {
-    penumbra_proto::util::tendermint_proxy::v1::{
+    penumbra_sdk_proto::util::tendermint_proxy::v1::{
         tendermint_proxy_service_server::TendermintProxyService, AbciQueryRequest,
         AbciQueryResponse, BroadcastTxAsyncRequest, BroadcastTxAsyncResponse,
         BroadcastTxSyncRequest, BroadcastTxSyncResponse, GetBlockByHeightRequest,

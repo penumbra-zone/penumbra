@@ -1,9 +1,9 @@
 use anyhow::Result;
 
-use penumbra_custody::{AuthorizeRequest, CustodyClient};
-use penumbra_keys::FullViewingKey;
-use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan};
-use penumbra_view::ViewClient;
+use penumbra_sdk_custody::{AuthorizeRequest, CustodyClient};
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_transaction::{AuthorizationData, Transaction, TransactionPlan};
+use penumbra_sdk_view::ViewClient;
 
 pub async fn build_transaction<V, C>(
     fvk: &FullViewingKey,

@@ -1,6 +1,10 @@
 [package]
-name = "penumbra-eddy"
+name = "penumbra-sdk-eddy"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "A research implementation of flow encryption for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]

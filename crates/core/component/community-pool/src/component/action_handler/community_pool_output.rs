@@ -2,8 +2,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
-use penumbra_sct::CommitmentSource;
-use penumbra_shielded_pool::component::NoteManager;
+use penumbra_sdk_sct::CommitmentSource;
+use penumbra_sdk_shielded_pool::component::NoteManager;
 
 use crate::CommunityPoolOutput;
 

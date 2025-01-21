@@ -1,8 +1,8 @@
 use crate::auction::{dutch::DutchAuctionDescription, nft::AuctionNft};
 use anyhow::anyhow;
-use penumbra_asset::{Balance, Value};
-use penumbra_proto::{core::component::auction::v1 as pb, DomainType};
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_asset::{Balance, Value};
+use penumbra_sdk_proto::{core::component::auction::v1 as pb, DomainType};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 /// The maximum amount of input/output in a Dutch auction description.

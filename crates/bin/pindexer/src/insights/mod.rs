@@ -2,21 +2,21 @@ use ethnum::I256;
 use std::{collections::BTreeMap, iter};
 
 use cometindex::{async_trait, index::EventBatch, AppView, ContextualizedEvent, PgTransaction};
-use penumbra_app::genesis::Content;
-use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
-use penumbra_dex::{
+use penumbra_sdk_app::genesis::Content;
+use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_dex::{
     event::{EventArbExecution, EventCandlestickData},
     DirectedTradingPair,
 };
-use penumbra_fee::event::EventBlockFees;
-use penumbra_funding::event::EventFundingStreamReward;
-use penumbra_num::Amount;
-use penumbra_proto::event::EventDomainType;
-use penumbra_shielded_pool::event::{
+use penumbra_sdk_fee::event::EventBlockFees;
+use penumbra_sdk_funding::event::EventFundingStreamReward;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::event::EventDomainType;
+use penumbra_sdk_shielded_pool::event::{
     EventInboundFungibleTokenTransfer, EventOutboundFungibleTokenRefund,
     EventOutboundFungibleTokenTransfer,
 };
-use penumbra_stake::{
+use penumbra_sdk_stake::{
     event::{EventDelegate, EventRateDataChange, EventUndelegate},
     validator::Validator,
     IdentityKey,

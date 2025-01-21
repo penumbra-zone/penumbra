@@ -1,12 +1,15 @@
 [package]
-name = "penumbra-proof-setup"
+name = "penumbra-sdk-proof-setup"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Decentralized setup for Groth16"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [[bench]]
 name = "all"
 harness = false
-
 
 [features]
 default = []
@@ -16,7 +19,7 @@ parallel = [
     "ark-groth16/parallel",
     "decaf377/parallel",
     "rayon",
-    "penumbra-shielded-pool/parallel",
+    "penumbra-sdk-shielded-pool/parallel",
 ]
 
 [dependencies]
@@ -29,12 +32,12 @@ ark-relations = {workspace = true}
 ark-serialize = {workspace = true}
 blake2b_simd = {workspace = true}
 decaf377 = {workspace = true, default-features = false}
-penumbra-dex = {workspace = true, default-features = true}
-penumbra-governance = {workspace = true, default-features = true}
-penumbra-proof-params = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, default-features = true}
-penumbra-stake = {workspace = true, features = ["component"], default-features = true}
+penumbra-sdk-dex = {workspace = true, default-features = true}
+penumbra-sdk-governance = {workspace = true, default-features = true}
+penumbra-sdk-proof-params = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = true}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = true}
+penumbra-sdk-stake = {workspace = true, features = ["component"], default-features = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 rayon = { version = "1.8.0", optional = true }
 
@@ -42,6 +45,6 @@ rayon = { version = "1.8.0", optional = true }
 ark-r1cs-std = {workspace = true}
 ark-snark = {workspace = true}
 criterion = {workspace = true, features = ["html_reports"]}
-penumbra-dex = {workspace = true, default-features = true}
-penumbra-proof-params = {workspace = true, default-features = true}
+penumbra-sdk-dex = {workspace = true, default-features = true}
+penumbra-sdk-proof-params = {workspace = true, default-features = true}
 rand_chacha = {workspace = true}

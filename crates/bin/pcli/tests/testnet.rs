@@ -10,7 +10,7 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use tempfile::{tempdir, TempDir};
 
-use penumbra_keys::test_keys::SEED_PHRASE;
+use penumbra_sdk_keys::test_keys::SEED_PHRASE;
 
 /// The URL for the public testnet pd endpoint.
 const NODE_URL: &str = "https://testnet.plinfra.net";

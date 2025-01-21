@@ -1,16 +1,16 @@
-use penumbra_auction::auction::dutch::actions::{
+use penumbra_sdk_auction::auction::dutch::actions::{
     ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
 };
-use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_dex::{PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim};
-use penumbra_fee::Gas;
-use penumbra_ibc::IbcRelay;
-use penumbra_shielded_pool::{Ics20Withdrawal, Output, Spend};
-use penumbra_stake::{
+use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_dex::{PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim};
+use penumbra_sdk_fee::Gas;
+use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Output, Spend};
+use penumbra_sdk_stake::{
     validator::Definition as ValidatorDefinition, Delegate, Undelegate, UndelegateClaim,
 };
 
-use penumbra_governance::{
+use penumbra_sdk_governance::{
     DelegatorVote, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
 
@@ -19,7 +19,7 @@ use crate::{
     Action, Transaction,
 };
 
-use penumbra_proto::DomainType;
+use penumbra_sdk_proto::DomainType;
 
 const NULLIFIER_SIZE: u64 = 2 + 32;
 const NOTEPAYLOAD_SIZE: u64 = 32 + 32 + 176;

@@ -23,7 +23,7 @@ pub mod sleep_worker;
 /// functions in our dependencies.
 pub fn register_metrics() {
     // This will register metrics for all components.
-    penumbra_app::register_metrics();
+    penumbra_sdk_app::register_metrics();
     self::sleep_worker::register_metrics();
     self::cpu_worker::register_metrics();
 }

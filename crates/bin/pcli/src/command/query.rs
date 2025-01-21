@@ -141,7 +141,7 @@ impl QueryCmd {
 
         // TODO: this is a hack; we should replace all raw state key uses with RPC methods.
         if let QueryCmd::ShieldedPool(ShieldedPool::CompactBlock { height }) = self {
-            use penumbra_proto::core::component::compact_block::v1::{
+            use penumbra_sdk_proto::core::component::compact_block::v1::{
                 query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
                 CompactBlockRequest,
             };

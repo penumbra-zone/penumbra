@@ -6,7 +6,7 @@ use {
         snapshot::Snapshot,
     },
     cnidarium::Storage,
-    penumbra_tower_trace::trace::request_span,
+    penumbra_sdk_tower_trace::trace::request_span,
     tendermint::v0_37::abci::{
         ConsensusRequest, ConsensusResponse, MempoolRequest, MempoolResponse,
     },
@@ -46,14 +46,14 @@ pub fn new(
 > {
     let consensus = tower::ServiceBuilder::new()
         .layer(request_span::layer(|req: &ConsensusRequest| {
-            use penumbra_tower_trace::v037::RequestExt;
+            use penumbra_sdk_tower_trace::v037::RequestExt;
             req.create_span()
         }))
         .layer(EventIndexLayer::index_all())
         .service(Consensus::new(storage.clone()));
     let mempool = tower::ServiceBuilder::new()
         .layer(request_span::layer(|req: &MempoolRequest| {
-            use penumbra_tower_trace::v037::RequestExt;
+            use penumbra_sdk_tower_trace::v037::RequestExt;
             req.create_span()
         }))
         .service(tower_actor::Actor::new(10, |queue: _| {

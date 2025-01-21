@@ -5,9 +5,9 @@ use chacha20poly1305::{
     ChaCha20Poly1305, Key, Nonce,
 };
 use decaf377_ka as ka;
-use penumbra_asset::balance;
-use penumbra_proto::core::keys::v1::{self as pb};
-use penumbra_tct::StateCommitment;
+use penumbra_sdk_asset::balance;
+use penumbra_sdk_proto::core::keys::v1::{self as pb};
+use penumbra_sdk_tct::StateCommitment;
 use rand::{CryptoRng, RngCore};
 
 pub const PAYLOAD_KEY_LEN_BYTES: usize = 32;

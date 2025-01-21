@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-view"
+name = "penumbra-sdk-view"
 version = {workspace = true}
 authors = {workspace = true}
 edition = {workspace = true}
@@ -7,7 +7,7 @@ description = "The view RPC library for the Penumbra Zone"
 repository = {workspace = true}
 homepage = {workspace = true}
 license = {workspace = true}
-publish = false
+publish = true
 
 [features]
 default = ["std"]
@@ -34,25 +34,25 @@ ibc-types = {workspace = true, default-features = false}
 metrics = {workspace = true}
 once_cell = {workspace = true}
 parking_lot = {workspace = true}
-penumbra-app = {workspace = true, default-features = false}
-penumbra-asset = {workspace = true, default-features = true}
-penumbra-community-pool = {workspace = true, default-features = false}
-penumbra-compact-block = {workspace = true, default-features = false}
-penumbra-dex = {workspace = true, default-features = false}
-penumbra-distributions = {workspace = true, default-features = false}
-penumbra-fee = {workspace = true, default-features = false}
-penumbra-funding = {workspace = true, default-features = false}
-penumbra-governance = {workspace = true, default-features = false}
-penumbra-ibc = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-num = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-transaction = {workspace = true, default-features = true}
-penumbra-auction = {workspace = true, default-features = false}
+penumbra-sdk-app = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = true}
+penumbra-sdk-community-pool = {workspace = true, default-features = false}
+penumbra-sdk-compact-block = {workspace = true, default-features = false}
+penumbra-sdk-dex = {workspace = true, default-features = false}
+penumbra-sdk-distributions = {workspace = true, default-features = false}
+penumbra-sdk-fee = {workspace = true, default-features = false}
+penumbra-sdk-funding = {workspace = true, default-features = false}
+penumbra-sdk-governance = {workspace = true, default-features = false}
+penumbra-sdk-ibc = {workspace = true, default-features = false}
+penumbra-sdk-keys = {workspace = true, default-features = true}
+penumbra-sdk-num = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, features = ["rpc"], default-features = true}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
+penumbra-sdk-stake = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = true}
+penumbra-sdk-transaction = {workspace = true, default-features = true}
+penumbra-sdk-auction = {workspace = true, default-features = false}
 prost = {workspace = true}
 r2d2 = {workspace = true}
 r2d2_sqlite = {workspace = true, features = ["bundled"]}

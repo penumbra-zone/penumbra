@@ -14,17 +14,17 @@ use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
-use penumbra_keys::{keys::Diversifier, Address};
-use penumbra_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
-use penumbra_tct::r1cs::StateCommitmentVar;
+use penumbra_sdk_keys::{keys::Diversifier, Address};
+use penumbra_sdk_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
+use penumbra_sdk_tct::r1cs::StateCommitmentVar;
 
 use crate::{note, Note, Rseed};
-use penumbra_asset::{
+use penumbra_sdk_asset::{
     balance,
     balance::{commitment::BalanceCommitmentVar, BalanceVar},
     Value,
 };
-use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_sdk_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
 /// The public input for an [`OutputProof`].
 #[derive(Clone, Debug)]
@@ -46,7 +46,7 @@ pub struct OutputProofPrivate {
 
 #[cfg(test)]
 fn check_satisfaction(public: &OutputProofPublic, private: &OutputProofPrivate) -> Result<()> {
-    use penumbra_asset::Balance;
+    use penumbra_sdk_asset::Balance;
 
     if private.note.diversified_generator() == decaf377::Element::default() {
         anyhow::bail!("diversified generator is identity");
@@ -264,9 +264,9 @@ impl TryFrom<pb::ZkOutputProof> for OutputProof {
 mod tests {
     use super::*;
     use decaf377::{Fq, Fr};
-    use penumbra_asset::{asset, Balance, Value};
-    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-    use penumbra_num::Amount;
+    use penumbra_sdk_asset::{asset, Balance, Value};
+    use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use penumbra_sdk_num::Amount;
     use proptest::prelude::*;
 
     use crate::{note, Note};

@@ -1,4 +1,4 @@
-use penumbra_asset::asset;
+use penumbra_sdk_asset::asset;
 
 pub fn community_pool_params() -> &'static str {
     "community_pool/params"

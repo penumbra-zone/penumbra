@@ -4,8 +4,8 @@ use anyhow::Ok;
 use async_trait::async_trait;
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use futures::StreamExt;
-use penumbra_asset::{asset, Value};
-use penumbra_num::Amount;
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_num::Amount;
 use rand_core::OsRng;
 
 use crate::component::{SwapDataRead, SwapDataWrite};
@@ -30,13 +30,13 @@ pub trait TempStorageExt: Sized {
 #[async_trait]
 impl TempStorageExt for TempStorage {
     async fn apply_minimal_genesis(self) -> anyhow::Result<Self> {
-        use penumbra_sct::component::clock::EpochManager as _;
+        use penumbra_sdk_sct::component::clock::EpochManager as _;
         let mut state = StateDelta::new(self.latest_snapshot());
 
         state.put_block_height(0);
         state.put_epoch_by_height(
             0,
-            penumbra_sct::epoch::Epoch {
+            penumbra_sdk_sct::epoch::Epoch {
                 index: 0,
                 start_height: 0,
             },
@@ -679,7 +679,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     tracing::info!(gm_id = ?gm.id());
     tracing::info!(gn_id = ?gn.id());
     tracing::info!(pusd_id = ?pusd.id());
-    tracing::info!(penumbra_id = ?penumbra.id());
+    tracing::info!(penumbra_sdk_id = ?penumbra.id());
 
     // Working backwards through the graph:
 
@@ -809,7 +809,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
 
     tracing::info!(gm_id = ?gm.id());
     tracing::info!(gn_id = ?gn.id());
-    tracing::info!(penumbra_id = ?penumbra.id());
+    tracing::info!(penumbra_sdk_id = ?penumbra.id());
 
     // Sell 10 gn at 1 penumbra each.
     state_tx
@@ -886,10 +886,10 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
         .get_unit("test_usd")
         .unwrap();
 
-    tracing::info!(penumbra_id= ?penumbra.id());
+    tracing::info!(penumbra_sdk_id= ?penumbra.id());
     tracing::info!(test_usd_id = ?test_usd.id());
 
-    let penumbra_usd = DirectedUnitPair::new(penumbra.clone(), test_usd.clone());
+    let penumbra_sdk_usd = DirectedUnitPair::new(penumbra.clone(), test_usd.clone());
 
     /*
      * INITIAL STATE:
@@ -921,13 +921,13 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
      *
      */
 
-    let mut buy_1 = create_buy(penumbra_usd.clone(), 1u64.into(), 110u64.into());
+    let mut buy_1 = create_buy(penumbra_sdk_usd.clone(), 1u64.into(), 110u64.into());
     buy_1.nonce = [1; 32];
 
-    let mut buy_2 = create_buy(penumbra_usd.clone(), 1u64.into(), 100u64.into());
+    let mut buy_2 = create_buy(penumbra_sdk_usd.clone(), 1u64.into(), 100u64.into());
     buy_2.nonce = [2; 32];
 
-    let mut sell_1 = create_sell(penumbra_usd.clone(), 10u64.into(), 100u64.into());
+    let mut sell_1 = create_sell(penumbra_sdk_usd.clone(), 10u64.into(), 100u64.into());
     sell_1.nonce = [0; 32];
 
     state_tx.open_position(buy_1).await.unwrap();
@@ -1028,7 +1028,7 @@ async fn check_routable_asset_ordering() -> anyhow::Result<()> {
     let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
     let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
 
-    let penumbra_usd = DirectedTradingPair::new(penumbra.id(), test_usd.id());
+    let penumbra_sdk_usd = DirectedTradingPair::new(penumbra.id(), test_usd.id());
 
     let reserves_1 = Reserves {
         // 0 penumbra
@@ -1039,7 +1039,7 @@ async fn check_routable_asset_ordering() -> anyhow::Result<()> {
 
     let position_1 = Position::new(
         OsRng,
-        penumbra_usd,
+        penumbra_sdk_usd,
         0u32,
         1_200_000u64.into(),
         1_000_000u64.into(),
@@ -1048,7 +1048,7 @@ async fn check_routable_asset_ordering() -> anyhow::Result<()> {
 
     state_tx.open_position(position_1).await.unwrap();
 
-    let penumbra_gn = DirectedTradingPair::new(penumbra.id(), gn.id());
+    let penumbra_sdk_gn = DirectedTradingPair::new(penumbra.id(), gn.id());
 
     let reserves_2 = Reserves {
         // 130,000 penumbra
@@ -1059,7 +1059,7 @@ async fn check_routable_asset_ordering() -> anyhow::Result<()> {
 
     let position_2 = Position::new(
         OsRng,
-        penumbra_gn,
+        penumbra_sdk_gn,
         0u32,
         1_200_000u64.into(),
         1_000_000u64.into(),
@@ -1068,7 +1068,7 @@ async fn check_routable_asset_ordering() -> anyhow::Result<()> {
 
     state_tx.open_position(position_2).await.unwrap();
 
-    let penumbra_btc = DirectedTradingPair::new(penumbra.id(), test_btc.id());
+    let penumbra_sdk_btc = DirectedTradingPair::new(penumbra.id(), test_btc.id());
 
     let reserves_3 = Reserves {
         // 100,000 penumbra
@@ -1079,7 +1079,7 @@ async fn check_routable_asset_ordering() -> anyhow::Result<()> {
 
     let position_3 = Position::new(
         OsRng,
-        penumbra_btc,
+        penumbra_sdk_btc,
         0u32,
         1_200_000u64.into(),
         1_000_000u64.into(),

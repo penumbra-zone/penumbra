@@ -1,6 +1,6 @@
 // use proptest::{arbitrary::*, prelude::*};
 
-// use penumbra_tct::Commitment;
+// use penumbra_sdk_tct::Commitment;
 
 // mod simulate;
 // use simulate::{Params, Simulate};

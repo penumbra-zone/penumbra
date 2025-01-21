@@ -1,10 +1,10 @@
 use decaf377::Fq;
-use penumbra_asset::{Balance, Value};
-use penumbra_keys::{keys::IncomingViewingKey, FullViewingKey};
-use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
-use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
-use penumbra_sct::Nullifier;
-use penumbra_tct as tct;
+use penumbra_sdk_asset::{Balance, Value};
+use penumbra_sdk_keys::{keys::IncomingViewingKey, FullViewingKey};
+use penumbra_sdk_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
+use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_tct as tct;
 
 use serde::{Deserialize, Serialize};
 use tct::Position;

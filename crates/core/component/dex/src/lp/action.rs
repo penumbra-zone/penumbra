@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use penumbra_asset::{balance, Balance, Value};
-use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_asset::{balance, Balance, Value};
+use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 
 use super::{position, position::Position, LpNft};
 

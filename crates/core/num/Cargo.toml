@@ -1,6 +1,10 @@
 [package]
-name = "penumbra-num"
+name = "penumbra-sdk-num"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Numerical data structures and implementations used by Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
@@ -29,7 +33,7 @@ hex = {workspace = true}
 ibig = {workspace = true}
 num-bigint = {workspace = true}
 once_cell = {workspace = true}
-penumbra-proto = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = true}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 regex = {workspace = true}

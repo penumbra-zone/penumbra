@@ -2,13 +2,13 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
-use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
-use penumbra_proto::{DomainType, StateWriteProto as _};
-use penumbra_sct::component::{
+use penumbra_sdk_proof_params::SPEND_PROOF_VERIFICATION_KEY;
+use penumbra_sdk_proto::{DomainType, StateWriteProto as _};
+use penumbra_sdk_sct::component::{
     source::SourceContext,
     tree::{SctManager, VerificationExt},
 };
-use penumbra_txhash::TransactionContext;
+use penumbra_sdk_txhash::TransactionContext;
 
 use crate::{event, Spend, SpendProofPublic};
 

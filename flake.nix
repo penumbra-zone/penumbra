@@ -13,7 +13,6 @@
     };
     crane = {
       url = "github:ipetkov/crane";
-      inputs = { nixpkgs.follows = "nixpkgs"; };
     };
   };
 
@@ -152,6 +151,7 @@
             inputsFrom = [ penumbra ];
             packages = [
               buf
+              cargo-hack
               cargo-nextest
               cargo-release
               cargo-watch
@@ -173,6 +173,7 @@
               rocksdb
               rsync
               sqlfluff
+              toml-cli
             ];
             shellHook = ''
               export LIBCLANG_PATH=${LIBCLANG_PATH}

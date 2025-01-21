@@ -3,16 +3,16 @@
 //! stored in the `pmonitor` config file, so that audit actions can reference it.
 use std::{collections::BTreeMap, str::FromStr};
 
-use penumbra_asset::STAKING_TOKEN_ASSET_ID;
-use penumbra_compact_block::{CompactBlock, StatePayload};
-use penumbra_keys::FullViewingKey;
-use penumbra_num::Amount;
-use penumbra_shielded_pool::{Note, NotePayload};
-use penumbra_stake::{
+use penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID;
+use penumbra_sdk_compact_block::{CompactBlock, StatePayload};
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_shielded_pool::{Note, NotePayload};
+use penumbra_sdk_stake::{
     rate::{BaseRateData, RateData},
     DelegationToken,
 };
-use penumbra_tct::StateCommitment;
+use penumbra_sdk_tct::StateCommitment;
 
 #[derive(Debug, Clone)]
 pub struct FilteredGenesisBlock {

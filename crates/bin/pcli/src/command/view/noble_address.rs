@@ -1,7 +1,7 @@
 use anyhow::Result;
 use rand_core::OsRng;
 
-use penumbra_keys::{Address, FullViewingKey};
+use penumbra_sdk_keys::{Address, FullViewingKey};
 
 #[derive(Debug, clap::Parser)]
 pub struct NobleAddressCmd {

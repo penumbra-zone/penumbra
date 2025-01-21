@@ -3,21 +3,21 @@ use crate::App;
 use clap::Subcommand;
 use comfy_table::{presets, Table};
 use comfy_table::{Cell, ContentArrangement};
-use penumbra_asset::asset::Cache;
-use penumbra_asset::Value;
-use penumbra_auction::auction::dutch::DutchAuction;
-use penumbra_auction::auction::AuctionId;
-use penumbra_dex::lp::position::{self, Position};
-use penumbra_num::fixpoint::U128x128;
-use penumbra_num::Amount;
-use penumbra_proto::core::component::auction::v1 as pb_auction;
-use penumbra_proto::core::component::auction::v1::query_service_client::QueryServiceClient as AuctionQueryServiceClient;
-use penumbra_proto::core::component::auction::v1::AuctionStateByIdRequest;
-use penumbra_proto::core::component::dex::v1::query_service_client::QueryServiceClient as DexQueryServiceClient;
-use penumbra_proto::core::component::dex::v1::LiquidityPositionByIdRequest;
-use penumbra_proto::DomainType;
-use penumbra_proto::Name;
-use penumbra_view::ViewClient;
+use penumbra_sdk_asset::asset::Cache;
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_auction::auction::dutch::DutchAuction;
+use penumbra_sdk_auction::auction::AuctionId;
+use penumbra_sdk_dex::lp::position::{self, Position};
+use penumbra_sdk_num::fixpoint::U128x128;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::core::component::auction::v1 as pb_auction;
+use penumbra_sdk_proto::core::component::auction::v1::query_service_client::QueryServiceClient as AuctionQueryServiceClient;
+use penumbra_sdk_proto::core::component::auction::v1::AuctionStateByIdRequest;
+use penumbra_sdk_proto::core::component::dex::v1::query_service_client::QueryServiceClient as DexQueryServiceClient;
+use penumbra_sdk_proto::core::component::dex::v1::LiquidityPositionByIdRequest;
+use penumbra_sdk_proto::DomainType;
+use penumbra_sdk_proto::Name;
+use penumbra_sdk_view::ViewClient;
 
 #[derive(Debug, Subcommand)]
 pub enum AuctionCmd {

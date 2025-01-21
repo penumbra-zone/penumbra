@@ -1,12 +1,12 @@
 use crate::dex_utils::replicate::math_utils;
 use anyhow::Context;
 use ndarray::Array;
-use penumbra_asset::Value;
-use penumbra_dex::{
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_dex::{
     lp::{position::Position, Reserves},
     DirectedUnitPair,
 };
-use penumbra_num::{fixpoint::U128x128, Amount};
+use penumbra_sdk_num::{fixpoint::U128x128, Amount};
 use rand_core::OsRng;
 use tracing::field;
 

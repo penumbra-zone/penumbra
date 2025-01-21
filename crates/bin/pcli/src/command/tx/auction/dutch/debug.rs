@@ -1,4 +1,4 @@
-use penumbra_auction::auction::dutch::DutchAuctionDescription;
+use penumbra_sdk_auction::auction::dutch::DutchAuctionDescription;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]

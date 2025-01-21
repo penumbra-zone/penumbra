@@ -23,12 +23,12 @@ use {
             },
         },
     },
-    penumbra_auction::component::rpc::Server as AuctionServer,
-    penumbra_compact_block::component::rpc::Server as CompactBlockServer,
-    penumbra_dex::component::rpc::Server as DexServer,
-    penumbra_fee::component::rpc::Server as FeeServer,
-    penumbra_governance::component::rpc::Server as GovernanceServer,
-    penumbra_proto::{
+    penumbra_sdk_auction::component::rpc::Server as AuctionServer,
+    penumbra_sdk_compact_block::component::rpc::Server as CompactBlockServer,
+    penumbra_sdk_dex::component::rpc::Server as DexServer,
+    penumbra_sdk_fee::component::rpc::Server as FeeServer,
+    penumbra_sdk_governance::component::rpc::Server as GovernanceServer,
+    penumbra_sdk_proto::{
         core::{
             app::v1::query_service_server::QueryServiceServer as AppQueryServiceServer,
             component::{
@@ -49,9 +49,9 @@ use {
             TendermintProxyService, TendermintProxyServiceServer,
         },
     },
-    penumbra_sct::component::rpc::Server as SctServer,
-    penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer,
-    penumbra_stake::component::rpc::Server as StakeServer,
+    penumbra_sdk_sct::component::rpc::Server as SctServer,
+    penumbra_sdk_shielded_pool::component::rpc::Server as ShieldedPoolServer,
+    penumbra_sdk_stake::component::rpc::Server as StakeServer,
     tonic::service::Routes,
     tonic_web::enable as we,
 };
@@ -61,7 +61,7 @@ pub fn routes(
     tm_proxy: impl TendermintProxyService,
     _enable_expensive_rpc: bool,
 ) -> anyhow::Result<tonic::service::Routes> {
-    let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
+    let ibc = penumbra_sdk_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
 
     let mut builder = Routes::builder();
     builder
@@ -117,7 +117,7 @@ pub fn routes(
             storage.clone(),
         ))))
         .add_service(we(tonic_reflection::server::Builder::configure()
-            .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
+            .register_encoded_file_descriptor_set(penumbra_sdk_proto::FILE_DESCRIPTOR_SET)
             .build_v1()
             .with_context(|| "could not configure grpc reflection service")?));
     Ok(builder.routes().prepare())

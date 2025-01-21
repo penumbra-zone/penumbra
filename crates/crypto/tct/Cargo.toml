@@ -1,6 +1,10 @@
 [package]
-name = "penumbra-tct"
+name = "penumbra-sdk-tct"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "The tiered commitment tree for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
@@ -26,7 +30,7 @@ hex = {workspace = true}
 im = {workspace = true, features = ["serde"]}
 once_cell = {workspace = true}
 parking_lot = {workspace = true}
-penumbra-proto = {workspace = true, default-features = true}
+penumbra-sdk-proto = {workspace = true, default-features = true}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 proptest = {workspace = true, optional = true}
 proptest-derive = {workspace = true, optional = true}

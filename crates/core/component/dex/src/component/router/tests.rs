@@ -3,8 +3,8 @@ use cnidarium::TempStorage;
 use cnidarium::{StateDelta, StateWrite};
 use core::panic;
 use futures::StreamExt;
-use penumbra_asset::{asset, Value};
-use penumbra_num::{fixpoint::U128x128, Amount};
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_num::{fixpoint::U128x128, Amount};
 use rand_core::OsRng;
 use std::sync::Arc;
 

@@ -3,9 +3,9 @@ use anyhow::{Context as _, Result};
 
 use cnidarium::{StateRead, StateWrite};
 use futures::{StreamExt, TryStreamExt as _};
-use penumbra_num::fixpoint::U128x128;
-use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
-use penumbra_sct::component::clock::EpochRead as _;
+use penumbra_sdk_num::fixpoint::U128x128;
+use penumbra_sdk_proto::{DomainType, StateReadProto, StateWriteProto};
+use penumbra_sdk_sct::component::clock::EpochRead as _;
 use tonic::async_trait;
 
 use crate::event::EventCandlestickData;
@@ -272,8 +272,8 @@ mod tests {
 
     use cnidarium::{ArcStateDeltaExt as _, StateDelta, TempStorage};
     use cnidarium_component::Component as _;
-    use penumbra_asset::asset;
-    use penumbra_sct::{component::clock::EpochManager as _, epoch::Epoch};
+    use penumbra_sdk_asset::asset;
+    use penumbra_sdk_sct::{component::clock::EpochManager as _, epoch::Epoch};
     use tendermint::abci;
 
     use crate::{
@@ -298,7 +298,7 @@ mod tests {
         state_tx.put_block_height(0);
         state_tx.put_epoch_by_height(
             0,
-            penumbra_sct::epoch::Epoch {
+            penumbra_sdk_sct::epoch::Epoch {
                 index: 0,
                 start_height: 0,
             },

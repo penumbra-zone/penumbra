@@ -2,12 +2,12 @@ use anyhow::Context;
 
 use crate::{vote::Vote, DelegatorVoteProof};
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
-use penumbra_asset::Value;
-use penumbra_num::Amount;
-use penumbra_proto::{core::component::governance::v1 as pb, DomainType};
-use penumbra_sct::Nullifier;
-use penumbra_tct as tct;
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{core::component::governance::v1 as pb, DomainType};
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_tct as tct;
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 
 #[derive(Debug, Clone, Copy)]
 pub struct DelegatorVote {

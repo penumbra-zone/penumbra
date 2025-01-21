@@ -5,22 +5,22 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use penumbra_sct::epoch::Epoch;
+use penumbra_sdk_sct::epoch::Epoch;
 use rand::{CryptoRng, RngCore};
 use rand_core::OsRng;
 use tracing::instrument;
 
 use crate::{SpendableNoteRecord, ViewClient};
 use anyhow::anyhow;
-use penumbra_asset::{asset, Value};
-use penumbra_auction::auction::dutch::DutchAuctionDescription;
-use penumbra_auction::auction::dutch::{actions::ActionDutchAuctionWithdrawPlan, DutchAuction};
-use penumbra_auction::auction::{
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_auction::auction::dutch::DutchAuctionDescription;
+use penumbra_sdk_auction::auction::dutch::{actions::ActionDutchAuctionWithdrawPlan, DutchAuction};
+use penumbra_sdk_auction::auction::{
     dutch::actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule},
     AuctionId,
 };
-use penumbra_community_pool::CommunityPoolDeposit;
-use penumbra_dex::{
+use penumbra_sdk_community_pool::CommunityPoolDeposit;
+use penumbra_sdk_dex::{
     lp::action::{PositionClose, PositionOpen},
     lp::plan::PositionWithdrawPlan,
     lp::position::{self, Position},
@@ -30,19 +30,19 @@ use penumbra_dex::{
     swap_claim::SwapClaimPlan,
     TradingPair,
 };
-use penumbra_fee::{Fee, FeeTier, GasPrices};
-use penumbra_governance::{
+use penumbra_sdk_fee::{Fee, FeeTier, GasPrices};
+use penumbra_sdk_governance::{
     proposal_state, DelegatorVotePlan, Proposal, ProposalDepositClaim, ProposalSubmit,
     ProposalWithdraw, ValidatorVote, Vote,
 };
-use penumbra_ibc::IbcRelay;
-use penumbra_keys::{keys::AddressIndex, Address};
-use penumbra_num::Amount;
-use penumbra_proto::view::v1::{NotesForVotingRequest, NotesRequest};
-use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
-use penumbra_stake::{rate::RateData, validator, IdentityKey, UndelegateClaimPlan};
-use penumbra_tct as tct;
-use penumbra_transaction::{
+use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_keys::{keys::AddressIndex, Address};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::view::v1::{NotesForVotingRequest, NotesRequest};
+use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
+use penumbra_sdk_stake::{rate::RateData, validator, IdentityKey, UndelegateClaimPlan};
+use penumbra_sdk_tct as tct;
+use penumbra_sdk_transaction::{
     memo::MemoPlaintext,
     plan::{ActionPlan, MemoPlan, TransactionPlan},
     ActionList, TransactionParameters,

@@ -1,23 +1,27 @@
 [package]
-name = "penumbra-governance"
+name = "penumbra-sdk-governance"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Governance component implementation for Penumbra"
 version = {workspace = true}
+license = {workspace = true}
 edition = {workspace = true}
 
 [features]
 component = [
     "cnidarium-component",
     "cnidarium",
-    "penumbra-proto/cnidarium",
-    "penumbra-sct/component",
-    "penumbra-stake/component",
+    "penumbra-sdk-proto/cnidarium",
+    "penumbra-sdk-sct/component",
+    "penumbra-sdk-stake/component",
     "tokio",
     "tonic",
 ]
-# proving-keys = ["penumbra-proof-params/proving-keys"]
+# proving-keys = ["penumbra-sdk-proof-params/proving-keys"]
 default = ["std", "component"]
 std = ["ark-ff/std", "ibc-types/std"]
 parallel = [
-    "penumbra-tct/parallel",
+    "penumbra-sdk-tct/parallel",
     "ark-ff/parallel",
     "decaf377-rdsa/parallel",
     "ark-groth16/parallel",
@@ -49,18 +53,18 @@ im = {workspace = true}
 metrics = {workspace = true}
 once_cell = {workspace = true}
 pbjson-types = {workspace = true}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-distributions = {workspace = true, default-features = false}
-penumbra-ibc = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-proof-params = {workspace = true, default-features = false}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-txhash = {workspace = true, default-features = false}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-distributions = {workspace = true, default-features = false}
+penumbra-sdk-ibc = {workspace = true, default-features = false}
+penumbra-sdk-keys = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proof-params = {workspace = true, default-features = false}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
+penumbra-sdk-stake = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = true}
+penumbra-sdk-txhash = {workspace = true, default-features = false}
 rand = {workspace = true}
 rand_chacha = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}

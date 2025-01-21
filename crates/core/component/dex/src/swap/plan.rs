@@ -2,9 +2,9 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::Zero;
 
 use decaf377::{Fq, Fr};
-use penumbra_asset::{balance, Balance, Value};
-use penumbra_keys::FullViewingKey;
-use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_asset::{balance, Balance, Value};
+use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -57,7 +57,7 @@ impl SwapPlan {
 
     /// Construct the [`SwapProof`] required by the [`swap::Body`] described by this [`SwapPlan`].
     pub fn swap_proof(&self) -> SwapProof {
-        use penumbra_proof_params::SWAP_PROOF_PROVING_KEY;
+        use penumbra_sdk_proof_params::SWAP_PROOF_PROVING_KEY;
 
         let balance_commitment =
             self.transparent_balance().commit(Fr::zero()) + self.fee_commitment();

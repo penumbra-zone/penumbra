@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{core::component::dex::v1 as pb, DomainType};
+use penumbra_sdk_proto::{core::component::dex::v1 as pb, DomainType};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "pb::CandlestickData", into = "pb::CandlestickData")]

@@ -1,10 +1,10 @@
 use anyhow::{ensure, Result};
 use cnidarium::StateRead;
-use penumbra_sct::component::clock::EpochRead;
-use penumbra_sct::component::tree::VerificationExt;
-use penumbra_shielded_pool::component::StateReadExt as _;
-use penumbra_shielded_pool::fmd;
-use penumbra_transaction::{Transaction, TransactionParameters};
+use penumbra_sdk_sct::component::clock::EpochRead;
+use penumbra_sdk_sct::component::tree::VerificationExt;
+use penumbra_sdk_shielded_pool::component::StateReadExt as _;
+use penumbra_sdk_shielded_pool::fmd;
+use penumbra_sdk_transaction::{Transaction, TransactionParameters};
 
 use crate::app::StateReadExt;
 

@@ -2,18 +2,18 @@ use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::Fq;
-use penumbra_asset::asset;
-use penumbra_dex::{
+use penumbra_sdk_asset::asset;
+use penumbra_sdk_dex::{
     swap::SwapPlaintext,
     swap_claim::{SwapClaimCircuit, SwapClaimProof, SwapClaimProofPrivate, SwapClaimProofPublic},
     BatchSwapOutputData, TradingPair,
 };
-use penumbra_fee::Fee;
-use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-use penumbra_num::Amount;
-use penumbra_proof_params::{DummyWitness, SWAPCLAIM_PROOF_PROVING_KEY};
-use penumbra_sct::Nullifier;
-use penumbra_tct as tct;
+use penumbra_sdk_fee::Fee;
+use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proof_params::{DummyWitness, SWAPCLAIM_PROOF_PROVING_KEY};
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_tct as tct;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;

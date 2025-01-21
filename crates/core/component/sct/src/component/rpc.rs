@@ -1,7 +1,7 @@
 use cnidarium::Storage;
 use pbjson_types::Timestamp;
-use penumbra_proto::core::component::sct::v1::query_service_server::QueryService;
-use penumbra_proto::core::component::sct::v1::{
+use penumbra_sdk_proto::core::component::sct::v1::query_service_server::QueryService;
+use penumbra_sdk_proto::core::component::sct::v1::{
     AnchorByHeightRequest, AnchorByHeightResponse, EpochByHeightRequest, EpochByHeightResponse,
     TimestampByHeightRequest, TimestampByHeightResponse,
 };

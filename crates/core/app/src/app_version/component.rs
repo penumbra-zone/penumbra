@@ -2,7 +2,7 @@ use std::fmt::Write as _;
 
 use anyhow::{anyhow, Context};
 use cnidarium::{StateDelta, Storage};
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 
 use super::APP_VERSION;
 

@@ -9,7 +9,7 @@ use ibc_types::{
     },
     path::{ClientConnectionPath, ConnectionPath},
 };
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 
 use crate::{prefix::MerklePrefixExt, IBC_COMMITMENT_PREFIX};
 

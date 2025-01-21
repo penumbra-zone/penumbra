@@ -2,15 +2,15 @@ use anyhow::Context;
 use dialoguer::Confirm;
 use rand_core::{CryptoRngCore, OsRng};
 
-use penumbra_asset::Value;
-use penumbra_dex::{
+use penumbra_sdk_asset::Value;
+use penumbra_sdk_dex::{
     lp::{position::Position, Reserves},
     DirectedUnitPair,
 };
-use penumbra_keys::keys::AddressIndex;
-use penumbra_num::Amount;
-use penumbra_proto::view::v1::GasPricesRequest;
-use penumbra_view::{Planner, ViewClient};
+use penumbra_sdk_keys::keys::AddressIndex;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::view::v1::GasPricesRequest;
+use penumbra_sdk_view::{Planner, ViewClient};
 
 use crate::App;
 
@@ -275,7 +275,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sanity_check_penumbra_gm_example() {
+    fn sanity_check_penumbra_sdk_gm_example() {
         let params = Linear {
             pair: "penumbra:gm".parse().unwrap(),
             input: "1000gm".parse().unwrap(),
@@ -301,7 +301,7 @@ mod tests {
             dbg!(position);
         }
 
-        let asset_cache = penumbra_asset::asset::Cache::with_known_assets();
+        let asset_cache = penumbra_sdk_asset::asset::Cache::with_known_assets();
 
         dbg!(&params);
         println!(

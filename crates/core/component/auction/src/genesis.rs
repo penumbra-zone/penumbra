@@ -2,7 +2,7 @@ use crate::params::AuctionParameters;
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::component::auction::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::component::auction::v1 as pb, DomainType};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]

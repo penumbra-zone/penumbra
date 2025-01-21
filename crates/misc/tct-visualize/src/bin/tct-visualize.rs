@@ -13,11 +13,11 @@ use std::{
 
 use anyhow::Result;
 use clap::Parser;
-use penumbra_tct_visualize::render;
+use penumbra_sdk_tct_visualize::render;
 use rand::{seq::SliceRandom, Rng, RngCore, SeedableRng};
 use rand_distr::Binomial;
 
-use penumbra_tct::{self as tct, StateCommitment, Tree, Witness};
+use penumbra_sdk_tct::{self as tct, StateCommitment, Tree, Witness};
 use tct::structure::Hash;
 
 /// Visualize the structure of the Tiered Commitment Tree.

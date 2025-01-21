@@ -1,15 +1,15 @@
-use penumbra_auction::genesis::Content as AuctionContent;
-use penumbra_community_pool::genesis::Content as CommunityPoolContent;
-use penumbra_dex::genesis::Content as DexContent;
-use penumbra_distributions::genesis::Content as DistributionsContent;
-use penumbra_fee::genesis::Content as FeeContent;
-use penumbra_funding::genesis::Content as FundingContent;
-use penumbra_governance::genesis::Content as GovernanceContent;
-use penumbra_ibc::genesis::Content as IBCContent;
-use penumbra_proto::{penumbra::core::app::v1 as pb, DomainType};
-use penumbra_sct::genesis::Content as SctContent;
-use penumbra_shielded_pool::genesis::Content as ShieldedPoolContent;
-use penumbra_stake::genesis::Content as StakeContent;
+use penumbra_sdk_auction::genesis::Content as AuctionContent;
+use penumbra_sdk_community_pool::genesis::Content as CommunityPoolContent;
+use penumbra_sdk_dex::genesis::Content as DexContent;
+use penumbra_sdk_distributions::genesis::Content as DistributionsContent;
+use penumbra_sdk_fee::genesis::Content as FeeContent;
+use penumbra_sdk_funding::genesis::Content as FundingContent;
+use penumbra_sdk_governance::genesis::Content as GovernanceContent;
+use penumbra_sdk_ibc::genesis::Content as IBCContent;
+use penumbra_sdk_proto::{penumbra::core::app::v1 as pb, DomainType};
+use penumbra_sdk_sct::genesis::Content as SctContent;
+use penumbra_sdk_shielded_pool::genesis::Content as ShieldedPoolContent;
+use penumbra_sdk_stake::genesis::Content as StakeContent;
 use serde::{Deserialize, Serialize};
 
 /// The application state at genesis.
@@ -188,8 +188,8 @@ impl Content {
 
     pub fn with_epoch_duration(self, epoch_duration: u64) -> Self {
         Self {
-            sct_content: penumbra_sct::genesis::Content {
-                sct_params: penumbra_sct::params::SctParameters { epoch_duration },
+            sct_content: penumbra_sdk_sct::genesis::Content {
+                sct_params: penumbra_sdk_sct::params::SctParameters { epoch_duration },
             },
             ..self
         }
@@ -197,8 +197,8 @@ impl Content {
 
     pub fn with_unbonding_delay(self, unbonding_delay: u64) -> Self {
         Self {
-            stake_content: penumbra_stake::genesis::Content {
-                stake_params: penumbra_stake::params::StakeParameters {
+            stake_content: penumbra_sdk_stake::genesis::Content {
+                stake_params: penumbra_sdk_stake::params::StakeParameters {
                     unbonding_delay,
                     ..self.stake_content.stake_params
                 },

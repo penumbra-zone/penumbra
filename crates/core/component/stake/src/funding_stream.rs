@@ -1,7 +1,7 @@
 use crate::BPS_SQUARED_SCALING_FACTOR;
-use penumbra_keys::Address;
-use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_num::{fixpoint::U128x128, Amount};
+use penumbra_sdk_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// A destination for a portion of a validator's commission of staking rewards.

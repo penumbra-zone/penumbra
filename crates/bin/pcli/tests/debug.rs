@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use penumbra_proof_params::{SPEND_PROOF_PROVING_KEY, SPEND_PROOF_VERIFICATION_KEY};
+use penumbra_sdk_proof_params::{SPEND_PROOF_PROVING_KEY, SPEND_PROOF_VERIFICATION_KEY};
 use std::{
     fs::{self, OpenOptions},
     io::Write,

@@ -1,20 +1,20 @@
 use ibc_types::core::{channel::ChannelId, channel::PortId, client::Height as IbcHeight};
-use penumbra_asset::{
+use penumbra_sdk_asset::{
     asset::{self, Metadata},
     Balance, Value,
 };
-use penumbra_keys::Address;
-use penumbra_num::Amount;
-use penumbra_proto::{
+use penumbra_sdk_keys::Address;
+use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::{
     penumbra::core::component::ibc::v1::{self as pb, FungibleTokenPacketData},
     DomainType,
 };
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 #[cfg(feature = "component")]
-use penumbra_ibc::component::packet::{IBCPacket, Unchecked};
+use penumbra_sdk_ibc::component::packet::{IBCPacket, Unchecked};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Ics20Withdrawal", into = "pb::Ics20Withdrawal")]

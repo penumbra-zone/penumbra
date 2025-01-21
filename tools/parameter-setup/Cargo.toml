@@ -1,22 +1,23 @@
 [package]
-name = "penumbra-parameter-setup"
+name = "penumbra-sdk-parameter-setup"
+description = "Penumbra proof parameters setup utilities"
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
 license = { workspace = true }
-publish = false
 repository = { workspace = true }
 version = { workspace = true }
+publish = false
 
 [dependencies]
 ark-groth16 = { workspace = true }
 ark-serialize = { workspace = true }
 decaf377 = { workspace = true, features = ["r1cs"] }
-penumbra-community-pool = { workspace = true , features = ["component"] }
-penumbra-dex = { workspace = true }
-penumbra-governance = { workspace = true }
-penumbra-proof-params = { workspace = true }
-penumbra-proof-setup = { workspace = true, features = ["parallel"] }
-penumbra-shielded-pool = { workspace = true, features = ["parallel"] }
-penumbra-stake = { workspace = true, features = ["component"] }
+penumbra-sdk-community-pool = { workspace = true , features = ["component"] }
+penumbra-sdk-dex = { workspace = true }
+penumbra-sdk-governance = { workspace = true }
+penumbra-sdk-proof-params = { workspace = true }
+penumbra-sdk-proof-setup = { workspace = true, features = ["parallel"] }
+penumbra-sdk-shielded-pool = { workspace = true, features = ["parallel"] }
+penumbra-sdk-stake = { workspace = true, features = ["component"] }
 rand_core = { workspace = true }
