@@ -16,6 +16,8 @@ use crate::{
 /// c.f. https://github.com/launchbadge/sqlx/issues/481#issuecomment-727011811
 async fn read_only_db(url: &str) -> anyhow::Result<PgPool> {
     PgPoolOptions::new()
+        // TODO: analyze slow queries and make them faster
+        .acquire_slow_threshold(std::time::Duration::from_secs(5))
         .after_connect(|conn, _| {
             Box::pin(async move {
                 sqlx::query("SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY;")
