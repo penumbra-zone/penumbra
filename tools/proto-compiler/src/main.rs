@@ -4,13 +4,6 @@ fn main() -> anyhow::Result<()> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     println!("root: {}", root.display());
 
-    // We build the proto files for the main penumbra_proto crate
-    // and for the cnidarium crate separately, because the
-    // cnidarium crate is supposed to be independent of the
-    // rest of the Penumbra codebase and its proto structures.
-    // Unfortunately, this means duplicating a lot of logic, because
-    // we can't share the prost_build::Config between the two.
-
     let target_dir = root
         .join("..")
         .join("..")
@@ -18,16 +11,8 @@ fn main() -> anyhow::Result<()> {
         .join("proto")
         .join("src")
         .join("gen");
-    let cnidarium_target_dir = root
-        .join("..")
-        .join("..")
-        .join("crates")
-        .join("cnidarium")
-        .join("src")
-        .join("gen");
 
     println!("target_dir: {}", target_dir.display());
-    println!("cnidarium_target_dir: {}", cnidarium_target_dir.display());
 
     // https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
     // Using the "no_lfs" suffix prevents matching a catch-all LFS rule.
@@ -35,7 +20,6 @@ fn main() -> anyhow::Result<()> {
 
     // prost_build::Config isn't Clone, so we need to make two.
     let mut config = prost_build::Config::new();
-    let mut cnidarium_config = prost_build::Config::new();
 
     config.compile_well_known_types();
     // As recommended in pbjson_types docs.
@@ -48,33 +32,12 @@ fn main() -> anyhow::Result<()> {
     config.extern_path(".ics23", "::ics23");
     config.extern_path(".cosmos.ics23", "::ics23");
 
-    cnidarium_config.compile_well_known_types();
-    cnidarium_config.extern_path(".google.protobuf", "::pbjson_types");
-    cnidarium_config.extern_path(".ibc", "::ibc_proto::ibc");
-    cnidarium_config.extern_path(".ics23", "::ics23");
-    cnidarium_config.extern_path(".cosmos.ics23", "::ics23");
-
     config
         .out_dir(&target_dir)
         .file_descriptor_set_path(&target_dir.join(descriptor_file_name))
         .enable_type_names();
-    cnidarium_config
-        .out_dir(&cnidarium_target_dir)
-        .file_descriptor_set_path(&cnidarium_target_dir.join(descriptor_file_name))
-        .enable_type_names();
 
     let rpc_doc_attr = r#"#[cfg(feature = "rpc")]"#;
-
-    tonic_build::configure()
-        .out_dir(&cnidarium_target_dir)
-        .emit_rerun_if_changed(false)
-        .server_mod_attribute(".", rpc_doc_attr)
-        .client_mod_attribute(".", rpc_doc_attr)
-        .compile_with_config(
-            cnidarium_config,
-            &["../../proto/penumbra/penumbra/cnidarium/v1/cnidarium.proto"],
-            &["../../proto/penumbra/", "../../proto/rust-vendored/"],
-        )?;
 
     tonic_build::configure()
         .out_dir(&target_dir)
@@ -84,7 +47,7 @@ fn main() -> anyhow::Result<()> {
         // We need to feature-gate the RPCs.
         .server_mod_attribute(".", rpc_doc_attr)
         .client_mod_attribute(".", rpc_doc_attr)
-        .compile_with_config(
+        .compile_protos_with_config(
             config,
             &[
                 "../../proto/penumbra/penumbra/core/app/v1/app.proto",
@@ -111,8 +74,6 @@ fn main() -> anyhow::Result<()> {
                 "../../proto/penumbra/penumbra/crypto/tct/v1/tct.proto",
                 "../../proto/penumbra/penumbra/custody/v1/custody.proto",
                 "../../proto/penumbra/penumbra/custody/threshold/v1/threshold.proto",
-                // Also included in the cnidarium crate directly.
-                "../../proto/penumbra/penumbra/cnidarium/v1/cnidarium.proto",
                 "../../proto/penumbra/penumbra/tools/summoning/v1/summoning.proto",
                 "../../proto/penumbra/penumbra/util/tendermint_proxy/v1/tendermint_proxy.proto",
                 "../../proto/penumbra/penumbra/view/v1/view.proto",
@@ -141,13 +102,6 @@ fn main() -> anyhow::Result<()> {
 
     // Finally, build pbjson Serialize, Deserialize impls:
     let descriptor_set = std::fs::read(target_dir.join(descriptor_file_name))?;
-    let cnidarium_descriptor_set = std::fs::read(cnidarium_target_dir.join(descriptor_file_name))?;
-
-    pbjson_build::Builder::new()
-        .register_descriptors(&cnidarium_descriptor_set)?
-        .ignore_unknown_fields()
-        .out_dir(&cnidarium_target_dir)
-        .build(&[".penumbra"])?;
 
     pbjson_build::Builder::new()
         .register_descriptors(&descriptor_set)?

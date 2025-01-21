@@ -1035,6 +1035,7 @@ impl serde::Serialize for AuctionsResponse {
         }
         if self.local_seq != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("localSeq", ToString::to_string(&self.local_seq).as_str())?;
         }
         struct_ser.end()
@@ -2171,6 +2172,7 @@ impl serde::Serialize for broadcast_transaction_response::Confirmed {
         }
         if self.detection_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("detectionHeight", ToString::to_string(&self.detection_height).as_str())?;
         }
         struct_ser.end()
@@ -3514,6 +3516,7 @@ impl serde::Serialize for NotesForVotingRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.NotesForVotingRequest", len)?;
         if self.votable_at_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("votableAtHeight", ToString::to_string(&self.votable_at_height).as_str())?;
         }
         if let Some(v) = self.address_index.as_ref() {
@@ -4476,14 +4479,17 @@ impl serde::Serialize for SpendableNoteRecord {
         }
         if self.height_created != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("heightCreated", ToString::to_string(&self.height_created).as_str())?;
         }
         if self.height_spent != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("heightSpent", ToString::to_string(&self.height_spent).as_str())?;
         }
         if self.position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
         }
         if let Some(v) = self.source.as_ref() {
@@ -4763,10 +4769,12 @@ impl serde::Serialize for StatusResponse {
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.StatusResponse", len)?;
         if self.full_sync_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("fullSyncHeight", ToString::to_string(&self.full_sync_height).as_str())?;
         }
         if self.partial_sync_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("partialSyncHeight", ToString::to_string(&self.partial_sync_height).as_str())?;
         }
         if self.catching_up {
@@ -4973,14 +4981,17 @@ impl serde::Serialize for StatusStreamResponse {
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.StatusStreamResponse", len)?;
         if self.latest_known_block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("latestKnownBlockHeight", ToString::to_string(&self.latest_known_block_height).as_str())?;
         }
         if self.full_sync_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("fullSyncHeight", ToString::to_string(&self.full_sync_height).as_str())?;
         }
         if self.partial_sync_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("partialSyncHeight", ToString::to_string(&self.partial_sync_height).as_str())?;
         }
         struct_ser.end()
@@ -5341,6 +5352,7 @@ impl serde::Serialize for SwapRecord {
         }
         if self.position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
         }
         if let Some(v) = self.nullifier.as_ref() {
@@ -5351,6 +5363,7 @@ impl serde::Serialize for SwapRecord {
         }
         if self.height_claimed != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("heightClaimed", ToString::to_string(&self.height_claimed).as_str())?;
         }
         if let Some(v) = self.source.as_ref() {
@@ -5535,6 +5548,7 @@ impl serde::Serialize for TransactionInfo {
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionInfo", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if let Some(v) = self.id.as_ref() {
@@ -5883,10 +5897,12 @@ impl serde::Serialize for TransactionInfoRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionInfoRequest", len)?;
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         if self.end_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("endHeight", ToString::to_string(&self.end_height).as_str())?;
         }
         struct_ser.end()
@@ -6159,6 +6175,7 @@ impl serde::Serialize for TransactionPlannerRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest", len)?;
         if self.expiry_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("expiryHeight", ToString::to_string(&self.expiry_height).as_str())?;
         }
         if let Some(v) = self.memo.as_ref() {
@@ -6217,6 +6234,7 @@ impl serde::Serialize for TransactionPlannerRequest {
         }
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
         if let Some(v) = self.epoch.as_ref() {
@@ -6784,6 +6802,7 @@ impl serde::Serialize for transaction_planner_request::ActionDutchAuctionWithdra
         }
         if self.seq != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("seq", ToString::to_string(&self.seq).as_str())?;
         }
         struct_ser.end()
@@ -7019,6 +7038,7 @@ impl serde::Serialize for transaction_planner_request::DelegatorVote {
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest.DelegatorVote", len)?;
         if self.proposal != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if let Some(v) = self.vote.as_ref() {
@@ -7026,10 +7046,12 @@ impl serde::Serialize for transaction_planner_request::DelegatorVote {
         }
         if self.start_block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startBlockHeight", ToString::to_string(&self.start_block_height).as_str())?;
         }
         if self.start_position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         if !self.rate_data.is_empty() {
@@ -8100,6 +8122,7 @@ impl serde::Serialize for transaction_planner_request::UndelegateClaim {
         }
         if self.start_epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
         }
         if let Some(v) = self.penalty.as_ref() {
@@ -8110,6 +8133,7 @@ impl serde::Serialize for transaction_planner_request::UndelegateClaim {
         }
         if self.unbonding_start_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("unbondingStartHeight", ToString::to_string(&self.unbonding_start_height).as_str())?;
         }
         struct_ser.end()

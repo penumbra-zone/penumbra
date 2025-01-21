@@ -18,6 +18,7 @@ impl serde::Serialize for DkgRound1Package {
         }
         if !self.proof_of_knowledge.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofOfKnowledge", pbjson::private::base64::encode(&self.proof_of_knowledge).as_str())?;
         }
         struct_ser.end()
@@ -224,6 +225,7 @@ impl serde::Serialize for NonceCommitment {
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.decaf377_frost.v1.NonceCommitment", len)?;
         if !self.element.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("element", pbjson::private::base64::encode(&self.element).as_str())?;
         }
         struct_ser.end()
@@ -322,6 +324,7 @@ impl serde::Serialize for SignatureShare {
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.decaf377_frost.v1.SignatureShare", len)?;
         if !self.scalar.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("scalar", pbjson::private::base64::encode(&self.scalar).as_str())?;
         }
         struct_ser.end()
@@ -532,6 +535,7 @@ impl serde::Serialize for SigningShare {
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.decaf377_frost.v1.SigningShare", len)?;
         if !self.scalar.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("scalar", pbjson::private::base64::encode(&self.scalar).as_str())?;
         }
         struct_ser.end()

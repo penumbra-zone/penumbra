@@ -479,6 +479,7 @@ impl serde::Serialize for GenesisAppState {
                 }
                 genesis_app_state::GenesisAppState::GenesisCheckpoint(v) => {
                     #[allow(clippy::needless_borrow)]
+                    #[allow(clippy::needless_borrows_for_generic_args)]
                     struct_ser.serialize_field("genesisCheckpoint", pbjson::private::base64::encode(&v).as_str())?;
                 }
             }
@@ -883,6 +884,7 @@ impl serde::Serialize for TransactionsByHeightRequest {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.app.v1.TransactionsByHeightRequest", len)?;
         if self.block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("blockHeight", ToString::to_string(&self.block_height).as_str())?;
         }
         struct_ser.end()
@@ -988,6 +990,7 @@ impl serde::Serialize for TransactionsByHeightResponse {
         }
         if self.block_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("blockHeight", ToString::to_string(&self.block_height).as_str())?;
         }
         struct_ser.end()

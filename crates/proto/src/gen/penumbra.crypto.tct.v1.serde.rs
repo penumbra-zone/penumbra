@@ -18,14 +18,17 @@ impl serde::Serialize for MerklePathChunk {
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.tct.v1.MerklePathChunk", len)?;
         if !self.sibling_1.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sibling1", pbjson::private::base64::encode(&self.sibling_1).as_str())?;
         }
         if !self.sibling_2.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sibling2", pbjson::private::base64::encode(&self.sibling_2).as_str())?;
         }
         if !self.sibling_3.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("sibling3", pbjson::private::base64::encode(&self.sibling_3).as_str())?;
         }
         struct_ser.end()
@@ -153,6 +156,7 @@ impl serde::Serialize for MerkleRoot {
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.tct.v1.MerkleRoot", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -251,6 +255,7 @@ impl serde::Serialize for StateCommitment {
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.tct.v1.StateCommitment", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -358,6 +363,7 @@ impl serde::Serialize for StateCommitmentProof {
         }
         if self.position != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
         }
         if !self.auth_path.is_empty() {

@@ -17,6 +17,8 @@ use rand_core::OsRng;
 use tap::{Tap, TapFallible};
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
+use tonic::transport::channel::ClientTlsConfig;
+use tonic::transport::channel::Endpoint;
 use tonic::{async_trait, transport::Channel, Request, Response, Status};
 use tracing::{instrument, Instrument};
 use url::Url;
@@ -123,13 +125,7 @@ impl ViewServer {
     /// will be backed by the same scanning task, rather than each spawning its own.
     pub async fn new(storage: Storage, node: Url) -> anyhow::Result<Self> {
         let span = tracing::error_span!(parent: None, "view");
-        let channel = Channel::from_shared(node.to_string())
-            .with_context(|| "could not parse node URI")?
-            .connect()
-            .instrument(span.clone())
-            .await
-            .with_context(|| "could not connect to grpc server")
-            .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
+        let channel = Self::get_pd_channel(node.clone()).await?;
 
         let (worker, state_commitment_tree, error_slot, sync_height_rx) =
             Worker::new(storage.clone(), channel)
@@ -148,6 +144,24 @@ impl ViewServer {
             state_commitment_tree,
             node,
         })
+    }
+
+    /// Obtain a Tonic [Channel] to a remote `pd` endpoint.
+    ///
+    /// Provided as a convenience method for bootstrapping a connection.
+    /// Handles configuring TLS if the URL is HTTPS. Also adds a tracing span
+    /// to the working [Channel].
+    pub async fn get_pd_channel(node: Url) -> anyhow::Result<Channel> {
+        let endpoint = get_pd_endpoint(node).await?;
+        let span = tracing::error_span!(parent: None, "view");
+        let c: Channel = endpoint
+            .connect()
+            .instrument(span.clone())
+            .await
+            .with_context(|| "could not connect to grpc server")
+            .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
+
+        Ok(c)
     }
 
     /// Checks if the view server worker has encountered an error.
@@ -1846,4 +1860,17 @@ impl ViewService for ViewServer {
     ) -> Result<tonic::Response<Self::UnbondingTokensByAddressIndexStream>, tonic::Status> {
         unimplemented!("unbonding_tokens_by_address_index currently only implemented on web")
     }
+}
+
+/// Convert a pd node URL to a Tonic `Endpoint`.
+///
+/// Required in order to configure TLS for HTTPS endpoints.
+async fn get_pd_endpoint(node: Url) -> anyhow::Result<Endpoint> {
+    let endpoint = match node.scheme() {
+        "http" => Channel::from_shared(node.to_string())?,
+        "https" => Channel::from_shared(node.to_string())?
+            .tls_config(ClientTlsConfig::new().with_webpki_roots())?,
+        other => anyhow::bail!("unknown url scheme {other}"),
+    };
+    Ok(endpoint)
 }

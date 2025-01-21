@@ -889,18 +889,22 @@ impl serde::Serialize for Gas {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.fee.v1.Gas", len)?;
         if self.block_space != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("blockSpace", ToString::to_string(&self.block_space).as_str())?;
         }
         if self.compact_block_space != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("compactBlockSpace", ToString::to_string(&self.compact_block_space).as_str())?;
         }
         if self.verification != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("verification", ToString::to_string(&self.verification).as_str())?;
         }
         if self.execution != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("execution", ToString::to_string(&self.execution).as_str())?;
         }
         struct_ser.end()
@@ -1055,18 +1059,22 @@ impl serde::Serialize for GasPrices {
         }
         if self.block_space_price != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("blockSpacePrice", ToString::to_string(&self.block_space_price).as_str())?;
         }
         if self.compact_block_space_price != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("compactBlockSpacePrice", ToString::to_string(&self.compact_block_space_price).as_str())?;
         }
         if self.verification_price != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("verificationPrice", ToString::to_string(&self.verification_price).as_str())?;
         }
         if self.execution_price != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("executionPrice", ToString::to_string(&self.execution_price).as_str())?;
         }
         struct_ser.end()

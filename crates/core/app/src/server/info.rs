@@ -259,6 +259,7 @@ impl Info {
                         channel_id: chan_id,
                         port_id: PortId::transfer(),
                         channel_end: channel,
+                        upgrade_sequence: 0,
                     };
                     channels.push(id_chan.into());
                 }
@@ -308,6 +309,7 @@ impl Info {
                             channel_id: chan_id,
                             port_id: PortId::transfer(),
                             channel_end: channel,
+                            upgrade_sequence: 0,
                         };
                         channels.push(id_chan.into());
                     }

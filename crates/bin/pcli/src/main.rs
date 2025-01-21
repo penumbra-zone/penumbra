@@ -5,6 +5,7 @@ use std::fs;
 
 use anyhow::{Context, Result};
 use clap::Parser;
+use rustls::crypto::aws_lc_rs;
 
 use pcli::{command::*, opt::Opt};
 
@@ -20,6 +21,12 @@ async fn main() -> Result<()> {
     // Initialize tracing here, rather than when converting into an `App`, so
     // that tracing is set up even for wallet commands that don't build the `App`.
     opt.init_tracing();
+
+    // Initialize HTTPS support
+    // rustls::crypto::aws_lc_rs::default_provider().install_default();
+    aws_lc_rs::default_provider()
+        .install_default()
+        .expect("failed to initialize rustls support, via aws-lc-rs");
 
     //Ensure that the data_path exists, in case this is a cold start
     fs::create_dir_all(&opt.home)

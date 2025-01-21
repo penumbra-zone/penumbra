@@ -45,7 +45,6 @@ pub fn axum_acceptor(
 
     // Define our server configuration, using the ACME certificate resolver.
     let mut rustls_config = ServerConfig::builder()
-        .with_safe_defaults()
         .with_no_client_auth()
         .with_cert_resolver(state.resolver());
     rustls_config.alpn_protocols = self::alpn_protocols();

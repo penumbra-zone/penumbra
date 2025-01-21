@@ -1449,10 +1449,12 @@ impl serde::Serialize for CluePlan {
         }
         if !self.rseed.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("rseed", pbjson::private::base64::encode(&self.rseed).as_str())?;
         }
         if self.precision_bits != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("precisionBits", ToString::to_string(&self.precision_bits).as_str())?;
         }
         struct_ser.end()
@@ -1768,6 +1770,7 @@ impl serde::Serialize for MemoCiphertext {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.MemoCiphertext", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -2098,6 +2101,7 @@ impl serde::Serialize for MemoPlan {
         }
         if !self.key.is_empty() {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("key", pbjson::private::base64::encode(&self.key).as_str())?;
         }
         struct_ser.end()
@@ -3186,6 +3190,7 @@ impl serde::Serialize for TransactionParameters {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.TransactionParameters", len)?;
         if self.expiry_height != 0 {
             #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("expiryHeight", ToString::to_string(&self.expiry_height).as_str())?;
         }
         if !self.chain_id.is_empty() {
