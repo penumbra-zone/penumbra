@@ -68,6 +68,7 @@ impl From<&Inner> for pb::Metadata {
             images: inner.images.clone(),
             badges: inner.badges.clone(),
             priority_score: inner.priority_score,
+            coingecko_id: String::new(),
         }
     }
 }
