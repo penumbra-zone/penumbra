@@ -71,6 +71,9 @@ message Metadata {
   // Associated icons for asset.
   // For ibc assets, usually an image of the source chain.
   repeated AssetImage badges = 1987;
+
+  // Coingecko ID for the asset.
+  string coingecko_id = 1988;
 }
 
 // DenomUnit represents a struct that describes a given denomination unit of the basic token.
@@ -100,7 +103,6 @@ message Balance {
   // Represents the vector of 'Value's in the balance.
   repeated SignedValue values = 1;
 }
-
 
 // Represents a value of a known or unknown denomination.
 message ValueView {

@@ -99,6 +99,9 @@ pub struct Metadata {
     /// For ibc assets, usually an image of the source chain.
     #[prost(message, repeated, tag = "1987")]
     pub badges: ::prost::alloc::vec::Vec<AssetImage>,
+    /// Coingecko ID for the asset.
+    #[prost(string, tag = "1988")]
+    pub coingecko_id: ::prost::alloc::string::String,
 }
 impl ::prost::Name for Metadata {
     const NAME: &'static str = "Metadata";
