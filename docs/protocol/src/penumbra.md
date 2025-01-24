@@ -96,7 +96,7 @@ encrypted votes and decrypt only the per-epoch totals.
 
 Penumbra provides private batch swaps using [ZSwap](./dex.md).
 ZSwap allows users to privately swap between any pair of assets.  Individual
-swaps publically burn their input notes and privately mint their output notes.
+swaps publicly burn their input notes and privately mint their output notes.
 All swaps in each block are executed in a single batch.  Users can also provide
 liquidity by anonymously creating concentrated liquidity positions.  These
 positions reveal the amount of liquidity and the bounds in which it is
