@@ -45,6 +45,7 @@ clap = {workspace = true, features = ["derive", "env"]}
 colored = "2.1.0"
 colored_json = "4.1"
 comfy-table = "5"
+csv = "1"
 decaf377 = {workspace = true, default-features = true}
 decaf377-rdsa = {workspace = true}
 dialoguer = "0.10.4"

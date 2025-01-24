@@ -4389,6 +4389,7 @@ dependencies = [
  "colored",
  "colored_json",
  "comfy-table",
+ "csv",
  "decaf377",
  "decaf377-rdsa",
  "dialoguer",

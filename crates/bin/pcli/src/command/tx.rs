@@ -149,6 +149,21 @@ pub enum TxCmd {
         #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
+    /// Delegate to many validators in a single transaction.
+    #[clap(display_order = 200)]
+    DelegateMany {
+        /// A path to a CSV file of (validator identity, UM amount) pairs.
+        ///
+        /// The amount is in UM, not upenumbra.
+        #[clap(long, display_order = 100)]
+        csv_path: String,
+        /// Only spend funds originally received by the given account.
+        #[clap(long, default_value = "0", display_order = 300)]
+        source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, default_value_t)]
+        fee_tier: FeeTier,
+    },
     /// Withdraw stake from a validator's delegation pool.
     #[clap(display_order = 200)]
     Undelegate {
@@ -342,6 +357,7 @@ impl TxCmd {
             TxCmd::Sweep { .. } => false,
             TxCmd::Swap { .. } => false,
             TxCmd::Delegate { .. } => false,
+            TxCmd::DelegateMany { .. } => false,
             TxCmd::Undelegate { .. } => false,
             TxCmd::UndelegateClaim { .. } => false,
             TxCmd::Vote { .. } => false,
@@ -598,6 +614,64 @@ impl TxCmd {
                     .set_fee_tier((*fee_tier).into());
                 let plan = planner
                     .delegate(epoch, unbonded_amount, rate_data)
+                    .plan(app.view(), AddressIndex::new(*source))
+                    .await
+                    .context("can't plan delegation, try running pcli tx sweep and try again")?;
+
+                app.build_and_submit_transaction(plan).await?;
+            }
+            TxCmd::DelegateMany {
+                csv_path,
+                source,
+                fee_tier,
+            } => {
+                let mut stake_client = StakeQueryServiceClient::new(app.pd_channel().await?);
+
+                let mut sct_client = SctQueryServiceClient::new(app.pd_channel().await?);
+                let latest_sync_height = app.view().status().await?.full_sync_height;
+                let epoch = sct_client
+                    .epoch_by_height(EpochByHeightRequest {
+                        height: latest_sync_height,
+                    })
+                    .await?
+                    .into_inner()
+                    .epoch
+                    .expect("epoch must be available")
+                    .into();
+
+                let mut planner = Planner::new(OsRng);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
+
+                let file = File::open(csv_path).context("can't open CSV file")?;
+                let mut reader = csv::ReaderBuilder::new()
+                    .has_headers(false) // Don't skip any rows
+                    .from_reader(file);
+                for result in reader.records() {
+                    let record = result?;
+                    let validator_identity: IdentityKey = record[0].parse()?;
+
+                    let rate_data: RateData = stake_client
+                        .current_validator_rate(tonic::Request::new(validator_identity.into()))
+                        .await?
+                        .into_inner()
+                        .try_into()?;
+
+                    let typed_amount_str = format!("{}penumbra", &record[1]);
+
+                    let unbonded_amount = {
+                        let Value { amount, asset_id } = typed_amount_str.parse::<Value>()?;
+                        if asset_id != *STAKING_TOKEN_ASSET_ID {
+                            anyhow::bail!("staking can only be done with the staking token");
+                        }
+                        amount
+                    };
+
+                    planner.delegate(epoch, unbonded_amount, rate_data);
+                }
+
+                let plan = planner
                     .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan delegation, try running pcli tx sweep and try again")?;
