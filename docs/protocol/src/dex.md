@@ -1,6 +1,6 @@
 # ZSwap
 
-Penumbra provides swaps wherein the user publically burns their input assets,
+Penumbra provides swaps wherein the user publicly burns their input assets,
 and privately mints the output assets. In a future upgrade, Penumbra plans to add
 sealed-bid batch swaps, protecting the privacy of the input assets to the trade.
 ZSwap allows users to privately swap between any pair of assets. All swaps in
@@ -81,7 +81,7 @@ know][bwh].  While users can prove that their user-specific state was updated
 correctly without revealing it, they cannot do so for other users' state.
 
 Instead of solving this problem, ZSwap sidesteps the need for users to do so.
-At a high level, swaps work as follows: users publically burn funds of one kind
+At a high level, swaps work as follows: users publicly burn funds of one kind
 in a coordinated way that allows the chain to compute a per-block clearing
 price, and mint or burn liquidity pool reserves.  Later, users privately mint
 funds of the other kind, proving that they previously burned funds and that the
