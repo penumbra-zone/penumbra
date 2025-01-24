@@ -112,7 +112,7 @@ processes:
   # Finalizer task, which will wait until all test suites have finished.
   # This allows us to ensure that.
   summary:
-    # The `command` only runs if all tests were succesful,
+    # The `command` only runs if all tests were successful,
     # otherwise the process exits due to dep failure.
     command: echo tests finished
     depends_on:
