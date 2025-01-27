@@ -1284,9 +1284,9 @@ dependencies = [
 
 [[package]]
 name = "cnidarium"
-version = "0.82.1"
+version = "0.83.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f0060de634f1f7411ab7464f1021f48ffdeb72fd63cf19553035fa766563828"
+checksum = "2caa1090700cdec4305df871194280f800f8c74e1fed4031697d436a31811af5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1298,7 +1298,7 @@ dependencies = [
  "ibc-types",
  "ics23",
  "jmt",
- "metrics 0.22.3",
+ "metrics 0.24.1",
  "once_cell",
  "parking_lot",
  "pbjson",
@@ -3766,16 +3766,6 @@ dependencies = [
  "keccak",
  "rand_core",
  "zeroize",
-]
-
-[[package]]
-name = "metrics"
-version = "0.22.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2be3cbd384d4e955b231c895ce10685e3d8260c5ccffae898c96c723b0772835"
-dependencies = [
- "ahash",
- "portable-atomic",
 ]
 
 [[package]]
