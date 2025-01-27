@@ -9,7 +9,44 @@ use http::StatusCode;
 use penumbra_sdk_proto::FILE_DESCRIPTOR_SET;
 use predicates::prelude::*;
 use prost_reflect::{DescriptorPool, ServiceDescriptor};
+use regex::Regex;
 use url::Url;
+
+/// Specific patterns for spot-checking the metrics emitted by pd.
+/// It's a smattering of metrics from the various components, including
+/// some from outside the workspace, e.g. `cnidarium`.
+const PD_METRICS_PATTERNS: &[&str] = &[
+    r"^cnidarium_get_raw_duration_seconds_count_seconds \d+",
+    r"^cnidarium_nonverifiable_get_raw_duration_seconds_count_seconds \d+",
+    r"^pd_async_sleep_drift_microseconds \d+",
+    r"^penumbra_funding_streams_total_processing_time_milliseconds_count_milliseconds \d+",
+    r"^penumbra_dex_path_search_duration_seconds_count_seconds \d+",
+];
+
+#[ignore]
+#[tokio::test]
+/// Confirm that prometheus metrics are being exported for scraping.
+/// Several times while bumping related crates we've missed a breakage
+/// to metrics, and only noticed when we checked the grafana boards
+/// for the preview environment post-deploy.
+async fn confirm_metrics_emission() -> anyhow::Result<()> {
+    let client = reqwest::Client::new();
+    let metrics_url = std::env::var("PENUMBRA_NODE_PD_METRICS_URL")
+        .unwrap_or("http://localhost:9000/metrics".to_string());
+    let r = client.get(metrics_url).send().await?;
+    let status = r.status();
+    let body = r.text().await?;
+    // Assert 200
+    assert_eq!(status, StatusCode::OK);
+
+    // Check specific metrics in the combined output
+    for pattern in PD_METRICS_PATTERNS {
+        // Enable multi-line support in the regex matching.
+        let re = Regex::new(&format!(r"(?m){}", pattern))?;
+        assert!(re.is_match(&body), "pd metric missing: {}", pattern);
+    }
+    Ok(())
+}
 
 #[ignore]
 #[tokio::test]

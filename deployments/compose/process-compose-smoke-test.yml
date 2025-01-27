@@ -65,18 +65,12 @@ processes:
       pd:
         condition: process_healthy
 
-  # Run `pd` integration tests.
-  test-pd:
-    command: >-
-      cargo test --release --package pd -- --ignored --test-threads 1 --nocapture
-    depends_on:
-      pd:
-        condition: process_healthy
-      cometbft:
-        condition: process_started
-    availability:
-      restart: exit_on_failure
-
+  # The order of the integration tests is (unfortunately) important:
+  #
+  #   1. First up are the pclientd tests, because
+  #   2. The pcli tests assume the pclientd tests have been run first
+  #   3. Finally, we run the pd tests, which need work to have been performed for metrics to be emitted.
+  #
   # Run `pclientd` integration tests.
   test-pclientd:
     command: >-
@@ -88,8 +82,6 @@ processes:
         condition: process_healthy
       cometbft:
         condition: process_started
-      test-pd:
-        condition: process_completed
     availability:
       restart: exit_on_failure
 
@@ -105,6 +97,21 @@ processes:
       cometbft:
         condition: process_started
       test-pclientd:
+        condition: process_completed
+    availability:
+      restart: exit_on_failure
+
+  # Run `pd` integration tests. These run last, as the metrics checks
+  # will be empty unless actual work has been performed.
+  test-pd:
+    command: >-
+      cargo test --release --package pd -- --ignored --test-threads 1 --nocapture
+    depends_on:
+      pd:
+        condition: process_healthy
+      cometbft:
+        condition: process_started
+      test-pcli:
         condition: process_completed
     availability:
       restart: exit_on_failure
