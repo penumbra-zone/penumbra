@@ -126,3 +126,4 @@ penumbra-sdk-proof-params = { workspace = true, features = [
 assert_cmd = { workspace = true }
 predicates = "2.1"
 prost-reflect = "0.14.3"
+regex = { workspace = true }
