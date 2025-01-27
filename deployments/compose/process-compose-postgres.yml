@@ -74,3 +74,8 @@ processes:
     depends_on:
       postgresql-init:
         condition: process_completed_successfully
+      # Make sure fullnode is running, otherwise database may be empty
+      pd:
+        condition: process_healthy
+      cometbft:
+        condition: process_healthy
