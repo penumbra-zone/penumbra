@@ -182,11 +182,11 @@ pub mod lqt {
                     format!("dex/lqt/v1/lp/by_volume/{epoch_index:020}/")
                 }
 
-                pub fn prefix_with_asset(epoch_index: u64, asset: &asset::Id) -> [u8; 74] {
+                pub fn prefix_with_asset(epoch_index: u64, asset: &asset::Id) -> [u8; 77] {
                     let prefix = prefix(epoch_index);
-                    let mut key = [0u8; 74];
-                    key[0..42].copy_from_slice(prefix.as_bytes());
-                    key[42..42 + 32].copy_from_slice(&asset.to_bytes());
+                    let mut key = [0u8; 77];
+                    key[0..45].copy_from_slice(prefix.as_bytes());
+                    key[45..45 + 32].copy_from_slice(&asset.to_bytes());
                     key
                 }
 
