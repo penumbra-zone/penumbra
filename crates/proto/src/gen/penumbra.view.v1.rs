@@ -1915,6 +1915,66 @@ impl ::prost::Name for UnbondingTokensByAddressIndexResponse {
         "/penumbra.view.v1.UnbondingTokensByAddressIndexResponse".into()
     }
 }
+/// Requests the latest swaps controlled by the user's wallet.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LatestSwapsRequest {
+    /// If present, filter balances to only include the account specified by the `AddressIndex`.
+    #[prost(message, optional, tag = "1")]
+    pub account_filter: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
+    /// If present, filter balances to only include trading activity on the specified pair.
+    #[prost(message, optional, tag = "2")]
+    pub pair: ::core::option::Option<
+        super::super::core::component::dex::v1::DirectedTradingPair,
+    >,
+    /// If present, limit the responses to activity that occured after this block height.
+    #[prost(uint64, tag = "3")]
+    pub after_height: u64,
+    /// Limit the response to the last entries within `response_limit`.
+    #[prost(uint64, tag = "4")]
+    pub response_limit: u64,
+}
+impl ::prost::Name for LatestSwapsRequest {
+    const NAME: &'static str = "LatestSwapsRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.LatestSwapsRequest".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.LatestSwapsRequest".into()
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LatestSwapsResponse {
+    /// The trading pair involved in this swap.
+    #[prost(message, optional, tag = "1")]
+    pub pair: ::core::option::Option<
+        super::super::core::component::dex::v1::DirectedTradingPair,
+    >,
+    /// The input value for the swap.
+    #[prost(message, optional, tag = "2")]
+    pub input: ::core::option::Option<super::super::core::asset::v1::Value>,
+    /// The output value received from the swap.
+    #[prost(message, optional, tag = "3")]
+    pub output: ::core::option::Option<super::super::core::asset::v1::Value>,
+    /// The block height at which this swap occurred.
+    #[prost(uint64, tag = "4")]
+    pub block_height: u64,
+    /// The hash of the transaction that was broadcast.
+    #[prost(message, optional, tag = "5")]
+    pub id: ::core::option::Option<super::super::core::txhash::v1::TransactionId>,
+}
+impl ::prost::Name for LatestSwapsResponse {
+    const NAME: &'static str = "LatestSwapsResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.LatestSwapsResponse".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.LatestSwapsResponse".into()
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod view_service_client {
@@ -2854,6 +2914,31 @@ pub mod view_service_client {
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "Auctions"));
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Gets the latest swaps controlled by the user's wallet.
+        pub async fn latest_swaps(
+            &mut self,
+            request: impl tonic::IntoRequest<super::LatestSwapsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::LatestSwapsResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/LatestSwaps",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "LatestSwaps"));
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -3227,6 +3312,20 @@ pub mod view_service_server {
             &self,
             request: tonic::Request<super::AuctionsRequest>,
         ) -> std::result::Result<tonic::Response<Self::AuctionsStream>, tonic::Status>;
+        /// Server streaming response type for the LatestSwaps method.
+        type LatestSwapsStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::LatestSwapsResponse, tonic::Status>,
+            >
+            + std::marker::Send
+            + 'static;
+        /// Gets the latest swaps controlled by the user's wallet.
+        async fn latest_swaps(
+            &self,
+            request: tonic::Request<super::LatestSwapsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::LatestSwapsStream>,
+            tonic::Status,
+        >;
     }
     /// The view RPC is used by a view client, who wants to do some
     /// transaction-related actions, to request data from a view service, which is
@@ -4688,6 +4787,52 @@ pub mod view_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = AuctionsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/LatestSwaps" => {
+                    #[allow(non_camel_case_types)]
+                    struct LatestSwapsSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::LatestSwapsRequest>
+                    for LatestSwapsSvc<T> {
+                        type Response = super::LatestSwapsResponse;
+                        type ResponseStream = T::LatestSwapsStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::LatestSwapsRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::latest_swaps(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = LatestSwapsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
