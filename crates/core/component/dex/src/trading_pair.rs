@@ -102,6 +102,10 @@ impl TradingPair {
         self.asset_2
     }
 
+    pub fn contains(&self, asset_id: asset::Id) -> bool {
+        self.asset_1 == asset_id || self.asset_2 == asset_id
+    }
+
     /// Convert the trading pair to bytes.
     pub(crate) fn to_bytes(self) -> [u8; 64] {
         let mut result: [u8; 64] = [0; 64];

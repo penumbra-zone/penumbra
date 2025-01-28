@@ -121,26 +121,52 @@ pub fn aggregate_value() -> &'static str {
 
 pub mod lqt {
     pub mod v1 {
-        pub mod lp {
+        pub mod pair {
             pub mod lookup {
                 use penumbra_sdk_asset::asset;
 
-                pub(crate) fn _prefix(epoch_index: u64) -> String {
-                    format!("dex/lqt/v1/lp/lookup/{epoch_index:020}/")
+                pub(crate) fn prefix(epoch_index: u64) -> String {
+                    format!("dex/lqt/v1/pair/lookup/{epoch_index:020}/")
                 }
 
-                // A lookup index used to update cumulative volumes.
-                /// It maps an trading pair (staking token, asset) to the cumulative volume of outbound liquidity.
+                // A lookup index used to inspect aggregate outflows for a given pair.
+                /// It maps a trading pair (staking token, asset) to the cumulative volume of outbound liquidity.
                 ///
                 /// # Key Encoding
                 /// The lookup key is encoded as `prefix || asset`
                 /// # Value Encoding
                 /// The value is encoded as `BE(Amount)`
-                pub(crate) fn _volume_by_pair(epoch_index: u64, asset: asset::Id) -> [u8; 74] {
-                    let prefix_bytes = _prefix(epoch_index);
+                pub(crate) fn volume_by_pair(epoch_index: u64, asset: asset::Id) -> [u8; 76] {
+                    let prefix_bytes = prefix(epoch_index);
+                    let mut key = [0u8; 76];
+                    key[0..44].copy_from_slice(prefix_bytes.as_bytes());
+                    key[44..44 + 32].copy_from_slice(&asset.to_bytes());
+                    key
+                }
+            }
+        }
+
+        pub mod lp {
+            pub mod lookup {
+                pub(crate) fn prefix(epoch_index: u64) -> String {
+                    format!("dex/lqt/v1/lp/lookup/{epoch_index:020}/")
+                }
+
+                /// A lookup index used to update the `by_volume` index.
+                /// It maps a position id to the latest tally of outbound cumulative volume.
+                ///
+                /// # Key Encoding
+                /// The lookup key is encoded as `prefix || position_id`
+                /// # Value Encoding
+                /// The value is encoded as `BE(Amount)`
+                pub(crate) fn volume_by_position(
+                    epoch_index: u64,
+                    position_id: &crate::lp::position::Id,
+                ) -> [u8; 74] {
+                    let prefix_bytes = prefix(epoch_index);
                     let mut key = [0u8; 74];
                     key[0..42].copy_from_slice(prefix_bytes.as_bytes());
-                    key[42..42 + 32].copy_from_slice(&asset.to_bytes());
+                    key[42..42 + 32].copy_from_slice(&position_id.0);
                     key
                 }
             }
@@ -150,37 +176,49 @@ pub mod lqt {
                 use penumbra_sdk_asset::asset;
                 use penumbra_sdk_num::Amount;
 
+                use crate::lp::position;
+
                 pub fn prefix(epoch_index: u64) -> String {
                     format!("dex/lqt/v1/lp/by_volume/{epoch_index:020}/")
+                }
+
+                pub fn prefix_with_asset(epoch_index: u64, asset: &asset::Id) -> [u8; 74] {
+                    let prefix = prefix(epoch_index);
+                    let mut key = [0u8; 74];
+                    key[0..42].copy_from_slice(prefix.as_bytes());
+                    key[42..42 + 32].copy_from_slice(&asset.to_bytes());
+                    key
                 }
 
                 /// Tracks the cumulative volume of outbound liquidity for a given pair.
                 /// The pair is always connected by the staking token, which is the implicit numeraire.
                 ///
                 /// # Encoding
-                /// The full key is encoded as: `prefix || asset || BE(!volume)`
+                /// The full key is encoded as: `prefix || asset || BE(!volume) || position`
                 pub(crate) fn _key(
                     epoch_index: u64,
                     asset: &asset::Id,
                     volume: Amount,
-                ) -> [u8; 93] {
+                    position: &position::Id,
+                ) -> [u8; 125] {
                     let prefix_bytes = prefix(epoch_index);
-                    let mut key = [0u8; 93];
+                    let mut key = [0u8; 125];
                     key[0..45].copy_from_slice(prefix_bytes.as_bytes());
                     key[45..45 + 32].copy_from_slice(&asset.to_bytes());
                     key[45 + 32..45 + 32 + 16].copy_from_slice(&(!volume).to_be_bytes());
+                    key[45 + 32 + 16..45 + 32 + 16 + 32].copy_from_slice(&position.0);
                     key
                 }
 
-                /// Extract the cumulative amount of liquidity from a fully specified key.
+                /// Parse a raw key into its constituent parts.
                 ///
                 /// # Errors
-                /// This function will return an error if the key is not 72 bytes. Or, if the
-                /// key contains an invalid asset identifier.
-                pub(crate) fn _parse_key(key: &[u8]) -> Result<(asset::Id, Amount)> {
-                    ensure!(key.len() == 93, "key must be 93 bytes");
+                /// This function will return an error if the key is not 125 bytes. Or, if the
+                /// key contains an invalid asset or position identifier.
+                pub(crate) fn parse_key(key: &[u8]) -> Result<(asset::Id, Amount, position::Id)> {
+                    ensure!(key.len() == 125, "key must be 125 bytes");
 
-                    // skip the first 45 bytes of prefix
+                    // Skip the first 45 bytes, which is the prefix.
                     let raw_asset: [u8; 32] = key[45..45 + 32].try_into()?;
                     let asset: asset::Id = raw_asset.try_into()?;
 
@@ -188,7 +226,11 @@ pub mod lqt {
                     let amount_complement = Amount::from_be_bytes(raw_amount);
                     let amount = !amount_complement;
 
-                    Ok((asset, amount))
+                    let raw_position_id: [u8; 32] =
+                        key[45 + 32 + 16..45 + 32 + 16 + 32].try_into()?;
+                    let position_id = position::Id(raw_position_id);
+
+                    Ok((asset, amount, position_id))
                 }
             }
         }
