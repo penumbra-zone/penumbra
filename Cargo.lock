@@ -1913,10 +1913,10 @@ checksum = "f400d0750c0c069e8493f2256cb4da6f604b6d2eeb69a0ca8863acde352f8400"
 [[package]]
 name = "decaf377"
 version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2097c5f69d06259112bea2024ddc41095c5001b503448f84ac169efc7cc8fd75"
+source = "git+https://github.com/hu55a1n1/decaf377.git#0945efd1eaf5e2d45441eb99c6f3a0cb3b928512"
 dependencies = [
  "ark-bls12-377",
+ "ark-crypto-primitives",
  "ark-ec",
  "ark-ed-on-bls12-377",
  "ark-ff",
@@ -1983,8 +1983,7 @@ dependencies = [
 [[package]]
 name = "decaf377-rdsa"
 version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "437967a34e0699b50b986a72ce6c4e2e5930bde85ec8f3749701f7e50d6d32b0"
+source = "git+https://github.com/dangush/decaf377-rdsa.git#d5b4d57ad8080315064878fcaa6954d6536c6d9b"
 dependencies = [
  "ark-ff",
  "ark-serialize",
@@ -6767,8 +6766,7 @@ checksum = "7170ef9988bc169ba16dd36a7fa041e5c4cbeb6a35b76d4c03daded371eae7c0"
 [[package]]
 name = "poseidon-parameters"
 version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6df50e93cde74d26eb66c9674fccde32172e915a420fe2a73fda39ab377f709"
+source = "git+https://github.com/dangush/poseidon377.git#61dc418b5f8296da4ca342f138c81b688e5808cb"
 dependencies = [
  "decaf377",
 ]
@@ -6776,8 +6774,7 @@ dependencies = [
 [[package]]
 name = "poseidon-permutation"
 version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03c4e1e8d622017ece288f1a1b06f0bfeaacaa4166fa155a91103317299452e2"
+source = "git+https://github.com/dangush/poseidon377.git#61dc418b5f8296da4ca342f138c81b688e5808cb"
 dependencies = [
  "ark-ff",
  "ark-r1cs-std",
@@ -6790,8 +6787,7 @@ dependencies = [
 [[package]]
 name = "poseidon377"
 version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae0544874afdaf74b69efc90795c66ea7a494faeb2981a0585d46c757ee2fa94"
+source = "git+https://github.com/dangush/poseidon377.git#61dc418b5f8296da4ca342f138c81b688e5808cb"
 dependencies = [
  "ark-ec",
  "ark-ff",
