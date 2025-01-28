@@ -158,7 +158,7 @@ pub mod lqt {
                 /// The pair is always connected by the staking token, which is the implicit numeraire.
                 ///
                 /// # Encoding
-                /// The full key is encoded as: `prefix || asset || BE(volume)`
+                /// The full key is encoded as: `prefix || asset || BE(!volume)`
                 pub(crate) fn _key(
                     epoch_index: u64,
                     asset: &asset::Id,
