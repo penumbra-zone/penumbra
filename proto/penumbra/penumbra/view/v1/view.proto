@@ -149,6 +149,9 @@ service ViewService {
 
   // Gets the auctions controlled by the user's wallet.
   rpc Auctions(AuctionsRequest) returns (stream AuctionsResponse);
+
+  // Gets the latest swaps controlled by the user's wallet. 
+  rpc LatestSwaps(LatestSwapsRequest) returns (stream LatestSwapsResponse);
 }
 
 // There's only one transparent address per wallet, so this request has no parameters;
@@ -789,4 +792,29 @@ message UnbondingTokensByAddressIndexResponse {
   // `true` if the `unbonding_delay` (from `StakeParameters`) has passed or the
   // validator has unbonded.
   bool claimable = 2;
+}
+
+// Requests the latest swaps controlled by the user's wallet. 
+message LatestSwapsRequest {
+  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  core.keys.v1.AddressIndex account_filter = 1;
+  // If present, filter balances to only include trading activity on the specified pair.
+  core.component.dex.v1.DirectedTradingPair pair = 2;
+  // If present, limit the responses to activity that occured after this block height.
+  uint64 after_height = 3;
+  // Limit the response to the last entries within `response_limit`.
+  uint64 response_limit = 4;
+}
+
+message LatestSwapsResponse {
+  // The trading pair involved in this swap.
+  core.component.dex.v1.DirectedTradingPair pair = 1;
+  // The input value for the swap.
+  core.asset.v1.Value input = 2;
+  // The output value received from the swap.
+  core.asset.v1.Value output = 3;
+  // The block height at which this swap occurred.
+  uint64 block_height = 4;
+  // The hash of the transaction that was broadcast.
+  core.txhash.v1.TransactionId id = 5;
 }

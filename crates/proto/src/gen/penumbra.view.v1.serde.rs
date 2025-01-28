@@ -3289,6 +3289,331 @@ impl<'de> serde::Deserialize<'de> for IndexByAddressResponse {
         deserializer.deserialize_struct("penumbra.view.v1.IndexByAddressResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for LatestSwapsRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.account_filter.is_some() {
+            len += 1;
+        }
+        if self.pair.is_some() {
+            len += 1;
+        }
+        if self.after_height != 0 {
+            len += 1;
+        }
+        if self.response_limit != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LatestSwapsRequest", len)?;
+        if let Some(v) = self.account_filter.as_ref() {
+            struct_ser.serialize_field("accountFilter", v)?;
+        }
+        if let Some(v) = self.pair.as_ref() {
+            struct_ser.serialize_field("pair", v)?;
+        }
+        if self.after_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("afterHeight", ToString::to_string(&self.after_height).as_str())?;
+        }
+        if self.response_limit != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("responseLimit", ToString::to_string(&self.response_limit).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for LatestSwapsRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "account_filter",
+            "accountFilter",
+            "pair",
+            "after_height",
+            "afterHeight",
+            "response_limit",
+            "responseLimit",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            AccountFilter,
+            Pair,
+            AfterHeight,
+            ResponseLimit,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "accountFilter" | "account_filter" => Ok(GeneratedField::AccountFilter),
+                            "pair" => Ok(GeneratedField::Pair),
+                            "afterHeight" | "after_height" => Ok(GeneratedField::AfterHeight),
+                            "responseLimit" | "response_limit" => Ok(GeneratedField::ResponseLimit),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = LatestSwapsRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.LatestSwapsRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<LatestSwapsRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut account_filter__ = None;
+                let mut pair__ = None;
+                let mut after_height__ = None;
+                let mut response_limit__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::AccountFilter => {
+                            if account_filter__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("accountFilter"));
+                            }
+                            account_filter__ = map_.next_value()?;
+                        }
+                        GeneratedField::Pair => {
+                            if pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("pair"));
+                            }
+                            pair__ = map_.next_value()?;
+                        }
+                        GeneratedField::AfterHeight => {
+                            if after_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("afterHeight"));
+                            }
+                            after_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ResponseLimit => {
+                            if response_limit__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("responseLimit"));
+                            }
+                            response_limit__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(LatestSwapsRequest {
+                    account_filter: account_filter__,
+                    pair: pair__,
+                    after_height: after_height__.unwrap_or_default(),
+                    response_limit: response_limit__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.LatestSwapsRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for LatestSwapsResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.pair.is_some() {
+            len += 1;
+        }
+        if self.input.is_some() {
+            len += 1;
+        }
+        if self.output.is_some() {
+            len += 1;
+        }
+        if self.block_height != 0 {
+            len += 1;
+        }
+        if self.id.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LatestSwapsResponse", len)?;
+        if let Some(v) = self.pair.as_ref() {
+            struct_ser.serialize_field("pair", v)?;
+        }
+        if let Some(v) = self.input.as_ref() {
+            struct_ser.serialize_field("input", v)?;
+        }
+        if let Some(v) = self.output.as_ref() {
+            struct_ser.serialize_field("output", v)?;
+        }
+        if self.block_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("blockHeight", ToString::to_string(&self.block_height).as_str())?;
+        }
+        if let Some(v) = self.id.as_ref() {
+            struct_ser.serialize_field("id", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for LatestSwapsResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "pair",
+            "input",
+            "output",
+            "block_height",
+            "blockHeight",
+            "id",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Pair,
+            Input,
+            Output,
+            BlockHeight,
+            Id,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "pair" => Ok(GeneratedField::Pair),
+                            "input" => Ok(GeneratedField::Input),
+                            "output" => Ok(GeneratedField::Output),
+                            "blockHeight" | "block_height" => Ok(GeneratedField::BlockHeight),
+                            "id" => Ok(GeneratedField::Id),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = LatestSwapsResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.LatestSwapsResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<LatestSwapsResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut pair__ = None;
+                let mut input__ = None;
+                let mut output__ = None;
+                let mut block_height__ = None;
+                let mut id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Pair => {
+                            if pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("pair"));
+                            }
+                            pair__ = map_.next_value()?;
+                        }
+                        GeneratedField::Input => {
+                            if input__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("input"));
+                            }
+                            input__ = map_.next_value()?;
+                        }
+                        GeneratedField::Output => {
+                            if output__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("output"));
+                            }
+                            output__ = map_.next_value()?;
+                        }
+                        GeneratedField::BlockHeight => {
+                            if block_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockHeight"));
+                            }
+                            block_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Id => {
+                            if id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("id"));
+                            }
+                            id__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(LatestSwapsResponse {
+                    pair: pair__,
+                    input: input__,
+                    output: output__,
+                    block_height: block_height__.unwrap_or_default(),
+                    id: id__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.LatestSwapsResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for NoteByCommitmentRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
