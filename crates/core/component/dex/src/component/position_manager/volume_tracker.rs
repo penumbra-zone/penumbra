@@ -51,11 +51,11 @@ pub(crate) trait PositionVolumeTracker: StateWrite {
         // We **DO NOT** want to track the volume of the other asset denominated in staking tokens.
         let prev_r1 = prev_state
             .as_ref()
-            .map_or(Amount::zero(), |prev| new_state.reserves_1().amount);
+            .map_or(Amount::zero(), |prev| prev.reserves_1().amount);
 
         let prev_r2 = prev_state
             .as_ref()
-            .map_or(Amount::zero(), |prev| new_state.reserves_2().amount);
+            .map_or(Amount::zero(), |prev| prev.reserves_2().amount);
 
         let new_r1 = new_state.reserves_1().amount;
         let new_r2 = new_state.reserves_2().amount;
