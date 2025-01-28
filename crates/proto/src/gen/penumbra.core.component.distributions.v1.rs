@@ -5,6 +5,9 @@ pub struct DistributionsParameters {
     /// The amount of staking token issued per block.
     #[prost(uint64, tag = "1")]
     pub staking_issuance_per_block: u64,
+    /// The amount of staking token flowing from the community pool to the liquidity tournament each block.
+    #[prost(uint64, tag = "2")]
+    pub liquidity_tournament_incentive_per_block: u64,
 }
 impl ::prost::Name for DistributionsParameters {
     const NAME: &'static str = "DistributionsParameters";
