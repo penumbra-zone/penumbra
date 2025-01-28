@@ -14,7 +14,7 @@ use penumbra_sdk_proto::{DomainType as _, StateReadProto, StateWriteProto};
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use crate::state_key::{block_scoped,};
+use crate::state_key::block_scoped;
 use crate::{
     component::SwapDataRead, component::SwapDataWrite, event, genesis, state_key,
     BatchSwapOutputData, DexParameters, DirectedTradingPair, SwapExecution, TradingPair,

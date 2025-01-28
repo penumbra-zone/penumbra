@@ -195,11 +195,11 @@ pub mod lqt {
                 ///
                 /// # Encoding
                 /// The full key is encoded as: `prefix || asset || BE(!volume) || position`
-                pub(crate) fn _key(
+                pub(crate) fn key(
                     epoch_index: u64,
                     asset: &asset::Id,
-                    volume: Amount,
                     position: &position::Id,
+                    volume: Amount,
                 ) -> [u8; 125] {
                     let prefix_bytes = prefix(epoch_index);
                     let mut key = [0u8; 125];

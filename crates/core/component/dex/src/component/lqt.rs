@@ -63,3 +63,5 @@ pub trait LqtRead: StateRead {
             .boxed())
     }
 }
+
+impl<T: StateRead + ?Sized> LqtRead for T {}
