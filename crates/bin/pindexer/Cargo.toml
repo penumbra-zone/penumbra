@@ -52,4 +52,4 @@ prost-reflect = "0.14.3"
 # TODO: move reqwest to workspace dependency
 reqwest= { version = "0.12.9", features = ["json", "stream"] }
 http = { workspace = true }
-rstest = "0.24.0"
+rstest = { workspace = true }

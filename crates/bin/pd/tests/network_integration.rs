@@ -10,26 +10,29 @@ use penumbra_sdk_proto::FILE_DESCRIPTOR_SET;
 use predicates::prelude::*;
 use prost_reflect::{DescriptorPool, ServiceDescriptor};
 use regex::Regex;
+use rstest::rstest;
 use url::Url;
 
+#[rstest]
 /// Specific patterns for spot-checking the metrics emitted by pd.
 /// It's a smattering of metrics from the various components, including
 /// some from outside the workspace, e.g. `cnidarium`.
-const PD_METRICS_PATTERNS: &[&str] = &[
-    r"^cnidarium_get_raw_duration_seconds_count_seconds \d+",
-    r"^cnidarium_nonverifiable_get_raw_duration_seconds_count_seconds \d+",
-    r"^pd_async_sleep_drift_microseconds \d+",
-    r"^penumbra_funding_streams_total_processing_time_milliseconds_count_milliseconds \d+",
-    r"^penumbra_dex_path_search_duration_seconds_count_seconds \d+",
-];
-
-#[ignore]
+#[case(r"^cnidarium_get_raw_duration_seconds_count_seconds \d+")]
+#[case(r"^cnidarium_nonverifiable_get_raw_duration_seconds_count_seconds \d+")]
+#[case(r"^pd_async_sleep_drift_microseconds \d+")]
+#[case(r"^pd_process_cpu_seconds_total \d+")]
+#[case(r"^pd_process_open_fds \d+")]
+#[case(r#"^penumbra_stake_missed_blocks\{identity_key=".*"\} \d+"#)]
+#[case(r"^penumbra_funding_streams_total_processing_time_milliseconds_count_milliseconds \d+")]
+#[case(r"^penumbra_dex_path_search_duration_seconds_count_seconds \d+")]
+#[case(r"^penumbra_dex_path_search_relax_path_duration_seconds_count_seconds \d+")]
 #[tokio::test]
+#[ignore]
 /// Confirm that prometheus metrics are being exported for scraping.
 /// Several times while bumping related crates we've missed a breakage
 /// to metrics, and only noticed when we checked the grafana boards
 /// for the preview environment post-deploy.
-async fn confirm_metrics_emission() -> anyhow::Result<()> {
+async fn confirm_metrics_emission(#[case] pattern: &str) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let metrics_url = std::env::var("PENUMBRA_NODE_PD_METRICS_URL")
         .unwrap_or("http://localhost:9000/metrics".to_string());
@@ -39,12 +42,10 @@ async fn confirm_metrics_emission() -> anyhow::Result<()> {
     // Assert 200
     assert_eq!(status, StatusCode::OK);
 
-    // Check specific metrics in the combined output
-    for pattern in PD_METRICS_PATTERNS {
-        // Enable multi-line support in the regex matching.
-        let re = Regex::new(&format!(r"(?m){}", pattern))?;
-        assert!(re.is_match(&body), "pd metric missing: {}", pattern);
-    }
+    // Enable multi-line support in the regex matching.
+    let re = Regex::new(&format!(r"(?m){}", pattern))?;
+    assert!(re.is_match(&body), "pd metric missing: {}", pattern);
+
     Ok(())
 }
 

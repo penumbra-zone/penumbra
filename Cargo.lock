@@ -1298,7 +1298,7 @@ dependencies = [
  "ibc-types",
  "ics23",
  "jmt",
- "metrics 0.24.1",
+ "metrics",
  "once_cell",
  "parking_lot",
  "pbjson",
@@ -3776,16 +3776,6 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "884adb57038347dfbaf2d5065887b6cf4312330dc8e94bc30a1a839bd79d3261"
-dependencies = [
- "ahash",
- "portable-atomic",
-]
-
-[[package]]
-name = "metrics"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a7deb012b3b2767169ff203fadb4c6b0b82b947512e5eb9e0b78c2e186ad9e3"
@@ -3807,7 +3797,7 @@ dependencies = [
  "hyper-util",
  "indexmap 2.7.1",
  "ipnet",
- "metrics 0.24.1",
+ "metrics",
  "metrics-util 0.19.0",
  "quanta",
  "thiserror 1.0.61",
@@ -3817,13 +3807,14 @@ dependencies = [
 
 [[package]]
 name = "metrics-process"
-version = "2.1.0"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb524e5438255eaa8aa74214d5a62713b77b2c3c6e3c0bbeee65cfd9a58948ba"
+checksum = "4a82c8add4382f29a122fa64fff1891453ed0f6b2867d971e7d60cb8dfa322ff"
 dependencies = [
+ "libc",
  "libproc",
  "mach2",
- "metrics 0.23.0",
+ "metrics",
  "once_cell",
  "procfs",
  "rlimit",
@@ -3839,7 +3830,7 @@ dependencies = [
  "indexmap 2.7.1",
  "itoa",
  "lockfree-object-pool",
- "metrics 0.24.1",
+ "metrics",
  "metrics-util 0.18.0",
  "once_cell",
  "tracing",
@@ -3858,7 +3849,7 @@ dependencies = [
  "crossbeam-utils",
  "hashbrown 0.15.2",
  "indexmap 2.7.1",
- "metrics 0.24.1",
+ "metrics",
  "ordered-float",
  "quanta",
  "radix_trie",
@@ -3874,7 +3865,7 @@ dependencies = [
  "crossbeam-epoch",
  "crossbeam-utils",
  "hashbrown 0.15.2",
- "metrics 0.24.1",
+ "metrics",
  "quanta",
  "rand",
  "rand_xoshiro",
@@ -4471,7 +4462,7 @@ dependencies = [
  "http-body 1.0.1",
  "ibc-proto",
  "ibc-types",
- "metrics 0.24.1",
+ "metrics",
  "parking_lot",
  "penumbra-sdk-app",
  "penumbra-sdk-asset",
@@ -4536,7 +4527,7 @@ dependencies = [
  "ibc-types",
  "ics23",
  "jmt",
- "metrics 0.24.1",
+ "metrics",
  "metrics-exporter-prometheus",
  "metrics-process",
  "metrics-tracing-context",
@@ -4577,6 +4568,7 @@ dependencies = [
  "regex",
  "reqwest 0.12.9",
  "rocksdb",
+ "rstest",
  "rustls 0.23.21",
  "serde",
  "serde_json",
@@ -4685,7 +4677,7 @@ dependencies = [
  "ics23",
  "im",
  "jmt",
- "metrics 0.24.1",
+ "metrics",
  "once_cell",
  "parking_lot",
  "penumbra-sdk-asset",
@@ -4768,7 +4760,7 @@ dependencies = [
  "ics23",
  "im",
  "jmt",
- "metrics 0.24.1",
+ "metrics",
  "once_cell",
  "parking_lot",
  "penumbra-sdk-app",
@@ -4895,7 +4887,7 @@ dependencies = [
  "futures",
  "hex",
  "im",
- "metrics 0.24.1",
+ "metrics",
  "once_cell",
  "pbjson-types",
  "penumbra-sdk-asset",
@@ -4994,7 +4986,7 @@ dependencies = [
  "cnidarium-component",
  "futures",
  "hex",
- "metrics 0.24.1",
+ "metrics",
  "once_cell",
  "pbjson-types",
  "penumbra-sdk-asset",
@@ -5027,7 +5019,7 @@ dependencies = [
  "decaf377-rdsa",
  "futures",
  "im",
- "metrics 0.24.1",
+ "metrics",
  "penumbra-sdk-dex",
  "penumbra-sdk-fee",
  "penumbra-sdk-governance",
@@ -5110,7 +5102,7 @@ dependencies = [
  "hex",
  "im",
  "itertools 0.11.0",
- "metrics 0.24.1",
+ "metrics",
  "metrics-exporter-prometheus",
  "once_cell",
  "parking_lot",
@@ -5197,7 +5189,7 @@ dependencies = [
  "decaf377-rdsa",
  "getrandom",
  "im",
- "metrics 0.24.1",
+ "metrics",
  "penumbra-sdk-asset",
  "penumbra-sdk-num",
  "penumbra-sdk-proto",
@@ -5218,7 +5210,7 @@ dependencies = [
  "cnidarium",
  "cnidarium-component",
  "futures",
- "metrics 0.24.1",
+ "metrics",
  "penumbra-sdk-asset",
  "penumbra-sdk-community-pool",
  "penumbra-sdk-distributions",
@@ -5255,7 +5247,7 @@ dependencies = [
  "futures",
  "ibc-types",
  "im",
- "metrics 0.24.1",
+ "metrics",
  "once_cell",
  "pbjson-types",
  "penumbra-sdk-asset",
@@ -5301,7 +5293,7 @@ dependencies = [
  "ibc-proto",
  "ibc-types",
  "ics23",
- "metrics 0.24.1",
+ "metrics",
  "num-traits",
  "once_cell",
  "pbjson-types",
@@ -5609,7 +5601,7 @@ dependencies = [
  "getrandom",
  "hex",
  "im",
- "metrics 0.24.1",
+ "metrics",
  "once_cell",
  "pbjson-types",
  "penumbra-sdk-keys",
@@ -5652,7 +5644,7 @@ dependencies = [
  "ibc-proto",
  "ibc-types",
  "im",
- "metrics 0.24.1",
+ "metrics",
  "once_cell",
  "penumbra-sdk-asset",
  "penumbra-sdk-ibc",
@@ -5703,7 +5695,7 @@ dependencies = [
  "getrandom",
  "hex",
  "im",
- "metrics 0.24.1",
+ "metrics",
  "once_cell",
  "penumbra-sdk-asset",
  "penumbra-sdk-distributions",
@@ -5815,7 +5807,7 @@ dependencies = [
  "futures",
  "hex",
  "http 1.2.0",
- "metrics 0.24.1",
+ "metrics",
  "pbjson-types",
  "penumbra-sdk-proto",
  "penumbra-sdk-transaction",
@@ -5953,7 +5945,7 @@ dependencies = [
  "genawaiter",
  "hex",
  "ibc-types",
- "metrics 0.24.1",
+ "metrics",
  "once_cell",
  "parking_lot",
  "pbjson-types",
@@ -6467,22 +6459,21 @@ dependencies = [
 
 [[package]]
 name = "procfs"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "731e0d9356b0c25f16f33b5be79b1c57b562f141ebfcdb0ad8ac2c13a24293b4"
+checksum = "cc5b72d8145275d844d4b5f6d4e1eef00c8cd889edb6035c21675d1bb1f45c9f"
 dependencies = [
  "bitflags 2.6.0",
  "hex",
- "lazy_static",
  "procfs-core",
  "rustix",
 ]
 
 [[package]]
 name = "procfs-core"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d3554923a69f4ce04c4a754260c338f505ce22642d3830e049a399fc2059a29"
+checksum = "239df02d8349b06fc07398a3a1697b06418223b1c7725085e801e7c0fc6a12ec"
 dependencies = [
  "bitflags 2.6.0",
  "hex",
@@ -9308,11 +9299,11 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "windows"
-version = "0.57.0"
+version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12342cb4d8e3b046f3d80effd474a7a02447231330ef77d71daa6fbc40681143"
+checksum = "dd04d41d93c4992d421894c18c8b43496aa748dd4c081bac0dc93eb0489272b6"
 dependencies = [
- "windows-core 0.57.0",
+ "windows-core 0.58.0",
  "windows-targets 0.52.6",
 ]
 
@@ -9327,21 +9318,22 @@ dependencies = [
 
 [[package]]
 name = "windows-core"
-version = "0.57.0"
+version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2ed2439a290666cd67ecce2b0ffaad89c2a56b976b736e6ece670297897832d"
+checksum = "6ba6d44ec8c2591c134257ce647b7ea6b20335bf6379a27dac5f1641fcf59f99"
 dependencies = [
  "windows-implement",
  "windows-interface",
- "windows-result 0.1.2",
+ "windows-result",
+ "windows-strings",
  "windows-targets 0.52.6",
 ]
 
 [[package]]
 name = "windows-implement"
-version = "0.57.0"
+version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9107ddc059d5b6fbfbffdfa7a7fe3e22a226def0b2608f72e9d552763d3e1ad7"
+checksum = "2bbd5b46c938e506ecbce286b6628a02171d56153ba733b6c741fc627ec9579b"
 dependencies = [
  "proc-macro2 1.0.93",
  "quote",
@@ -9350,9 +9342,9 @@ dependencies = [
 
 [[package]]
 name = "windows-interface"
-version = "0.57.0"
+version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29bee4b38ea3cde66011baa44dba677c432a78593e202392d1e9070cf2a7fca7"
+checksum = "053c4c462dc91d3b1504c6fe5a726dd15e216ba718e84a0e46a88fbe5ded3515"
 dependencies = [
  "proc-macro2 1.0.93",
  "quote",
@@ -9365,17 +9357,8 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e400001bb720a623c1c69032f8e3e4cf09984deec740f007dd2b03ec864804b0"
 dependencies = [
- "windows-result 0.2.0",
+ "windows-result",
  "windows-strings",
- "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "windows-result"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e383302e8ec8515204254685643de10811af0ed97ea37210dc26fb0032647f8"
-dependencies = [
  "windows-targets 0.52.6",
 ]
 
@@ -9394,7 +9377,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cd9b125c486025df0eabcb585e62173c6c9eddcec5d117d3b6e8c30e2ee4d10"
 dependencies = [
- "windows-result 0.2.0",
+ "windows-result",
  "windows-targets 0.52.6",
 ]
 
