@@ -5,5 +5,6 @@ pub mod component;
 pub mod event;
 
 pub mod genesis;
+pub mod liquidity_tournament;
 pub mod params;
 pub use params::FundingParameters;
