@@ -75,7 +75,10 @@ impl AppParameters {
                     fixed_gas_prices: _,
                     fixed_alt_gas_prices: _,
                 },
-            funding_params: FundingParameters {},
+            funding_params:
+                FundingParameters {
+                    liquidity_tournament: _,
+                },
             governance_params:
                 GovernanceParameters {
                     proposal_voting_blocks: _,
@@ -171,7 +174,10 @@ impl AppParameters {
                     fixed_gas_prices: _,
                     fixed_alt_gas_prices: _,
                 },
-            funding_params: FundingParameters {},
+            funding_params:
+                FundingParameters {
+                    liquidity_tournament: _,
+                },
             governance_params:
                 GovernanceParameters {
                     proposal_voting_blocks,
