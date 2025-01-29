@@ -56,7 +56,7 @@ pub trait LqtRead: StateRead {
             .map(|res| {
                 res.map(|(raw_entry, _)| {
                     let (asset, volume, position_id) =
-                        lqt::v1::lp::by_volume::parse_key(&raw_entry).expect("TODO");
+                        lqt::v1::lp::by_volume::parse_key(&raw_entry).expect("internal invariant failed: failed to parse state key for lqt::v1::lp::by_volume");
                     (asset, position_id, volume)
                 })
             })
