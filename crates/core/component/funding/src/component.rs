@@ -19,7 +19,7 @@ use cnidarium_component::Component;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use crate::{event::EventFundingStreamReward, genesis, FundingParameters};
+use crate::{event::EventFundingStreamReward, genesis};
 
 pub struct Funding {}
 
