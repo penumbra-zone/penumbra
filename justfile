@@ -16,6 +16,7 @@ test-pmonitor:
 dev:
     ./deployments/scripts/check-nix-shell && \
         ./deployments/scripts/run-local-devnet.sh \
+        --keep-project \
         --config ./deployments/compose/process-compose-postgres.yml \
         --config ./deployments/compose/process-compose-metrics.yml \
         --config ./deployments/compose/process-compose-dev-tooling.yml
@@ -53,5 +54,6 @@ integration-testnet:
 
 # Run smoke test suite, via process-compose config.
 smoke:
+    ./deployments/scripts/check-nix-shell
     ./deployments/scripts/warn-about-pd-state
     ./deployments/scripts/smoke-test.sh

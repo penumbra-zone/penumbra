@@ -23,8 +23,6 @@ processes:
       # More info: https://www.postgresql.org/docs/current/server-shutdown.html
       # and `man 7 signal`.
       signal: 2
-    availability:
-      restart: exit_on_failure
 
   # Set up databases and initial schemas
   postgresql-init:
@@ -50,8 +48,6 @@ processes:
       psql -h localhost -p 5432 -d penumbra_cometbft -c 'GRANT pg_read_all_data TO penumbra_ro;'
       psql -h localhost -p 5432 -d penumbra_pindexer -c 'GRANT pg_write_all_data TO penumbra_ro;'
       psql -h localhost -p 5432 -d penumbra_pindexer -c 'GRANT ALL PRIVILEGES ON DATABASE penumbra_pindexer TO penumbra_ro;'
-    availability:
-      restart: exit_on_failure
     depends_on:
       postgresql:
         condition: process_healthy

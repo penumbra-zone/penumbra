@@ -22,8 +22,6 @@ processes:
       initial_delay_seconds: 10
       period_seconds: 5
       failure_threshold: 3
-    availability:
-      restart: exit_on_failure
     depends_on:
       prometheus:
         condition: process_healthy
@@ -43,5 +41,3 @@ processes:
       initial_delay_seconds: 10
       period_seconds: 5
       failure_threshold: 3
-    availability:
-      restart: exit_on_failure

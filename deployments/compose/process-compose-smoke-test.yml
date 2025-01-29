@@ -1,8 +1,9 @@
 ---
 # A process-compose configuration for running penumbra smoke-tests.
+# Intended as an extension for other process-compose configs that provide
 #
-# https://github.com/F1bonacc1/process-compose/
-#
+# core functionality, such as pd/cometbft services.
+# Best invoked via `just smoke` at the project root.
 version: "0.5"
 
 # Env vars set here will be accessible to all processes.
@@ -19,52 +20,6 @@ is_strict: true
 log_location: deployments/logs/smoke-combined.log
 
 processes:
-  # Build latest version of local code. We do this once, up front,
-  # so that each test suite runs immediately when ready, without iterative building.
-  build-code:
-    command: |-
-      echo "Building source code before running tests..."
-      cargo --quiet build --release --all-targets
-      cargo --quiet test --release --no-run
-      cargo --quiet test --release --no-run -- --ignored
-      cargo --quiet test --release --features sct-divergence-check --package pclientd --no-run -- \
-        --ignored --test-threads 1 --nocapture
-      cargo --quiet test --release --features sct-divergence-check,download-proving-keys --package pcli --no-run -- \
-        --ignored --test-threads 1 --nocapture
-      cargo --quiet test --release --package pd --no-run -- \
-        --ignored --test-threads 1 --nocapture
-
-  # Create network configuration, for running a pd validator locally.
-  network-generate:
-    command: >
-      cargo run --quiet --release --bin pd -- 
-      network generate --unbonding-delay 50
-      --epoch-duration 50 --timeout-commit 500ms --gas-price-simple 1000
-    depends_on:
-      build-code:
-        condition: process_completed_successfully
-
-  # Run pd validator based on generated network.
-  pd:
-    command: "cargo run --release --bin pd -- start"
-    readiness_probe:
-      http_get:
-        host: 127.0.0.1
-        scheme: http
-        path: "/"
-        port: 8080
-      period_seconds: 5
-    depends_on:
-      network-generate:
-        condition: process_completed_successfully
-
-  # Run CometBFT for pd p2p.
-  cometbft:
-    command: "cometbft --home ~/.penumbra/network_data/node0/cometbft start"
-    depends_on:
-      pd:
-        condition: process_healthy
-
   # The order of the integration tests is (unfortunately) important:
   #
   #   1. First up are the pclientd tests, because
