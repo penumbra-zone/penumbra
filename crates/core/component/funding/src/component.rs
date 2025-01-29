@@ -30,9 +30,7 @@ impl Component for Funding {
     #[instrument(name = "funding", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
-            None => {
-                state.put_funding_params(FundingParameters::default());
-            }
+            None => { /* no-op */ }
             Some(genesis) => {
                 state.put_funding_params(genesis.funding_params.clone());
             }
