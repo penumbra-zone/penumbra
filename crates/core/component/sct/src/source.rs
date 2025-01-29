@@ -136,7 +136,7 @@ impl TryFrom<pb::CommitmentSource> for CommitmentSource {
                     .tx_hash
                     .map(|x| x.try_into())
                     .transpose()?
-                    .expect("failed to retrieve LQT transaction hash"),
+                    .ok_or_else(|| anyhow!("missing LQT transaction hash"))?,
             },
         })
     }
