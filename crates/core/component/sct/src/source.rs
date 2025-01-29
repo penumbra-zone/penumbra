@@ -1,5 +1,6 @@
 use anyhow::anyhow;
 use penumbra_sdk_proto::{core::component::sct::v1 as pb, DomainType};
+use penumbra_sdk_txhash::TransactionId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
@@ -27,6 +28,13 @@ pub enum CommitmentSource {
         channel_id: String,
         /// The sender address on the counterparty chain.
         sender: String,
+    },
+    /// The commitment was created through the participation in the liquidity tournament.
+    LiquidityTournamentReward {
+        /// The epoch in which the reward occured.
+        epoch: u64,
+        /// Transaction hash of the transaction that did the voting.
+        tx_hash: TransactionId,
     },
 }
 
@@ -82,6 +90,12 @@ impl From<CommitmentSource> for pb::CommitmentSource {
                     channel_id,
                     sender,
                 }),
+                CommitmentSource::LiquidityTournamentReward { epoch, tx_hash } => {
+                    Source::Lqt(pbcs::LiquidityTournamentReward {
+                        epoch,
+                        tx_hash: Some(tx_hash.into()),
+                    })
+                }
             }),
         }
     }
@@ -115,6 +129,14 @@ impl TryFrom<pb::CommitmentSource> for CommitmentSource {
                 packet_seq: x.packet_seq,
                 channel_id: x.channel_id,
                 sender: x.sender,
+            },
+            Source::Lqt(x) => Self::LiquidityTournamentReward {
+                epoch: x.epoch,
+                tx_hash: x
+                    .tx_hash
+                    .map(|x| x.try_into())
+                    .transpose()?
+                    .expect("failed to retrieve LQT transaction hash"),
             },
         })
     }
