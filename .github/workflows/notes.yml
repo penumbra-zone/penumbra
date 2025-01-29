@@ -1,4 +1,4 @@
-name: Render and Deploy Docs
+name: docs
 
 on:
   workflow_dispatch:
@@ -8,8 +8,10 @@ on:
 
 jobs:
 
+  # Renders and deploys protocol and API docs.
+  # Would be faster if we parallelized it, but it's already <10m,
+  # and only runs post-merge on main, so 10m isn't bad.
   build:
-    name: Render and deploy protocol and API docs
     timeout-minutes: 30
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:

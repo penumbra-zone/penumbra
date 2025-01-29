@@ -25,9 +25,16 @@ dev:
 fmt:
     cargo fmt --all
 
+# warms the rust cache by building all targets
+build:
+    cargo build --release --all-features --all-targets
+
 # Runs 'cargo check' on all rust files in the project.
 check:
-  RUSTFLAGS="-D warnings" cargo check --release --all-targets
+  # check, failing on warnings
+  RUSTFLAGS="-D warnings" cargo check --release --all-targets --all-features --target-dir=target/check
+  # fmt dry-run, failing on any suggestions
+  cargo fmt --all -- --check
 
 # Render livereload environment for editing the Protocol documentation.
 protocol-docs:
@@ -47,6 +54,10 @@ metrics:
 # Rebuild Rust crate documentation
 rustdocs:
     ./deployments/scripts/rust-docs
+
+# Run rust unit tests, via cargo-nextest
+test:
+  cargo nextest run --release
 
 # Run integration tests against the testnet, for validating HTTPS support
 integration-testnet:

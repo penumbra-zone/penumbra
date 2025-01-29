@@ -1,4 +1,4 @@
-name: Update protobuf docs
+name: protobuf
 # We want to rebuild on every commit to main, and also for named testnet tags,
 # so that API users can pick a tagged version of the protobuf definitions
 # to use against a matching testnet.
@@ -9,7 +9,7 @@ on:
     tags:
       - '**'
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +18,7 @@ jobs:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           input: 'proto'
+
       - uses: bufbuild/buf-lint-action@v1
         with:
           input: 'proto'

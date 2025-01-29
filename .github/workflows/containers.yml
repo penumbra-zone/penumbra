@@ -1,5 +1,5 @@
 ---
-name: Create and publish container images
+name: containers
 on:
   # Build on merge to main, or any tag push.
   push:

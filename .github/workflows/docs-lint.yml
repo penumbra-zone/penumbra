@@ -1,4 +1,4 @@
-name: Docs lint
+name: docs-lint
 on: pull_request
 
 jobs:
@@ -6,7 +6,6 @@ jobs:
     # We use a custom script to generate the index page for https://rustdoc.penumbra.zone,
     # and refactors to rust deps can break that generation. Let's ensure this script exits 0
     # on PRs, but we'll still only deploy after merge into main.
-    name: rustdoc-lint
     runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +20,9 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
 
+      # Don't bother importing nix env, since we only need cargo-nightly,
+      # no other deps.
+
       # Building with warm cache takes ~40s, depending on changes.
       - name: Build rustdocs
         run: ./deployments/scripts/rust-docs
@@ -28,7 +30,6 @@ jobs:
   # Also validate that the `mdbook` docs (guide & protocol) build correctly.
   # In particular, links are checked within the docs.
   mdbook:
-    name: mdbook-lint
     # Downgrading runner size to 4vcpu, since we're not compiling code.
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
@@ -39,8 +40,9 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
 
-      # It's OK to install from crates, building from source, because of cache use
-      # on previous step. Install takes ~5s with warm cache.
+      # Don't bother importing nix env, since we only need a few cargo deps.
+      # It's OK to install from crates, building from source, because the
+      # rust-cache restore on the previous step reduces the install step to ~5s.
       - name: Install mdbook dependencies
         run: cargo install mdbook mdbook-katex mdbook-mermaid mdbook-linkcheck
 

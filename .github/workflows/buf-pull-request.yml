@@ -1,4 +1,4 @@
-name: Protobuf
+name: protobuf
 on:
   # Exclude feature branches, only run if the PR is targeting main.
   pull_request:
@@ -7,8 +7,7 @@ on:
 jobs:
   # Ensure there are no breaking changes to the protocol specs,
   # by running the "buf lint" action against the changes in this PR.
-  lint:
-    name: Lint protobuf
+  backwards-compatibility:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,12 +40,13 @@ jobs:
         with:
           input: "proto"
           # The 'main' branch of the GitHub repository that defines the module.
-          against: "https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto"
+          # Don't use `GITHUB_REPOSITORY`, because then it'll fail when run on forks.
+          # against: "https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto"
+          against: "https://github.com/penumbra-zone/penumbra.git#branch=main,subdir=proto"
 
   # Run our bespoke tooling for codegen, consuming the protocol buffer definitions
   # and emitting generated code. Afterward, there should be no uncommitted changes.
-  protobuf-fresh:
-    name: Compile protobuf specs to rust code
+  build:
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - name: Checkout the source code
