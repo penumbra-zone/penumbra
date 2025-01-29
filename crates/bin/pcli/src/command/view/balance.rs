@@ -119,8 +119,7 @@ fn format_source(source: &CommitmentSource) -> String {
         CommitmentSource::LiquidityTournamentReward { epoch, tx_hash } => {
             format!(
                 "Liquidity tournament reward (Epoch {}, Tx {})",
-                epoch,
-                hex::encode(tx_hash)
+                epoch, tx_hash
             )
         }
     }
