@@ -14,6 +14,9 @@ use penumbra_sdk_dex::{
     swap::{Swap, SwapCiphertext, SwapView},
     swap_claim::{SwapClaim, SwapClaimView},
 };
+use penumbra_sdk_funding::liquidity_tournament::{
+    ActionLiquidityTournamentVote, ActionLiquidityTournamentVoteView,
+};
 use penumbra_sdk_governance::{
     DelegatorVote, DelegatorVoteView, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
     ValidatorVote, VotingReceiptToken,
@@ -496,5 +499,25 @@ impl IsAction for ActionDutchAuctionWithdraw {
             reserves: vec![],
         };
         ActionView::ActionDutchAuctionWithdraw(view)
+    }
+}
+
+impl IsAction for ActionLiquidityTournamentVote {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance_commmitment()
+    }
+
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
+        let lqt_vote_view = match txp.spend_nullifiers.get(&self.body.nullifier) {
+            Some(note) => ActionLiquidityTournamentVoteView::Visible {
+                vote: self.to_owned(),
+                note: txp.view_note(note.to_owned()),
+            },
+            None => ActionLiquidityTournamentVoteView::Opaque {
+                vote: self.to_owned(),
+            },
+        };
+
+        ActionView::ActionLiquidityTournamentVote(lqt_vote_view)
     }
 }

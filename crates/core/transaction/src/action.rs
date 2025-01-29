@@ -45,6 +45,9 @@ pub enum Action {
     ActionDutchAuctionSchedule(ActionDutchAuctionSchedule),
     ActionDutchAuctionEnd(ActionDutchAuctionEnd),
     ActionDutchAuctionWithdraw(ActionDutchAuctionWithdraw),
+    ActionLiquidityTournamentVote(
+        penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVote,
+    ),
 }
 
 impl EffectingData for Action {
@@ -74,6 +77,7 @@ impl EffectingData for Action {
             Action::ActionDutchAuctionSchedule(a) => a.effect_hash(),
             Action::ActionDutchAuctionEnd(a) => a.effect_hash(),
             Action::ActionDutchAuctionWithdraw(a) => a.effect_hash(),
+            Action::ActionLiquidityTournamentVote(a) => a.effect_hash(),
         }
     }
 }
@@ -125,6 +129,9 @@ impl Action {
             Action::ActionDutchAuctionWithdraw(_) => {
                 tracing::info_span!("ActionDutchAuctionWithdraw", ?idx)
             }
+            Action::ActionLiquidityTournamentVote(_) => {
+                tracing::info_span!("ActionLiquidityTournamentVote", ?idx)
+            }
         }
     }
 
@@ -155,6 +162,7 @@ impl Action {
             Action::ActionDutchAuctionSchedule(_) => 53,
             Action::ActionDutchAuctionEnd(_) => 54,
             Action::ActionDutchAuctionWithdraw(_) => 55,
+            Action::ActionLiquidityTournamentVote(_) => 70,
         }
     }
 }
@@ -188,6 +196,7 @@ impl IsAction for Action {
             Action::ActionDutchAuctionSchedule(action) => action.balance_commitment(),
             Action::ActionDutchAuctionEnd(action) => action.balance_commitment(),
             Action::ActionDutchAuctionWithdraw(action) => action.balance_commitment(),
+            Action::ActionLiquidityTournamentVote(action) => action.balance_commmitment(),
         }
     }
 
@@ -217,6 +226,7 @@ impl IsAction for Action {
             Action::ActionDutchAuctionSchedule(x) => x.view_from_perspective(txp),
             Action::ActionDutchAuctionEnd(x) => x.view_from_perspective(txp),
             Action::ActionDutchAuctionWithdraw(x) => x.view_from_perspective(txp),
+            Action::ActionLiquidityTournamentVote(x) => x.view_from_perspective(txp),
         }
     }
 }
@@ -300,6 +310,11 @@ impl From<Action> for pb::Action {
             Action::ActionDutchAuctionWithdraw(inner) => pb::Action {
                 action: Some(pb::action::Action::ActionDutchAuctionWithdraw(inner.into())),
             },
+            Action::ActionLiquidityTournamentVote(inner) => pb::Action {
+                action: Some(pb::action::Action::ActionLiquidityTournamentVote(
+                    inner.into(),
+                )),
+            },
         }
     }
 }
@@ -373,6 +388,9 @@ impl TryFrom<pb::Action> for Action {
             }
             pb::action::Action::ActionDutchAuctionWithdraw(inner) => {
                 Ok(Action::ActionDutchAuctionWithdraw(inner.try_into()?))
+            }
+            pb::action::Action::ActionLiquidityTournamentVote(inner) => {
+                Ok(Action::ActionLiquidityTournamentVote(inner.try_into()?))
             }
         }
     }
