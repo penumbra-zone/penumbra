@@ -4,7 +4,29 @@ package penumbra.core.component.funding.v1;
 import "penumbra/core/num/v1/num.proto";
 
 // Funding component configuration data.
-message FundingParameters {}
+message FundingParameters {
+  message LiquidityTournament {
+    // The fraction of gauge votes that an asset must pass to get any rewards.
+    //
+    // Takes a value in [0, 100].
+    uint64 gauge_threshold_percent = 1;
+    // The maximum number of liquidity positions that can receive rewards.
+    //
+    // This avoids potential DoS vectors with processing a large number of small positions.
+    uint64 max_positions = 2;
+    // The maximum number of delegators that can be rewarded.
+    //
+    // Also avoids potential DoS vectors 
+    uint64 max_delegators = 3;
+    // The share of rewards which will go to delegators, opposed with positions.
+    //
+    // Takes a value in [0, 100].
+    uint64 delegator_share_percent = 4;
+  }
+
+  // The parameters governing the funding of the liquidity tournament.
+  LiquidityTournament liquidity_tournament = 1;
+}
 
 // Genesis data for the funding component.
 message GenesisContent {
