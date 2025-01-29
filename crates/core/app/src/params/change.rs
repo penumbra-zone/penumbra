@@ -68,13 +68,17 @@ impl AppParameters {
             distributions_params:
                 DistributionsParameters {
                     staking_issuance_per_block: _,
+                    liquidity_tournament_incentive_per_block: _,
                 },
             fee_params:
                 FeeParameters {
                     fixed_gas_prices: _,
                     fixed_alt_gas_prices: _,
                 },
-            funding_params: FundingParameters {},
+            funding_params:
+                FundingParameters {
+                    liquidity_tournament: _,
+                },
             governance_params:
                 GovernanceParameters {
                     proposal_voting_blocks: _,
@@ -163,13 +167,17 @@ impl AppParameters {
             distributions_params:
                 DistributionsParameters {
                     staking_issuance_per_block: _,
+                    liquidity_tournament_incentive_per_block: _,
                 },
             fee_params:
                 FeeParameters {
                     fixed_gas_prices: _,
                     fixed_alt_gas_prices: _,
                 },
-            funding_params: FundingParameters {},
+            funding_params:
+                FundingParameters {
+                    liquidity_tournament: _,
+                },
             governance_params:
                 GovernanceParameters {
                     proposal_voting_blocks,
