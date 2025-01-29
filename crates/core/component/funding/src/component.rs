@@ -19,7 +19,7 @@ use cnidarium_component::Component;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use crate::{event::EventFundingStreamReward, genesis};
+use crate::{event::EventFundingStreamReward, genesis, FundingParameters};
 
 pub struct Funding {}
 
@@ -30,7 +30,9 @@ impl Component for Funding {
     #[instrument(name = "funding", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
-            None => { /* Checkpoint -- no-op */ }
+            None => {
+                state.put_funding_params(FundingParameters::default());
+            }
             Some(genesis) => {
                 state.put_funding_params(genesis.funding_params.clone());
             }
