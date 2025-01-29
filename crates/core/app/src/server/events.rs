@@ -39,25 +39,24 @@ impl EventIndexLayer {
                 // the cosmos SDK: https://docs.cosmos.network/main/core/config
                 // e.g., "message.sender", "message.recipient"
 
-                // XXX: tendermint-rs now supports v034 events types, which are
-                //      plain bytes and need not be utf8. This messes with the
-                //      regex and is likely not desirable to have in downstream
-                //      consumers of the indexed events.
                 match attr.key_str() {
                     Ok(key) => {
                         let nested_key = format!("{}.{}", e.kind, key);
 
                         if self.no_index.is_match(&nested_key) {
-                            attr.set_index(false)
+                            attr.set_index(false);
                         }
+
                         // This comes second so that explicit index requests take priority over no-index requests.
                         if self.index.is_match(&nested_key) {
-                            attr.set_index(false)
+                            attr.set_index(true);
                         }
                     }
-                    // TODO: what should be done with this error? Emit a warning?
-                    Err(_err) => {
-                        attr.set_index(false);
+                    _ => {
+                        // The key is not valid UTF-8, so we can't match it, we skip it.
+                        // This should be unreachable, as the key is always a valid UTF-8 string
+                        // for tendermint/cometbft > 0.34
+                        tracing::warn!("event attribute key is not valid UTF-8");
                     }
                 }
             }

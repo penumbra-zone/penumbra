@@ -12,6 +12,10 @@ publish = false
 [package.metadata.dist]
 dist = true
 
+[features]
+default = []
+network-integration = []
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -39,3 +43,13 @@ tracing = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 serde_json = {workspace = true}
 sqlx = { workspace = true, features = ["chrono", "postgres"] }
+
+[dev-dependencies]
+url = {workspace = true}
+assert_cmd = { workspace = true }
+predicates = "2.1"
+prost-reflect = "0.14.3"
+# TODO: move reqwest to workspace dependency
+reqwest= { version = "0.12.9", features = ["json", "stream"] }
+http = { workspace = true }
+rstest = "0.24.0"
