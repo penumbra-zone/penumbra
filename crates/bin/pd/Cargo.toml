@@ -53,7 +53,7 @@ ics23                            = { workspace = true }
 jmt                              = { workspace = true }
 metrics                          = { workspace = true }
 metrics-exporter-prometheus      = { workspace = true }
-metrics-process                  = "2.0.0"
+metrics-process                  = "2.4.0"
 metrics-tracing-context          = { workspace = true }
 metrics-util                     = "0.18.0"
 mime_guess                       = "2"
@@ -127,3 +127,4 @@ assert_cmd = { workspace = true }
 predicates = "2.1"
 prost-reflect = "0.14.3"
 regex = { workspace = true }
+rstest = { workspace = true }
