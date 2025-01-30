@@ -458,6 +458,7 @@ impl TransactionViewExt for TransactionView {
                     action = format!("{} -> [{}]", x.action.auction_id, inside);
                     ["Dutch Auction Withdraw", &action]
                 }
+                penumbra_sdk_transaction::ActionView::ActionLiquidityTournamentVote(_) => todo!(),
             };
 
             actions_table.add_row(row);

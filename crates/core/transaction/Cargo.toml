@@ -15,6 +15,7 @@ parallel = [
     "penumbra-sdk-shielded-pool/parallel",
     "penumbra-sdk-auction/parallel",
     "penumbra-sdk-dex/parallel",
+    "penumbra-sdk-funding/parallel",
     "penumbra-sdk-governance/parallel",
     "penumbra-sdk-stake/parallel",
 ]
@@ -45,6 +46,7 @@ penumbra-sdk-community-pool = {workspace = true, default-features = false}
 penumbra-sdk-auction = {workspace = true, default-features = false}
 penumbra-sdk-dex = {workspace = true, default-features = false}
 penumbra-sdk-fee = {workspace = true, default-features = false}
+penumbra-sdk-funding = {workspace = true, default-features = false}
 penumbra-sdk-governance = {workspace = true, default-features = false}
 penumbra-sdk-ibc = {workspace = true, default-features = false}
 penumbra-sdk-keys = {workspace = true, default-features = false}
