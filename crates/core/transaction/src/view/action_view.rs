@@ -8,6 +8,7 @@ use penumbra_sdk_dex::{
     swap::SwapView,
     swap_claim::SwapClaimView,
 };
+use penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVoteView;
 use penumbra_sdk_governance::{
     ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
@@ -53,6 +54,7 @@ pub enum ActionView {
     ActionDutchAuctionSchedule(ActionDutchAuctionScheduleView),
     ActionDutchAuctionEnd(ActionDutchAuctionEnd),
     ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawView),
+    ActionLiquidityTournamentVote(ActionLiquidityTournamentVoteView),
 }
 
 impl DomainType for ActionView {
@@ -102,6 +104,9 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::ActionDutchAuctionWithdraw(x) => {
                     ActionView::ActionDutchAuctionWithdraw(x.try_into()?)
                 }
+                AV::ActionLiquidityTournamentVote(x) => {
+                    ActionView::ActionLiquidityTournamentVote(x.try_into()?)
+                }
             },
         )
     }
@@ -140,6 +145,9 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::ActionDutchAuctionWithdraw(x) => {
                     AV::ActionDutchAuctionWithdraw(x.into())
                 }
+                ActionView::ActionLiquidityTournamentVote(x) => {
+                    AV::ActionLiquidityTournamentVote(x.into())
+                }
             }),
         }
     }
@@ -175,6 +183,9 @@ impl From<ActionView> for Action {
             ActionView::ActionDutchAuctionEnd(x) => Action::ActionDutchAuctionEnd(x),
             ActionView::ActionDutchAuctionWithdraw(x) => {
                 Action::ActionDutchAuctionWithdraw(x.into())
+            }
+            ActionView::ActionLiquidityTournamentVote(x) => {
+                Action::ActionLiquidityTournamentVote(x.into())
             }
         }
     }

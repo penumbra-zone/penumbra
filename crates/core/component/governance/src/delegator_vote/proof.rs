@@ -394,6 +394,10 @@ impl DelegatorVoteProof {
         .then_some(())
         .ok_or(VerificationError::InvalidProof)
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
 }
 
 impl DomainType for DelegatorVoteProof {
@@ -413,6 +417,14 @@ impl TryFrom<pb::ZkDelegatorVoteProof> for DelegatorVoteProof {
 
     fn try_from(proto: pb::ZkDelegatorVoteProof) -> Result<Self, Self::Error> {
         Ok(DelegatorVoteProof(proto.inner[..].try_into()?))
+    }
+}
+
+impl TryFrom<&[u8]> for DelegatorVoteProof {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &[u8]) -> Result<Self> {
+        Ok(Self(value.try_into()?))
     }
 }
 
