@@ -1,7 +1,12 @@
 syntax = "proto3";
 package penumbra.core.component.funding.v1;
 
+import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/sct/v1/sct.proto";
+import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
+import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
+import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
 
 // Funding component configuration data.
 message FundingParameters {
@@ -44,4 +49,51 @@ message EventFundingStreamReward {
   uint64 epoch_index = 2;
   // The amount of the reward, in staking tokens.
   num.v1.Amount reward_amount = 3;
+}
+
+// An action for voting in a liquidity tournament.
+message ActionLiquidityTournamentVote {
+  // The effectful data signalling user intent, and the validity of this intent.
+  LiquidityTournamentVoteBody body = 1;
+  // An authorization from the user over this body.
+  crypto.decaf377_rdsa.v1.SpendAuthSignature auth_sig = 2;
+  // A ZK proof that it was correctly constructed from private user state.
+  ZKLiquidityTournamentVoteProof proof = 3;
+}
+
+message LiquidityTournamentVoteBody {
+  // Which asset should be incentivized.
+  asset.v1.Denom incentivized = 1;
+  // Where to send any rewards for participating in the tournament.
+  keys.v1.Address rewards_recipient = 2;
+  // The start position of the tournament
+  uint64 start_position = 3;
+  // The value being voted with.
+  //
+  // This should be some amount of a validator's delegation token.
+  asset.v1.Value value = 4;
+  // The nullifier associated with the note being spent.
+  sct.v1.Nullifier nullifier = 5;
+  // A randomized verification key with which to check the auth signature.
+  crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 6;
+}
+
+// A proof of the validity of a liquidity vote, wrt private state.
+message ZKLiquidityTournamentVoteProof {
+  bytes inner = 1;
+}
+
+message ActionLiquidityTournamentVoteView {
+  // If we initiated the vote, we should know the note that we spent.
+  message Visible {
+    ActionLiquidityTournamentVote vote = 1;
+    shielded_pool.v1.NoteView note = 2;
+  }
+  message Opaque {
+    ActionLiquidityTournamentVote vote = 1;    
+  }
+  oneof liquidity_tournament_vote {
+    Visible visible = 1;
+    Opaque opaque = 2;
+  }
 }

@@ -98,3 +98,150 @@ impl ::prost::Name for EventFundingStreamReward {
         "/penumbra.core.component.funding.v1.EventFundingStreamReward".into()
     }
 }
+/// An action for voting in a liquidity tournament.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionLiquidityTournamentVote {
+    /// The effectful data signalling user intent, and the validity of this intent.
+    #[prost(message, optional, tag = "1")]
+    pub body: ::core::option::Option<LiquidityTournamentVoteBody>,
+    /// An authorization from the user over this body.
+    #[prost(message, optional, tag = "2")]
+    pub auth_sig: ::core::option::Option<
+        super::super::super::super::crypto::decaf377_rdsa::v1::SpendAuthSignature,
+    >,
+    /// A ZK proof that it was correctly constructed from private user state.
+    #[prost(message, optional, tag = "3")]
+    pub proof: ::core::option::Option<ZkLiquidityTournamentVoteProof>,
+}
+impl ::prost::Name for ActionLiquidityTournamentVote {
+    const NAME: &'static str = "ActionLiquidityTournamentVote";
+    const PACKAGE: &'static str = "penumbra.core.component.funding.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.funding.v1.ActionLiquidityTournamentVote".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.funding.v1.ActionLiquidityTournamentVote".into()
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiquidityTournamentVoteBody {
+    /// Which asset should be incentivized.
+    #[prost(message, optional, tag = "1")]
+    pub incentivized: ::core::option::Option<super::super::super::asset::v1::Denom>,
+    /// Where to send any rewards for participating in the tournament.
+    #[prost(message, optional, tag = "2")]
+    pub rewards_recipient: ::core::option::Option<
+        super::super::super::keys::v1::Address,
+    >,
+    /// The start position of the tournament
+    #[prost(uint64, tag = "3")]
+    pub start_position: u64,
+    /// The value being voted with.
+    ///
+    /// This should be some amount of a validator's delegation token.
+    #[prost(message, optional, tag = "4")]
+    pub value: ::core::option::Option<super::super::super::asset::v1::Value>,
+    /// The nullifier associated with the note being spent.
+    #[prost(message, optional, tag = "5")]
+    pub nullifier: ::core::option::Option<super::super::sct::v1::Nullifier>,
+    /// A randomized verification key with which to check the auth signature.
+    #[prost(message, optional, tag = "6")]
+    pub rk: ::core::option::Option<
+        super::super::super::super::crypto::decaf377_rdsa::v1::SpendVerificationKey,
+    >,
+}
+impl ::prost::Name for LiquidityTournamentVoteBody {
+    const NAME: &'static str = "LiquidityTournamentVoteBody";
+    const PACKAGE: &'static str = "penumbra.core.component.funding.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.funding.v1.LiquidityTournamentVoteBody".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.funding.v1.LiquidityTournamentVoteBody".into()
+    }
+}
+/// A proof of the validity of a liquidity vote, wrt private state.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ZkLiquidityTournamentVoteProof {
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ZkLiquidityTournamentVoteProof {
+    const NAME: &'static str = "ZKLiquidityTournamentVoteProof";
+    const PACKAGE: &'static str = "penumbra.core.component.funding.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.funding.v1.ZKLiquidityTournamentVoteProof".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.funding.v1.ZKLiquidityTournamentVoteProof".into()
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionLiquidityTournamentVoteView {
+    #[prost(
+        oneof = "action_liquidity_tournament_vote_view::LiquidityTournamentVote",
+        tags = "1, 2"
+    )]
+    pub liquidity_tournament_vote: ::core::option::Option<
+        action_liquidity_tournament_vote_view::LiquidityTournamentVote,
+    >,
+}
+/// Nested message and enum types in `ActionLiquidityTournamentVoteView`.
+pub mod action_liquidity_tournament_vote_view {
+    /// If we initiated the vote, we should know the note that we spent.
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Visible {
+        #[prost(message, optional, tag = "1")]
+        pub vote: ::core::option::Option<super::ActionLiquidityTournamentVote>,
+        #[prost(message, optional, tag = "2")]
+        pub note: ::core::option::Option<
+            super::super::super::shielded_pool::v1::NoteView,
+        >,
+    }
+    impl ::prost::Name for Visible {
+        const NAME: &'static str = "Visible";
+        const PACKAGE: &'static str = "penumbra.core.component.funding.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            "penumbra.core.component.funding.v1.ActionLiquidityTournamentVoteView.Visible"
+                .into()
+        }
+        fn type_url() -> ::prost::alloc::string::String {
+            "/penumbra.core.component.funding.v1.ActionLiquidityTournamentVoteView.Visible"
+                .into()
+        }
+    }
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Opaque {
+        #[prost(message, optional, tag = "1")]
+        pub vote: ::core::option::Option<super::ActionLiquidityTournamentVote>,
+    }
+    impl ::prost::Name for Opaque {
+        const NAME: &'static str = "Opaque";
+        const PACKAGE: &'static str = "penumbra.core.component.funding.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            "penumbra.core.component.funding.v1.ActionLiquidityTournamentVoteView.Opaque"
+                .into()
+        }
+        fn type_url() -> ::prost::alloc::string::String {
+            "/penumbra.core.component.funding.v1.ActionLiquidityTournamentVoteView.Opaque"
+                .into()
+        }
+    }
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum LiquidityTournamentVote {
+        #[prost(message, tag = "1")]
+        Visible(Visible),
+        #[prost(message, tag = "2")]
+        Opaque(Opaque),
+    }
+}
+impl ::prost::Name for ActionLiquidityTournamentVoteView {
+    const NAME: &'static str = "ActionLiquidityTournamentVoteView";
+    const PACKAGE: &'static str = "penumbra.core.component.funding.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.funding.v1.ActionLiquidityTournamentVoteView".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.funding.v1.ActionLiquidityTournamentVoteView".into()
+    }
+}
