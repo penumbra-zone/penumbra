@@ -17,7 +17,7 @@ pub trait StateReadExt: StateRead {
     }
 
     /// Gets the funding module chain parameters from the JMT.
-    async fn get_txid_from_nullifier(&self, nullifier: Nullifier) -> Result<TransactionId> {
+    async fn get_txid_from_nullifier(&self, nullifier: Nullifier) -> Option<TransactionId> {
         // Grab the ambient epoch index.
         let epoch_index = self
             .get_current_epoch()
@@ -27,12 +27,12 @@ pub trait StateReadExt: StateRead {
 
         let nullifier_key = &state_key::lqt_nullifier_lookup_for_txid(epoch_index, &nullifier);
 
-        let tx_id: TransactionId = self
+        let tx_id: Option<TransactionId> = self
             .nonverifiable_get(&nullifier_key.as_bytes())
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("infallible"))?;
+            .await
+            .expect("infallible");
 
-        Ok(tx_id)
+        tx_id
     }
 }
 
