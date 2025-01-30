@@ -518,8 +518,7 @@ trait Inner: StateWrite {
         self.update_trading_pair_position_counter(&prev_state, &new_state)
             .await?;
         self.update_position_by_price_index(&id, &prev_state, &new_state)?;
-        self.update_volume_index(&id, &prev_state, &new_state)
-            .await;
+        self.update_volume_index(&id, &prev_state, &new_state).await;
 
         self.put(state_key::position_by_id(&id), new_state.clone());
         Ok(new_state)
