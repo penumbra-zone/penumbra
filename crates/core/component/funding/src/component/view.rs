@@ -16,7 +16,7 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow::anyhow!("Missing FundingParameters"))
     }
 
-    /// Gets the funding module chain parameters from the JMT.
+    /// Gets the transaction id associated with the given nullifier from the JMT.
     async fn get_txid_from_nullifier(&self, nullifier: Nullifier) -> Option<TransactionId> {
         // Grab the ambient epoch index.
         let epoch_index = self
@@ -45,6 +45,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         self.put(state_key::staking_funding_parameters().into(), params)
     }
 
+    // Sets the LQT nullifier in the JMT.
     fn put_lqt_nullifier(&mut self, epoch_index: u64, nullifier: Nullifier, tx_id: TransactionId) {
         let nullifier_key = state_key::lqt_nullifier_lookup_for_txid(epoch_index, &nullifier);
 
