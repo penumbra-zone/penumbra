@@ -18,7 +18,7 @@ use crate::component::{
     dex::StateReadExt as _,
     position_manager::{
         base_liquidity_index::AssetByLiquidityIndex, inventory_index::PositionByInventoryIndex,
-        price_index::PositionByPriceIndex,
+        price_index::PositionByPriceIndex, volume_tracker::PositionVolumeTracker,
     },
 };
 use crate::lp::Reserves;
@@ -518,6 +518,8 @@ trait Inner: StateWrite {
         self.update_trading_pair_position_counter(&prev_state, &new_state)
             .await?;
         self.update_position_by_price_index(&id, &prev_state, &new_state)?;
+        self.update_volume_index(&id, &prev_state, &new_state)
+            .await;
 
         self.put(state_key::position_by_id(&id), new_state.clone());
         Ok(new_state)
