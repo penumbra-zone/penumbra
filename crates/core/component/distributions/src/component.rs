@@ -48,23 +48,28 @@ impl Component for Distributions {
     #[instrument(name = "distributions", skip(state))]
     async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> Result<()> {
         let state = Arc::get_mut(state).context("state should be unique")?;
-        let new_issuance = state.compute_new_issuance().await?;
-        tracing::debug!(?new_issuance, "computed new issuance for epoch");
-        Ok(state.distribute(new_issuance).await)
+
+        // Define staking budget.
+        state.define_staking_budget().await?;
+
+        // Define LQT budget.
+        state.define_lqt_budget().await?;
+
+        Ok(())
     }
 }
 
 #[async_trait]
 trait DistributionManager: StateWriteExt {
     /// Compute the total new issuance of staking tokens for this epoch.
-    async fn compute_new_issuance(&self) -> Result<Amount> {
+    async fn compute_new_staking_issuance(&self) -> Result<Amount> {
         use penumbra_sdk_sct::component::clock::EpochRead;
 
         let current_block_height = self.get_block_height().await?;
         let current_epoch = self.get_current_epoch().await?;
         let num_blocks = current_block_height
             .checked_sub(current_epoch.start_height)
-            .unwrap_or_else(|| panic!("epoch start height is less than or equal to current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
+            .unwrap_or_else(|| panic!("epoch start height is greater than current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
 
         // TODO(erwan): Will make the distribution chain param an `Amount`
         // in a subsequent PR. Want to avoid conflicts with other in-flight changes.
@@ -76,21 +81,66 @@ trait DistributionManager: StateWriteExt {
         tracing::debug!(
             number_of_blocks_in_epoch = num_blocks,
             staking_issuance_per_block,
-            "calculating issuance per epoch"
+            "calculating staking issuance per epoch"
         );
 
-        let new_issuance_for_epoch = staking_issuance_per_block
+        let new_staking_issuance_for_epoch = staking_issuance_per_block
             .checked_mul(num_blocks as u128) /* Safe to cast a `u64` to `u128` */
-            .expect("infaillible unless issuance is pathological");
+            .expect("infallible unless issuance is pathological");
 
-        tracing::debug!(?new_issuance_for_epoch, "computed new issuance for epoch");
+        tracing::debug!(
+            ?new_staking_issuance_for_epoch,
+            "computed new staking issuance for epoch"
+        );
 
-        Ok(Amount::from(new_issuance_for_epoch))
+        Ok(Amount::from(new_staking_issuance_for_epoch))
     }
 
     /// Update the object store with the new issuance of staking tokens for this epoch.
-    async fn distribute(&mut self, new_issuance: Amount) {
-        self.set_staking_token_issuance_for_epoch(new_issuance)
+    async fn define_staking_budget(&mut self) -> Result<()> {
+        let new_issuance = self.compute_new_staking_issuance().await?;
+        tracing::debug!(?new_issuance, "computed new staking issuance for epoch");
+        Ok(self.set_staking_token_issuance_for_epoch(new_issuance))
+    }
+
+    /// Computes total LQT reward issuance for the epoch.
+    async fn compute_new_lqt_issuance(&self) -> Result<Amount> {
+        use penumbra_sdk_sct::component::clock::EpochRead;
+
+        let current_block_height = self.get_block_height().await?;
+        let current_epoch = self.get_current_epoch().await?;
+        let epoch_length = current_block_height
+            .checked_sub(current_epoch.start_height)
+            .unwrap_or_else(|| panic!("epoch start height is greater than current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
+
+        let lqt_block_reward_rate = self
+            .get_distributions_params()
+            .await?
+            .liquidity_tournament_incentive_per_block as u64;
+
+        tracing::debug!(
+            number_of_blocks_in_epoch = epoch_length,
+            lqt_block_reward_rate,
+            "calculating lqt reward issuance per epoch"
+        );
+
+        let total_pool_size_for_epoch = lqt_block_reward_rate
+            .checked_mul(epoch_length as u64)
+            .expect("infallible unless issuance is pathological");
+
+        tracing::debug!(
+            ?total_pool_size_for_epoch,
+            "computed new reward lqt issuance for epoch"
+        );
+
+        Ok(Amount::from(total_pool_size_for_epoch))
+    }
+
+    /// Update the nonverifiable storage with the newly issued LQT rewards for the current epoch.
+    async fn define_lqt_budget(&mut self) -> Result<()> {
+        let new_issuance = self.compute_new_lqt_issuance().await?;
+        tracing::debug!(?new_issuance, "computed new lqt reward issuance for epoch");
+        Ok(self.set_lqt_reward_issuance_for_epoch(new_issuance))
     }
 }
 
