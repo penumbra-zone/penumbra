@@ -140,7 +140,7 @@ impl EffectingData for ActionLiquidityTournamentVote {
 
 impl ActionLiquidityTournamentVote {
     /// This action doesn't actually produce or consume value.
-    pub fn balance_commmitment(&self) -> balance::Commitment {
+    pub fn balance_commitment(&self) -> balance::Commitment {
         // This will be the commitment to zero.
         balance::Commitment::default()
     }

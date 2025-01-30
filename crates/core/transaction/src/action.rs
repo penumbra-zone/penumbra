@@ -196,7 +196,7 @@ impl IsAction for Action {
             Action::ActionDutchAuctionSchedule(action) => action.balance_commitment(),
             Action::ActionDutchAuctionEnd(action) => action.balance_commitment(),
             Action::ActionDutchAuctionWithdraw(action) => action.balance_commitment(),
-            Action::ActionLiquidityTournamentVote(action) => action.balance_commmitment(),
+            Action::ActionLiquidityTournamentVote(action) => action.balance_commitment(),
         }
     }
 

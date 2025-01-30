@@ -504,7 +504,7 @@ impl IsAction for ActionDutchAuctionWithdraw {
 
 impl IsAction for ActionLiquidityTournamentVote {
     fn balance_commitment(&self) -> balance::Commitment {
-        self.balance_commmitment()
+        self.balance_commitment()
     }
 
     fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
