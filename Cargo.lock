@@ -5620,6 +5620,7 @@ dependencies = [
  "penumbra-sdk-keys",
  "penumbra-sdk-proto",
  "penumbra-sdk-tct",
+ "penumbra-sdk-txhash",
  "poseidon377",
  "rand",
  "rand_core",
