@@ -16,7 +16,7 @@ use penumbra_sdk_sct::component::clock::EpochRead;
 
 #[async_trait]
 pub(crate) trait PositionVolumeTracker: StateWrite {
-    async fn increase_volume_index(
+    async fn update_volume_index(
         &mut self,
         position_id: &position::Id,
         prev_state: &Option<Position>,
