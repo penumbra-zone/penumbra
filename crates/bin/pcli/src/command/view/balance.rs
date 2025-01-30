@@ -116,6 +116,12 @@ fn format_source(source: &CommitmentSource) -> String {
             "ICS20 packet {} via {} from {}",
             packet_seq, channel_id, sender
         ),
+        CommitmentSource::LiquidityTournamentReward { epoch, tx_hash } => {
+            format!(
+                "Liquidity tournament reward (Epoch {}, Tx {})",
+                epoch, tx_hash
+            )
+        }
     }
 }
 
