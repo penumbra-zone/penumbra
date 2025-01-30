@@ -23,7 +23,7 @@ pub(crate) trait PositionVolumeTracker: StateWrite {
         new_state: &Position,
     ) {
         // We only index the volume for staking token pairs.
-        if !new_state.phi.pair.contains(*STAKING_TOKEN_ASSET_ID) {
+        if !new_state.phi.matches_input(*STAKING_TOKEN_ASSET_ID) {
             return;
         }
 
@@ -49,29 +49,18 @@ pub(crate) trait PositionVolumeTracker: StateWrite {
         // This means that we track the amount of staking tokens that have left the position.
         // We do this by comparing the previous and new reserves of the staking token.
         // We **DO NOT** want to track the volume of the other asset denominated in staking tokens.
-        let prev_r1 = prev_state
-            .as_ref()
-            .map_or(Amount::zero(), |prev| prev.reserves_1().amount);
+        let prev_state = prev_state.as_ref().expect("the previous state exists");
+        let prev_balance = prev_state
+            .reserves_for(*STAKING_TOKEN_ASSET_ID)
+            .expect("the staking token is in the pair");
 
-        let prev_r2 = prev_state
-            .as_ref()
-            .map_or(Amount::zero(), |prev| prev.reserves_2().amount);
-
-        let new_r1 = new_state.reserves_1().amount;
-        let new_r2 = new_state.reserves_2().amount;
+        let new_balance = new_state
+            .reserves_for(*STAKING_TOKEN_ASSET_ID)
+            .expect("the staking token is in the pair");
 
         // We track the *outflow* of the staking token.
         // "How much inventory has left the position?"
-        let outflow_1 = prev_r1.saturating_sub(&new_r1);
-        let outflow_2 = prev_r2.saturating_sub(&new_r2);
-
-        // We select the correct outflow based on the staking token asset id.
-        // This is the amount of volume we aggregate in the volume index.
-        let staking_token_outflow = if *STAKING_TOKEN_ASSET_ID == trading_pair.asset_1() {
-            outflow_1
-        } else {
-            outflow_2
-        };
+        let staking_token_outflow = prev_balance.saturating_sub(&new_balance);
 
         // We lookup the previous volume index entry.
         let old_volume = self.get_volume_for_position(position_id).await;
