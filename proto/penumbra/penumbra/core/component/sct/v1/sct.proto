@@ -1,9 +1,10 @@
 syntax = "proto3";
 package penumbra.core.component.sct.v1;
 
+import "penumbra/crypto/tct/v1/tct.proto";
+import "penumbra/core/txhash/v1/txhash.proto";
 import "google/protobuf/timestamp.proto";
 import "ibc/core/commitment/v1/commitment.proto";
-import "penumbra/crypto/tct/v1/tct.proto";
 
 // Configuration data for the SCT component.
 message SctParameters {
@@ -60,12 +61,20 @@ message CommitmentSource {
     // The sender address on the counterparty chain
     string sender = 3;
   }
+  // The commitment was created by the LQT mechanism and tracks LQT reward notes. 
+  message LiquidityTournamentReward {
+    // The epoch in which the reward occured.
+    uint64 epoch = 1;
+    // Transaction hash of the transaction that did the voting.
+    txhash.v1.TransactionId tx_hash = 2;
+  }
   oneof source {
     Transaction transaction = 1;
     Ics20Transfer ics_20_transfer = 2;
     FundingStreamReward funding_stream_reward = 20;
     CommunityPoolOutput community_pool_output = 30;
     Genesis genesis = 40;
+    LiquidityTournamentReward lqt = 50;
   }
 }
 

@@ -59,7 +59,7 @@ impl ::prost::Name for Epoch {
 /// decide whether or not to download block data.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommitmentSource {
-    #[prost(oneof = "commitment_source::Source", tags = "1, 2, 20, 30, 40")]
+    #[prost(oneof = "commitment_source::Source", tags = "1, 2, 20, 30, 40, 50")]
     pub source: ::core::option::Option<commitment_source::Source>,
 }
 /// Nested message and enum types in `CommitmentSource`.
@@ -154,6 +154,30 @@ pub mod commitment_source {
             "/penumbra.core.component.sct.v1.CommitmentSource.Ics20Transfer".into()
         }
     }
+    /// The commitment was created by the LQT mechanism and tracks LQT reward notes.
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct LiquidityTournamentReward {
+        /// The epoch in which the reward occured.
+        #[prost(uint64, tag = "1")]
+        pub epoch: u64,
+        /// Transaction hash of the transaction that did the voting.
+        #[prost(message, optional, tag = "2")]
+        pub tx_hash: ::core::option::Option<
+            super::super::super::super::txhash::v1::TransactionId,
+        >,
+    }
+    impl ::prost::Name for LiquidityTournamentReward {
+        const NAME: &'static str = "LiquidityTournamentReward";
+        const PACKAGE: &'static str = "penumbra.core.component.sct.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            "penumbra.core.component.sct.v1.CommitmentSource.LiquidityTournamentReward"
+                .into()
+        }
+        fn type_url() -> ::prost::alloc::string::String {
+            "/penumbra.core.component.sct.v1.CommitmentSource.LiquidityTournamentReward"
+                .into()
+        }
+    }
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Source {
         #[prost(message, tag = "1")]
@@ -166,6 +190,8 @@ pub mod commitment_source {
         CommunityPoolOutput(CommunityPoolOutput),
         #[prost(message, tag = "40")]
         Genesis(Genesis),
+        #[prost(message, tag = "50")]
+        Lqt(LiquidityTournamentReward),
     }
 }
 impl ::prost::Name for CommitmentSource {
