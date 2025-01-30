@@ -109,7 +109,7 @@ trait DistributionManager: StateWriteExt {
 
         let current_block_height = self.get_block_height().await?;
         let current_epoch = self.get_current_epoch().await?;
-        let num_blocks = current_block_height
+        let epoch_length = current_block_height
             .checked_sub(current_epoch.start_height)
             .unwrap_or_else(|| panic!("epoch start height is less than or equal to current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
 
@@ -119,13 +119,13 @@ trait DistributionManager: StateWriteExt {
             .liquidity_tournament_incentive_per_block as u64;
 
         tracing::debug!(
-            number_of_blocks_in_epoch = num_blocks,
+            number_of_blocks_in_epoch = epoch_length,
             lqt_block_reward_rate,
             "calculating lqt reward issuance per epoch"
         );
 
         let total_pool_size_for_epoch = lqt_block_reward_rate
-            .checked_mul(num_blocks as u64)
+            .checked_mul(epoch_length as u64)
             .expect("infaillible unless issuance is pathological");
 
         tracing::debug!(
@@ -136,7 +136,7 @@ trait DistributionManager: StateWriteExt {
         Ok(Amount::from(total_pool_size_for_epoch))
     }
 
-    /// Update the nonverifiable storage with the new issuance of LQT rewards for this epoch.
+    /// Update the nonverifiable storage with the newly issued LQT rewards for the current epoch.
     async fn define_lqt_budget(&mut self) -> Result<()> {
         let new_issuance = self.compute_new_lqt_issuance().await?;
         tracing::debug!(?new_issuance, "computed new lqt reward issuance for epoch");
