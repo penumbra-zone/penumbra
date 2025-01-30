@@ -7,6 +7,7 @@ import "penumbra/core/component/auction/v1/auction.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/governance/v1/governance.proto";
+import "penumbra/core/component/funding/v1/funding.proto";
 import "penumbra/core/component/ibc/v1/ibc.proto";
 import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
@@ -111,6 +112,9 @@ message Action {
     component.auction.v1.ActionDutchAuctionSchedule action_dutch_auction_schedule = 53;
     component.auction.v1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
     component.auction.v1.ActionDutchAuctionWithdraw action_dutch_auction_withdraw = 55;
+
+    // Funding
+    component.funding.v1.ActionLiquidityTournamentVote action_liquidity_tournament_vote = 70;
 
     component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
   }
@@ -241,6 +245,9 @@ message ActionView {
     // balance commitment, and can only infer the value from looking at the rest
     // of the transaction. is that fine?
     component.stake.v1.UndelegateClaim undelegate_claim = 43;
+
+    component.funding.v1.ActionLiquidityTournamentVoteView action_liquidity_tournament_vote = 70;
+    
     component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
   }
 }

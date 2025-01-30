@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// Each denomination has a unique [`asset::Id`] and base unit, and may also
 /// have other display units.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(try_from = "pb::Denom", into = "pb::Denom")]
 pub struct Denom {
     pub denom: String,
