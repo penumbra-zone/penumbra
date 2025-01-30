@@ -1,15 +1,22 @@
-use anyhow::Context as _;
+use anyhow::{anyhow, Context as _};
 use async_trait::async_trait;
-use cnidarium::StateWrite;
-use penumbra_sdk_asset::asset::Denom;
+use cnidarium::{StateRead, StateWrite};
+use cnidarium_component::ActionHandler;
+use penumbra_sdk_asset::{asset::Denom, Value};
+use penumbra_sdk_governance::StateReadExt as _;
+use penumbra_sdk_num::Amount;
 use penumbra_sdk_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
+use penumbra_sdk_sct::component::clock::EpochRead as _;
+use penumbra_sdk_sct::epoch::Epoch;
+use penumbra_sdk_stake::component::validator_handler::ValidatorDataRead as _;
+use penumbra_sdk_tct::Position;
 use penumbra_sdk_txhash::TransactionContext;
 
+use crate::component::liquidity_tournament::votes::StateWriteExt as _;
 use crate::liquidity_tournament::{
     proof::LiquidityTournamentVoteProofPublic, ActionLiquidityTournamentVote,
     LiquidityTournamentVoteBody, LIQUIDITY_TOURNAMENT_VOTE_DENOM_MAX_BYTES,
 };
-use cnidarium_component::ActionHandler;
 
 fn is_valid_denom(denom: &Denom) -> anyhow::Result<()> {
     anyhow::ensure!(
@@ -24,6 +31,37 @@ fn is_valid_denom(denom: &Denom) -> anyhow::Result<()> {
         &denom.denom
     );
     Ok(())
+}
+
+// Check that the start position is early enough to vote in the current epoch.
+async fn start_position_good_for_epoch(epoch: Epoch, start: Position) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        epoch.index > u64::from(start.epoch()),
+        "position {start:?} is not before epoch {epoch:?}"
+    );
+    Ok(())
+}
+
+/// Fetch the unbonded equivalent of some purported delegation token.
+///
+/// Will fail if (either):
+///  - the token is not for a known validator,
+///  - the validator does not have any rate data.
+async fn unbonded_amount(state: impl StateRead, value: Value) -> anyhow::Result<Amount> {
+    let validator = state.validator_by_delegation_asset(value.asset_id).await?;
+    let rate = state
+        .get_validator_rate(&validator)
+        .await?
+        .ok_or_else(|| anyhow!("{} has no rate data", &validator))?;
+    Ok(rate.unbonded_amount(value.amount))
+}
+
+// This isolates the logic for how we should handle out of bounds amounts.
+fn voting_power(amount: Amount) -> u64 {
+    amount
+        .value()
+        .try_into()
+        .expect("someone acquired {amount:?} > u64::MAX worth of delegation tokens!")
 }
 
 #[async_trait]
@@ -70,7 +108,28 @@ impl ActionHandler for ActionLiquidityTournamentVote {
         Ok(())
     }
 
-    async fn check_and_execute<S: StateWrite>(&self, _state: S) -> anyhow::Result<()> {
-        todo!()
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> anyhow::Result<()> {
+        // 1. Check that the nullifier hasn't appeared in this round. (TODO)
+        // 2. Check that the start position can vote in this round.
+        let current_epoch = state
+            .get_current_epoch()
+            .await
+            .expect("failed to fetch current epoch");
+        start_position_good_for_epoch(current_epoch, self.body.start_position).await?;
+        // 3. Tally.
+        let power = voting_power(unbonded_amount(&state, self.body.value).await?);
+        let incentivized = self
+            .body
+            .incentivized_id()
+            .ok_or_else(|| anyhow!("{:?} is not a base denom", self.body.incentivized))?;
+        state
+            .tally(
+                current_epoch.index,
+                incentivized,
+                power,
+                &self.body.rewards_recipient,
+            )
+            .await?;
+        Ok(())
     }
 }

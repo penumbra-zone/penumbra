@@ -42,7 +42,6 @@ pub mod lqt {
             const POWER_LEN: usize = 8;
             const RECEIPT_LEN: usize = PREFIX_LEN + ASSET_LEN + POWER_LEN + ADDRESS_LEN_BYTES;
 
-            #[allow(dead_code)] // TODO: remove once used
             /// When present, indicates that an address voted for a particular asset, with a given power.
             ///
             /// To get the values ordered by descending voting power, use [`prefix`];
