@@ -69,7 +69,7 @@ trait DistributionManager: StateWriteExt {
         let current_epoch = self.get_current_epoch().await?;
         let num_blocks = current_block_height
             .checked_sub(current_epoch.start_height)
-            .unwrap_or_else(|| panic!("epoch start height is less than or equal to current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
+            .unwrap_or_else(|| panic!("epoch start height is greater than current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
 
         // TODO(erwan): Will make the distribution chain param an `Amount`
         // in a subsequent PR. Want to avoid conflicts with other in-flight changes.
@@ -86,7 +86,7 @@ trait DistributionManager: StateWriteExt {
 
         let new_staking_issuance_for_epoch = staking_issuance_per_block
             .checked_mul(num_blocks as u128) /* Safe to cast a `u64` to `u128` */
-            .expect("infaillible unless issuance is pathological");
+            .expect("infallible unless issuance is pathological");
 
         tracing::debug!(
             ?new_staking_issuance_for_epoch,
@@ -111,7 +111,7 @@ trait DistributionManager: StateWriteExt {
         let current_epoch = self.get_current_epoch().await?;
         let epoch_length = current_block_height
             .checked_sub(current_epoch.start_height)
-            .unwrap_or_else(|| panic!("epoch start height is less than or equal to current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
+            .unwrap_or_else(|| panic!("epoch start height is greater than current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
 
         let lqt_block_reward_rate = self
             .get_distributions_params()
@@ -126,7 +126,7 @@ trait DistributionManager: StateWriteExt {
 
         let total_pool_size_for_epoch = lqt_block_reward_rate
             .checked_mul(epoch_length as u64)
-            .expect("infaillible unless issuance is pathological");
+            .expect("infallible unless issuance is pathological");
 
         tracing::debug!(
             ?total_pool_size_for_epoch,
