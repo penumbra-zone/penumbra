@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
+# This script automates the process of testing Noble IBC transfers.
+# It assumes it'll be run from the repo root of the Noble project [0].
+# It's not used in CI but may be useful in validating fixes related to GH4899.
+#
+# [0] https://github.com/noble-assets/noble
 set -euo pipefail
 
-# This script automates the process of testing Noble IBC transfers
 
 # Constants
 NOBLE_CHAIN_ID="grand-1"
@@ -58,7 +62,7 @@ set -e  # Re-enable error checking
 
 # Check address
 NOBLE_ADDRESS=$(./build keys show test_key --output json | jq '.address' | sed 's/"//g')
-echo "Noble address: $NOBLE_ADDRESS\n"
+printf 'Noble address: %s\n\n' "$NOBLE_ADDRESS"
 
 # Ensure address has funds
 INITIAL_NOBLE_BALANCE=$(./build query bank balance "$NOBLE_ADDRESS" uusdc --output json | jq '.balance.amount' | sed 's/"//g')
@@ -96,23 +100,23 @@ CONNECTION_ID=$(./build query ibc connection connections --node "$NODE_URL" --li
 ) | .id] | last' | sed 's/"//g')
 
 # Find the Noble channel ID associated with the connection ID
-CHANNEL_ID=$(./build query ibc channel connections $CONNECTION_ID --node "$NODE_URL" --limit 10000 --output json | jq '[.channels[] | select(
+CHANNEL_ID="$(./build query ibc channel connections "$CONNECTION_ID" --node "$NODE_URL" --limit 10000 --output json | jq '[.channels[] | select(
     .state == "STATE_OPEN" and
     .port_id == "transfer"
-) | .channel_id] | last' | sed 's/"//g')
+) | .channel_id] | last' | sed 's/"//g')"
 # Find the counterparty (Penumbra) channel ID associated with the connection ID
-COUNTERPARTY_CHANNEL_ID=$(./build query ibc channel connections $CONNECTION_ID --node "$NODE_URL" --limit 10000 --output json | jq '[.channels[] | select(
+COUNTERPARTY_CHANNEL_ID="$(./build query ibc channel connections "$CONNECTION_ID" --node "$NODE_URL" --limit 10000 --output json | jq '[.channels[] | select(
     .state == "STATE_OPEN" and
     .port_id == "transfer"
-) | .counterparty.channel_id] | last' | sed 's/"//g')
+) | .counterparty.channel_id] | last' | sed 's/"//g')"
 
 # Get both compat address and normal address, and test both
-PENUMBRA_COMPAT_ADDRESS=$(pcli view address --compat)
-PENUMBRA_ADDRESS=$(pcli view address)
+PENUMBRA_COMPAT_ADDRESS="$(pcli view address --compat)"
+PENUMBRA_ADDRESS="$(pcli view address)"
 
 # Send a test transfer to the normal address
 echo -e "Submitting IBC transfer to $PENUMBRA_ADDRESS...\n"
-./build tx ibc-transfer transfer transfer $CHANNEL_ID $PENUMBRA_ADDRESS 1uusdc --from $NOBLE_ADDRESS --chain-id $NOBLE_CHAIN_ID -y | tee /dev/stderr | grep -q "code: 0" || {
+./build tx ibc-transfer transfer transfer "$CHANNEL_ID" "$PENUMBRA_ADDRESS" 1uusdc --from "$NOBLE_ADDRESS" --chain-id "$NOBLE_CHAIN_ID" -y | tee /dev/stderr | grep -q "code: 0" || {
     echo -e "Submitting test transfer transaction to $PENUMBRA_ADDRESS failed"
     exit 1
 }
@@ -122,7 +126,7 @@ sleep 5
 
 echo -e "Submitting IBC transfer to $PENUMBRA_COMPAT_ADDRESS...\n"
 # Send a test transfer to the compat address
-./build tx ibc-transfer transfer transfer $CHANNEL_ID $PENUMBRA_COMPAT_ADDRESS 1uusdc --from $NOBLE_ADDRESS --chain-id $NOBLE_CHAIN_ID -y | tee /dev/stderr | grep -q "code: 0" || {
+./build tx ibc-transfer transfer transfer "$CHANNEL_ID" "$PENUMBRA_COMPAT_ADDRESS" 1uusdc --from "$NOBLE_ADDRESS" --chain-id "$NOBLE_CHAIN_ID" -y | tee /dev/stderr | grep -q "code: 0" || {
     echo -e "Submitting test transfer transaction to $PENUMBRA_COMPAT_ADDRESS failed"
     exit 1
 }
@@ -164,7 +168,7 @@ unset FINAL_NOBLE_BALANCE
 unset FINAL_PENUMBRA_BALANCE
 
 PENUMBRA_CHANNEL_NUMBER=${COUNTERPARTY_CHANNEL_ID#*-}
-pcli tx withdraw --to $NOBLE_ADDRESS --channel $PENUMBRA_CHANNEL_NUMBER 1transfer/$COUNTERPARTY_CHANNEL_ID/uusdc
+pcli tx withdraw --to "$NOBLE_ADDRESS" --channel "$PENUMBRA_CHANNEL_NUMBER" "1transfer/${COUNTERPARTY_CHANNEL_ID}/uusdc"
 
 sleep 20
 
