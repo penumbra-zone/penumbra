@@ -4,6 +4,9 @@ use penumbra_sdk_auction::auction::dutch::actions::{
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_sdk_dex::{PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim};
 use penumbra_sdk_fee::Gas;
+use penumbra_sdk_funding::liquidity_tournament::{
+    ActionLiquidityTournamentVote, LIQUIDITY_TOURNAMENT_VOTE_DENOM_MAX_BYTES,
+};
 use penumbra_sdk_ibc::IbcRelay;
 use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Output, Spend};
 use penumbra_sdk_stake::{
@@ -288,6 +291,35 @@ fn dutch_auction_withdraw_gas_cost() -> Gas {
     }
 }
 
+fn liquidity_tournament_vote_gas_cost() -> Gas {
+    Gas {
+        block_space:
+        // LiquidityTournamentVoteBody body = 1;
+        (
+            // asset.v1.Denom incentivized = 1; (restricted to MAX bytes)
+            LIQUIDITY_TOURNAMENT_VOTE_DENOM_MAX_BYTES as u64
+            // keys.v1.Address rewards_recipient = 2; (the larger of the two exclusive fields)
+            + 223
+            // uint64 start_position = 3;
+            + 8
+            // asset.v1.Value value = 4;
+            + 48
+            // sct.v1.Nullifier nullifier = 5;
+            + 32
+            // crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 6;
+            + 32
+        )
+        // crypto.decaf377_rdsa.v1.SpendAuthSignature auth_sig = 2;
+        + 64
+        // ZKLiquidityTournamentVoteProof proof = 3;
+        + ZKPROOF_SIZE,
+        // For the rest, c.f. `delegator_vote_gas_cost`
+        compact_block_space: 0,
+        verification: 1000,
+        execution: 10,
+    }
+}
+
 impl GasCost for Transaction {
     fn gas_cost(&self) -> Gas {
         self.actions().map(GasCost::gas_cost).sum()
@@ -375,6 +407,9 @@ impl GasCost for Action {
             }
             Action::ActionDutchAuctionWithdraw(action_dutch_auction_withdraw) => {
                 action_dutch_auction_withdraw.gas_cost()
+            }
+            Action::ActionLiquidityTournamentVote(action_liquidity_tournament_vote) => {
+                action_liquidity_tournament_vote.gas_cost()
             }
         }
     }
@@ -649,5 +684,11 @@ impl GasCost for ActionDutchAuctionEnd {
 impl GasCost for ActionDutchAuctionWithdraw {
     fn gas_cost(&self) -> Gas {
         dutch_auction_withdraw_gas_cost()
+    }
+}
+
+impl GasCost for ActionLiquidityTournamentVote {
+    fn gas_cost(&self) -> Gas {
+        liquidity_tournament_vote_gas_cost()
     }
 }
