@@ -39,6 +39,7 @@ mod base_liquidity_index;
 pub(crate) mod counter;
 pub(crate) mod inventory_index;
 pub(crate) mod price_index;
+pub(crate) mod volume_tracker;
 
 #[async_trait]
 pub trait PositionRead: StateRead {

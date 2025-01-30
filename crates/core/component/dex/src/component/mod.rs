@@ -13,6 +13,7 @@ pub(crate) mod circuit_breaker;
 mod dex;
 mod eviction_manager;
 mod flow;
+mod lqt;
 mod position_manager;
 mod swap_manager;
 
@@ -20,6 +21,7 @@ pub use dex::{Dex, StateReadExt, StateWriteExt};
 pub use position_manager::PositionManager;
 
 // Read data from the Dex component;
+pub use lqt::LqtRead;
 pub use position_manager::PositionRead;
 pub use swap_manager::SwapDataRead;
 
