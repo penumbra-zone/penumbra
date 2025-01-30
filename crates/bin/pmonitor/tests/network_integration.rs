@@ -1,3 +1,4 @@
+#![cfg(feature = "network-integration")]
 //! Integration integration testing of `pmonitor` against a local devnet.
 //! Sets up various scenarios of genesis allocations, and ensures the tool reports
 //! violations as errors.
@@ -12,17 +13,16 @@ mod common;
 use crate::common::pcli_helpers::{pcli_init_softkms, pcli_migrate_balance, pcli_view_address};
 use crate::common::PmonitorTestRunner;
 
-#[ignore]
-#[test]
+#[tokio::test]
 /// Tests the simplest happy path for pmonitor: all wallets have genesis balances,
 /// they never transferred any funds out, nor migrated balances, so all
 /// current balances equal the genesis balances. In this case `pmonitor`
 /// should exit 0.
-fn audit_passes_on_compliant_wallets() -> anyhow::Result<()> {
+async fn audit_passes_on_compliant_wallets() -> anyhow::Result<()> {
     tracing_subscriber::fmt::try_init().ok();
     let p = PmonitorTestRunner::new();
     p.create_pcli_wallets()?;
-    let _network = p.start_devnet()?;
+    let _network = p.start_devnet().await?;
     p.initialize_pmonitor()?;
 
     // Debugging: uncomment the sleep line below if you want to interact with the pmonitor testbed
@@ -38,17 +38,16 @@ fn audit_passes_on_compliant_wallets() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore]
-#[test]
+#[tokio::test]
 /// Tests another happy path for pmonitor: all wallets have genesis balances,
 /// one of the wallets ran `pcli migrate balance` once. This means that all
 /// wallets still have their genesis balance, save one, which has the genesis
 /// balance minus gas fees. In this case, `pmonitor` should exit 0,
 /// because it understood the balance migration and updated the FVK.
-fn audit_passes_on_wallets_that_migrated_once() -> anyhow::Result<()> {
+async fn audit_passes_on_wallets_that_migrated_once() -> anyhow::Result<()> {
     let p = PmonitorTestRunner::new();
     p.create_pcli_wallets()?;
-    let _network = p.start_devnet()?;
+    let _network = p.start_devnet().await?;
     // Run audit once, to confirm compliance on clean slate.
     p.initialize_pmonitor()?;
     p.pmonitor_audit()?;
@@ -72,18 +71,17 @@ fn audit_passes_on_wallets_that_migrated_once() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore]
-#[test]
+#[tokio::test]
 /// Tests another happy path for pmonitor: all wallets have genesis balances,
 /// one of the wallets ran `pcli migrate balance` once, then that receiving
 /// wallet ran `pcli migrate balance` itself, so the genesis funds are now
 /// two (2) FVKs away from the original account. In this case,
 /// pmonitor` should exit 0, because it understood all balance migrations
 /// and updated the FVK in its config file accordingly.
-fn audit_passes_on_wallets_that_migrated_twice() -> anyhow::Result<()> {
+async fn audit_passes_on_wallets_that_migrated_twice() -> anyhow::Result<()> {
     let p = PmonitorTestRunner::new();
     p.create_pcli_wallets()?;
-    let _network = p.start_devnet()?;
+    let _network = p.start_devnet().await?;
     // Run audit once, to confirm compliance on clean slate.
     p.initialize_pmonitor()?;
     p.pmonitor_audit()
@@ -127,15 +125,15 @@ fn audit_passes_on_wallets_that_migrated_twice() -> anyhow::Result<()> {
 
     Ok(())
 }
-#[ignore]
-#[test]
+
+#[tokio::test]
 /// Tests an unhappy path for `pmonitor`: a single wallet has sent all its funds
 /// to non-genesis account, via `pcli tx send` rather than `pcli migrate balance`.
 /// In this case, `pmonitor` should exit non-zero.
-fn audit_fails_on_misbehaving_wallet_that_sent_funds() -> anyhow::Result<()> {
+async fn audit_fails_on_misbehaving_wallet_that_sent_funds() -> anyhow::Result<()> {
     let p = PmonitorTestRunner::new();
     p.create_pcli_wallets()?;
-    let _network = p.start_devnet()?;
+    let _network = p.start_devnet().await?;
     // Run audit once, to confirm compliance on clean slate.
     p.initialize_pmonitor()?;
     p.pmonitor_audit()?;
@@ -174,17 +172,17 @@ fn audit_fails_on_misbehaving_wallet_that_sent_funds() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore]
-#[test]
+#[tokio::test]
 /// Tests a happy path for `pmonitor`: a single wallet has sent all its funds
 /// to non-genesis account, via `pcli tx send` rather than `pcli migrate balance`,
 /// but the receiving wallet then sent those funds back.
 /// In this case, `pmonitor` should exit zero.
-fn audit_passes_on_misbehaving_wallet_that_sent_funds_but_got_them_back() -> anyhow::Result<()> {
+async fn audit_passes_on_misbehaving_wallet_that_sent_funds_but_got_them_back() -> anyhow::Result<()>
+{
     tracing_subscriber::fmt::try_init().ok();
     let p = PmonitorTestRunner::new();
     p.create_pcli_wallets()?;
-    let _network = p.start_devnet()?;
+    let _network = p.start_devnet().await?;
     // Run audit once, to confirm compliance on clean slate.
     p.initialize_pmonitor()?;
     p.pmonitor_audit()?;

@@ -2,15 +2,6 @@
 default:
     @just --list
 
-# Run integration tests for pmonitor tool
-test-pmonitor:
-  # prebuild cargo binaries required for integration tests
-  cargo -q build --package pcli --package pd --package pmonitor
-  cargo -q run --release --bin pd -- network unsafe-reset-all
-  rm -rf /tmp/pmonitor-integration-test
-  cargo nextest run -p pmonitor --run-ignored=ignored-only --test-threads 1
-  # cargo test -p pmonitor -- --ignored --test-threads 1 --nocapture
-
 # Creates and runs a local devnet with solo validator. Includes ancillary services
 # like metrics, postgres for storing ABCI events, and pindexer for munging those events.
 dev:
@@ -62,6 +53,15 @@ test:
 # Run integration tests against the testnet, for validating HTTPS support
 integration-testnet:
   cargo nextest run --release --features integration-testnet -E 'test(/_testnet$/)'
+
+# Run integration tests for pmonitor tool
+integration-pmonitor:
+  ./deployments/scripts/warn-about-pd-state
+  rm -rf /tmp/pmonitor-integration-test
+  # Prebuild binaries, so they're available inside the tests without blocking.
+  cargo build --release --bin pcli --bin pd --bin pmonitor
+  cargo -q run --release --bin pd -- --help > /dev/null
+  cargo nextest run --release -p pmonitor --features network-integration --no-capture --no-fail-fast
 
 # Run smoke test suite, via process-compose config.
 smoke:

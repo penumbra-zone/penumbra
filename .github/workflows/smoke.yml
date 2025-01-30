@@ -64,7 +64,7 @@ jobs:
         uses: astriaorg/buildjet-rust-cache@v2.5.1
 
       - name: run the pmonitor integration tests
-        run: nix develop --command just test-pmonitor
+        run: nix develop --command just integration-pmonitor
 
   # Integration tests that run against the public testnet endpoints.
   # Temporarily enabling these in CI, to provide assurance during refactoring.

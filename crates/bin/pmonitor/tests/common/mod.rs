@@ -8,6 +8,7 @@ use assert_cmd::Command as AssertCommand;
 use once_cell::sync::Lazy;
 use pcli::config::PcliConfig;
 use penumbra_sdk_keys::address::Address;
+use process_compose_openapi_client::Client;
 use std::fs::{create_dir_all, remove_dir_all, File};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
@@ -285,7 +286,7 @@ impl PmonitorTestRunner {
                     "'process-compose down' completed, sleeping briefly during teardown"
                 );
 
-                std::thread::sleep(Duration::from_secs(3));
+                std::thread::sleep(Duration::from_secs(2));
                 return Ok(());
             }
             Err(_e) => {
@@ -300,7 +301,7 @@ impl PmonitorTestRunner {
     /// Run a local devnet based on input config. Returns a handle to the spawned process,
     /// so that cleanup can be handled gracefully.
     /// We assume that the port `8888` is unique to the process-compose API for this test suite.
-    pub fn start_devnet(&self) -> anyhow::Result<Child> {
+    pub async fn start_devnet(&self) -> anyhow::Result<Child> {
         // Ensure no other instance is currently running;
         self.stop_devnet()?;
 
@@ -324,9 +325,52 @@ impl PmonitorTestRunner {
             .stderr(Stdio::null())
             .spawn()
             .expect("failed to execute devnet start cmd");
-        // Sleep a bit, to let network start
-        // TODO: use process-compose API to check for "Running" status on pd.
-        std::thread::sleep(Duration::from_secs(8));
+
+        // Use process-compose API to check for "Running" status on pd.
+        let _pd_result = poll_for_ready("pd").await?;
+        let _cmt_result = poll_for_ready("cometbft").await?;
+        tracing::debug!("all processes ready, devnet is running");
         Ok(child)
     }
+}
+
+/// Block until the process-compose service denoted by `process_name` reports "Ready"
+/// in its status API. Polls once per second, timing out after 60s.
+async fn poll_for_ready(process_name: &str) -> anyhow::Result<()> {
+    // Connect to the running process-compose service, via the custom port.
+    let c = Client::new(format!("http://localhost:{}", PROCESS_COMPOSE_PORT).as_str());
+
+    // Configure timeout, so we can error out if the service never comes up.
+    let timeout = 60;
+    let mut elapsed = 0;
+    while elapsed < timeout {
+        let resp = c.get_process(process_name).await;
+        // Ignore error to API server, process-compose may not be up yet.
+        if let Ok(r) = resp {
+            let state = r.into_inner().is_ready;
+            match state.as_deref() {
+                Some("-") => {
+                    tracing::debug!("still waiting for process to be ready: {}", process_name);
+                }
+                Some("Ready") => {
+                    tracing::debug!("process '{}' is ready!", process_name);
+                    return Ok(());
+                }
+                _ => {
+                    tracing::warn!(
+                        "unexpected status for process '{}', waiting...",
+                        process_name
+                    );
+                }
+            }
+        }
+        // Sleep and try again
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        elapsed = elapsed + 1;
+    }
+    anyhow::bail!(
+        "process '{}' not ready after {} seconds, failing",
+        process_name,
+        timeout
+    );
 }
