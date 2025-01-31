@@ -23,7 +23,10 @@ pub trait NullifierRead: StateRead {
         let tx_id: Option<TransactionId> = self
             .nonverifiable_get(&nullifier_key.as_bytes())
             .await
-            .expect("infallible");
+            .expect(&format!(
+                "failed to retrieve key {} from non-verifiable storage",
+                nullifier_key,
+            ));
 
         tx_id
     }
