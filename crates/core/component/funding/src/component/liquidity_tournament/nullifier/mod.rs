@@ -6,7 +6,6 @@ use cnidarium::{StateRead, StateWrite};
 use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 use penumbra_sdk_sct::{component::clock::EpochRead, Nullifier};
 
-#[allow(dead_code)]
 #[async_trait]
 pub trait NullifierRead: StateRead {
     /// Returns the `TransactionId` if the nullifier has been spent; otherwise, returns None.
@@ -34,7 +33,6 @@ pub trait NullifierRead: StateRead {
 
 impl<T: StateRead + ?Sized> NullifierRead for T {}
 
-#[allow(dead_code)]
 #[async_trait]
 pub trait NullifierWrite: StateWrite {
     /// Sets the LQT nullifier in the NV storage.
