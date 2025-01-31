@@ -67,6 +67,8 @@ impl Component for Funding {
         let state = Arc::get_mut(state).expect("state should be unique");
         let funding_execution_start = std::time::Instant::now();
 
+        liquidity_tournament::distribute_rewards(&mut *state).await?;
+
         // Here, we want to process the funding rewards for the epoch that just ended. To do this,
         // we pull the funding queue that the staking component has prepared for us, as well as the
         // base rate data for the epoch that just ended.
