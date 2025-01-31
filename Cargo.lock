@@ -5217,6 +5217,7 @@ dependencies = [
  "metrics",
  "penumbra-sdk-asset",
  "penumbra-sdk-community-pool",
+ "penumbra-sdk-dex",
  "penumbra-sdk-distributions",
  "penumbra-sdk-governance",
  "penumbra-sdk-keys",
