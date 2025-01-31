@@ -17,7 +17,7 @@ use penumbra_sdk_sct::{
 use penumbra_sdk_shielded_pool::{
     component::ShieldedPool, Note, SpendPlan, SpendProof, SpendProofPrivate, SpendProofPublic,
 };
-use penumbra_sdk_txhash::{EffectHash, TransactionContext};
+use penumbra_sdk_txhash::{EffectHash, TransactionContext, TransactionId};
 use rand_core::{OsRng, SeedableRng};
 use std::{ops::Deref, sync::Arc};
 use tendermint::abci;
@@ -65,7 +65,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
     let transaction_context = TransactionContext {
         anchor: root,
         effect_hash: EffectHash(dummy_effect_hash),
-        transaction_id: [0; 32],
+        transaction_id: TransactionId([0; 32]),
     };
 
     // 3. Simulate execution of the Spend action
@@ -190,7 +190,7 @@ async fn invalid_dummy_spend() {
     let transaction_context = TransactionContext {
         anchor: root,
         effect_hash: EffectHash(dummy_effect_hash),
-        transaction_id: [0; 32],
+        transaction_id: TransactionId([0; 32]),
     };
 
     // 3. Simulate execution of the Spend action
