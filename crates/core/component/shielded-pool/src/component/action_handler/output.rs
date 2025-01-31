@@ -31,7 +31,7 @@ impl ActionHandler for Output {
             .expect("source should be set during execution");
 
         state
-            .add_note_payload(self.body.note_payload.clone(), source)
+            .add_note_payload(self.body.note_payload.clone(), source.into())
             .await;
 
         state.record_proto(
