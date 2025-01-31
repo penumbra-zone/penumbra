@@ -1,7 +1,6 @@
-use async_trait::async_trait;
-
 use crate::{component::state_key, params::FundingParameters};
 use anyhow::Result;
+use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 
