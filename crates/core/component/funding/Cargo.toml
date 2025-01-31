@@ -14,6 +14,7 @@ component = [
     "penumbra-sdk-proto/cnidarium",
     "penumbra-sdk-community-pool/component",
     "penumbra-sdk-distributions/component",
+    "penumbra-sdk-governance/component",
     "penumbra-sdk-sct/component",
     "penumbra-sdk-shielded-pool/component",
     "penumbra-sdk-stake/component",
