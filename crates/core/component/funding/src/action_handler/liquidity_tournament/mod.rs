@@ -10,9 +10,12 @@ use penumbra_sdk_sct::component::clock::EpochRead as _;
 use penumbra_sdk_sct::epoch::Epoch;
 use penumbra_sdk_stake::component::validator_handler::ValidatorDataRead as _;
 use penumbra_sdk_tct::Position;
-use penumbra_sdk_txhash::TransactionContext;
+use penumbra_sdk_txhash::{TransactionContext, TransactionId};
 
-use crate::component::liquidity_tournament::votes::StateWriteExt as _;
+use crate::component::liquidity_tournament::{
+    nullifier::{NullifierRead as _, NullifierWrite as _},
+    votes::StateWriteExt as _,
+};
 use crate::liquidity_tournament::{
     proof::LiquidityTournamentVoteProofPublic, ActionLiquidityTournamentVote,
     LiquidityTournamentVoteBody, LIQUIDITY_TOURNAMENT_VOTE_DENOM_MAX_BYTES,
@@ -109,14 +112,23 @@ impl ActionHandler for ActionLiquidityTournamentVote {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> anyhow::Result<()> {
-        // 1. Check that the nullifier hasn't appeared in this round. (TODO)
-        // 2. Check that the start position can vote in this round.
+        // 1. Check that the start position can vote in this round.
         let current_epoch = state
             .get_current_epoch()
             .await
             .expect("failed to fetch current epoch");
         start_position_good_for_epoch(current_epoch, self.body.start_position).await?;
-        // 3. Tally.
+        // 2. We can tally, as long as the nullifier hasn't been used yet (this round).
+        let nullifier = self.body.nullifier;
+        let nullifier_exists = state.get_lqt_spent_nullifier(nullifier).await.is_some();
+        anyhow::ensure!(
+            !nullifier_exists,
+            "nullifier {} already voted in epoch {}",
+            self.body.nullifier,
+            current_epoch.index
+        );
+        state.put_lqt_spent_nullifier(current_epoch.index, nullifier, TransactionId([0u8; 32]));
+        // 3. Ok, actually tally.
         let power = voting_power(unbonded_amount(&state, self.body.value).await?);
         let incentivized = self
             .body
