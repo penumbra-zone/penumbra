@@ -87,13 +87,13 @@ impl ActionHandler for SwapClaim {
             .expect("source is set during tx execution");
 
         state
-            .add_rolled_up_payload(self.body.output_1_commitment, source.clone())
+            .add_rolled_up_payload(self.body.output_1_commitment, source.into())
             .await;
         state
-            .add_rolled_up_payload(self.body.output_2_commitment, source.clone())
+            .add_rolled_up_payload(self.body.output_2_commitment, source.into())
             .await;
 
-        state.nullify(self.body.nullifier, source).await;
+        state.nullify(self.body.nullifier, source.into()).await;
 
         state.record_proto(event::EventSwapClaim::from(self).to_proto());
 

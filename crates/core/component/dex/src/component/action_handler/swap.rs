@@ -55,7 +55,7 @@ impl ActionHandler for Swap {
         // Record the swap commitment in the state.
         let source = state.get_current_source().expect("source is set");
         state
-            .add_swap_payload(self.body.payload.clone(), source)
+            .add_swap_payload(self.body.payload.clone(), source.into())
             .await;
 
         // Mark the assets for the swap's trading pair as accessed during this block.

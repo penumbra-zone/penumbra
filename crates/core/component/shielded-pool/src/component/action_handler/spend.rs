@@ -46,7 +46,7 @@ impl ActionHandler for Spend {
 
         let source = state.get_current_source().expect("source should be set");
 
-        state.nullify(self.body.nullifier, source).await;
+        state.nullify(self.body.nullifier, source.into()).await;
 
         // Also record an ABCI event for transaction indexing.
         state.record_proto(

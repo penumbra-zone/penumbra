@@ -141,3 +141,9 @@ impl TryFrom<pb::CommitmentSource> for CommitmentSource {
         })
     }
 }
+
+impl From<TransactionId> for CommitmentSource {
+    fn from(id: TransactionId) -> Self {
+        Self::Transaction { id: Some(id.0) }
+    }
+}

@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_sdk_fee::component::FeePay as _;
-use penumbra_sdk_sct::{component::source::SourceContext, CommitmentSource};
+use penumbra_sdk_sct::component::source::SourceContext;
 use penumbra_sdk_shielded_pool::component::ClueManager;
 use penumbra_sdk_transaction::{gas::GasCost as _, Transaction};
 use tokio::task::JoinSet;
@@ -107,10 +107,7 @@ impl AppActionHandler for Transaction {
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // While we have access to the full Transaction, hash it to
         // obtain a NoteSource we can cache for various actions.
-        let source = CommitmentSource::Transaction {
-            id: Some(self.id().0),
-        };
-        state.put_current_source(Some(source));
+        state.put_current_source(Some(self.id()));
 
         // Check and record the transaction's fee payment,
         // before doing the rest of execution.
