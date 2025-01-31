@@ -1,4 +1,4 @@
-pub fn staking_funding_parameters() -> &'static str {
+pub fn funding_parameters() -> &'static str {
     "funding/parameters"
 }
 
