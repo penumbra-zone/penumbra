@@ -7,7 +7,7 @@ use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 #[async_trait]
 pub trait StateReadExt: StateRead {
     /// Gets the funding module chain parameters from the JMT.
-    async fn get_staking_funding_params(&self) -> Result<FundingParameters> {
+    async fn get_funding_params(&self) -> Result<FundingParameters> {
         self.get(state_key::staking_funding_parameters())
             .await?
             .ok_or_else(|| anyhow::anyhow!("Missing FundingParameters"))
@@ -19,7 +19,7 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
     /// Set the Funding parameters in the JMT.
-    fn put_staking_funding_params(&mut self, params: FundingParameters) {
+    fn put_funding_params(&mut self, params: FundingParameters) {
         self.put(state_key::staking_funding_parameters().into(), params)
     }
 }

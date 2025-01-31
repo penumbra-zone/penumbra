@@ -9,8 +9,8 @@ use penumbra_sdk_sct::{component::clock::EpochRead, Nullifier};
 #[allow(dead_code)]
 #[async_trait]
 pub trait NullifierRead: StateRead {
-    /// Gets the transaction id associated with the given nullifier from the JMT.
-    async fn get_txid_from_nullifier(&self, nullifier: Nullifier) -> Option<TransactionId> {
+    /// Returns the `TransactionId` if the nullifier has been spent; otherwise, returns None.
+    async fn get_lqt_spent_nullifier(&self, nullifier: Nullifier) -> Option<TransactionId> {
         // Grab the ambient epoch index.
         let epoch_index = self
             .get_current_epoch()
@@ -18,8 +18,7 @@ pub trait NullifierRead: StateRead {
             .expect("epoch is always set")
             .index;
 
-        let nullifier_key =
-            &state_key::lqt::v1::nullifier::lqt_nullifier_lookup_for_txid(epoch_index, &nullifier);
+        let nullifier_key = &state_key::lqt::v1::nullifier::key(epoch_index, &nullifier);
 
         let tx_id: Option<TransactionId> = self
             .nonverifiable_get(&nullifier_key.as_bytes())
@@ -35,12 +34,16 @@ impl<T: StateRead + ?Sized> NullifierRead for T {}
 #[allow(dead_code)]
 #[async_trait]
 pub trait NullifierWrite: StateWrite {
-    /// Sets the LQT nullifier in the JMT.
-    fn put_lqt_nullifier(&mut self, epoch_index: u64, nullifier: Nullifier, tx_id: TransactionId) {
-        let nullifier_key =
-            state_key::lqt::v1::nullifier::lqt_nullifier_lookup_for_txid(epoch_index, &nullifier);
+    /// Sets the LQT nullifier in the NV storage.
+    fn put_lqt_spent_nullifier(
+        &mut self,
+        epoch_index: u64,
+        nullifier: Nullifier,
+        tx_id: TransactionId,
+    ) {
+        let nullifier_key = state_key::lqt::v1::nullifier::key(epoch_index, &nullifier);
 
-        self.put(nullifier_key, tx_id);
+        self.nonverifiable_put(nullifier_key.into(), tx_id);
     }
 }
 

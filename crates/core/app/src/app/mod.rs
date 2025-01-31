@@ -690,7 +690,7 @@ pub trait StateReadExt: StateRead {
         let distributions_params = self.get_distributions_params().await?;
         let ibc_params = self.get_ibc_params().await?;
         let fee_params = self.get_fee_params().await?;
-        let funding_params = self.get_staking_funding_params().await?;
+        let funding_params = self.get_funding_params().await?;
         let governance_params = self.get_governance_params().await?;
         let sct_params = self.get_sct_params().await?;
         let shielded_pool_params = self.get_shielded_pool_params().await?;
@@ -812,7 +812,7 @@ pub trait StateWriteExt: StateWrite {
         self.put_community_pool_params(community_pool_params);
         self.put_distributions_params(distributions_params);
         self.put_fee_params(fee_params);
-        self.put_staking_funding_params(funding_params);
+        self.put_funding_params(funding_params);
         self.put_governance_params(governance_params);
         self.put_ibc_params(ibc_params);
         self.put_sct_params(sct_params);
