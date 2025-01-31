@@ -1,6 +1,9 @@
 use anyhow::{anyhow, Context};
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
-use penumbra_sdk_asset::{asset::Denom, balance, Value};
+use penumbra_sdk_asset::{
+    asset::{self, Denom, REGISTRY},
+    balance, Value,
+};
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_proto::{core::component::funding::v1 as pb, DomainType};
 use penumbra_sdk_sct::Nullifier;
@@ -32,6 +35,17 @@ pub struct LiquidityTournamentVoteBody {
     pub nullifier: Nullifier,
     /// The key that must be used to vote.
     pub rk: VerificationKey<SpendAuth>,
+}
+
+impl LiquidityTournamentVoteBody {
+    /// Get the asset id that should be incentivized.
+    ///
+    /// This will return None if the denom is not a base denom.
+    pub fn incentivized_id(&self) -> Option<asset::Id> {
+        REGISTRY
+            .parse_denom(&self.incentivized.denom)
+            .map(|x| x.id())
+    }
 }
 
 impl DomainType for LiquidityTournamentVoteBody {
