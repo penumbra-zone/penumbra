@@ -1,16 +1,19 @@
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_sdk_community_pool::{StateReadExt as _, StateWriteExt as _};
+use penumbra_sdk_community_pool::StateWriteExt as _;
 use penumbra_sdk_dex::lp::position;
 use penumbra_sdk_distributions::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::{fixpoint::U128x128, Amount};
+use penumbra_sdk_sct::component::clock::EpochRead as _;
+use penumbra_sdk_sct::CommitmentSource;
+use penumbra_sdk_shielded_pool::component::NoteManager as _;
+use penumbra_sdk_txhash::TransactionId;
 
 /// Move a fraction of the budget, up to the entire budget, from the community pool.
 ///
 /// This will return the amount pulled (in terms of the staking token).
-#[allow(dead_code)]
 async fn appropriate_budget(
     mut state: impl StateWrite,
     fraction: U128x128,
@@ -46,14 +49,32 @@ async fn appropriate_budget(
 /// This ensures that rewards do not exceed the issuance budget, and are immediately
 /// debited from the appropriate source (which happens to be the community pool),
 /// and credited towards the appropriate destination (i.e. positions or new notes).
-pub trait Bank: StateWrite {
+pub trait Bank: StateWrite + Sized {
     /// Move a fraction of our issuance budget towards an address, by minting a note.
     async fn reward_fraction_to_voter(
         &mut self,
-        _fraction: U128x128,
-        _voter: &Address,
+        fraction: U128x128,
+        voter: &Address,
+        tx_hash: TransactionId,
     ) -> anyhow::Result<()> {
-        unimplemented!()
+        let reward = appropriate_budget(&mut self, fraction).await?;
+        let epoch = self
+            .get_current_epoch()
+            .await
+            .expect("should be able to read current epoch");
+        self.mint_note(
+            Value {
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+                amount: reward,
+            },
+            voter,
+            CommitmentSource::LiquidityTournamentReward {
+                epoch: epoch.index,
+                tx_hash,
+            },
+        )
+        .await?;
+        Ok(())
     }
 
     /// Move a fraction of our issuance budget towards a position, increasing its reserves.
