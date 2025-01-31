@@ -7,7 +7,8 @@ use async_trait::async_trait;
 use cnidarium::{EscapedByteSlice, StateRead, StateWrite};
 use futures::Stream;
 use futures::StreamExt;
-use penumbra_sdk_asset::{asset, Balance};
+use penumbra_sdk_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 use tap::Tap;
@@ -487,6 +488,57 @@ pub trait PositionManager: StateWrite + PositionRead {
             .await?;
 
         Ok(reserves)
+    }
+
+    /// This adds extra rewards in the form of staking tokens to the reserves of a position.
+    #[tracing::instrument(level = "debug", skip(self))]
+    async fn reward_position(
+        &mut self,
+        position_id: position::Id,
+        reward: Amount,
+    ) -> anyhow::Result<()> {
+        let prev_state = self
+            .position_by_id(&position_id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("rewarding unknown position {}", position_id))?;
+        // The new state is the result of adding the staking token to the reserves,
+        // or doing nothing if for some reason this position does not have the staking token.
+        let new_state = {
+            let mut new_state = prev_state.clone();
+            let pair = prev_state.phi.pair;
+            let to_increment = if pair.asset_1() == *STAKING_TOKEN_ASSET_ID {
+                &mut new_state.reserves.r1
+            } else if pair.asset_2() == *STAKING_TOKEN_ASSET_ID {
+                &mut new_state.reserves.r2
+            } else {
+                tracing::error!("pair {} does not contain staking asset", pair);
+                return Ok(());
+            };
+            *to_increment = to_increment.checked_add(&reward).expect(&format!(
+                "failed to add reward {} to reserves {}",
+                reward, *to_increment
+            ));
+            // Ok, you'd think we'd be done here, alas, the [`guard_invalid_transitions`] function
+            // will complain if the position has already been withdrawn, but the sequence has not yet been incremented!
+            new_state.state = match prev_state.state {
+                position::State::Opened => position::State::Opened,
+                position::State::Closed => position::State::Closed,
+                position::State::Withdrawn { sequence } => position::State::Withdrawn {
+                    sequence: sequence.saturating_add(1),
+                },
+            };
+            new_state
+        };
+        self.update_position(&position_id, Some(prev_state), new_state)
+            .await?;
+        // At this point, we can credit the VCB, because the update passed.
+        // This is a credit because the reward has moved value *into* the DEX.
+        self.dex_vcb_credit(Value {
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+            amount: reward,
+        })
+        .await?;
+        Ok(())
     }
 }
 
