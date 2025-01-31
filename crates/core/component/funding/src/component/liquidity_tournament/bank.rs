@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_community_pool::StateWriteExt as _;
+use penumbra_sdk_dex::component::PositionManager as _;
 use penumbra_sdk_dex::lp::position;
 use penumbra_sdk_distributions::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_sdk_keys::Address;
@@ -80,9 +81,11 @@ pub trait Bank: StateWrite + Sized {
     /// Move a fraction of our issuance budget towards a position, increasing its reserves.
     async fn reward_fraction_to_position(
         &mut self,
-        _fraction: U128x128,
-        _lp: position::Id,
+        fraction: U128x128,
+        lp: position::Id,
     ) -> anyhow::Result<()> {
-        unimplemented!()
+        let reward = appropriate_budget(&mut self, fraction).await?;
+        self.reward_position(lp, reward).await?;
+        Ok(())
     }
 }
