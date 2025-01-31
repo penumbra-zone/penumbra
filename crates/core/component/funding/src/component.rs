@@ -3,7 +3,6 @@ mod state_key;
 pub mod view;
 use ::metrics::{gauge, histogram};
 pub use metrics::register_metrics;
-pub(crate) mod liquidity_tournament;
 
 /* Component implementation */
 use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
