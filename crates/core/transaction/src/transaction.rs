@@ -144,6 +144,7 @@ impl Transaction {
         TransactionContext {
             anchor: self.anchor,
             effect_hash: self.effect_hash(),
+            transaction_id: self.id(),
         }
     }
 
