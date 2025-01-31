@@ -9,6 +9,7 @@ use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_proto::{DomainType, StateWriteProto};
 use penumbra_sdk_stake::component::validator_handler::ValidatorDataRead;
 pub use view::{StateReadExt, StateWriteExt};
+pub(crate) mod liquidity_tournament;
 
 use std::sync::Arc;
 
