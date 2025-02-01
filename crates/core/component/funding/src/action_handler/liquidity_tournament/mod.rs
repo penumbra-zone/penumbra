@@ -6,11 +6,11 @@ use penumbra_sdk_asset::{asset::Denom, Value};
 use penumbra_sdk_governance::StateReadExt as _;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
-use penumbra_sdk_sct::component::clock::EpochRead as _;
+use penumbra_sdk_sct::component::{clock::EpochRead as _, source::SourceContext as _};
 use penumbra_sdk_sct::epoch::Epoch;
 use penumbra_sdk_stake::component::validator_handler::ValidatorDataRead as _;
 use penumbra_sdk_tct::Position;
-use penumbra_sdk_txhash::{TransactionContext, TransactionId};
+use penumbra_sdk_txhash::TransactionContext;
 
 use crate::component::liquidity_tournament::{
     nullifier::{NullifierRead as _, NullifierWrite as _},
@@ -127,7 +127,10 @@ impl ActionHandler for ActionLiquidityTournamentVote {
             self.body.nullifier,
             current_epoch.index
         );
-        state.put_lqt_spent_nullifier(current_epoch.index, nullifier, TransactionId([0u8; 32]));
+        let tx_id = state
+            .get_current_source()
+            .expect("source transaction id should be set");
+        state.put_lqt_spent_nullifier(current_epoch.index, nullifier, tx_id);
         // 3. Ok, actually tally.
         let power = voting_power(unbonded_amount(&state, self.body.value).await?);
         let incentivized = self

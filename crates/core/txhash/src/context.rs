@@ -1,4 +1,4 @@
-use crate::{EffectHash, TransactionId};
+use crate::EffectHash;
 use penumbra_sdk_tct as tct;
 
 /// Stateless verification context for a transaction.
@@ -10,6 +10,4 @@ pub struct TransactionContext {
     pub anchor: tct::Root,
     /// The transaction's effect hash.
     pub effect_hash: EffectHash,
-    /// The transaction's id.
-    pub transaction_id: TransactionId,
 }
