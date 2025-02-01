@@ -5166,6 +5166,7 @@ dependencies = [
  "penumbra-sdk-sct",
  "serde",
  "tendermint 0.40.1",
+ "tonic",
  "tracing",
 ]
 
