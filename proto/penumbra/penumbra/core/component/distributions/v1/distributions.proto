@@ -5,6 +5,7 @@ import "penumbra/core/num/v1/num.proto";
 // Query operations for the distributions component.
 service DistributionsService {
   rpc CurrentLqtPoolSize(CurrentLqtPoolSizeRequest) returns (CurrentLqtPoolSizeResponse);
+  rpc LqtPoolSizeByEpoch(LqtPoolSizeByEpochRequest) returns (LqtPoolSizeByEpochResponse);
 }
 
 // Distribution configuration data.
@@ -29,5 +30,20 @@ message CurrentLqtPoolSizeResponse {
   uint64 epoch_index = 1;
 
   // The total LQT pool size for the current epoch.
+  core.num.v1.Amount pool_size = 2;
+}
+
+// Request for retrieving the pool size at a specific epoch.
+message LqtPoolSizeByEpochRequest {
+  // The epoch for which we want to retrieve the pool size.
+  uint64 epoch = 1;
+}
+
+// Response containing the pool size at a specific epoch.
+message LqtPoolSizeByEpochResponse {
+  // The epoch for which the pool size is returned.
+  uint64 epoch_index = 1;
+  
+  // The total LQT pool size for the given epoch.
   core.num.v1.Amount pool_size = 2;
 }

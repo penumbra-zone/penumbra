@@ -68,6 +68,43 @@ impl ::prost::Name for CurrentLqtPoolSizeResponse {
         "/penumbra.core.component.distributions.v1.CurrentLqtPoolSizeResponse".into()
     }
 }
+/// Request for retrieving the pool size at a specific epoch.
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct LqtPoolSizeByEpochRequest {
+    /// The epoch for which we want to retrieve the pool size.
+    #[prost(uint64, tag = "1")]
+    pub epoch: u64,
+}
+impl ::prost::Name for LqtPoolSizeByEpochRequest {
+    const NAME: &'static str = "LqtPoolSizeByEpochRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.distributions.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.distributions.v1.LqtPoolSizeByEpochRequest".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.distributions.v1.LqtPoolSizeByEpochRequest".into()
+    }
+}
+/// Response containing the pool size at a specific epoch.
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct LqtPoolSizeByEpochResponse {
+    /// The epoch for which the pool size is returned.
+    #[prost(uint64, tag = "1")]
+    pub epoch_index: u64,
+    /// The total LQT pool size for the given epoch.
+    #[prost(message, optional, tag = "2")]
+    pub pool_size: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for LqtPoolSizeByEpochResponse {
+    const NAME: &'static str = "LqtPoolSizeByEpochResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.distributions.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.distributions.v1.LqtPoolSizeByEpochResponse".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.distributions.v1.LqtPoolSizeByEpochResponse".into()
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod distributions_service_client {
@@ -190,6 +227,35 @@ pub mod distributions_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        pub async fn lqt_pool_size_by_epoch(
+            &mut self,
+            request: impl tonic::IntoRequest<super::LqtPoolSizeByEpochRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::LqtPoolSizeByEpochResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.distributions.v1.DistributionsService/LqtPoolSizeByEpoch",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.distributions.v1.DistributionsService",
+                        "LqtPoolSizeByEpoch",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -211,6 +277,13 @@ pub mod distributions_service_server {
             request: tonic::Request<super::CurrentLqtPoolSizeRequest>,
         ) -> std::result::Result<
             tonic::Response<super::CurrentLqtPoolSizeResponse>,
+            tonic::Status,
+        >;
+        async fn lqt_pool_size_by_epoch(
+            &self,
+            request: tonic::Request<super::LqtPoolSizeByEpochRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::LqtPoolSizeByEpochResponse>,
             tonic::Status,
         >;
     }
@@ -326,6 +399,55 @@ pub mod distributions_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = CurrentLqtPoolSizeSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.distributions.v1.DistributionsService/LqtPoolSizeByEpoch" => {
+                    #[allow(non_camel_case_types)]
+                    struct LqtPoolSizeByEpochSvc<T: DistributionsService>(pub Arc<T>);
+                    impl<
+                        T: DistributionsService,
+                    > tonic::server::UnaryService<super::LqtPoolSizeByEpochRequest>
+                    for LqtPoolSizeByEpochSvc<T> {
+                        type Response = super::LqtPoolSizeByEpochResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::LqtPoolSizeByEpochRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as DistributionsService>::lqt_pool_size_by_epoch(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = LqtPoolSizeByEpochSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
