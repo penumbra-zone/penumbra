@@ -1,5 +1,6 @@
 pub mod state_key;
 pub use view::{StateReadExt, StateWriteExt};
+pub mod rpc;
 
 mod view;
 
@@ -10,6 +11,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
 use penumbra_sdk_num::Amount;
+use penumbra_sdk_sct::{component::clock::EpochRead, epoch::Epoch};
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
@@ -99,16 +101,16 @@ trait DistributionManager: StateWriteExt {
     /// Update the object store with the new issuance of staking tokens for this epoch.
     async fn define_staking_budget(&mut self) -> Result<()> {
         let new_issuance = self.compute_new_staking_issuance().await?;
-        tracing::debug!(?new_issuance, "computed new staking issuance for epoch");
+        tracing::debug!(
+            ?new_issuance,
+            "computed new staking issuance for current epoch"
+        );
         Ok(self.set_staking_token_issuance_for_epoch(new_issuance))
     }
 
     /// Computes total LQT reward issuance for the epoch.
-    async fn compute_new_lqt_issuance(&self) -> Result<Amount> {
-        use penumbra_sdk_sct::component::clock::EpochRead;
-
+    async fn compute_new_lqt_issuance(&self, current_epoch: Epoch) -> Result<Amount> {
         let current_block_height = self.get_block_height().await?;
-        let current_epoch = self.get_current_epoch().await?;
         let epoch_length = current_block_height
             .checked_sub(current_epoch.start_height)
             .unwrap_or_else(|| panic!("epoch start height is greater than current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
@@ -138,9 +140,16 @@ trait DistributionManager: StateWriteExt {
 
     /// Update the nonverifiable storage with the newly issued LQT rewards for the current epoch.
     async fn define_lqt_budget(&mut self) -> Result<()> {
-        let new_issuance = self.compute_new_lqt_issuance().await?;
-        tracing::debug!(?new_issuance, "computed new lqt reward issuance for epoch");
-        Ok(self.set_lqt_reward_issuance_for_epoch(new_issuance))
+        // Grab the ambient epoch index.
+        let current_epoch = self.get_current_epoch().await?;
+
+        let new_issuance = self.compute_new_lqt_issuance(current_epoch).await?;
+        tracing::debug!(
+            ?new_issuance,
+            "computed new lqt reward issuance for epoch {}",
+            current_epoch.index
+        );
+        Ok(self.set_lqt_reward_issuance_for_epoch(current_epoch.index, new_issuance))
     }
 }
 
