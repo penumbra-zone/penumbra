@@ -21,8 +21,15 @@ pub trait StateReadExt: StateRead {
     }
 
     // Get the total amount of LQT rewards issued for this epoch.
-    fn get_lqt_reward_issuance_for_epoch(&self) -> Option<Amount> {
-        self.object_get(&state_key::lqt_reward_issuance_for_epoch())
+    async fn get_lqt_reward_issuance_for_epoch(&self, epoch_index: u64) -> Option<Amount> {
+        let key = &state_key::lqt_reward_issuance_for_epoch(epoch_index);
+
+        self.nonverifiable_get(&key.as_bytes())
+            .await
+            .expect(&format!(
+                "failed to retrieve key {} from non-verifiable storage",
+                key,
+            ))
     }
 }
 
@@ -41,8 +48,11 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     }
 
     /// Set the total amount of LQT rewards issued for this epoch.
-    fn set_lqt_reward_issuance_for_epoch(&mut self, issuance: Amount) {
-        self.object_put(state_key::lqt_reward_issuance_for_epoch(), issuance);
+    fn set_lqt_reward_issuance_for_epoch(&mut self, epoch_index: u64, issuance: Amount) {
+        self.nonverifiable_put(
+            state_key::lqt_reward_issuance_for_epoch(epoch_index).into(),
+            issuance,
+        );
     }
 }
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}

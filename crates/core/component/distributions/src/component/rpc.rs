@@ -54,4 +54,25 @@ impl DistributionsService for Server {
             pool_size: Some(Amount::from(current_lqt_pool_size).into()),
         }))
     }
+
+    async fn lqt_pool_size_by_epoch(
+        &self,
+        request: tonic::Request<pb::LqtPoolSizeByEpochRequest>,
+    ) -> Result<tonic::Response<pb::LqtPoolSizeByEpochResponse>, tonic::Status> {
+        // Retrieve latest state snapshot.
+        let state = self.storage.latest_snapshot();
+        let epoch_index = request.into_inner().epoch;
+        let amount = state
+            .get_lqt_reward_issuance_for_epoch(epoch_index)
+            .await
+            .expect(&format!(
+                "failed to retrieve LQT issuance for epoch {} from non-verifiable storage",
+                epoch_index,
+            ));
+
+        Ok(tonic::Response::new(pb::LqtPoolSizeByEpochResponse {
+            epoch_index,
+            pool_size: Some(amount.into()),
+        }))
+    }
 }
