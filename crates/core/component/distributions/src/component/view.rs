@@ -22,14 +22,12 @@ pub trait StateReadExt: StateRead {
 
     // Get the total amount of LQT rewards issued for this epoch.
     async fn get_lqt_reward_issuance_for_epoch(&self, epoch_index: u64) -> Option<Amount> {
-        let key = &state_key::lqt_reward_issuance_for_epoch(epoch_index);
+        let key = state_key::lqt::v1::budget::for_epoch(epoch_index);
 
-        self.nonverifiable_get(&key.as_bytes())
-            .await
-            .expect(&format!(
-                "failed to retrieve key {} from non-verifiable storage",
-                key,
-            ))
+        self.nonverifiable_get(&key).await.unwrap_or_else(|_| {
+            tracing::error!("LQT issuance does not exist for epoch");
+            None
+        })
     }
 }
 
@@ -50,7 +48,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     /// Set the total amount of LQT rewards issued for this epoch.
     fn set_lqt_reward_issuance_for_epoch(&mut self, epoch_index: u64, issuance: Amount) {
         self.nonverifiable_put(
-            state_key::lqt_reward_issuance_for_epoch(epoch_index).into(),
+            state_key::lqt::v1::budget::for_epoch(epoch_index).into(),
             issuance,
         );
     }

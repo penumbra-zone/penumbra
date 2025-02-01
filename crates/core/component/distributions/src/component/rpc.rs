@@ -65,10 +65,12 @@ impl DistributionsService for Server {
         let amount = state
             .get_lqt_reward_issuance_for_epoch(epoch_index)
             .await
-            .expect(&format!(
-                "failed to retrieve LQT issuance for epoch {} from non-verifiable storage",
-                epoch_index,
-            ));
+            .ok_or_else(|| {
+                tonic::Status::not_found(format!(
+                    "failed to retrieve LQT issuance for epoch {} from non-verifiable storage",
+                    epoch_index,
+                ))
+            })?;
 
         Ok(tonic::Response::new(pb::LqtPoolSizeByEpochResponse {
             epoch_index,
