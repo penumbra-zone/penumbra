@@ -1,5 +1,6 @@
 pub mod state_key;
 pub use view::{StateReadExt, StateWriteExt};
+pub mod rpc;
 
 mod view;
 
