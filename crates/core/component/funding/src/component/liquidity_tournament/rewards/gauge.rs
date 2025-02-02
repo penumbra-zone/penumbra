@@ -201,4 +201,11 @@ mod test {
             voting_power_combines_inner(votes);
         }
     }
+
+    #[test]
+    fn test_no_votes() {
+        let (assets, voters) = trace(finalize(Gauge::empty()));
+        assert!(assets.is_empty());
+        assert!(voters.is_empty());
+    }
 }
