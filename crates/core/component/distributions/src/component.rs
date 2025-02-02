@@ -6,16 +6,17 @@ mod view;
 
 use std::sync::Arc;
 
+use crate::event;
+use crate::genesis;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
 use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::StateWriteProto;
 use penumbra_sdk_sct::{component::clock::EpochRead, epoch::Epoch};
 use tendermint::v0_37::abci;
 use tracing::instrument;
-
-use crate::genesis;
 
 pub struct Distributions {}
 
@@ -146,10 +147,35 @@ trait DistributionManager: StateWriteExt {
         let new_issuance = self.compute_new_lqt_issuance(current_epoch).await?;
         tracing::debug!(
             ?new_issuance,
-            "computed new lqt reward issuance for epoch {}",
+            "computed new lqt reward issuance for currentepoch {}",
             current_epoch.index
         );
-        Ok(self.set_lqt_reward_issuance_for_epoch(current_epoch.index, new_issuance))
+
+        // Retrieve the previous cumulative LQT issuance total from NV storage.
+        let previous_issuance = self
+            .get_cummulative_lqt_reward_issuance(current_epoch.index - 1)
+            .await
+            .ok_or_else(|| {
+                tonic::Status::not_found(format!(
+                    "failed to retrieve cumulative LQT issuance for epoch {} from non-verifiable storage",
+                    current_epoch.index,
+                ))
+            })?;
+
+        // Compute total new LQT issuance.
+        let total_new_issuance = previous_issuance + new_issuance;
+
+        // Emit an event for LQT pool size increase.
+        self.record_proto(event::event_lqt_pool_size_increase(
+            current_epoch.index,
+            new_issuance,
+            total_new_issuance,
+        ));
+
+        self.set_lqt_reward_issuance_for_epoch(current_epoch.index, new_issuance);
+        self.set_cumulative_lqt_reward_issuance(current_epoch.index, total_new_issuance);
+
+        Ok(())
     }
 }
 

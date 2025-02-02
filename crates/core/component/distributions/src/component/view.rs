@@ -29,6 +29,16 @@ pub trait StateReadExt: StateRead {
             None
         })
     }
+
+    // Get the cumulative amount of LQT rewards issued up until this epoch.
+    async fn get_cummulative_lqt_reward_issuance(&self, epoch_index: u64) -> Option<Amount> {
+        let key = state_key::lqt::v1::budget::cumulative(epoch_index);
+
+        self.nonverifiable_get(&key).await.unwrap_or_else(|_| {
+            tracing::error!("cumulative LQT issuance does not exist for epoch");
+            None
+        })
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
@@ -49,6 +59,14 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     fn set_lqt_reward_issuance_for_epoch(&mut self, epoch_index: u64, issuance: Amount) {
         self.nonverifiable_put(
             state_key::lqt::v1::budget::for_epoch(epoch_index).into(),
+            issuance,
+        );
+    }
+
+    /// Set the cumulative amount of LQT rewards issued up until this epoch.
+    fn set_cumulative_lqt_reward_issuance(&mut self, epoch_index: u64, issuance: Amount) {
+        self.nonverifiable_put(
+            state_key::lqt::v1::budget::cumulative(epoch_index).into(),
             issuance,
         );
     }
