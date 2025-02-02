@@ -200,10 +200,10 @@ mod test {
         }
     }
 
-    fn almost_1(share: Share) -> bool {
-        // <= 1 and >= 99.9_999_999%
-        share <= Share::from(1u64)
-            && share >= Share::ratio(999_999_999u64, 1_000_000_000u64).unwrap()
+    fn almost_equal(share: Share, target: Share) -> bool {
+        // 9 9s of precision
+        share <= target
+            && target.checked_sub(&share).unwrap() < Share::ratio(1, 1_000_000_000u64).unwrap()
     }
 
     fn shares_sum_to_1_inner(votes: Vec<(u8, u32, u8)>) {
@@ -224,8 +224,8 @@ mod test {
             voter_sum = voter_sum.checked_add(&x).unwrap();
         }
         // Because of rounding, need to test almost 1 instead
-        assert!(almost_1(asset_sum));
-        assert!(almost_1(voter_sum));
+        assert!(almost_equal(asset_sum, Share::from(1u64)));
+        assert!(almost_equal(voter_sum, Share::from(1u64)));
     }
 
     proptest! {
@@ -240,5 +240,23 @@ mod test {
         let (assets, voters) = trace(Gauge::empty());
         assert!(assets.is_empty());
         assert!(voters.is_empty());
+    }
+
+    #[test]
+    fn test_basic_votes() {
+        let votes: Vec<(u8, u64, u8)> =
+            vec![(0, 1, 0), (0, 2, 1), (1, 4, 0), (1, 8, 2), (2, 1, 100)];
+        let mut gauge = Gauge::empty();
+        for (asset, power, voter) in votes {
+            gauge.tally(asset_for(asset), power, addr_for(voter));
+        }
+        let (assets, voters) = trace(gauge);
+        assert!(almost_equal(assets[&asset_for(0u8)], create_share(3, 15)));
+        assert!(almost_equal(assets[&asset_for(1u8)], create_share(12, 15)));
+        assert!(!assets.contains_key(&asset_for(2)));
+        assert!(almost_equal(voters[addr_for(0u8)], create_share(5, 15)));
+        assert!(almost_equal(voters[addr_for(1u8)], create_share(2, 15)));
+        assert!(almost_equal(voters[addr_for(2u8)], create_share(8, 15)));
+        assert!(!voters.contains_key(addr_for(100)));
     }
 }
