@@ -144,10 +144,11 @@ trait DistributionManager: StateWriteExt {
         // Grab the ambient epoch index.
         let current_epoch = self.get_current_epoch().await?;
 
+        // New issuance for the current epoch.
         let new_issuance = self.compute_new_lqt_issuance(current_epoch).await?;
         tracing::debug!(
             ?new_issuance,
-            "computed new lqt reward issuance for currentepoch {}",
+            "computed new lqt reward issuance for current epoch {}",
             current_epoch.index
         );
 
