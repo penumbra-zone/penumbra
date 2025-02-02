@@ -346,18 +346,23 @@ async fn build_community_pool_transaction(
     transaction_plan: TransactionPlan,
 ) -> Result<Transaction> {
     let effect_hash = transaction_plan.effect_hash(&COMMUNITY_POOL_FULL_VIEWING_KEY)?;
-    transaction_plan.build(
-        &COMMUNITY_POOL_FULL_VIEWING_KEY,
-        &WitnessData {
-            anchor: penumbra_sdk_tct::Tree::new().root(),
-            state_commitment_proofs: Default::default(),
-        },
-        &AuthorizationData {
-            effect_hash: Some(effect_hash),
-            spend_auths: Default::default(),
-            delegator_vote_auths: Default::default(),
-        },
-    )
+    Ok(transaction_plan
+        .build_concurrent(
+            &COMMUNITY_POOL_FULL_VIEWING_KEY,
+            &WitnessData {
+                anchor: penumbra_sdk_tct::Tree::new().root(),
+                state_commitment_proofs: Default::default(),
+            },
+            &AuthorizationData {
+                effect_hash: Some(effect_hash),
+                spend_auths: Default::default(),
+                delegator_vote_auths: Default::default(),
+            },
+        )
+        .await
+        .expect(
+            "community pool transactions are always well-formed and should never fail to build",
+        ))
 }
 
 #[cfg(test)]
