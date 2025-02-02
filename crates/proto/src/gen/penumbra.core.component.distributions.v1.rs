@@ -105,6 +105,29 @@ impl ::prost::Name for LqtPoolSizeByEpochResponse {
         "/penumbra.core.component.distributions.v1.LqtPoolSizeByEpochResponse".into()
     }
 }
+/// Event emitted when the size of the LQT pool increases.
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct EventLqtPoolSizeIncrease {
+    /// The epoch in which the pool size increase occurred.
+    #[prost(uint64, tag = "1")]
+    pub epoch: u64,
+    /// The amount by which the LQT pool size increased in this epoch.
+    #[prost(message, optional, tag = "2")]
+    pub increase: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The new total size of the LQT pool after the increase.
+    #[prost(message, optional, tag = "3")]
+    pub new_total: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventLqtPoolSizeIncrease {
+    const NAME: &'static str = "EventLqtPoolSizeIncrease";
+    const PACKAGE: &'static str = "penumbra.core.component.distributions.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.distributions.v1.EventLqtPoolSizeIncrease".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.distributions.v1.EventLqtPoolSizeIncrease".into()
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod distributions_service_client {
