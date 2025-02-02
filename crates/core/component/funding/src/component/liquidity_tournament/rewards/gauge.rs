@@ -30,7 +30,7 @@ impl<'s> Gauge<'s> {
     /// Tally a vote into this gauge.
     ///
     /// Voting twice is the same as voting once with that combined power:
-    /// ```
+    /// ```text
     ///  vote(A, p1, V) ; vote(A, p2, V) = vote(A, p1 + p2, V)`
     /// ```
     pub fn tally(&mut self, vote: asset::Id, power: u64, voter: &'s [u8]) {
@@ -133,9 +133,7 @@ impl<'s> FinalizedGauge<'s> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use penumbra_sdk_governance::VotingReceiptToken;
     use proptest::prelude::*;
-    use rand_chacha::rand_core::SeedableRng as _;
 
     fn finalize(gauge: Gauge) -> FinalizedGauge {
         gauge.finalize(Percentage::from_percent(10), 10)
@@ -202,9 +200,44 @@ mod test {
         }
     }
 
+    fn almost_1(share: Share) -> bool {
+        // <= 1 and >= 99.9_999_999%
+        share <= Share::from(1u64)
+            && share >= Share::ratio(999_999_999u64, 1_000_000_000u64).unwrap()
+    }
+
+    fn shares_sum_to_1_inner(votes: Vec<(u8, u32, u8)>) {
+        let gauge = {
+            let mut out = Gauge::empty();
+            for (asset, power, voter) in votes.iter().copied() {
+                out.tally(asset_for(asset), power.into(), addr_for(voter));
+            }
+            out
+        };
+        let (assets, voters) = trace(gauge);
+        let mut asset_sum: Share = Share::default();
+        let mut voter_sum: Share = Share::default();
+        for (_, x) in assets {
+            asset_sum = asset_sum.checked_add(&x).unwrap();
+        }
+        for (_, x) in voters {
+            voter_sum = voter_sum.checked_add(&x).unwrap();
+        }
+        // Because of rounding, need to test almost 1 instead
+        assert!(almost_1(asset_sum));
+        assert!(almost_1(voter_sum));
+    }
+
+    proptest! {
+        #[test]
+        fn shares_sum_to_1(votes in proptest::collection::vec((0u8..10, any::<u32>(), any::<u8>()), 1..100)) {
+            shares_sum_to_1_inner(votes);
+        }
+    }
+
     #[test]
     fn test_no_votes() {
-        let (assets, voters) = trace(finalize(Gauge::empty()));
+        let (assets, voters) = trace(Gauge::empty());
         assert!(assets.is_empty());
         assert!(voters.is_empty());
     }

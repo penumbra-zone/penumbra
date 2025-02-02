@@ -5231,7 +5231,6 @@ dependencies = [
  "penumbra-sdk-tct",
  "penumbra-sdk-txhash",
  "proptest",
- "rand_chacha",
  "serde",
  "tendermint 0.40.1",
  "tracing",
