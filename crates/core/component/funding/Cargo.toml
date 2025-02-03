@@ -64,3 +64,4 @@ tendermint = {workspace = true}
 tracing = {workspace = true}
 
 [dev-dependencies]
+proptest = {workspace = true}

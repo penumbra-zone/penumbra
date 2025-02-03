@@ -10,7 +10,6 @@ use penumbra_sdk_sct::CommitmentSource;
 use penumbra_sdk_shielded_pool::component::NoteManager as _;
 use penumbra_sdk_txhash::TransactionId;
 
-#[allow(dead_code)]
 #[async_trait]
 /// The bank strictly controls issuance of rewards in the liquidity tournament.
 ///
@@ -25,6 +24,9 @@ pub trait Bank: StateWrite + Sized {
         voter: &Address,
         tx_hash: TransactionId,
     ) -> anyhow::Result<()> {
+        if reward == Amount::default() {
+            return Ok(());
+        }
         let epoch = self
             .get_current_epoch()
             .await
@@ -46,7 +48,12 @@ pub trait Bank: StateWrite + Sized {
 
     /// Move a fraction of our issuance budget towards a position, increasing its reserves.
     async fn reward_to_position(&mut self, reward: Amount, lp: position::Id) -> anyhow::Result<()> {
+        if reward == Amount::default() {
+            return Ok(());
+        }
         self.reward_position(lp, reward).await?;
         Ok(())
     }
 }
+
+impl<T: StateWrite + Sized> Bank for T {}
