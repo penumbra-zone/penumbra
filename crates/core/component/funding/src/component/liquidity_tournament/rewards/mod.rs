@@ -5,7 +5,6 @@ use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_community_pool::component::StateWriteExt as _;
 use penumbra_sdk_dex::{component::LqtRead as _, lp::position};
 use penumbra_sdk_distributions::component::StateReadExt as _;
-use penumbra_sdk_keys::address::ADDRESS_LEN_BYTES;
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_sct::component::clock::EpochRead as _;
 use penumbra_sdk_txhash::TransactionId;
@@ -46,25 +45,10 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
     let current_epoch = state.get_current_epoch().await?;
     let params = state.get_funding_params().await?;
 
-    // Because of borrow checking shenanigans, we first collect all the votes,
-    // in the form of a big blob of bytes for voter addresses, and individual tuples
-    // for the asset, power tallies.
-
-    // 80 KB of memory should be enough for anybody.
-    let mut all_voter_bytes = Vec::<u8>::with_capacity(ADDRESS_LEN_BYTES * 1000);
-    let mut tallies = Vec::new();
+    let mut gauge = Gauge::empty();
     let mut vote_receipts = state.vote_receipts(current_epoch.index);
     while let Some(x) = vote_receipts.next().await {
-        let (asset, power, voter_bytes) = x?;
-        all_voter_bytes.extend_from_slice(&voter_bytes);
-        tallies.push((asset, power));
-    }
-    // Now actually tally things up.
-    let mut gauge = Gauge::empty();
-    for ((asset, power), voter) in tallies
-        .into_iter()
-        .zip(all_voter_bytes.chunks_exact(ADDRESS_LEN_BYTES))
-    {
+        let (asset, power, voter) = x?;
         gauge.tally(asset, power, voter);
     }
     let finalized = gauge.finalize(

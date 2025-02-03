@@ -13,12 +13,12 @@ fn create_share(portion: u128, total: u128) -> Share {
 
 /// A gauge is used to tally up votes in the tournament.
 #[derive(Clone, Debug)]
-pub struct Gauge<'s> {
+pub struct Gauge {
     total: u128,
-    asset_tally: BTreeMap<asset::Id, (u128, BTreeMap<&'s [u8], u128>)>,
+    asset_tally: BTreeMap<asset::Id, (u128, BTreeMap<Vec<u8>, u128>)>,
 }
 
-impl<'s> Gauge<'s> {
+impl Gauge {
     /// The state with no votes.
     pub fn empty() -> Self {
         Self {
@@ -33,7 +33,7 @@ impl<'s> Gauge<'s> {
     /// ```text
     ///  vote(A, p1, V) ; vote(A, p2, V) = vote(A, p1 + p2, V)`
     /// ```
-    pub fn tally(&mut self, vote: asset::Id, power: u64, voter: &'s [u8]) {
+    pub fn tally(&mut self, vote: asset::Id, power: u64, voter: Vec<u8>) {
         let power = u128::from(power);
         // Increment the total vote power, then per asset, then per voter.
         self.total += power;
@@ -52,7 +52,7 @@ impl<'s> Gauge<'s> {
         self,
         gauge_threshold: Percentage,
         max_voters_per_asset: usize,
-    ) -> FinalizedGauge<'s> {
+    ) -> FinalizedGauge {
         let gauge_share = Share::from(gauge_threshold);
         // First, let's figure out what assets remain after the threshold.
         let assets = {
@@ -81,7 +81,7 @@ impl<'s> Gauge<'s> {
         let voters = {
             let mut voters_power = 0u128;
             // The idea here is to take the top N voters for each asset, and put them in this map.
-            let mut filtered_voters = BTreeMap::<&'s [u8], u128>::new();
+            let mut filtered_voters = BTreeMap::<Vec<u8>, u128>::new();
             for (_, asset) in assets.iter() {
                 let ranked_voters_for_this_asset = self.asset_tally[asset]
                     .1
@@ -95,7 +95,7 @@ impl<'s> Gauge<'s> {
                     .take(max_voters_per_asset)
                     .for_each(|(power, voter)| {
                         voters_power += power;
-                        *filtered_voters.entry(voter).or_insert(0u128) += power;
+                        *filtered_voters.entry(voter.clone()).or_insert(0u128) += power;
                     });
             }
             // Now, convert this into the share each voter has;
@@ -115,18 +115,18 @@ impl<'s> Gauge<'s> {
 /// This allows easily querying which assets received what share of the vote,
 /// and which voters
 #[derive(Clone, Debug)]
-pub struct FinalizedGauge<'s> {
+pub struct FinalizedGauge {
     assets: Vec<(Share, asset::Id)>,
-    voters: Vec<(Share, &'s [u8])>,
+    voters: Vec<(Share, Vec<u8>)>,
 }
 
-impl<'s> FinalizedGauge<'s> {
+impl FinalizedGauge {
     pub fn asset_shares(&self) -> impl Iterator<Item = (Share, asset::Id)> + use<'_> {
         self.assets.iter().copied()
     }
 
-    pub fn voter_shares(&self) -> impl Iterator<Item = (Share, &'s [u8])> + use<'s, '_> {
-        self.voters.iter().copied()
+    pub fn voter_shares(&self) -> impl Iterator<Item = (Share, &[u8])> + use<'_> {
+        self.voters.iter().map(|(s, v)| (*s, v.as_slice()))
     }
 }
 
@@ -150,20 +150,8 @@ mod test {
         )
     }
 
-    // so that we can easily pass in references to slices.
-    const ALL_BYTES: [u8; 256] = {
-        let mut arr = [0u8; 256];
-        let mut i = 0;
-        while i < 256 {
-            arr[i] = i as u8;
-            i += 1;
-        }
-        arr
-    };
-
-    fn addr_for(byte: u8) -> &'static [u8] {
-        let i = usize::from(byte);
-        &ALL_BYTES[i..i + 1]
+    fn addr_for(byte: u8) -> Vec<u8> {
+        vec![byte]
     }
 
     fn asset_for(byte: u8) -> asset::Id {
@@ -254,9 +242,9 @@ mod test {
         assert!(almost_equal(assets[&asset_for(0u8)], create_share(3, 15)));
         assert!(almost_equal(assets[&asset_for(1u8)], create_share(12, 15)));
         assert!(!assets.contains_key(&asset_for(2)));
-        assert!(almost_equal(voters[addr_for(0u8)], create_share(5, 15)));
-        assert!(almost_equal(voters[addr_for(1u8)], create_share(2, 15)));
-        assert!(almost_equal(voters[addr_for(2u8)], create_share(8, 15)));
-        assert!(!voters.contains_key(addr_for(100)));
+        assert!(almost_equal(voters[&addr_for(0u8)], create_share(5, 15)));
+        assert!(almost_equal(voters[&addr_for(1u8)], create_share(2, 15)));
+        assert!(almost_equal(voters[&addr_for(2u8)], create_share(8, 15)));
+        assert!(!voters.contains_key(&addr_for(100)));
     }
 }
