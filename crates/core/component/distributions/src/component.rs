@@ -6,16 +6,17 @@ mod view;
 
 use std::sync::Arc;
 
+use crate::event;
+use crate::genesis;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
 use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::StateWriteProto;
 use penumbra_sdk_sct::{component::clock::EpochRead, epoch::Epoch};
 use tendermint::v0_37::abci;
 use tracing::instrument;
-
-use crate::genesis;
 
 pub struct Distributions {}
 
@@ -40,11 +41,36 @@ impl Component for Distributions {
     ) {
     }
 
-    #[instrument(name = "distributions", skip(_state, _end_block))]
+    #[instrument(name = "distributions", skip(state))]
     async fn end_block<S: StateWrite + 'static>(
-        _state: &mut Arc<S>,
-        _end_block: &abci::request::EndBlock,
+        state: &mut Arc<S>,
+        end_block: &abci::request::EndBlock,
     ) {
+        let state = Arc::get_mut(state).expect("the state should not be shared");
+
+        let current_epoch = state.get_current_epoch().await.expect("msg");
+        let current_block_height = end_block
+            .height
+            .try_into()
+            .expect("block height should not be negative");
+
+        let new_issuance = state
+            .get_distributions_params()
+            .await
+            .expect("distribution parameters should be available")
+            .staking_issuance_per_block as u128;
+
+        let total_new_issuance = state
+            .compute_lqt_issuance_from_blocks(current_epoch, current_block_height)
+            .await
+            .expect("should be able to compute LQT issuance from block");
+
+        // Emit an event for LQT pool size increase at the end of the block.
+        state.record_proto(event::event_lqt_pool_size_increase(
+            current_epoch.index,
+            new_issuance.into(),
+            total_new_issuance,
+        ))
     }
 
     #[instrument(name = "distributions", skip(state))]
@@ -108,9 +134,12 @@ trait DistributionManager: StateWriteExt {
         Ok(self.set_staking_token_issuance_for_epoch(new_issuance))
     }
 
-    /// Computes total LQT reward issuance for the epoch.
-    async fn compute_new_lqt_issuance(&self, current_epoch: Epoch) -> Result<Amount> {
-        let current_block_height = self.get_block_height().await?;
+    /// Helper function that computes the LQT issuance for the current block height in the epoch.
+    async fn compute_lqt_issuance_from_blocks(
+        &self,
+        current_epoch: Epoch,
+        current_block_height: u64,
+    ) -> Result<Amount> {
         let epoch_length = current_block_height
             .checked_sub(current_epoch.start_height)
             .unwrap_or_else(|| panic!("epoch start height is greater than current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
@@ -138,17 +167,28 @@ trait DistributionManager: StateWriteExt {
         Ok(Amount::from(total_pool_size_for_epoch))
     }
 
+    /// Computes total LQT reward issuance for the epoch.
+    async fn compute_new_lqt_issuance(&self, current_epoch: Epoch) -> Result<Amount> {
+        let current_block_height = self.get_block_height().await?;
+
+        Ok(self
+            .compute_lqt_issuance_from_blocks(current_epoch, current_block_height)
+            .await?)
+    }
+
     /// Update the nonverifiable storage with the newly issued LQT rewards for the current epoch.
     async fn define_lqt_budget(&mut self) -> Result<()> {
         // Grab the ambient epoch index.
         let current_epoch = self.get_current_epoch().await?;
 
+        // New issuance for the current epoch.
         let new_issuance = self.compute_new_lqt_issuance(current_epoch).await?;
         tracing::debug!(
             ?new_issuance,
-            "computed new lqt reward issuance for epoch {}",
+            "computed new lqt reward issuance for current epoch {}",
             current_epoch.index
         );
+
         Ok(self.set_lqt_reward_issuance_for_epoch(current_epoch.index, new_issuance))
     }
 }
