@@ -310,6 +310,140 @@ impl<'de> serde::Deserialize<'de> for DistributionsParameters {
         deserializer.deserialize_struct("penumbra.core.component.distributions.v1.DistributionsParameters", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventLqtPoolSizeIncrease {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.epoch != 0 {
+            len += 1;
+        }
+        if self.increase.is_some() {
+            len += 1;
+        }
+        if self.new_total.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.distributions.v1.EventLqtPoolSizeIncrease", len)?;
+        if self.epoch != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("epoch", ToString::to_string(&self.epoch).as_str())?;
+        }
+        if let Some(v) = self.increase.as_ref() {
+            struct_ser.serialize_field("increase", v)?;
+        }
+        if let Some(v) = self.new_total.as_ref() {
+            struct_ser.serialize_field("newTotal", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventLqtPoolSizeIncrease {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "epoch",
+            "increase",
+            "new_total",
+            "newTotal",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Epoch,
+            Increase,
+            NewTotal,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "epoch" => Ok(GeneratedField::Epoch),
+                            "increase" => Ok(GeneratedField::Increase),
+                            "newTotal" | "new_total" => Ok(GeneratedField::NewTotal),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventLqtPoolSizeIncrease;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.distributions.v1.EventLqtPoolSizeIncrease")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventLqtPoolSizeIncrease, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut epoch__ = None;
+                let mut increase__ = None;
+                let mut new_total__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Epoch => {
+                            if epoch__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epoch"));
+                            }
+                            epoch__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Increase => {
+                            if increase__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("increase"));
+                            }
+                            increase__ = map_.next_value()?;
+                        }
+                        GeneratedField::NewTotal => {
+                            if new_total__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("newTotal"));
+                            }
+                            new_total__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventLqtPoolSizeIncrease {
+                    epoch: epoch__.unwrap_or_default(),
+                    increase: increase__,
+                    new_total: new_total__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.distributions.v1.EventLqtPoolSizeIncrease", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for GenesisContent {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
