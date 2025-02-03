@@ -1,3 +1,5 @@
+use crate::fixpoint::U128x128;
+
 /// Represents a percentage value.
 ///
 /// Useful for more robust typesafety, versus just passing around a `u64` which
@@ -21,6 +23,17 @@ impl Percentage {
     /// Given an arbitrary `u64`, produce a percentage, *saturating* at 100.
     pub fn from_percent(p: u64) -> Self {
         Self(u64::min(p.into(), 100))
+    }
+
+    /// Given p%, return (1 - p)%.
+    pub fn complement(self) -> Self {
+        Self(100 - self.0)
+    }
+}
+
+impl From<Percentage> for U128x128 {
+    fn from(value: Percentage) -> Self {
+        Self::ratio(value.to_percent(), 100).expect("dividing by 100 should succeed")
     }
 }
 
