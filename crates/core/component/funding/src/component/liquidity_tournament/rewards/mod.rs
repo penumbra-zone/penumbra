@@ -40,10 +40,7 @@ async fn position_shares(
     Ok(tallies)
 }
 
-pub async fn distribute_rewards(
-    mut state: impl StateWrite + Sized,
-    tx_source: TransactionId,
-) -> anyhow::Result<()> {
+pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::Result<()> {
     let current_epoch = state.get_current_epoch().await?;
     let params = state.get_funding_params().await?;
 
@@ -93,8 +90,9 @@ pub async fn distribute_rewards(
         let voter_addr = Address::try_from(voter)?;
         let reward = (Share::from(params.liquidity_tournament.delegator_share) * voter_share)?
             .apply_to_amount(&initial_budget)?;
+        // TODO: use a real transaction id or ids.
         state
-            .reward_to_voter(reward, &voter_addr, tx_source)
+            .reward_to_voter(reward, &voter_addr, TransactionId::default())
             .await?;
         current_budget = current_budget
             .checked_sub(&reward)

@@ -7,7 +7,6 @@ pub use metrics::register_metrics;
 /* Component implementation */
 use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_proto::{DomainType, StateWriteProto};
-use penumbra_sdk_sct::component::source::SourceContext as _;
 use penumbra_sdk_stake::component::validator_handler::ValidatorDataRead;
 pub use view::{StateReadExt, StateWriteExt};
 pub(crate) mod liquidity_tournament;
@@ -68,10 +67,7 @@ impl Component for Funding {
         let state = Arc::get_mut(state).expect("state should be unique");
         let funding_execution_start = std::time::Instant::now();
 
-        let tx_source = state
-            .get_current_source()
-            .expect("source transaction should be set");
-        liquidity_tournament::distribute_rewards(&mut *state, tx_source).await?;
+        liquidity_tournament::distribute_rewards(&mut *state).await?;
 
         // Here, we want to process the funding rewards for the epoch that just ended. To do this,
         // we pull the funding queue that the staking component has prepared for us, as well as the
