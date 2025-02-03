@@ -6,3 +6,4 @@ pub mod component;
 pub mod genesis;
 pub mod params;
 pub use params::DistributionsParameters;
+pub mod event;
