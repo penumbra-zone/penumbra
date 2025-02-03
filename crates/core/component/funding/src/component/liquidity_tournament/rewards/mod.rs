@@ -35,7 +35,9 @@ async fn position_shares(
     }
     // Then divide each volume by the total volume, to get a relevant share.
     for x in &mut tallies {
-        *x = ((x.0 / Share::from(total))?, x.1);
+        // If we divide by 0, just treat all positions as having 0 share.
+        let share = (x.0 / Share::from(total)).unwrap_or_default();
+        *x = (share, x.1);
     }
     Ok(tallies)
 }
