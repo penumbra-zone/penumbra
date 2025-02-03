@@ -5243,6 +5243,7 @@ dependencies = [
  "penumbra-sdk-stake",
  "penumbra-sdk-tct",
  "penumbra-sdk-txhash",
+ "proptest",
  "serde",
  "tendermint 0.40.1",
  "tracing",
