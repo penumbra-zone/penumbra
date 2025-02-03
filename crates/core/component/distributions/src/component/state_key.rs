@@ -17,14 +17,6 @@ pub mod lqt {
                 key[0..48].copy_from_slice(prefix_bytes.as_bytes());
                 key
             }
-
-            /// The amount of LQT rewards issued up until this epoch.
-            pub fn cumulative(epoch_index: u64) -> [u8; 59] {
-                let key_str = format!("distributions/lqt/v1/budget/cumulative/{epoch_index:020}");
-                let mut key = [0u8; 59];
-                key.copy_from_slice(key_str.as_bytes());
-                key
-            }
         }
     }
 }
