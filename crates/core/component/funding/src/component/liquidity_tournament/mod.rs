@@ -1,4 +1,4 @@
-pub mod bank;
+mod bank;
 pub mod nullifier;
 mod rewards;
 pub mod votes;

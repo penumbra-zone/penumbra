@@ -24,6 +24,11 @@ impl Percentage {
     pub fn from_percent(p: u64) -> Self {
         Self(u64::min(p.into(), 100))
     }
+
+    /// Given p%, return (1 - p)%.
+    pub fn complement(self) -> Self {
+        Self(100 - self.0)
+    }
 }
 
 impl From<Percentage> for U128x128 {

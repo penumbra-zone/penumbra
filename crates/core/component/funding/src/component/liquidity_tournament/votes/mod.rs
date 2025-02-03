@@ -8,10 +8,8 @@ use penumbra_sdk_keys::Address;
 
 use crate::component::state_key;
 
-#[allow(dead_code)]
-#[async_trait]
 pub trait StateReadExt: StateRead {
-    async fn vote_receipts(
+    fn vote_receipts(
         &self,
         epoch: u64,
     ) -> Pin<Box<dyn Stream<Item = anyhow::Result<(asset::Id, u64, Vec<u8>)>> + Send + 'static>>
