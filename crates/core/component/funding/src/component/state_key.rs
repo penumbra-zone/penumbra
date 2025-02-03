@@ -83,7 +83,7 @@ pub mod lqt {
                 let (bytes_power, bytes_voter) = rest.split_at(POWER_LEN);
 
                 let asset = asset::Id::try_from(bytes_asset)?;
-                let power = u64::from_be_bytes(bytes_power.try_into()?);
+                let power = !u64::from_be_bytes(bytes_power.try_into()?);
                 let voter = bytes_voter.to_vec();
 
                 Ok((asset, power, voter))
