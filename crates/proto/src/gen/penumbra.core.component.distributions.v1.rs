@@ -111,10 +111,10 @@ pub struct EventLqtPoolSizeIncrease {
     /// The epoch in which the pool size increase occurred.
     #[prost(uint64, tag = "1")]
     pub epoch: u64,
-    /// The amount by which the LQT pool size increased in this epoch.
+    /// The amount by which the LQT pool size increased in the block.
     #[prost(message, optional, tag = "2")]
     pub increase: ::core::option::Option<super::super::super::num::v1::Amount>,
-    /// The new total size of the LQT pool after the increase.
+    /// The new total size of the LQT pool after the increase in the block.
     #[prost(message, optional, tag = "3")]
     pub new_total: ::core::option::Option<super::super::super::num::v1::Amount>,
 }

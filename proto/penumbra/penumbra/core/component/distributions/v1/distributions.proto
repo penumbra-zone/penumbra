@@ -52,8 +52,8 @@ message LqtPoolSizeByEpochResponse {
 message EventLqtPoolSizeIncrease {
   // The epoch in which the pool size increase occurred.
   uint64 epoch = 1;
-  // The amount by which the LQT pool size increased in this epoch.
+  // The amount by which the LQT pool size increased in the block.
   core.num.v1.Amount increase = 2;
-  // The new total size of the LQT pool after the increase.
+  // The new total size of the LQT pool after the increase in the block.
   core.num.v1.Amount new_total = 3;
 }
