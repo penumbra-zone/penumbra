@@ -163,18 +163,18 @@ trait DistributionManager: StateWriteExt {
                 ))
             })?;
 
-        // Compute total new LQT issuance.
-        let total_new_issuance = previous_issuance + new_issuance;
+        // Compute cumulative LQT issuance up until current epoch.
+        let cumulative_issuance = previous_issuance + new_issuance;
 
         // Emit an event for LQT pool size increase.
         self.record_proto(event::event_lqt_pool_size_increase(
             current_epoch.index,
             new_issuance,
-            total_new_issuance,
+            cumulative_issuance,
         ));
 
         self.set_lqt_reward_issuance_for_epoch(current_epoch.index, new_issuance);
-        self.set_cumulative_lqt_reward_issuance(current_epoch.index, total_new_issuance);
+        self.set_cumulative_lqt_reward_issuance(current_epoch.index, cumulative_issuance);
 
         Ok(())
     }
