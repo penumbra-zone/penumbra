@@ -65,6 +65,29 @@ pub mod lqt {
 
                 bytes
             }
+
+            /// Parse the output of [`receipt`] back into its parts.
+            ///
+            /// We return a `Vec<u8>` instead of an `Address`, because tallying
+            /// wants to defer parsing the address until later, comparing encodings instead.
+            pub(crate) fn parse_receipt(key: &[u8]) -> anyhow::Result<(asset::Id, u64, Vec<u8>)> {
+                anyhow::ensure!(
+                    key.len() == RECEIPT_LEN,
+                    "key length was {}, expected {}",
+                    key.len(),
+                    RECEIPT_LEN
+                );
+                let rest = key;
+                let (_bytes_prefix, rest) = rest.split_at(PREFIX_LEN);
+                let (bytes_asset, rest) = rest.split_at(ASSET_LEN);
+                let (bytes_power, bytes_voter) = rest.split_at(POWER_LEN);
+
+                let asset = asset::Id::try_from(bytes_asset)?;
+                let power = u64::from_be_bytes(bytes_asset.try_into()?);
+                let voter = bytes_voter.to_vec();
+
+                Ok((asset, power, voter))
+            }
         }
     }
 }

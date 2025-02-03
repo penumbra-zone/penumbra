@@ -1,9 +1,29 @@
+use std::pin::Pin;
+
 use async_trait::async_trait;
-use cnidarium::StateWrite;
+use cnidarium::{StateRead, StateWrite};
+use futures::{Stream, StreamExt as _};
 use penumbra_sdk_asset::asset;
 use penumbra_sdk_keys::Address;
 
 use crate::component::state_key;
+
+#[allow(dead_code)]
+#[async_trait]
+pub trait StateReadExt: StateRead {
+    async fn vote_receipts(
+        &self,
+        epoch: u64,
+    ) -> Pin<Box<dyn Stream<Item = anyhow::Result<(asset::Id, u64, Vec<u8>)>> + Send + 'static>>
+    {
+        let prefix = state_key::lqt::v1::votes::prefix(epoch);
+        self.nonverifiable_prefix_raw(&prefix)
+            .map(|res| res.and_then(|(k, _)| state_key::lqt::v1::votes::parse_receipt(&k)))
+            .boxed()
+    }
+}
+
+impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
