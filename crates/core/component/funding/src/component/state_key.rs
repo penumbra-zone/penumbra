@@ -15,78 +15,247 @@ pub mod lqt {
 
         pub mod votes {
             use penumbra_sdk_asset::asset;
-            use penumbra_sdk_keys::{address::ADDRESS_LEN_BYTES, Address};
 
-            const PART0: &'static str = "funding/lqt/v1/votes/";
             const EPOCH_LEN: usize = 20;
-            const PART1: &'static str = "/by_asset/";
-            const PREFIX_LEN: usize = PART0.len() + EPOCH_LEN + PART1.len();
-
-            /// A prefix for accessing the votes in a given epoch, c.f. [`power_asset_address`];
-            pub(crate) fn prefix(epoch_index: u64) -> [u8; PREFIX_LEN] {
-                let mut bytes = [0u8; PREFIX_LEN];
-
-                let rest = &mut bytes;
-                let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
-                let (bytes_epoch_index, bytes_part1) = rest.split_at_mut(EPOCH_LEN);
-
-                bytes_part0.copy_from_slice(PART0.as_bytes());
-                bytes_epoch_index
-                    .copy_from_slice(format!("{epoch_index:0w$}", w = EPOCH_LEN).as_bytes());
-                bytes_part1.copy_from_slice(PART1.as_bytes());
-
-                bytes
-            }
-
             const ASSET_LEN: usize = 32;
             const POWER_LEN: usize = 8;
-            const RECEIPT_LEN: usize = PREFIX_LEN + ASSET_LEN + POWER_LEN + ADDRESS_LEN_BYTES;
+            const PART0: &'static str = "funding/lqt/v1/votes/";
 
-            /// When present, indicates that an address voted for a particular asset, with a given power.
-            ///
-            /// To get the values ordered by descending voting power, use [`prefix`];
-            pub(crate) fn receipt(
-                epoch_index: u64,
-                asset: asset::Id,
-                power: u64,
-                voter: &Address,
-            ) -> [u8; RECEIPT_LEN] {
-                let mut bytes = [0u8; RECEIPT_LEN];
-
-                let rest = &mut bytes;
-                let (bytes_prefix, rest) = rest.split_at_mut(PREFIX_LEN);
-                let (bytes_asset, rest) = rest.split_at_mut(ASSET_LEN);
-                let (bytes_power, bytes_voter) = rest.split_at_mut(POWER_LEN);
-
-                bytes_prefix.copy_from_slice(&prefix(epoch_index));
-                bytes_asset.copy_from_slice(&asset.to_bytes());
-                bytes_power.copy_from_slice(&((!power).to_be_bytes()));
-                bytes_voter.copy_from_slice(&voter.to_vec());
-
-                bytes
+            fn format_epoch(epoch_index: u64) -> String {
+                format!("{epoch_index:0w$}", w = EPOCH_LEN)
             }
 
-            /// Parse the output of [`receipt`] back into its parts.
-            ///
-            /// We return a `Vec<u8>` instead of an `Address`, because tallying
-            /// wants to defer parsing the address until later, comparing encodings instead.
-            pub(crate) fn parse_receipt(key: &[u8]) -> anyhow::Result<(asset::Id, u64, Vec<u8>)> {
-                anyhow::ensure!(
-                    key.len() == RECEIPT_LEN,
-                    "key length was {}, expected {}",
-                    key.len(),
-                    RECEIPT_LEN
-                );
-                let rest = key;
-                let (_bytes_prefix, rest) = rest.split_at(PREFIX_LEN);
-                let (bytes_asset, rest) = rest.split_at(ASSET_LEN);
-                let (bytes_power, bytes_voter) = rest.split_at(POWER_LEN);
+            pub mod total {
+                use super::*;
 
-                let asset = asset::Id::try_from(bytes_asset)?;
-                let power = !u64::from_be_bytes(bytes_power.try_into()?);
-                let voter = bytes_voter.to_vec();
+                const PART1: &'static str = "/total/";
 
-                Ok((asset, power, voter))
+                const KEY_LEN: usize = PART0.len() + EPOCH_LEN + PART1.len();
+
+                pub(crate) fn key(epoch_index: u64) -> [u8; KEY_LEN] {
+                    let mut bytes = [0u8; KEY_LEN];
+
+                    let rest = &mut bytes;
+                    let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
+                    let (bytes_epoch, rest) = rest.split_at_mut(EPOCH_LEN);
+                    let (bytes_part1, _) = rest.split_at_mut(PART1.len());
+
+                    bytes_part0.copy_from_slice(PART0.as_bytes());
+                    bytes_epoch.copy_from_slice(format_epoch(epoch_index).as_bytes());
+                    bytes_part1.copy_from_slice(PART1.as_bytes());
+
+                    bytes
+                }
+            }
+
+            pub mod by_asset {
+                use super::*;
+
+                const PART1: &'static str = "/by_asset/";
+
+                pub mod total {
+                    use super::*;
+
+                    const PART2: &'static str = "total/";
+                    const KEY_LEN: usize =
+                        PART0.len() + EPOCH_LEN + PART1.len() + PART2.len() + ASSET_LEN;
+
+                    pub(crate) fn key(epoch_index: u64, asset: asset::Id) -> [u8; KEY_LEN] {
+                        let mut bytes = [0u8; KEY_LEN];
+
+                        let rest = &mut bytes;
+                        let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
+                        let (bytes_epoch, rest) = rest.split_at_mut(EPOCH_LEN);
+                        let (bytes_part1, rest) = rest.split_at_mut(PART1.len());
+                        let (bytes_part2, rest) = rest.split_at_mut(PART2.len());
+                        let (bytes_asset, _) = rest.split_at_mut(ASSET_LEN);
+
+                        bytes_part0.copy_from_slice(PART0.as_bytes());
+                        bytes_epoch.copy_from_slice(format_epoch(epoch_index).as_bytes());
+                        bytes_part1.copy_from_slice(PART1.as_bytes());
+                        bytes_part2.copy_from_slice(PART2.as_bytes());
+                        bytes_asset.copy_from_slice(asset.to_bytes().as_slice());
+
+                        bytes
+                    }
+                }
+
+                pub mod ranked {
+                    use super::*;
+
+                    const PART2: &'static str = "ranked/";
+                    const PREFIX_LEN: usize = PART0.len() + EPOCH_LEN + PART1.len() + PART2.len();
+
+                    pub(crate) fn prefix(epoch_index: u64) -> [u8; PREFIX_LEN] {
+                        let mut bytes = [0u8; PREFIX_LEN];
+
+                        let rest = &mut bytes;
+                        let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
+                        let (bytes_epoch, rest) = rest.split_at_mut(EPOCH_LEN);
+                        let (bytes_part1, rest) = rest.split_at_mut(PART1.len());
+                        let (bytes_part2, _) = rest.split_at_mut(PART2.len());
+
+                        bytes_part0.copy_from_slice(PART0.as_bytes());
+                        bytes_epoch.copy_from_slice(format_epoch(epoch_index).as_bytes());
+                        bytes_part1.copy_from_slice(PART1.as_bytes());
+                        bytes_part2.copy_from_slice(PART2.as_bytes());
+
+                        bytes
+                    }
+
+                    const KEY_LEN: usize = PREFIX_LEN + POWER_LEN + ASSET_LEN;
+
+                    pub(crate) fn key(
+                        epoch_index: u64,
+                        power: u64,
+                        asset: asset::Id,
+                    ) -> [u8; KEY_LEN] {
+                        let mut bytes = [0u8; KEY_LEN];
+
+                        let rest = &mut bytes;
+                        let (bytes_prefix, rest) = rest.split_at_mut(PREFIX_LEN);
+                        let (bytes_power, rest) = rest.split_at_mut(POWER_LEN);
+                        let (bytes_asset, _) = rest.split_at_mut(ASSET_LEN);
+
+                        bytes_prefix.copy_from_slice(&prefix(epoch_index));
+                        bytes_power.copy_from_slice(&((!power).to_be_bytes()));
+                        bytes_asset.copy_from_slice(&asset.to_bytes());
+
+                        bytes
+                    }
+
+                    pub(crate) fn parse_key(key: &[u8]) -> anyhow::Result<(u64, asset::Id)> {
+                        anyhow::ensure!(
+                            key.len() == KEY_LEN,
+                            "key length was {}, expected {}",
+                            key.len(),
+                            KEY_LEN
+                        );
+                        let rest = key;
+                        let (_bytes_prefix, rest) = rest.split_at(PREFIX_LEN);
+                        let (bytes_power, rest) = rest.split_at(POWER_LEN);
+                        let (bytes_asset, _) = rest.split_at(ASSET_LEN);
+
+                        let power = !u64::from_be_bytes(bytes_power.try_into()?);
+                        let asset = asset::Id::try_from(bytes_asset)?;
+
+                        Ok((power, asset))
+                    }
+                }
+            }
+
+            pub mod by_voter {
+
+                use penumbra_sdk_keys::{address::ADDRESS_LEN_BYTES, Address};
+
+                use super::*;
+
+                const PART1: &'static str = "/by_voter/";
+
+                pub mod total {
+
+                    use super::*;
+
+                    const PART2: &'static str = "total/";
+                    const KEY_LEN: usize = PART0.len()
+                        + EPOCH_LEN
+                        + PART1.len()
+                        + PART2.len()
+                        + ASSET_LEN
+                        + ADDRESS_LEN_BYTES;
+
+                    pub(crate) fn key(
+                        epoch_index: u64,
+                        asset: asset::Id,
+                        addr: &Address,
+                    ) -> [u8; KEY_LEN] {
+                        let mut bytes = [0u8; KEY_LEN];
+
+                        let rest = &mut bytes;
+                        let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
+                        let (bytes_epoch, rest) = rest.split_at_mut(EPOCH_LEN);
+                        let (bytes_part1, rest) = rest.split_at_mut(PART1.len());
+                        let (bytes_part2, rest) = rest.split_at_mut(PART2.len());
+                        let (bytes_asset, rest) = rest.split_at_mut(ASSET_LEN);
+                        let (bytes_addr, _) = rest.split_at_mut(ADDRESS_LEN_BYTES);
+
+                        bytes_part0.copy_from_slice(PART0.as_bytes());
+                        bytes_epoch.copy_from_slice(format_epoch(epoch_index).as_bytes());
+                        bytes_part1.copy_from_slice(PART1.as_bytes());
+                        bytes_part2.copy_from_slice(PART2.as_bytes());
+                        bytes_asset.copy_from_slice(asset.to_bytes().as_slice());
+                        bytes_addr.copy_from_slice(addr.to_vec().as_slice());
+
+                        bytes
+                    }
+                }
+
+                pub mod ranked {
+                    use super::*;
+
+                    const PART2: &'static str = "ranked/";
+                    const PREFIX_LEN: usize =
+                        PART0.len() + EPOCH_LEN + PART1.len() + PART2.len() + ASSET_LEN;
+
+                    pub(crate) fn prefix(epoch_index: u64, asset: asset::Id) -> [u8; PREFIX_LEN] {
+                        let mut bytes = [0u8; PREFIX_LEN];
+
+                        let rest = &mut bytes;
+                        let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
+                        let (bytes_epoch, rest) = rest.split_at_mut(EPOCH_LEN);
+                        let (bytes_part1, rest) = rest.split_at_mut(PART1.len());
+                        let (bytes_part2, rest) = rest.split_at_mut(PART2.len());
+                        let (bytes_asset, _) = rest.split_at_mut(ASSET_LEN);
+
+                        bytes_part0.copy_from_slice(PART0.as_bytes());
+                        bytes_epoch.copy_from_slice(format_epoch(epoch_index).as_bytes());
+                        bytes_part1.copy_from_slice(PART1.as_bytes());
+                        bytes_part2.copy_from_slice(PART2.as_bytes());
+                        bytes_asset.copy_from_slice(&asset.to_bytes());
+
+                        bytes
+                    }
+
+                    const KEY_LEN: usize = PREFIX_LEN + POWER_LEN + ADDRESS_LEN_BYTES;
+
+                    pub(crate) fn key(
+                        epoch_index: u64,
+                        asset: asset::Id,
+                        power: u64,
+                        addr: &Address,
+                    ) -> [u8; KEY_LEN] {
+                        let mut bytes = [0u8; KEY_LEN];
+
+                        let rest = &mut bytes;
+                        let (bytes_prefix, rest) = rest.split_at_mut(PREFIX_LEN);
+                        let (bytes_power, rest) = rest.split_at_mut(POWER_LEN);
+                        let (bytes_addr, _) = rest.split_at_mut(ADDRESS_LEN_BYTES);
+
+                        bytes_prefix.copy_from_slice(&prefix(epoch_index, asset));
+                        bytes_power.copy_from_slice(&((!power).to_be_bytes()));
+                        bytes_addr.copy_from_slice(&addr.to_vec());
+
+                        bytes
+                    }
+
+                    pub(crate) fn parse_key(key: &[u8]) -> anyhow::Result<(u64, Address)> {
+                        anyhow::ensure!(
+                            key.len() == KEY_LEN,
+                            "key length was {}, expected {}",
+                            key.len(),
+                            KEY_LEN
+                        );
+                        let rest = key;
+                        let (_bytes_prefix, rest) = rest.split_at(PREFIX_LEN);
+                        let (bytes_power, rest) = rest.split_at(POWER_LEN);
+                        let (bytes_addr, _) = rest.split_at(ADDRESS_LEN_BYTES);
+
+                        let power = !u64::from_be_bytes(bytes_power.try_into()?);
+                        let addr = Address::try_from(bytes_addr)?;
+
+                        Ok((power, addr))
+                    }
+                }
             }
         }
     }

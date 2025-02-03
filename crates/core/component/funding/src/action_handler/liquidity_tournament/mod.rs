@@ -144,7 +144,7 @@ impl ActionHandler for ActionLiquidityTournamentVote {
                 power,
                 &self.body.rewards_recipient,
             )
-            .await?;
+            .await;
         Ok(())
     }
 }
