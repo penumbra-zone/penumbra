@@ -1,17 +1,12 @@
-#![allow(unused_imports, unused_variables, dead_code)]
-use anyhow::Result;
 use cnidarium::StateWrite;
 use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_num::Amount;
-use position::State::*;
 use tracing::instrument;
 
 use crate::component::lqt::LqtRead;
 use crate::lp::position::{self, Position};
-use crate::state_key::{engine, lqt};
-use crate::{trading_pair, DirectedTradingPair, TradingPair};
+use crate::state_key::lqt;
 use async_trait::async_trait;
-use penumbra_sdk_proto::{StateReadProto, StateWriteProto};
 use penumbra_sdk_sct::component::clock::EpochRead;
 
 #[async_trait]
