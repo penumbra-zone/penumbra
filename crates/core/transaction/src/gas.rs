@@ -313,8 +313,8 @@ fn liquidity_tournament_vote_gas_cost() -> Gas {
         + 64
         // ZKLiquidityTournamentVoteProof proof = 3;
         + ZKPROOF_SIZE,
-        // For the rest, c.f. `delegator_vote_gas_cost`
-        compact_block_space: 0,
+        // Each vote will, pessimistically, create one output for the reward.
+        compact_block_space: NOTEPAYLOAD_SIZE,
         verification: 1000,
         execution: 10,
     }
