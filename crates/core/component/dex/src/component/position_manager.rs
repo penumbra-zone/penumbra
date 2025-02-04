@@ -443,6 +443,7 @@ pub trait PositionManager: StateWrite + PositionRead {
                 sequence: current_sequence,
             } = prev_state.state
             {
+                // Defense-in-depth: Check that the sequence number is incremented by 1.
                 if current_sequence + 1 != sequence {
                     anyhow::bail!(
                         "attempted to withdraw position {} with sequence {}, expected {}",
@@ -518,15 +519,10 @@ pub trait PositionManager: StateWrite + PositionRead {
                 "failed to add reward {} to reserves {}",
                 reward, *to_increment
             ));
-            // Ok, you'd think we'd be done here, alas, the [`guard_invalid_transitions`] function
-            // will complain if the position has already been withdrawn, but the sequence has not yet been incremented!
-            new_state.state = match prev_state.state {
-                position::State::Opened => position::State::Opened,
-                position::State::Closed => position::State::Closed,
-                position::State::Withdrawn { sequence } => position::State::Withdrawn {
-                    sequence: sequence.saturating_add(1),
-                },
-            };
+
+            // We are done, we only deposit rewards into the position's reserves.
+            // Even, if it is closed or withdrawn.
+
             new_state
         };
         self.update_position(&position_id, Some(prev_state), new_state)
@@ -597,14 +593,15 @@ trait Inner: StateWrite {
                     );
                 }
                 (Withdrawn { sequence: old_seq }, Withdrawn { sequence: new_seq }) => {
-                    let expected_seq = old_seq.saturating_add(1);
-                    ensure!(
-                        new_seq == expected_seq,
-                        "withdrawn must increase 1-by-1 (old: {}, new: {}, expected: {})",
-                        old_seq,
-                        new_seq,
-                        expected_seq
-                    );
+                    tracing::debug!(?old_seq, ?new_seq, "updating withdrawn position");
+                    // We do not check that the sequence number increases here.
+                    // Reason: We want to be able to update the position with a new state (e.g, depositing rewards)
+                    //         This is a valid operation that does not increment the sequence number.
+                    // This is safe: The sequence number only increases when the user withdraws from the position.
+                    //               When they do, we zero-out the position reserves, burn the previous NFT, and mint
+                    //               a new one with an increased sequence number.
+                    // Defense-in-depth: The invariant is enforced twice: once by the value balance mechanism
+                    //                                                    once by an additional check in the `withdraw_position` handler
                 }
                 _ => bail!("invalid transition"),
             }
