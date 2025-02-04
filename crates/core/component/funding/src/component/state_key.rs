@@ -84,10 +84,11 @@ pub mod lqt {
                     use super::*;
 
                     const PART2: &'static str = "ranked/";
-                    const PREFIX_LEN: usize = PART0.len() + EPOCH_LEN + PART1.len() + PART2.len();
+                    const EPOCH_PREFIX_LEN: usize =
+                        PART0.len() + EPOCH_LEN + PART1.len() + PART2.len();
 
-                    pub(crate) fn prefix(epoch_index: u64) -> [u8; PREFIX_LEN] {
-                        let mut bytes = [0u8; PREFIX_LEN];
+                    pub(crate) fn prefix(epoch_index: u64) -> [u8; EPOCH_PREFIX_LEN] {
+                        let mut bytes = [0u8; EPOCH_PREFIX_LEN];
 
                         let rest = &mut bytes;
                         let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
@@ -103,7 +104,7 @@ pub mod lqt {
                         bytes
                     }
 
-                    const KEY_LEN: usize = PREFIX_LEN + POWER_LEN + ASSET_LEN;
+                    const KEY_LEN: usize = EPOCH_PREFIX_LEN + POWER_LEN + ASSET_LEN;
 
                     pub(crate) fn key(
                         epoch_index: u64,
@@ -113,7 +114,7 @@ pub mod lqt {
                         let mut bytes = [0u8; KEY_LEN];
 
                         let rest = &mut bytes;
-                        let (bytes_prefix, rest) = rest.split_at_mut(PREFIX_LEN);
+                        let (bytes_prefix, rest) = rest.split_at_mut(EPOCH_PREFIX_LEN);
                         let (bytes_power, rest) = rest.split_at_mut(POWER_LEN);
                         let (bytes_asset, _) = rest.split_at_mut(ASSET_LEN);
 
@@ -132,7 +133,7 @@ pub mod lqt {
                             KEY_LEN
                         );
                         let rest = key;
-                        let (_bytes_prefix, rest) = rest.split_at(PREFIX_LEN);
+                        let (_bytes_prefix, rest) = rest.split_at(EPOCH_PREFIX_LEN);
                         let (bytes_power, rest) = rest.split_at(POWER_LEN);
                         let (bytes_asset, _) = rest.split_at(ASSET_LEN);
 
@@ -194,11 +195,14 @@ pub mod lqt {
                     use super::*;
 
                     const PART2: &'static str = "ranked/";
-                    const PREFIX_LEN: usize =
+                    const EPOCH_ASSET_PREFIX_LEN: usize =
                         PART0.len() + EPOCH_LEN + PART1.len() + PART2.len() + ASSET_LEN;
 
-                    pub(crate) fn prefix(epoch_index: u64, asset: asset::Id) -> [u8; PREFIX_LEN] {
-                        let mut bytes = [0u8; PREFIX_LEN];
+                    pub(crate) fn prefix(
+                        epoch_index: u64,
+                        asset: asset::Id,
+                    ) -> [u8; EPOCH_ASSET_PREFIX_LEN] {
+                        let mut bytes = [0u8; EPOCH_ASSET_PREFIX_LEN];
 
                         let rest = &mut bytes;
                         let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
@@ -216,7 +220,7 @@ pub mod lqt {
                         bytes
                     }
 
-                    const KEY_LEN: usize = PREFIX_LEN + POWER_LEN + ADDRESS_LEN_BYTES;
+                    const KEY_LEN: usize = EPOCH_ASSET_PREFIX_LEN + POWER_LEN + ADDRESS_LEN_BYTES;
 
                     pub(crate) fn key(
                         epoch_index: u64,
@@ -227,7 +231,7 @@ pub mod lqt {
                         let mut bytes = [0u8; KEY_LEN];
 
                         let rest = &mut bytes;
-                        let (bytes_prefix, rest) = rest.split_at_mut(PREFIX_LEN);
+                        let (bytes_prefix, rest) = rest.split_at_mut(EPOCH_ASSET_PREFIX_LEN);
                         let (bytes_power, rest) = rest.split_at_mut(POWER_LEN);
                         let (bytes_addr, _) = rest.split_at_mut(ADDRESS_LEN_BYTES);
 
@@ -246,7 +250,7 @@ pub mod lqt {
                             KEY_LEN
                         );
                         let rest = key;
-                        let (_bytes_prefix, rest) = rest.split_at(PREFIX_LEN);
+                        let (_bytes_prefix, rest) = rest.split_at(EPOCH_ASSET_PREFIX_LEN);
                         let (bytes_power, rest) = rest.split_at(POWER_LEN);
                         let (bytes_addr, _) = rest.split_at(ADDRESS_LEN_BYTES);
 
