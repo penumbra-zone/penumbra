@@ -32,17 +32,12 @@ pub mod lqt {
 
                 const KEY_LEN: usize = PART0.len() + EPOCH_LEN + PART1.len();
 
-                pub(crate) fn key(epoch_index: u64) -> [u8; KEY_LEN] {
-                    let mut bytes = [0u8; KEY_LEN];
+                pub(crate) fn key(epoch_index: u64) -> Vec<u8> {
+                    let mut bytes = Vec::with_capacity(KEY_LEN);
 
-                    let rest = &mut bytes;
-                    let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
-                    let (bytes_epoch, rest) = rest.split_at_mut(EPOCH_LEN);
-                    let (bytes_part1, _) = rest.split_at_mut(PART1.len());
-
-                    bytes_part0.copy_from_slice(PART0.as_bytes());
-                    bytes_epoch.copy_from_slice(format_epoch(epoch_index).as_bytes());
-                    bytes_part1.copy_from_slice(PART1.as_bytes());
+                    bytes.extend_from_slice(PART0.as_bytes());
+                    bytes.extend_from_slice(format_epoch(epoch_index).as_bytes());
+                    bytes.extend_from_slice(PART1.as_bytes());
 
                     bytes
                 }
@@ -60,21 +55,14 @@ pub mod lqt {
                     const KEY_LEN: usize =
                         PART0.len() + EPOCH_LEN + PART1.len() + PART2.len() + ASSET_LEN;
 
-                    pub(crate) fn key(epoch_index: u64, asset: asset::Id) -> [u8; KEY_LEN] {
-                        let mut bytes = [0u8; KEY_LEN];
+                    pub(crate) fn key(epoch_index: u64, asset: asset::Id) -> Vec<u8> {
+                        let mut bytes = Vec::with_capacity(KEY_LEN);
 
-                        let rest = &mut bytes;
-                        let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
-                        let (bytes_epoch, rest) = rest.split_at_mut(EPOCH_LEN);
-                        let (bytes_part1, rest) = rest.split_at_mut(PART1.len());
-                        let (bytes_part2, rest) = rest.split_at_mut(PART2.len());
-                        let (bytes_asset, _) = rest.split_at_mut(ASSET_LEN);
-
-                        bytes_part0.copy_from_slice(PART0.as_bytes());
-                        bytes_epoch.copy_from_slice(format_epoch(epoch_index).as_bytes());
-                        bytes_part1.copy_from_slice(PART1.as_bytes());
-                        bytes_part2.copy_from_slice(PART2.as_bytes());
-                        bytes_asset.copy_from_slice(asset.to_bytes().as_slice());
+                        bytes.extend_from_slice(PART0.as_bytes());
+                        bytes.extend_from_slice(format_epoch(epoch_index).as_bytes());
+                        bytes.extend_from_slice(PART1.as_bytes());
+                        bytes.extend_from_slice(PART2.as_bytes());
+                        bytes.extend_from_slice(asset.to_bytes().as_slice());
 
                         bytes
                     }
@@ -106,21 +94,12 @@ pub mod lqt {
 
                     const KEY_LEN: usize = EPOCH_PREFIX_LEN + POWER_LEN + ASSET_LEN;
 
-                    pub(crate) fn key(
-                        epoch_index: u64,
-                        power: u64,
-                        asset: asset::Id,
-                    ) -> [u8; KEY_LEN] {
-                        let mut bytes = [0u8; KEY_LEN];
+                    pub(crate) fn key(epoch_index: u64, power: u64, asset: asset::Id) -> Vec<u8> {
+                        let mut bytes = Vec::with_capacity(KEY_LEN);
 
-                        let rest = &mut bytes;
-                        let (bytes_prefix, rest) = rest.split_at_mut(EPOCH_PREFIX_LEN);
-                        let (bytes_power, rest) = rest.split_at_mut(POWER_LEN);
-                        let (bytes_asset, _) = rest.split_at_mut(ASSET_LEN);
-
-                        bytes_prefix.copy_from_slice(&prefix(epoch_index));
-                        bytes_power.copy_from_slice(&((!power).to_be_bytes()));
-                        bytes_asset.copy_from_slice(&asset.to_bytes());
+                        bytes.extend_from_slice(&prefix(epoch_index));
+                        bytes.extend_from_slice(&((!power).to_be_bytes()));
+                        bytes.extend_from_slice(&asset.to_bytes());
 
                         bytes
                     }
@@ -169,23 +148,15 @@ pub mod lqt {
                         epoch_index: u64,
                         asset: asset::Id,
                         addr: &Address,
-                    ) -> [u8; KEY_LEN] {
-                        let mut bytes = [0u8; KEY_LEN];
+                    ) -> Vec<u8> {
+                        let mut bytes = Vec::with_capacity(KEY_LEN);
 
-                        let rest = &mut bytes;
-                        let (bytes_part0, rest) = rest.split_at_mut(PART0.len());
-                        let (bytes_epoch, rest) = rest.split_at_mut(EPOCH_LEN);
-                        let (bytes_part1, rest) = rest.split_at_mut(PART1.len());
-                        let (bytes_part2, rest) = rest.split_at_mut(PART2.len());
-                        let (bytes_asset, rest) = rest.split_at_mut(ASSET_LEN);
-                        let (bytes_addr, _) = rest.split_at_mut(ADDRESS_LEN_BYTES);
-
-                        bytes_part0.copy_from_slice(PART0.as_bytes());
-                        bytes_epoch.copy_from_slice(format_epoch(epoch_index).as_bytes());
-                        bytes_part1.copy_from_slice(PART1.as_bytes());
-                        bytes_part2.copy_from_slice(PART2.as_bytes());
-                        bytes_asset.copy_from_slice(asset.to_bytes().as_slice());
-                        bytes_addr.copy_from_slice(addr.to_vec().as_slice());
+                        bytes.extend_from_slice(PART0.as_bytes());
+                        bytes.extend_from_slice(format_epoch(epoch_index).as_bytes());
+                        bytes.extend_from_slice(PART1.as_bytes());
+                        bytes.extend_from_slice(PART2.as_bytes());
+                        bytes.extend_from_slice(asset.to_bytes().as_slice());
+                        bytes.extend_from_slice(addr.to_vec().as_slice());
 
                         bytes
                     }
@@ -227,17 +198,12 @@ pub mod lqt {
                         asset: asset::Id,
                         power: u64,
                         addr: &Address,
-                    ) -> [u8; KEY_LEN] {
-                        let mut bytes = [0u8; KEY_LEN];
+                    ) -> Vec<u8> {
+                        let mut bytes = Vec::with_capacity(KEY_LEN);
 
-                        let rest = &mut bytes;
-                        let (bytes_prefix, rest) = rest.split_at_mut(EPOCH_ASSET_PREFIX_LEN);
-                        let (bytes_power, rest) = rest.split_at_mut(POWER_LEN);
-                        let (bytes_addr, _) = rest.split_at_mut(ADDRESS_LEN_BYTES);
-
-                        bytes_prefix.copy_from_slice(&prefix(epoch_index, asset));
-                        bytes_power.copy_from_slice(&((!power).to_be_bytes()));
-                        bytes_addr.copy_from_slice(&addr.to_vec());
+                        bytes.extend_from_slice(&prefix(epoch_index, asset));
+                        bytes.extend_from_slice(&((!power).to_be_bytes()));
+                        bytes.extend_from_slice(&addr.to_vec());
 
                         bytes
                     }

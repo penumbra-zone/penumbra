@@ -20,10 +20,7 @@ async fn get_total(state: impl StateRead, epoch_index: u64) -> u64 {
 }
 
 fn put_total(mut state: impl StateWrite, epoch_index: u64, total: u64) {
-    state.nonverifiable_put_proto(
-        state_key::lqt::v1::votes::total::key(epoch_index).to_vec(),
-        total,
-    )
+    state.nonverifiable_put_proto(state_key::lqt::v1::votes::total::key(epoch_index), total)
 }
 
 async fn get_asset_total(state: impl StateRead, epoch_index: u64, asset: asset::Id) -> u64 {
@@ -39,22 +36,24 @@ async fn get_asset_total(state: impl StateRead, epoch_index: u64, asset: asset::
 
 fn put_asset_total(mut state: impl StateWrite, epoch_index: u64, asset: asset::Id, total: u64) {
     state.nonverifiable_put_proto(
-        state_key::lqt::v1::votes::by_asset::total::key(epoch_index, asset).to_vec(),
+        state_key::lqt::v1::votes::by_asset::total::key(epoch_index, asset),
         total,
     )
 }
 
 fn put_ranked_asset(mut state: impl StateWrite, epoch_index: u64, power: u64, asset: asset::Id) {
     state.nonverifiable_put_raw(
-        state_key::lqt::v1::votes::by_asset::ranked::key(epoch_index, power, asset).to_vec(),
+        state_key::lqt::v1::votes::by_asset::ranked::key(epoch_index, power, asset),
         Vec::new(),
     )
 }
 
 fn delete_ranked_asset(mut state: impl StateWrite, epoch_index: u64, power: u64, asset: asset::Id) {
-    state.nonverifiable_delete(
-        state_key::lqt::v1::votes::by_asset::ranked::key(epoch_index, power, asset).to_vec(),
-    );
+    state.nonverifiable_delete(state_key::lqt::v1::votes::by_asset::ranked::key(
+        epoch_index,
+        power,
+        asset,
+    ));
 }
 
 async fn get_voter_total(
@@ -82,7 +81,7 @@ fn put_voter_total(
     total: u64,
 ) {
     state.nonverifiable_put_proto(
-        state_key::lqt::v1::votes::by_voter::total::key(epoch_index, asset, voter).to_vec(),
+        state_key::lqt::v1::votes::by_voter::total::key(epoch_index, asset, voter),
         total,
     )
 }
@@ -96,7 +95,7 @@ fn put_ranked_voter(
     tx: TransactionId,
 ) {
     state.nonverifiable_put_proto(
-        state_key::lqt::v1::votes::by_voter::ranked::key(epoch_index, asset, power, voter).to_vec(),
+        state_key::lqt::v1::votes::by_voter::ranked::key(epoch_index, asset, power, voter),
         tx.to_proto(),
     )
 }
@@ -108,9 +107,12 @@ fn delete_ranked_voter(
     power: u64,
     voter: &Address,
 ) {
-    state.nonverifiable_delete(
-        state_key::lqt::v1::votes::by_voter::ranked::key(epoch_index, asset, power, voter).to_vec(),
-    );
+    state.nonverifiable_delete(state_key::lqt::v1::votes::by_voter::ranked::key(
+        epoch_index,
+        asset,
+        power,
+        voter,
+    ));
 }
 
 #[async_trait]
