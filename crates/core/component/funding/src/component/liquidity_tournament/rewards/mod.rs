@@ -1,64 +1,119 @@
 use anyhow::anyhow;
 use cnidarium::{StateRead, StateWrite};
 use futures::stream::StreamExt as _;
+use futures::{Stream, TryStreamExt};
 use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_community_pool::component::StateWriteExt as _;
 use penumbra_sdk_dex::{component::LqtRead as _, lp::position};
 use penumbra_sdk_distributions::component::StateReadExt as _;
 use penumbra_sdk_keys::Address;
+use penumbra_sdk_num::fixpoint::U128x128;
+use penumbra_sdk_num::Amount;
 use penumbra_sdk_sct::component::clock::EpochRead as _;
 use penumbra_sdk_txhash::TransactionId;
 
 use super::bank::Bank as _;
 use super::votes::StateReadExt as _;
 use crate::component::StateReadExt as _;
+use crate::params::LiquidityTournamentParameters;
 
-mod gauge;
-use gauge::{Gauge, Share};
+fn create_share(portion: impl Into<U128x128>, total: impl Into<U128x128>) -> U128x128 {
+    U128x128::ratio(portion.into(), total.into().max(U128x128::from(1u64)))
+        .expect("max(x, 1) cannot be 0")
+}
 
-async fn position_shares(
+async fn relevant_votes_for_asset(
     state: impl StateRead,
+    params: &LiquidityTournamentParameters,
     epoch: u64,
     asset: asset::Id,
-    top_n: usize,
-) -> anyhow::Result<Vec<(Share, position::Id)>> {
-    let mut stream = state.positions_by_volume_stream(epoch, asset)?.take(top_n);
-    let mut total = 0u128;
-    // This will end up containing the volume of each lp.
-    let mut tallies = Vec::new();
-    while let Some(x) = stream.next().await {
-        let (_, lp, volume) = x?;
-        let volume = volume.value();
+) -> anyhow::Result<Amount> {
+    let mut out = Amount::default();
+    let mut stream = state.ranked_voters(epoch, asset).take(
+        usize::try_from(params.max_delegators).expect("max delegators should fit in a usize"),
+    );
+    while let Some(((power, _voter), _tx)) = stream.try_next().await? {
+        out += Amount::from(power);
+    }
+    Ok(out)
+}
+
+/// Return each asset along with the share of the relevant vote it received.
+//
+/// Each asset will only be featured once.
+///
+/// This will only count votes from the top N voters, as per the params,
+/// and only include assets which clear the threshold.
+async fn asset_totals(
+    state: &impl StateRead,
+    params: &LiquidityTournamentParameters,
+    epoch: u64,
+) -> anyhow::Result<Vec<(asset::Id, Amount)>> {
+    let total_votes = state.total_votes(epoch).await;
+    // 100 should be ample, but also not a huge amount to allocate.
+    let mut out = Vec::with_capacity(100);
+    let mut stream = state.ranked_assets(epoch);
+    while let Some((_, asset)) = stream.try_next().await? {
+        let votes = relevant_votes_for_asset(state, params, epoch, asset).await?;
+        // The assets are ranked by descending power, so we can stop here.
+        if create_share(votes, total_votes) < U128x128::from(params.gauge_threshold) {
+            break;
+        }
+        out.push((asset, votes));
+    }
+    Ok(out)
+}
+
+fn voter_shares_of_asset(
+    state: &impl StateRead,
+    params: &LiquidityTournamentParameters,
+    epoch: u64,
+    asset: asset::Id,
+    total: Amount,
+) -> impl Stream<Item = anyhow::Result<(Address, U128x128, TransactionId)>> + Send + 'static {
+    state
+        .ranked_voters(epoch, asset)
+        .take(usize::try_from(params.max_delegators).expect("max delegators should fit in a usize"))
+        .map_ok(move |((votes, voter), tx)| (voter, create_share(votes, total), tx))
+}
+
+async fn relevant_positions_total_volume(
+    state: impl StateRead,
+    params: &LiquidityTournamentParameters,
+    epoch: u64,
+    asset: asset::Id,
+) -> anyhow::Result<Amount> {
+    let mut stream = state
+        .positions_by_volume_stream(epoch, asset)?
+        .take(usize::try_from(params.max_positions).expect("max positions should fit in a usize"));
+    let mut total = Amount::default();
+    while let Some((_, _, volume)) = stream.try_next().await? {
         total += volume;
-        tallies.push((Share::from(volume), lp));
     }
-    // Then divide each volume by the total volume, to get a relevant share.
-    for x in &mut tallies {
-        // If we divide by 0, just treat all positions as having 0 share.
-        let share = (x.0 / Share::from(total)).unwrap_or_default();
-        *x = (share, x.1);
-    }
-    Ok(tallies)
+    Ok(total)
+}
+
+fn position_shares(
+    state: impl StateRead,
+    params: &LiquidityTournamentParameters,
+    epoch: u64,
+    asset: asset::Id,
+    total_volume: Amount,
+) -> impl Stream<Item = anyhow::Result<(position::Id, U128x128)>> + Send + 'static {
+    state
+        .positions_by_volume_stream(epoch, asset)
+        .expect("should be able to create positions by volume stream")
+        .take(usize::try_from(params.max_positions).expect("max positions should fit in a usize"))
+        .map_ok(move |(_, lp, volume)| (lp, create_share(volume, total_volume)))
 }
 
 pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::Result<()> {
-    let current_epoch = state.get_current_epoch().await?;
+    let current_epoch = state.get_current_epoch().await?.index;
     let params = state.get_funding_params().await?;
-
-    let mut gauge = Gauge::empty();
-    let mut vote_receipts = state.vote_receipts(current_epoch.index);
-    while let Some(x) = vote_receipts.next().await {
-        let (asset, power, voter) = x?;
-        gauge.tally(asset, power, voter);
-    }
-    let finalized = gauge.finalize(
-        params.liquidity_tournament.gauge_threshold,
-        usize::try_from(params.liquidity_tournament.max_delegators)?,
-    );
 
     // Get the initial budget, and immediately withdraw it from the community pool.
     let initial_budget = state
-        .get_lqt_reward_issuance_for_epoch(current_epoch.index)
+        .get_lqt_reward_issuance_for_epoch(current_epoch)
         .await
         .unwrap_or_default();
     state
@@ -71,32 +126,50 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
     // the initial budget, which should not be modified.
     let mut current_budget = initial_budget;
 
-    // First, distribute rewards to voters.
-    for (voter_share, voter) in finalized.voter_shares() {
-        let voter_addr = Address::try_from(voter)?;
-        let reward = (Share::from(params.liquidity_tournament.delegator_share) * voter_share)?
-            .apply_to_amount(&initial_budget)?;
-        // TODO: use a real transaction id or ids.
-        state
-            .reward_to_voter(reward, &voter_addr, TransactionId::default())
-            .await?;
-        current_budget = current_budget
-            .checked_sub(&reward)
-            .ok_or(anyhow!("LQT rewards exceeded budget"))?;
-    }
-
-    // Next, distribute rewards to positions.
-    let lp_reward_share = Share::from(params.liquidity_tournament.delegator_share.complement());
-    for (asset_share, asset) in finalized.asset_shares() {
-        for (lp_share, lp) in position_shares(
+    // First, figure out the total votes for each asset, after culling unpopular assets,
+    // and insufficiently highly ranked voters.
+    let asset_totals = asset_totals(&state, &params.liquidity_tournament, current_epoch).await?;
+    let total_votes: Amount = asset_totals.iter().map(|(_, v)| *v).sum();
+    // Now, iterate over each asset, and it's share of the total.
+    for (asset, asset_votes) in asset_totals {
+        let asset_share = create_share(asset_votes, total_votes);
+        // Next, distribute rewards to voters.
+        let mut voter_stream = voter_shares_of_asset(
             &state,
-            current_epoch.index,
+            &params.liquidity_tournament,
+            current_epoch,
             asset,
-            params.liquidity_tournament.max_positions.try_into()?,
+            asset_votes,
+        );
+        while let Some((voter, voter_share, tx)) = voter_stream.try_next().await? {
+            let reward = ((U128x128::from(params.liquidity_tournament.delegator_share)
+                * asset_share)?
+                * voter_share)?
+                .apply_to_amount(&initial_budget)?;
+            state.reward_to_voter(reward, &voter, tx).await?;
+            current_budget = current_budget
+                .checked_sub(&reward)
+                .ok_or(anyhow!("LQT rewards exceeded budget"))?;
+        }
+        // Then, distribute rewards to LPs.
+        let total_volume = relevant_positions_total_volume(
+            &state,
+            &params.liquidity_tournament,
+            current_epoch,
+            asset,
         )
-        .await?
-        {
+        .await?;
+        let mut lp_stream = position_shares(
+            &state,
+            &params.liquidity_tournament,
+            current_epoch,
+            asset,
+            total_volume,
+        );
+        while let Some((lp, lp_share)) = lp_stream.try_next().await? {
             // What fraction goes to lps, then of that, to this asset, then of that, to this lp.
+            let lp_reward_share =
+                U128x128::from(params.liquidity_tournament.delegator_share.complement());
             let reward =
                 ((lp_reward_share * asset_share)? * lp_share)?.apply_to_amount(&initial_budget)?;
             state.reward_to_position(reward, lp).await?;
