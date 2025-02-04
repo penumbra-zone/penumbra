@@ -8,6 +8,7 @@ use penumbra_sdk_dex::{component::LqtRead as _, lp::position};
 use penumbra_sdk_distributions::component::StateReadExt as _;
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::fixpoint::U128x128;
+use penumbra_sdk_num::Amount;
 use penumbra_sdk_sct::component::clock::EpochRead as _;
 use penumbra_sdk_txhash::TransactionId;
 
@@ -26,13 +27,13 @@ async fn relevant_votes_for_asset(
     params: &LiquidityTournamentParameters,
     epoch: u64,
     asset: asset::Id,
-) -> anyhow::Result<u128> {
-    let mut out = 0u128;
+) -> anyhow::Result<Amount> {
+    let mut out = Amount::default();
     let mut stream = state.ranked_voters(epoch, asset).take(
         usize::try_from(params.max_delegators).expect("max delegators should fit in a usize"),
     );
     while let Some(((power, _voter), _tx)) = stream.try_next().await? {
-        out += u128::from(power);
+        out += Amount::from(power);
     }
     Ok(out)
 }
@@ -47,7 +48,7 @@ async fn asset_totals(
     state: &impl StateRead,
     params: &LiquidityTournamentParameters,
     epoch: u64,
-) -> anyhow::Result<Vec<(asset::Id, u128)>> {
+) -> anyhow::Result<Vec<(asset::Id, Amount)>> {
     let total_votes = state.total_votes(epoch).await;
     // 100 should be ample, but also not a huge amount to allocate.
     let mut out = Vec::with_capacity(100);
@@ -68,7 +69,7 @@ fn voter_shares_of_asset(
     params: &LiquidityTournamentParameters,
     epoch: u64,
     asset: asset::Id,
-    total: u128,
+    total: Amount,
 ) -> impl Stream<Item = anyhow::Result<(Address, U128x128, TransactionId)>> + Send + 'static {
     state
         .ranked_voters(epoch, asset)
@@ -81,13 +82,13 @@ async fn relevant_positions_total_volume(
     params: &LiquidityTournamentParameters,
     epoch: u64,
     asset: asset::Id,
-) -> anyhow::Result<u128> {
+) -> anyhow::Result<Amount> {
     let mut stream = state
         .positions_by_volume_stream(epoch, asset)?
         .take(usize::try_from(params.max_positions).expect("max positions should fit in a usize"));
-    let mut total = 0u128;
+    let mut total = Amount::default();
     while let Some((_, _, volume)) = stream.try_next().await? {
-        total += volume.value();
+        total += volume;
     }
     Ok(total)
 }
@@ -97,13 +98,13 @@ fn position_shares(
     params: &LiquidityTournamentParameters,
     epoch: u64,
     asset: asset::Id,
-    total_volume: u128,
+    total_volume: Amount,
 ) -> impl Stream<Item = anyhow::Result<(position::Id, U128x128)>> + Send + 'static {
     state
         .positions_by_volume_stream(epoch, asset)
         .expect("should be able to create positions by volume stream")
         .take(usize::try_from(params.max_positions).expect("max positions should fit in a usize"))
-        .map_ok(move |(_, lp, volume)| (lp, create_share(volume.value(), total_volume)))
+        .map_ok(move |(_, lp, volume)| (lp, create_share(volume, total_volume)))
 }
 
 pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::Result<()> {
@@ -128,7 +129,7 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
     // First, figure out the total votes for each asset, after culling unpopular assets,
     // and insufficiently highly ranked voters.
     let asset_totals = asset_totals(&state, &params.liquidity_tournament, current_epoch).await?;
-    let total_votes: u128 = asset_totals.iter().map(|(_, v)| *v).sum();
+    let total_votes: Amount = asset_totals.iter().map(|(_, v)| *v).sum();
     // Now, iterate over each asset, and it's share of the total.
     for (asset, asset_votes) in asset_totals {
         let asset_share = create_share(asset_votes, total_votes);
