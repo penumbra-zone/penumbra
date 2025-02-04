@@ -1,0 +1,14 @@
+[package]
+name = "picturesque"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
+description = "Experimental tool for integration testing"
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
+publish = false
+rust-version = "1.65"
+
+[package.metadata.dist]
+dist = true
