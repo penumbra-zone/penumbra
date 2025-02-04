@@ -26,9 +26,11 @@
           # nix-prefetch-git --url https://github.com/cometbft/cometbft --rev <tag>
           # and review the output.
           cometBftRelease = {
-            version = "0.37.9";
-            sha256 = "sha256-4LUdDlDog4kbiwyGo5fZEvtDXa6sIm+SKlSBWq1angc=";
-            vendorHash = "sha256-0iqI/Z8rqDyQ7JqSrsqA9kADqF6qZy8NxTDNjAYYHts=";
+            version = "0.37.15";
+            # Set `sha256` to the value `hash` in the nix-prefetch-git output.
+            sha256 = "sha256-sX3hehsMNWWiQYbepMcdVoUAqz+lK4x76/ohjGb/J08=";
+            # Set `vendorHash` to "", run `nix build`, and review the hash.
+            vendorHash = "sha256-F6km3YpvfdpPeIJB1FwA5lQvPda11odny0EHPD8B6kw=";
           };
 
           # Build grpcui from source, for Reflection v1 support.
