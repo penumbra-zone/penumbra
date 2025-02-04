@@ -1,88 +1,19 @@
-name: Rust CI
+name: rust
 on:
   pull_request:
     # Don't run Rust tests if only docs changed.
     paths-ignore:
       - 'docs/**'
+  # Also support ad-hoc calls for workflow.
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test Suite
-    runs-on: buildjet-16vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-
-      # The `rust-toolchain.toml` file dictates which version of rust to setup.
-      - name: check rust version
-        run: rustc --version
-
-      - name: Install nextest
-        uses: taiki-e/install-action@nextest
-
-      - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
-
-      - name: Run cargo check, failing on warnings
-        run: cargo check --release --all-targets
-        env:
-          # The `-D warnings` option causes an error on warnings.
-          RUSTFLAGS: "-D warnings"
-
-      - name: Check wasm compatibility
-        run: ./deployments/scripts/check-wasm-compat.sh
-
-      # If a dependency was modified, Cargo.lock may flap if not committed.
-      - name: Check for diffs
-        shell: bash
-        run: |
-          s="$(git status --porcelain)"
-          if [[ -n "$s" ]]; then
-              echo "ERROR: found modified files that should be committed:"
-              echo "$s"
-              git diff | head -n 128
-              exit 1
-          else
-              echo "OK: no uncommitted changes detected"
-          fi
-
-      - name: Run tests with nextest
-        run: cargo nextest run --release
-        env:
-          CARGO_TERM_COLOR: always
-
-  fmt:
-    name: Rustfmt
-    runs-on: buildjet-8vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # we don't need lfs for the check to pass, but we do need it for the paths-ignore
-          # option to work correctly.
-          lfs: true
-      - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
-      - run: cargo fmt --all -- --check
-
-  check:
-    name: Check all crate features
-    runs-on: buildjet-16vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
-      - name: install cargo-hack
-        run: cargo install cargo-hack
-      # Build each crate separately, to validate that the feature-gating is working.
-      # This is a lighter-weight version of `cargo check-all-features --workspace --release`.
-      - run: ./deployments/scripts/check-crate-feature-sets
-
-  # Integration tests that run against the public testnet endpoints.
-  # Temporarily enabling these in CI, to provide assurance during refactoring.
-  testnet-integration:
+  lint:
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
@@ -102,9 +33,79 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
 
-      # Confirm that the nix devshell is buildable and runs at all.
-      - name: validate nix env
-        run: nix develop --command echo hello
+      # The `rust-toolchain.toml` file dictates which version of rust to setup.
+      - name: check rust version
+        run: nix develop --command rustc --version
 
-      - name: run the testnet integration tests
-        run: nix develop --command just integration-testnet
+      # Run `cargo check`, with a custom target dir for caching.
+      - name: run cargo check
+        run: nix develop --command just check
+
+      # If a dependency was modified, Cargo.lock may flap if not committed.
+      - name: Check for diffs
+        shell: bash
+        run: |
+          s="$(git status --porcelain)"
+          if [[ -n "$s" ]]; then
+              echo "ERROR: found modified files that should be committed:"
+              echo "$s"
+              git diff | head -n 128
+              exit 1
+          else
+              echo "OK: no uncommitted changes detected"
+          fi
+
+  # As of 2025Q1, the "features" job is the slowest in the CI suite.
+  # Consider moving to a scheduled job on main, rather than running on PRs.
+  features:
+    runs-on: buildjet-16vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: install nix
+        uses: nixbuild/nix-quick-install-action@v28
+
+      - name: setup nix cache
+        uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          backend: buildjet
+
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+
+      # Build each crate separately, to validate that the feature-gating is working.
+      # This is a lighter-weight version of `cargo check-all-features --workspace --release`.
+      - name: check crate features
+        run: nix develop --command ./deployments/scripts/check-crate-feature-sets
+
+      - name: check wasm compatibility
+        run: nix develop --command ./deployments/scripts/check-wasm-compat.sh
+
+  test:
+    runs-on: buildjet-16vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: install nix
+        uses: nixbuild/nix-quick-install-action@v28
+
+      - name: setup nix cache
+        uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          backend: buildjet
+
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+
+      - name: Run tests with nextest
+        run: nix develop --command just test
+        env:
+          CARGO_TERM_COLOR: always

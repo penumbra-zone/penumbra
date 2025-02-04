@@ -2,20 +2,12 @@
 default:
     @just --list
 
-# Run integration tests for pmonitor tool
-test-pmonitor:
-  # prebuild cargo binaries required for integration tests
-  cargo -q build --package pcli --package pd --package pmonitor
-  cargo -q run --release --bin pd -- network unsafe-reset-all
-  rm -rf /tmp/pmonitor-integration-test
-  cargo nextest run -p pmonitor --run-ignored=ignored-only --test-threads 1
-  # cargo test -p pmonitor -- --ignored --test-threads 1 --nocapture
-
 # Creates and runs a local devnet with solo validator. Includes ancillary services
 # like metrics, postgres for storing ABCI events, and pindexer for munging those events.
 dev:
     ./deployments/scripts/check-nix-shell && \
         ./deployments/scripts/run-local-devnet.sh \
+        --keep-project \
         --config ./deployments/compose/process-compose-postgres.yml \
         --config ./deployments/compose/process-compose-metrics.yml \
         --config ./deployments/compose/process-compose-dev-tooling.yml
@@ -24,9 +16,16 @@ dev:
 fmt:
     cargo fmt --all
 
+# warms the rust cache by building all targets
+build:
+    cargo build --release --all-features --all-targets
+
 # Runs 'cargo check' on all rust files in the project.
 check:
-  RUSTFLAGS="-D warnings" cargo check --release --all-targets
+  # check, failing on warnings
+  RUSTFLAGS="-D warnings" cargo check --release --all-targets --all-features --target-dir=target/check
+  # fmt dry-run, failing on any suggestions
+  cargo fmt --all -- --check
 
 # Render livereload environment for editing the Protocol documentation.
 protocol-docs:
@@ -47,11 +46,25 @@ metrics:
 rustdocs:
     ./deployments/scripts/rust-docs
 
+# Run rust unit tests, via cargo-nextest
+test:
+  cargo nextest run --release
+
 # Run integration tests against the testnet, for validating HTTPS support
 integration-testnet:
   cargo nextest run --release --features integration-testnet -E 'test(/_testnet$/)'
 
+# Run integration tests for pmonitor tool
+integration-pmonitor:
+  ./deployments/scripts/warn-about-pd-state
+  rm -rf /tmp/pmonitor-integration-test
+  # Prebuild binaries, so they're available inside the tests without blocking.
+  cargo build --release --bin pcli --bin pd --bin pmonitor
+  cargo -q run --release --bin pd -- --help > /dev/null
+  cargo nextest run --release -p pmonitor --features network-integration --no-capture --no-fail-fast
+
 # Run smoke test suite, via process-compose config.
 smoke:
+    ./deployments/scripts/check-nix-shell
     ./deployments/scripts/warn-about-pd-state
     ./deployments/scripts/smoke-test.sh

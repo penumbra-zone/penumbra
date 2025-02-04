@@ -1,47 +1,49 @@
-name: Smoke Test
+name: integration
 on:
   pull_request:
     # Don't run Rust tests if only docs changed.
     paths-ignore:
       - 'docs/**'
+  # Also support ad-hoc calls for workflow.
+  workflow_call:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  smoke_test:
+  smoke:
     runs-on: buildjet-16vcpu-ubuntu-2204
-    environment: smoke-test
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
 
+      - name: install nix
+        uses: nixbuild/nix-quick-install-action@v28
+
+      - name: setup nix cache
+        uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          backend: buildjet
+
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
+        with:
+          # bust cache with unique key; increment the integer in `^v(\d+)` to force fresh cache
+          prefix-key: "v0-rust-smoke"
 
-      - name: Install cometbft binary
-        run: ./deployments/scripts/install-cometbft
-
-      - name: Install process-compose
-        run: >-
-          sh -c "$(curl --location https://raw.githubusercontent.com/F1bonacc1/process-compose/main/scripts/get-pc.sh)" --
-          -d -b ~/bin
-
-      - name: Install grpcurl
-        run: ./deployments/scripts/install-grpcurl
-
-      - name: Run the smoke test suite
-        run: |
-          export PATH="$HOME/bin:$PATH"
-          ./deployments/scripts/smoke-test.sh
+      - name: run the smoke-test suite
+        run: nix develop --command just smoke
 
       - name: Display smoke-test logs
         if: always()
         run: cat deployments/logs/smoke-*.log
 
-  pmonitor-integration:
+  pmonitor:
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
@@ -61,9 +63,30 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
 
-      # Confirm that the nix devshell is buildable and runs at all.
-      - name: validate nix env
-        run: nix develop --command echo hello
-
       - name: run the pmonitor integration tests
-        run: nix develop --command just test-pmonitor
+        run: nix develop --command just integration-pmonitor
+
+  # Integration tests that run against the public testnet endpoints.
+  # Temporarily enabling these in CI, to provide assurance during refactoring.
+  testnet:
+    runs-on: buildjet-16vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: install nix
+        uses: nixbuild/nix-quick-install-action@v28
+
+      - name: setup nix cache
+        uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          backend: buildjet
+
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+
+      - name: run the testnet integration tests
+        run: nix develop --command just integration-testnet

@@ -23,11 +23,22 @@ else
         --epoch-duration 50 \
         --proposal-voting-blocks 50 \
         --gas-price-simple 500 \
-        --timeout-commit 1s
+        --timeout-commit 500ms
     # opt in to cometbft abci indexing to postgres
     postgresql_db_url="postgresql://penumbra:penumbra@localhost:5432/penumbra_cometbft?sslmode=disable"
     sed -i -e "s#^indexer.*#indexer = \"psql\"\\npsql-conn = \"$postgresql_db_url\"#" ~/.penumbra/network_data/node0/cometbft/config/config.toml
 fi
 
+# Check for interactive terminal session, enable TUI if yes.
+if [[ -t 1 ]] ; then
+    use_tui="true"
+else
+    use_tui="false"
+fi
+
 # Run the core fullnode config, plus any additional params passed via `$@`.
-process-compose up --no-server --config "${repo_root}/deployments/compose/process-compose.yml" --keep-tui "$@"
+process-compose up --no-server \
+    --ordered-shutdown \
+    --tui="$use_tui" \
+    --config "${repo_root}/deployments/compose/process-compose.yml" \
+    "$@"
