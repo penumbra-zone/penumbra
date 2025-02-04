@@ -58,6 +58,7 @@ members = [
   "crates/wallet",
   "tools/summonerd",
   "tools/parameter-setup",
+  "tools/picturesque",
 ]
 
 # The profile that 'cargo dist' will build with
