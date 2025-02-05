@@ -594,14 +594,14 @@ trait Inner: StateWrite {
                 }
                 (Withdrawn { sequence: old_seq }, Withdrawn { sequence: new_seq }) => {
                     tracing::debug!(?old_seq, ?new_seq, "updating withdrawn position");
-                    // We do not check that the sequence number increases here.
-                    // Reason: We want to be able to update the position with a new state (e.g, depositing rewards)
-                    //         This is a valid operation that does not increment the sequence number.
-                    // This is safe: The sequence number only increases when the user withdraws from the position.
-                    //               When they do, we zero-out the position reserves, burn the previous NFT, and mint
-                    //               a new one with an increased sequence number.
-                    // Defense-in-depth: The invariant is enforced twice: once by the value balance mechanism
-                    //                                                    once by an additional check in the `withdraw_position` handler
+                    // We allow the sequence number to be incremented by one, or to stay the same.
+                    // We want to allow the following scenario:
+                    // 1. User withdraws from a position (increasing the sequence number)
+                    // 2. A component deposits rewards into the position (keeping the sequence number the same)
+                    ensure!(
+                        new_seq == old_seq + 1 || new_seq == old_seq,
+                        "if the sequence number increase, it must increase by exactly one"
+                    );
                 }
                 _ => bail!("invalid transition"),
             }
