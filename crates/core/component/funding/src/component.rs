@@ -1,4 +1,5 @@
 pub mod metrics;
+pub mod rpc;
 mod state_key;
 pub mod view;
 use ::metrics::{gauge, histogram};
