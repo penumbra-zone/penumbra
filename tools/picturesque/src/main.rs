@@ -1,5 +1,7 @@
-use picturesque::hello;
+use picturesque::run_devnet;
 
-fn main() {
-    println!("{}", hello());
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    run_devnet().await?;
+    Ok(())
 }
