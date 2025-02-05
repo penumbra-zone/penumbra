@@ -47,7 +47,9 @@ impl FundingService for Server {
         };
 
         // Perform a state nullifier lookup.
-        let maybe_tx_id = state.get_lqt_spent_nullifier(nullifier).await;
+        let maybe_tx_id = state
+            .get_lqt_spent_nullifier_by_epoch(nullifier, epoch_index)
+            .await;
 
         if let Some(tx_id) = maybe_tx_id {
             // Nullifier was spent and user has already voted.
