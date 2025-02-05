@@ -16,10 +16,10 @@ impl ::prost::Name for LqtCurrentEpochVotedRequest {
         "/penumbra.core.component.funding.v1.LqtCurrentEpochVotedRequest".into()
     }
 }
-/// Response indicating whether the nullifier is used.
+/// Response indicating whether the nullifier was already used.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LqtCurrentEpochVotedResponse {
-    /// Transaction Id where the vote occurred.
+    /// TransactionId where the vote occurred.
     #[prost(message, optional, tag = "1")]
     pub tx_id: ::core::option::Option<super::super::super::txhash::v1::TransactionId>,
     /// True if the nullifier has been used for voting in the current epoch.

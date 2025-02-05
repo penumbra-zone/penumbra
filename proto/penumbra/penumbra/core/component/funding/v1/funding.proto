@@ -21,9 +21,9 @@ message LqtCurrentEpochVotedRequest {
   sct.v1.Nullifier nullifier = 1;
 }
 
-// Response indicating whether the nullifier is used.
+// Response indicating whether the nullifier was already used.
 message LqtCurrentEpochVotedResponse {
-  // Transaction Id where the vote occurred.
+  // TransactionId where the vote occurred.
   txhash.v1.TransactionId tx_id = 1;
   // True if the nullifier has been used for voting in the current epoch.
   bool already_voted = 2;
