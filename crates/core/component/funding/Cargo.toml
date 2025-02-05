@@ -20,7 +20,8 @@ component = [
     "penumbra-sdk-shielded-pool/component",
     "penumbra-sdk-stake/component",
     "metrics",
-    "futures"
+    "futures",
+    "tonic",
 ]
 default = ["component"]
 parallel = [
@@ -62,6 +63,7 @@ penumbra-sdk-txhash = {workspace = true, default-features = false}
 serde = {workspace = true, features = ["derive"]}
 tendermint = {workspace = true}
 tracing = {workspace = true}
+tonic = {workspace = true, optional = true}
 
 [dev-dependencies]
 proptest = {workspace = true}
