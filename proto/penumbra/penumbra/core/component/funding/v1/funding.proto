@@ -7,6 +7,27 @@ import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
 import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
+import "penumbra/core/txhash/v1/txhash.proto";
+
+// Query operations for the funding component.
+service DistributionsService {
+  // Checks if a particular nullifier has already been used in the current epoch.
+  rpc LqtCurrentEpochVoted(LqtCurrentEpochVotedRequest) returns (LqtCurrentEpochVotedResponse);
+}
+
+// Request if a nullifier is already used in the current epoch.
+message LqtCurrentEpochVotedRequest {
+  // The nullifier to check.
+  sct.v1.Nullifier nullifier = 1;
+}
+
+// Response indicating whether the nullifier is used.
+message LqtCurrentEpochVotedResponse {
+  // Transaction Id where the vote occurred.
+  txhash.v1.TransactionId tx_id = 1;
+  // True if the nullifier has been used for voting in the current epoch.
+  bool already_voted = 2;
+}
 
 // Funding component configuration data.
 message FundingParameters {
