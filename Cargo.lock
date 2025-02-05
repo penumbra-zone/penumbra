@@ -5248,6 +5248,7 @@ dependencies = [
  "proptest",
  "serde",
  "tendermint 0.40.1",
+ "tonic",
  "tracing",
 ]
 
