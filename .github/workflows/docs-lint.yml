@@ -1,5 +1,9 @@
 name: docs-lint
-on: pull_request
+on:
+  pull_request:
+  # Also support ad-hoc calls for workflow.
+  workflow_call:
+  workflow_dispatch:
 
 jobs:
   rustdocs:
