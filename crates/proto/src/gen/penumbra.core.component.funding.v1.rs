@@ -284,7 +284,7 @@ impl ::prost::Name for ActionLiquidityTournamentVoteView {
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
-pub mod distributions_service_client {
+pub mod funding_service_client {
     #![allow(
         unused_variables,
         dead_code,
@@ -296,10 +296,10 @@ pub mod distributions_service_client {
     use tonic::codegen::http::Uri;
     /// Query operations for the funding component.
     #[derive(Debug, Clone)]
-    pub struct DistributionsServiceClient<T> {
+    pub struct FundingServiceClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl DistributionsServiceClient<tonic::transport::Channel> {
+    impl FundingServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -310,7 +310,7 @@ pub mod distributions_service_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> DistributionsServiceClient<T>
+    impl<T> FundingServiceClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -328,7 +328,7 @@ pub mod distributions_service_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> DistributionsServiceClient<InterceptedService<T, F>>
+        ) -> FundingServiceClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -342,7 +342,7 @@ pub mod distributions_service_client {
                 http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
-            DistributionsServiceClient::new(InterceptedService::new(inner, interceptor))
+            FundingServiceClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -393,13 +393,13 @@ pub mod distributions_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.core.component.funding.v1.DistributionsService/LqtCurrentEpochVoted",
+                "/penumbra.core.component.funding.v1.FundingService/LqtCurrentEpochVoted",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "penumbra.core.component.funding.v1.DistributionsService",
+                        "penumbra.core.component.funding.v1.FundingService",
                         "LqtCurrentEpochVoted",
                     ),
                 );
@@ -409,7 +409,7 @@ pub mod distributions_service_client {
 }
 /// Generated server implementations.
 #[cfg(feature = "rpc")]
-pub mod distributions_service_server {
+pub mod funding_service_server {
     #![allow(
         unused_variables,
         dead_code,
@@ -418,9 +418,9 @@ pub mod distributions_service_server {
         clippy::let_unit_value,
     )]
     use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with DistributionsServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with FundingServiceServer.
     #[async_trait]
-    pub trait DistributionsService: std::marker::Send + std::marker::Sync + 'static {
+    pub trait FundingService: std::marker::Send + std::marker::Sync + 'static {
         /// Checks if a particular nullifier has already been used in the current epoch.
         async fn lqt_current_epoch_voted(
             &self,
@@ -432,14 +432,14 @@ pub mod distributions_service_server {
     }
     /// Query operations for the funding component.
     #[derive(Debug)]
-    pub struct DistributionsServiceServer<T> {
+    pub struct FundingServiceServer<T> {
         inner: Arc<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
         max_decoding_message_size: Option<usize>,
         max_encoding_message_size: Option<usize>,
     }
-    impl<T> DistributionsServiceServer<T> {
+    impl<T> FundingServiceServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -490,10 +490,9 @@ pub mod distributions_service_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>>
-    for DistributionsServiceServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for FundingServiceServer<T>
     where
-        T: DistributionsService,
+        T: FundingService,
         B: Body + std::marker::Send + 'static,
         B::Error: Into<StdError> + std::marker::Send + 'static,
     {
@@ -508,11 +507,11 @@ pub mod distributions_service_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/penumbra.core.component.funding.v1.DistributionsService/LqtCurrentEpochVoted" => {
+                "/penumbra.core.component.funding.v1.FundingService/LqtCurrentEpochVoted" => {
                     #[allow(non_camel_case_types)]
-                    struct LqtCurrentEpochVotedSvc<T: DistributionsService>(pub Arc<T>);
+                    struct LqtCurrentEpochVotedSvc<T: FundingService>(pub Arc<T>);
                     impl<
-                        T: DistributionsService,
+                        T: FundingService,
                     > tonic::server::UnaryService<super::LqtCurrentEpochVotedRequest>
                     for LqtCurrentEpochVotedSvc<T> {
                         type Response = super::LqtCurrentEpochVotedResponse;
@@ -526,7 +525,7 @@ pub mod distributions_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as DistributionsService>::lqt_current_epoch_voted(
+                                <T as FundingService>::lqt_current_epoch_voted(
                                         &inner,
                                         request,
                                     )
@@ -577,7 +576,7 @@ pub mod distributions_service_server {
             }
         }
     }
-    impl<T> Clone for DistributionsServiceServer<T> {
+    impl<T> Clone for FundingServiceServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -590,8 +589,8 @@ pub mod distributions_service_server {
         }
     }
     /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "penumbra.core.component.funding.v1.DistributionsService";
-    impl<T> tonic::server::NamedService for DistributionsServiceServer<T> {
+    pub const SERVICE_NAME: &str = "penumbra.core.component.funding.v1.FundingService";
+    impl<T> tonic::server::NamedService for FundingServiceServer<T> {
         const NAME: &'static str = SERVICE_NAME;
     }
 }

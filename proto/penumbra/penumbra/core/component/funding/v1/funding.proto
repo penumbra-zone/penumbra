@@ -10,7 +10,7 @@ import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
 import "penumbra/core/txhash/v1/txhash.proto";
 
 // Query operations for the funding component.
-service DistributionsService {
+service FundingService {
   // Checks if a particular nullifier has already been used in the current epoch.
   rpc LqtCurrentEpochVoted(LqtCurrentEpochVotedRequest) returns (LqtCurrentEpochVotedResponse);
 }
