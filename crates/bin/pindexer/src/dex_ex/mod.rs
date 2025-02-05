@@ -546,6 +546,7 @@ mod summary {
                 SELECT asset_start as asset, price
                 FROM dex_ex_pairs_summary
                 WHERE asset_end = $1
+                AND liquidity >= $2
                 UNION VALUES ($1, 1.0)
             ),
             converted_pairs_summary AS (

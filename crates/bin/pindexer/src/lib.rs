@@ -2,7 +2,7 @@ pub use cometindex::{AppView, ContextualizedEvent, Indexer, PgPool, PgTransactio
 
 mod indexer_ext;
 pub use indexer_ext::IndexerExt;
-use penumbra_asset::asset;
+use penumbra_sdk_asset::asset;
 pub mod block;
 pub mod dex_ex;
 pub mod ibc;
