@@ -1,9 +1,10 @@
 name: protobuf
 on:
-  # Exclude feature branches, only run if the PR is targeting main.
+  # Run against all PRs, regardless of feature branch target.
   pull_request:
-    branches:
-      - "main"
+  # Also support ad-hoc calls for workflow.
+  workflow_call:
+  workflow_dispatch:
 jobs:
   # Ensure there are no breaking changes to the protocol specs,
   # by running the "buf lint" action against the changes in this PR.
