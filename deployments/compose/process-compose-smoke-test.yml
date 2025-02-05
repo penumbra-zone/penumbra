@@ -56,6 +56,21 @@ processes:
     availability:
       restart: exit_on_failure
 
+  # Run `pindexer` integration tests.
+  test-pindexer:
+    command: >-
+      cargo nextest run --release -p pindexer --features network-integration
+    log_location: deployments/logs/smoke-test-pindexer.log
+    depends_on:
+      pd:
+        condition: process_healthy
+      cometbft:
+        condition: process_started
+      test-pcli:
+        condition: process_completed
+    availability:
+      restart: exit_on_failure
+
   # Run `pd` integration tests. These run last, as the metrics checks
   # will be empty unless actual work has been performed.
   test-pd:
@@ -66,7 +81,7 @@ processes:
         condition: process_healthy
       cometbft:
         condition: process_started
-      test-pcli:
+      test-pindexer:
         condition: process_completed
     availability:
       restart: exit_on_failure
@@ -83,6 +98,8 @@ processes:
       test-pclientd:
         condition: process_completed_successfully
       test-pcli:
+        condition: process_completed_successfully
+      test-pindexer:
         condition: process_completed_successfully
     availability:
       exit_on_end: true
