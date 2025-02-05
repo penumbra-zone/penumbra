@@ -443,6 +443,7 @@ pub trait PositionManager: StateWrite + PositionRead {
                 sequence: current_sequence,
             } = prev_state.state
             {
+                // Defense-in-depth: Check that the sequence number is incremented by 1.
                 if current_sequence + 1 != sequence {
                     anyhow::bail!(
                         "attempted to withdraw position {} with sequence {}, expected {}",
@@ -518,15 +519,10 @@ pub trait PositionManager: StateWrite + PositionRead {
                 "failed to add reward {} to reserves {}",
                 reward, *to_increment
             ));
-            // Ok, you'd think we'd be done here, alas, the [`guard_invalid_transitions`] function
-            // will complain if the position has already been withdrawn, but the sequence has not yet been incremented!
-            new_state.state = match prev_state.state {
-                position::State::Opened => position::State::Opened,
-                position::State::Closed => position::State::Closed,
-                position::State::Withdrawn { sequence } => position::State::Withdrawn {
-                    sequence: sequence.saturating_add(1),
-                },
-            };
+
+            // We are done, we only deposit rewards into the position's reserves.
+            // Even, if it is closed or withdrawn.
+
             new_state
         };
         self.update_position(&position_id, Some(prev_state), new_state)
@@ -597,13 +593,14 @@ trait Inner: StateWrite {
                     );
                 }
                 (Withdrawn { sequence: old_seq }, Withdrawn { sequence: new_seq }) => {
-                    let expected_seq = old_seq.saturating_add(1);
+                    tracing::debug!(?old_seq, ?new_seq, "updating withdrawn position");
+                    // We allow the sequence number to be incremented by one, or to stay the same.
+                    // We want to allow the following scenario:
+                    // 1. User withdraws from a position (increasing the sequence number)
+                    // 2. A component deposits rewards into the position (keeping the sequence number the same)
                     ensure!(
-                        new_seq == expected_seq,
-                        "withdrawn must increase 1-by-1 (old: {}, new: {}, expected: {})",
-                        old_seq,
-                        new_seq,
-                        expected_seq
+                        new_seq == old_seq + 1 || new_seq == old_seq,
+                        "if the sequence number increase, it must increase by exactly one"
                     );
                 }
                 _ => bail!("invalid transition"),
