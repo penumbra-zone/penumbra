@@ -10,6 +10,7 @@ use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::fixpoint::U128x128;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_sct::component::clock::EpochRead as _;
+use penumbra_sdk_stake::IdentityKey;
 use penumbra_sdk_txhash::TransactionId;
 
 use super::bank::Bank as _;
@@ -32,7 +33,7 @@ async fn relevant_votes_for_asset(
     let mut stream = state.ranked_voters(epoch, asset).take(
         usize::try_from(params.max_delegators).expect("max delegators should fit in a usize"),
     );
-    while let Some(((power, _voter), _tx)) = stream.try_next().await? {
+    while let Some(((power, _voter, _), _tx)) = stream.try_next().await? {
         out += Amount::from(power);
     }
     Ok(out)
@@ -70,11 +71,14 @@ fn voter_shares_of_asset(
     epoch: u64,
     asset: asset::Id,
     total: Amount,
-) -> impl Stream<Item = anyhow::Result<(Address, U128x128, TransactionId)>> + Send + 'static {
+) -> impl Stream<Item = anyhow::Result<(Address, U128x128, IdentityKey, TransactionId)>> + Send + 'static
+{
     state
         .ranked_voters(epoch, asset)
         .take(usize::try_from(params.max_delegators).expect("max delegators should fit in a usize"))
-        .map_ok(move |((votes, voter), tx)| (voter, create_share(votes, total), tx))
+        .map_ok(move |((votes, voter, validator), tx)| {
+            (voter, create_share(votes, total), validator, tx)
+        })
 }
 
 async fn relevant_positions_total_volume(
@@ -141,14 +145,28 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
             asset,
             asset_votes,
         );
-        while let Some((voter, voter_share, tx)) = voter_stream.try_next().await? {
-            let reward = ((U128x128::from(params.liquidity_tournament.delegator_share)
-                * asset_share)?
-                * voter_share)?
-                .apply_to_amount(&initial_budget)?;
-            state.reward_to_voter(reward, &voter, tx).await?;
+        while let Some((voter, voter_share, identity_key, tx)) = voter_stream.try_next().await? {
+            // We compute the reward denominated in staking tokens.
+            let unbonded_reward_amount =
+                ((U128x128::from(params.liquidity_tournament.delegator_share) * asset_share)?
+                    * voter_share)?
+                    .apply_to_amount(&initial_budget)?;
+            // We compute a reward in staking tokens, our work is done.
+            // It is the responsibility of the `Bank::reward_to_voter` implementation to
+            // decide the modalities of how and in what form the reward is minted.
+            state
+                .reward_to_voter(
+                    Value {
+                        asset_id: *STAKING_TOKEN_ASSET_ID,
+                        amount: unbonded_reward_amount,
+                    },
+                    identity_key,
+                    &voter,
+                    tx,
+                )
+                .await?;
             current_budget = current_budget
-                .checked_sub(&reward)
+                .checked_sub(&unbonded_reward_amount)
                 .ok_or(anyhow!("LQT rewards exceeded budget"))?;
         }
         // Then, distribute rewards to LPs.
