@@ -37,11 +37,10 @@ fi
 cargo build --release -p pcli -p pclientd -p pd
 
 # Reuse existing dev-env script
-# Temporary: cannot set ``--config ./deployments/compose/process-compose-postgres.yml`
-# because pindexer is currently failing due to GH4999.
 if ! "${repo_root}/deployments/scripts/run-local-devnet.sh" \
         --config ./deployments/compose/process-compose-metrics.yml \
         --config ./deployments/compose/process-compose-dev-tooling.yml \
+        --config ./deployments/compose/process-compose-postgres.yml \
         --config ./deployments/compose/process-compose-smoke-test.yml \
         ; then
     >&2 echo "ERROR: smoke tests failed"
