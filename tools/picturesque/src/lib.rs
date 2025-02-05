@@ -1,3 +1,3 @@
-pub fn hello() -> String {
-    "hello".to_string()
+pub async fn run_devnet() -> anyhow::Result<()> {
+    Ok(())
 }
