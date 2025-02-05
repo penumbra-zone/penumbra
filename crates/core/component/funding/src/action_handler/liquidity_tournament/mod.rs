@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context as _};
+use anyhow::{anyhow, ensure, Context as _};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
@@ -131,17 +131,38 @@ impl ActionHandler for ActionLiquidityTournamentVote {
             .get_current_source()
             .expect("source transaction id should be set");
         state.put_lqt_spent_nullifier(current_epoch.index, nullifier, tx_id);
-        // 3. Ok, actually tally.
+        // 3. Validate that the delegation asset is for a known validator.
+        let validator = state
+            .validator_by_delegation_asset(self.body.value.asset_id)
+            .await?;
+        // The ZK proof asserts that we own the delegation notes, so no further checks are needed
+        // for the IK.
+
+        // 4. Check that the validator state is not `Defined` or `Tombstoned`
+        let Some(validator_state) = state.get_validator_state(&validator).await? else {
+            anyhow::bail!("validator {} is unknown", validator)
+        };
+
+        use penumbra_sdk_stake::validator::State;
+        ensure!(
+            !matches!(validator_state, State::Defined | State::Tombstoned),
+            "validator {} is not in a valid state (Defined or Tombstoned)",
+            validator
+        );
+
+        // 5. Ok, actually tally.
         let power = voting_power(unbonded_amount(&state, self.body.value).await?);
         let incentivized = self
             .body
             .incentivized_id()
             .ok_or_else(|| anyhow!("{:?} is not a base denom", self.body.incentivized))?;
+
         state
             .tally(
                 current_epoch.index,
                 incentivized,
                 power,
+                validator,
                 &self.body.rewards_recipient,
             )
             .await;
