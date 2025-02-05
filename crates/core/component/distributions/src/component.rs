@@ -48,7 +48,10 @@ impl Component for Distributions {
     ) {
         let state = Arc::get_mut(state).expect("the state should not be shared");
 
-        let current_epoch = state.get_current_epoch().await.expect("msg");
+        let current_epoch = state
+            .get_current_epoch()
+            .await
+            .expect("failed to retrieve current epoch from state");
         let current_block_height = end_block
             .height
             .try_into()
