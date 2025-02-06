@@ -127,12 +127,15 @@ pub mod lqt {
             pub mod by_voter {
 
                 use penumbra_sdk_keys::{address::ADDRESS_LEN_BYTES, Address};
+                use penumbra_sdk_stake::IDENTITY_KEY_LEN_BYTES;
 
                 use super::*;
 
                 const PART1: &'static str = "/by_voter/";
 
                 pub mod total {
+
+                    use penumbra_sdk_stake::IdentityKey;
 
                     use super::*;
 
@@ -142,12 +145,14 @@ pub mod lqt {
                         + PART1.len()
                         + PART2.len()
                         + ASSET_LEN
-                        + ADDRESS_LEN_BYTES;
+                        + ADDRESS_LEN_BYTES
+                        + IDENTITY_KEY_LEN_BYTES;
 
                     pub(crate) fn key(
                         epoch_index: u64,
                         asset: asset::Id,
                         addr: &Address,
+                        validator: &IdentityKey,
                     ) -> Vec<u8> {
                         let mut bytes = Vec::with_capacity(KEY_LEN);
 
@@ -157,12 +162,15 @@ pub mod lqt {
                         bytes.extend_from_slice(PART2.as_bytes());
                         bytes.extend_from_slice(asset.to_bytes().as_slice());
                         bytes.extend_from_slice(addr.to_vec().as_slice());
+                        bytes.extend_from_slice(validator.to_bytes().as_slice());
 
                         bytes
                     }
                 }
 
                 pub mod ranked {
+                    use penumbra_sdk_stake::IdentityKey;
+
                     use super::*;
 
                     const PART2: &'static str = "ranked/";
@@ -191,24 +199,31 @@ pub mod lqt {
                         bytes
                     }
 
-                    const KEY_LEN: usize = EPOCH_ASSET_PREFIX_LEN + POWER_LEN + ADDRESS_LEN_BYTES;
+                    const KEY_LEN: usize = EPOCH_ASSET_PREFIX_LEN
+                        + POWER_LEN
+                        + ADDRESS_LEN_BYTES
+                        + IDENTITY_KEY_LEN_BYTES;
 
                     pub(crate) fn key(
                         epoch_index: u64,
                         asset: asset::Id,
                         power: u64,
                         addr: &Address,
+                        validator: &IdentityKey,
                     ) -> Vec<u8> {
                         let mut bytes = Vec::with_capacity(KEY_LEN);
 
                         bytes.extend_from_slice(&prefix(epoch_index, asset));
                         bytes.extend_from_slice(&((!power).to_be_bytes()));
                         bytes.extend_from_slice(&addr.to_vec());
+                        bytes.extend_from_slice(&validator.to_bytes());
 
                         bytes
                     }
 
-                    pub(crate) fn parse_key(key: &[u8]) -> anyhow::Result<(u64, Address)> {
+                    pub(crate) fn parse_key(
+                        key: &[u8],
+                    ) -> anyhow::Result<(u64, Address, IdentityKey)> {
                         anyhow::ensure!(
                             key.len() == KEY_LEN,
                             "key length was {}, expected {}",
@@ -218,12 +233,14 @@ pub mod lqt {
                         let rest = key;
                         let (_bytes_prefix, rest) = rest.split_at(EPOCH_ASSET_PREFIX_LEN);
                         let (bytes_power, rest) = rest.split_at(POWER_LEN);
-                        let (bytes_addr, _) = rest.split_at(ADDRESS_LEN_BYTES);
+                        let (bytes_addr, rest) = rest.split_at(ADDRESS_LEN_BYTES);
+                        let (bytes_ik, _) = rest.split_at(IDENTITY_KEY_LEN_BYTES);
 
                         let power = !u64::from_be_bytes(bytes_power.try_into()?);
                         let addr = Address::try_from(bytes_addr)?;
+                        let ik = IdentityKey(bytes_ik.try_into()?);
 
-                        Ok((power, addr))
+                        Ok((power, addr, ik))
                     }
                 }
             }

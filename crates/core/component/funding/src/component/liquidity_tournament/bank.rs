@@ -1,6 +1,6 @@
+use anyhow::bail;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_sdk_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_dex::component::PositionManager as _;
 use penumbra_sdk_dex::lp::position;
 use penumbra_sdk_keys::Address;
@@ -8,6 +8,9 @@ use penumbra_sdk_num::Amount;
 use penumbra_sdk_sct::component::clock::EpochRead as _;
 use penumbra_sdk_sct::CommitmentSource;
 use penumbra_sdk_shielded_pool::component::NoteManager as _;
+use penumbra_sdk_stake::component::ValidatorPoolDeposit;
+use penumbra_sdk_stake::IdentityKey;
+
 use penumbra_sdk_txhash::TransactionId;
 
 #[async_trait]
@@ -20,22 +23,28 @@ pub trait Bank: StateWrite + Sized {
     /// Move a fraction of our issuance budget towards an address, by minting a note.
     async fn reward_to_voter(
         &mut self,
-        reward: Amount,
+        unbonded_reward: Amount,
+        validator: IdentityKey,
         voter: &Address,
         tx_hash: TransactionId,
     ) -> anyhow::Result<()> {
-        if reward == Amount::default() {
+        if unbonded_reward == Amount::zero() {
             return Ok(());
         }
         let epoch = self
             .get_current_epoch()
             .await
             .expect("should be able to read current epoch");
+
+        let Some(bonded_reward) = self
+            .deposit_to_validator_pool(&validator, unbonded_reward)
+            .await
+        else {
+            bail!("failed to deposit to validator pool");
+        };
+
         self.mint_note(
-            Value {
-                asset_id: *STAKING_TOKEN_ASSET_ID,
-                amount: reward,
-            },
+            bonded_reward,
             voter,
             CommitmentSource::LiquidityTournamentReward {
                 epoch: epoch.index,
