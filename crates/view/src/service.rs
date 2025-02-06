@@ -420,6 +420,9 @@ impl ViewService for ViewServer {
         Pin<Box<dyn futures::Stream<Item = Result<pb::AuctionsResponse, tonic::Status>> + Send>>;
     type LatestSwapsStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::LatestSwapsResponse, tonic::Status>> + Send>>;
+    type LqtVotingNotesStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::LqtVotingNotesResponse, tonic::Status>> + Send>,
+    >;
 
     #[instrument(skip_all, level = "trace")]
     async fn auctions(
@@ -1884,7 +1887,7 @@ impl ViewService for ViewServer {
     async fn lqt_voting_notes(
         &self,
         _request: tonic::Request<pb::LqtVotingNotesRequest>,
-    ) -> Result<tonic::Response<LqtVotingNotesResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::LqtVotingNotesStream>, tonic::Status> {
         unimplemented!("lqt_voting_notes currently only implemented on web")
     }
 }

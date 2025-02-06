@@ -4,10 +4,10 @@ pub struct LqtVotingNotesRequest {
     /// The epoch index to check for nullifier usage.
     #[prost(uint64, tag = "1")]
     pub epoch_index: u64,
-    /// The nullifier whose voting status is being queried.
+    /// If present, filter balances to only include the account specified by the `AddressIndex`.
     #[prost(message, optional, tag = "2")]
-    pub nullifier: ::core::option::Option<
-        super::super::core::component::sct::v1::Nullifier,
+    pub account_filter: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
     >,
 }
 impl ::prost::Name for LqtVotingNotesRequest {
@@ -22,18 +22,9 @@ impl ::prost::Name for LqtVotingNotesRequest {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LqtVotingNotesResponse {
-    /// The transaction ID of the vote, if the nullifier has been used.
-    /// This field is always present if `already_voted` is true.
+    /// The delegation note that can be used to vote with in current epoch.
     #[prost(message, optional, tag = "1")]
-    pub transaction: ::core::option::Option<
-        super::super::core::txhash::v1::TransactionId,
-    >,
-    /// Indicates whether the nullifier has already been used for voting in the given epoch.
-    #[prost(bool, tag = "2")]
-    pub already_voted: bool,
-    /// The epoch index in which the nullifier was checked.
-    #[prost(uint64, tag = "3")]
-    pub epoch_index: u64,
+    pub note_record: ::core::option::Option<SpendableNoteRecord>,
 }
 impl ::prost::Name for LqtVotingNotesResponse {
     const NAME: &'static str = "LqtVotingNotesResponse";
@@ -83,14 +74,19 @@ pub mod tournament_votes_response {
         pub incentivized_asset: ::core::option::Option<
             super::super::super::core::asset::v1::AssetId,
         >,
-        /// The total amount of voting power allocated to this asset.
+        /// The amount of voting power that this specific vote contributed.
         #[prost(message, optional, tag = "2")]
         pub vote_power: ::core::option::Option<
             super::super::super::core::num::v1::Amount,
         >,
-        /// The total amount of rewards issued for votes on this asset.
+        /// The amount of rewards issued for votes on this asset.
         #[prost(message, optional, tag = "3")]
         pub reward: ::core::option::Option<super::super::super::core::asset::v1::Value>,
+        /// The transaction ID for the vote.
+        #[prost(message, optional, tag = "4")]
+        pub transaction: ::core::option::Option<
+            super::super::super::core::txhash::v1::TransactionId,
+        >,
     }
     impl ::prost::Name for Vote {
         const NAME: &'static str = "Vote";
@@ -3086,7 +3082,7 @@ pub mod view_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::LqtVotingNotesRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::LqtVotingNotesResponse>,
+            tonic::Response<tonic::codec::Streaming<super::LqtVotingNotesResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -3106,7 +3102,7 @@ pub mod view_service_client {
                 .insert(
                     GrpcMethod::new("penumbra.view.v1.ViewService", "LqtVotingNotes"),
                 );
-            self.inner.unary(req, path, codec).await
+            self.inner.server_streaming(req, path, codec).await
         }
     }
 }
@@ -3503,13 +3499,19 @@ pub mod view_service_server {
             tonic::Response<super::TournamentVotesResponse>,
             tonic::Status,
         >;
+        /// Server streaming response type for the LqtVotingNotes method.
+        type LqtVotingNotesStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::LqtVotingNotesResponse, tonic::Status>,
+            >
+            + std::marker::Send
+            + 'static;
         /// Checks whether a voting note has already been used for voting in a specific epoch.
         /// TODO: support streaming responses in the future.
         async fn lqt_voting_notes(
             &self,
             request: tonic::Request<super::LqtVotingNotesRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::LqtVotingNotesResponse>,
+            tonic::Response<Self::LqtVotingNotesStream>,
             tonic::Status,
         >;
     }
@@ -5084,11 +5086,12 @@ pub mod view_service_server {
                     struct LqtVotingNotesSvc<T: ViewService>(pub Arc<T>);
                     impl<
                         T: ViewService,
-                    > tonic::server::UnaryService<super::LqtVotingNotesRequest>
+                    > tonic::server::ServerStreamingService<super::LqtVotingNotesRequest>
                     for LqtVotingNotesSvc<T> {
                         type Response = super::LqtVotingNotesResponse;
+                        type ResponseStream = T::LqtVotingNotesStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
+                            tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
@@ -5119,7 +5122,7 @@ pub mod view_service_server {
                                 max_decoding_message_size,
                                 max_encoding_message_size,
                             );
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

@@ -158,24 +158,19 @@ service ViewService {
 
   // Checks whether a voting note has already been used for voting in a specific epoch.
   // TODO: support streaming responses in the future.  
-  rpc LqtVotingNotes(LqtVotingNotesRequest) returns (LqtVotingNotesResponse);
+  rpc LqtVotingNotes(LqtVotingNotesRequest) returns (stream LqtVotingNotesResponse);
 }
 
 message LqtVotingNotesRequest {
   // The epoch index to check for nullifier usage.
   uint64 epoch_index = 1;
-  // The nullifier whose voting status is being queried.
-  core.component.sct.v1.Nullifier nullifier = 2;
+  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  core.keys.v1.AddressIndex account_filter = 2;
 }
 
 message LqtVotingNotesResponse {
-  // The transaction ID of the vote, if the nullifier has been used.
-  // This field is always present if `already_voted` is true.
-  core.txhash.v1.TransactionId transaction = 1;
-  // Indicates whether the nullifier has already been used for voting in the given epoch.
-  bool already_voted = 2;
-  // The epoch index in which the nullifier was checked.
-  uint64 epoch_index = 3;
+  // The delegation note that can be used to vote with in current epoch. 
+  SpendableNoteRecord note_record = 1;
 }
 
 // Note: implementations must not accept messages with both `epoch_index`
@@ -193,10 +188,12 @@ message TournamentVotesResponse {
   message Vote {
     // The incentivized asset receiving this vote.
     core.asset.v1.AssetId incentivized_asset = 1;
-    // The total amount of voting power allocated to this asset.
+    // The amount of voting power that this specific vote contributed.
     core.num.v1.Amount vote_power = 2;
-    // The total amount of rewards issued for votes on this asset.
+    // The amount of rewards issued for votes on this asset.
     core.asset.v1.Value reward = 3;
+    // The transaction ID for the vote. 
+    core.txhash.v1.TransactionId transaction = 4;
   }
   
   // A list of votes cast for different incentivized assets.

@@ -3625,7 +3625,7 @@ impl serde::Serialize for LqtVotingNotesRequest {
         if self.epoch_index != 0 {
             len += 1;
         }
-        if self.nullifier.is_some() {
+        if self.account_filter.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LqtVotingNotesRequest", len)?;
@@ -3634,8 +3634,8 @@ impl serde::Serialize for LqtVotingNotesRequest {
             #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
-        if let Some(v) = self.nullifier.as_ref() {
-            struct_ser.serialize_field("nullifier", v)?;
+        if let Some(v) = self.account_filter.as_ref() {
+            struct_ser.serialize_field("accountFilter", v)?;
         }
         struct_ser.end()
     }
@@ -3649,13 +3649,14 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesRequest {
         const FIELDS: &[&str] = &[
             "epoch_index",
             "epochIndex",
-            "nullifier",
+            "account_filter",
+            "accountFilter",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             EpochIndex,
-            Nullifier,
+            AccountFilter,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3679,7 +3680,7 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesRequest {
                     {
                         match value {
                             "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
-                            "nullifier" => Ok(GeneratedField::Nullifier),
+                            "accountFilter" | "account_filter" => Ok(GeneratedField::AccountFilter),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3700,7 +3701,7 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesRequest {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut epoch_index__ = None;
-                let mut nullifier__ = None;
+                let mut account_filter__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::EpochIndex => {
@@ -3711,11 +3712,11 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesRequest {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::Nullifier => {
-                            if nullifier__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("nullifier"));
+                        GeneratedField::AccountFilter => {
+                            if account_filter__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("accountFilter"));
                             }
-                            nullifier__ = map_.next_value()?;
+                            account_filter__ = map_.next_value()?;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -3724,7 +3725,7 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesRequest {
                 }
                 Ok(LqtVotingNotesRequest {
                     epoch_index: epoch_index__.unwrap_or_default(),
-                    nullifier: nullifier__,
+                    account_filter: account_filter__,
                 })
             }
         }
@@ -3739,26 +3740,12 @@ impl serde::Serialize for LqtVotingNotesResponse {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.transaction.is_some() {
-            len += 1;
-        }
-        if self.already_voted {
-            len += 1;
-        }
-        if self.epoch_index != 0 {
+        if self.note_record.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LqtVotingNotesResponse", len)?;
-        if let Some(v) = self.transaction.as_ref() {
-            struct_ser.serialize_field("transaction", v)?;
-        }
-        if self.already_voted {
-            struct_ser.serialize_field("alreadyVoted", &self.already_voted)?;
-        }
-        if self.epoch_index != 0 {
-            #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        if let Some(v) = self.note_record.as_ref() {
+            struct_ser.serialize_field("noteRecord", v)?;
         }
         struct_ser.end()
     }
@@ -3770,18 +3757,13 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesResponse {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "transaction",
-            "already_voted",
-            "alreadyVoted",
-            "epoch_index",
-            "epochIndex",
+            "note_record",
+            "noteRecord",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Transaction,
-            AlreadyVoted,
-            EpochIndex,
+            NoteRecord,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3804,9 +3786,7 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesResponse {
                         E: serde::de::Error,
                     {
                         match value {
-                            "transaction" => Ok(GeneratedField::Transaction),
-                            "alreadyVoted" | "already_voted" => Ok(GeneratedField::AlreadyVoted),
-                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            "noteRecord" | "note_record" => Ok(GeneratedField::NoteRecord),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3826,30 +3806,14 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesResponse {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut transaction__ = None;
-                let mut already_voted__ = None;
-                let mut epoch_index__ = None;
+                let mut note_record__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::Transaction => {
-                            if transaction__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("transaction"));
+                        GeneratedField::NoteRecord => {
+                            if note_record__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("noteRecord"));
                             }
-                            transaction__ = map_.next_value()?;
-                        }
-                        GeneratedField::AlreadyVoted => {
-                            if already_voted__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("alreadyVoted"));
-                            }
-                            already_voted__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::EpochIndex => {
-                            if epoch_index__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("epochIndex"));
-                            }
-                            epoch_index__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            note_record__ = map_.next_value()?;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -3857,9 +3821,7 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesResponse {
                     }
                 }
                 Ok(LqtVotingNotesResponse {
-                    transaction: transaction__,
-                    already_voted: already_voted__.unwrap_or_default(),
-                    epoch_index: epoch_index__.unwrap_or_default(),
+                    note_record: note_record__,
                 })
             }
         }
@@ -6333,6 +6295,9 @@ impl serde::Serialize for tournament_votes_response::Vote {
         if self.reward.is_some() {
             len += 1;
         }
+        if self.transaction.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TournamentVotesResponse.Vote", len)?;
         if let Some(v) = self.incentivized_asset.as_ref() {
             struct_ser.serialize_field("incentivizedAsset", v)?;
@@ -6342,6 +6307,9 @@ impl serde::Serialize for tournament_votes_response::Vote {
         }
         if let Some(v) = self.reward.as_ref() {
             struct_ser.serialize_field("reward", v)?;
+        }
+        if let Some(v) = self.transaction.as_ref() {
+            struct_ser.serialize_field("transaction", v)?;
         }
         struct_ser.end()
     }
@@ -6358,6 +6326,7 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
             "vote_power",
             "votePower",
             "reward",
+            "transaction",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -6365,6 +6334,7 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
             IncentivizedAsset,
             VotePower,
             Reward,
+            Transaction,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -6390,6 +6360,7 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
                             "incentivizedAsset" | "incentivized_asset" => Ok(GeneratedField::IncentivizedAsset),
                             "votePower" | "vote_power" => Ok(GeneratedField::VotePower),
                             "reward" => Ok(GeneratedField::Reward),
+                            "transaction" => Ok(GeneratedField::Transaction),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -6412,6 +6383,7 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
                 let mut incentivized_asset__ = None;
                 let mut vote_power__ = None;
                 let mut reward__ = None;
+                let mut transaction__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::IncentivizedAsset => {
@@ -6432,6 +6404,12 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
                             }
                             reward__ = map_.next_value()?;
                         }
+                        GeneratedField::Transaction => {
+                            if transaction__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transaction"));
+                            }
+                            transaction__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -6441,6 +6419,7 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
                     incentivized_asset: incentivized_asset__,
                     vote_power: vote_power__,
                     reward: reward__,
+                    transaction: transaction__,
                 })
             }
         }
