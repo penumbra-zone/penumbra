@@ -145,7 +145,8 @@ pub mod lqt {
                         + PART1.len()
                         + PART2.len()
                         + ASSET_LEN
-                        + ADDRESS_LEN_BYTES;
+                        + ADDRESS_LEN_BYTES
+                        + IDENTITY_KEY_LEN_BYTES;
 
                     pub(crate) fn key(
                         epoch_index: u64,
@@ -198,7 +199,10 @@ pub mod lqt {
                         bytes
                     }
 
-                    const KEY_LEN: usize = EPOCH_ASSET_PREFIX_LEN + POWER_LEN + ADDRESS_LEN_BYTES;
+                    const KEY_LEN: usize = EPOCH_ASSET_PREFIX_LEN
+                        + POWER_LEN
+                        + ADDRESS_LEN_BYTES
+                        + IDENTITY_KEY_LEN_BYTES;
 
                     pub(crate) fn key(
                         epoch_index: u64,
