@@ -3048,7 +3048,7 @@ pub mod view_service_client {
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "LatestSwaps"));
             self.inner.server_streaming(req, path, codec).await
         }
-        /// Gets the total voted weights for each incentivized asset for the current epoch.
+        /// Gets details on the list votes cast in the current epoch for incentivized assets.
         pub async fn tournament_votes(
             &mut self,
             request: impl tonic::IntoRequest<super::TournamentVotesRequest>,
@@ -3075,7 +3075,7 @@ pub mod view_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
-        /// Gets the user's spendable note records that are eligible for voting in the current epoch.
+        /// Gets the spendable note records that are eligible for voting in the current epoch.
         pub async fn lqt_voting_notes(
             &mut self,
             request: impl tonic::IntoRequest<super::LqtVotingNotesRequest>,
@@ -3489,7 +3489,7 @@ pub mod view_service_server {
             tonic::Response<Self::LatestSwapsStream>,
             tonic::Status,
         >;
-        /// Gets the total voted weights for each incentivized asset for the current epoch.
+        /// Gets details on the list votes cast in the current epoch for incentivized assets.
         async fn tournament_votes(
             &self,
             request: tonic::Request<super::TournamentVotesRequest>,
@@ -3503,7 +3503,7 @@ pub mod view_service_server {
             >
             + std::marker::Send
             + 'static;
-        /// Gets the user's spendable note records that are eligible for voting in the current epoch.
+        /// Gets the spendable note records that are eligible for voting in the current epoch.
         async fn lqt_voting_notes(
             &self,
             request: tonic::Request<super::LqtVotingNotesRequest>,
