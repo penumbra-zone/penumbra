@@ -59,7 +59,7 @@ pub struct EventLqtDelegatorReward {
     /// The recipient address.
     pub address: Address,
     /// The incentivized asset.
-    pub asset_id: asset::Id,
+    pub incentivized_asset_id: asset::Id,
 }
 
 impl TryFrom<pb::EventLqtDelegatorReward> for EventLqtDelegatorReward {
@@ -80,8 +80,8 @@ impl TryFrom<pb::EventLqtDelegatorReward> for EventLqtDelegatorReward {
                     .address
                     .ok_or_else(|| anyhow!("missing `address`"))?
                     .try_into()?,
-                asset_id: value
-                    .asset_id
+                incentivized_asset_id: value
+                    .incentivized_asset_id
                     .ok_or_else(|| anyhow!("missing `asset_id`"))?
                     .try_into()?,
             })
@@ -97,7 +97,7 @@ impl From<EventLqtDelegatorReward> for pb::EventLqtDelegatorReward {
             reward_amount: Some(value.reward_amount.into()),
             delegation_tokens: Some(value.delegation_tokens.into()),
             address: Some(value.address.into()),
-            asset_id: Some(value.asset_id.into()),
+            incentivized_asset_id: Some(value.incentivized_asset_id.into()),
         }
     }
 }
@@ -116,7 +116,7 @@ pub struct EventLqtPositionReward {
     /// The liquidity position that receives the reward.
     pub position_id: position::Id,
     /// The incentivized asset.
-    pub asset_id: asset::Id,
+    pub incentivized_asset_id: asset::Id,
     /// The total volume for the pair during the tournament (in staking tokens).
     pub tournament_volume: Amount,
     /// The cumulative volume for the LP (in staking tokens).
@@ -137,8 +137,8 @@ impl TryFrom<pb::EventLqtPositionReward> for EventLqtPositionReward {
                     .position_id
                     .ok_or_else(|| anyhow!("missing `position_id`"))?
                     .try_into()?,
-                asset_id: value
-                    .asset_id
+                incentivized_asset_id: value
+                    .incentivized_asset_id
                     .ok_or_else(|| anyhow!("missing `asset_id`"))?
                     .try_into()?,
                 tournament_volume: value
@@ -161,7 +161,7 @@ impl From<EventLqtPositionReward> for pb::EventLqtPositionReward {
             epoch_index: value.epoch_index,
             reward_amount: Some(value.reward_amount.into()),
             position_id: Some(value.position_id.into()),
-            asset_id: Some(value.asset_id.into()),
+            asset_id: Some(value.incentivized_asset_id.into()),
             tournament_volume: Some(value.tournament_volume.into()),
             position_volume: Some(value.position_volume.into()),
         }
@@ -180,7 +180,7 @@ pub struct EventLqtVote {
     /// The voting power associated with the vote.
     pub voting_power: Amount,
     /// The asset being voted on.
-    pub asset_id: asset::Id,
+    pub incentivized_asset_id: asset::Id,
     /// The denom string for the incentivized asset.
     pub incentivized: Denom,
 }
@@ -195,8 +195,8 @@ impl TryFrom<pb::EventLqtVote> for EventLqtVote {
                     .voting_power
                     .ok_or_else(|| anyhow!("missing `voting_power`"))?
                     .try_into()?,
-                asset_id: value
-                    .asset_id
+                incentivized_asset_id: value
+                    .incentivized_asset_id
                     .ok_or_else(|| anyhow!("missing `asset_id`"))?
                     .try_into()?,
                 incentivized: value
@@ -214,7 +214,7 @@ impl From<EventLqtVote> for pb::EventLqtVote {
         Self {
             epoch_index: value.epoch_index,
             voting_power: Some(value.voting_power.into()),
-            asset_id: Some(value.asset_id.into()),
+            incentivized_asset_id: Some(value.incentivized_asset_id.into()),
             incentivized: Some(value.incentivized.into()),
         }
     }

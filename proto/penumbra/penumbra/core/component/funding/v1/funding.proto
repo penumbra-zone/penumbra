@@ -135,7 +135,7 @@ message EventLqtDelegatorReward {
   // The recipient of the reward
   keys.v1.Address address = 4;
   // The incentivized asset.
-  asset.v1.AssetId asset_id = 5;
+  asset.v1.AssetId incentivized_asset_id = 5;
 }
 
 message EventLqtPositionReward {
@@ -146,7 +146,7 @@ message EventLqtPositionReward {
   // The liquidity position receiving the reward
   dex.v1.PositionId position_id = 3;
   // The incentivized asset.
-  asset.v1.AssetId asset_id = 4;
+  asset.v1.AssetId incentivized_asset_id = 4;
   // The total volume for the pair during the tournament, in staking tokens.
   num.v1.Amount tournament_volume = 10;
   // The cumulative volume for the LP, in staking tokens.
@@ -159,7 +159,7 @@ message EventLqtVote {
   // The amount of voting power this vote carries.
   core.num.v1.Amount voting_power = 2;
   // The asset id of the asset being voted on.
-  core.asset.v1.AssetId asset_id = 3;
+  core.asset.v1.AssetId incentivized_asset_id = 3;
   // The denom string of the asset being voted on.
   asset.v1.Denom incentivized = 4;
 }

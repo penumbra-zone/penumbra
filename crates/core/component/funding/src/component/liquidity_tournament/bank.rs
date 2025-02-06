@@ -5,6 +5,7 @@ use penumbra_sdk_dex::component::PositionManager as _;
 use penumbra_sdk_dex::lp::position;
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::StateWriteProto;
 use penumbra_sdk_sct::component::clock::EpochRead as _;
 use penumbra_sdk_sct::CommitmentSource;
 use penumbra_sdk_shielded_pool::component::NoteManager as _;
@@ -12,6 +13,8 @@ use penumbra_sdk_stake::component::ValidatorPoolDeposit;
 use penumbra_sdk_stake::IdentityKey;
 
 use penumbra_sdk_txhash::TransactionId;
+
+use crate::event;
 
 #[async_trait]
 /// The bank strictly controls issuance of rewards in the liquidity tournament.
@@ -27,6 +30,7 @@ pub trait Bank: StateWrite + Sized {
         validator: IdentityKey,
         voter: &Address,
         tx_hash: TransactionId,
+        incentivized_asset_id: asset::Id,
     ) -> anyhow::Result<()> {
         if unbonded_reward == Amount::zero() {
             return Ok(());
@@ -42,6 +46,17 @@ pub trait Bank: StateWrite + Sized {
         else {
             bail!("failed to deposit to validator pool");
         };
+
+        self.record_proto(
+            event::EventLqtDelegatorReward {
+                epoch_index: epoch.index,
+                delegation_tokens: bonded_reward,
+                reward_amount: unbonded_reward,
+                address: voter.clone(),
+                incentivized_asset_id,
+            }
+            .to_proto(),
+        );
 
         self.mint_note(
             bonded_reward,

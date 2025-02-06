@@ -135,14 +135,14 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
     let asset_totals = asset_totals(&state, &params.liquidity_tournament, current_epoch).await?;
     let total_votes: Amount = asset_totals.iter().map(|(_, v)| *v).sum();
     // Now, iterate over each asset, and it's share of the total.
-    for (asset, asset_votes) in asset_totals {
+    for (incentivized_asset, asset_votes) in asset_totals {
         let asset_share = create_share(asset_votes, total_votes);
         // Next, distribute rewards to voters.
         let mut voter_stream = voter_shares_of_asset(
             &state,
             &params.liquidity_tournament,
             current_epoch,
-            asset,
+            incentivized_asset,
             asset_votes,
         );
         while let Some((voter, voter_share, identity_key, tx)) = voter_stream.try_next().await? {
@@ -154,7 +154,13 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
 
             // We ask the bank to mint rewards.
             state
-                .reward_to_voter(unbonded_reward_amount, identity_key, &voter, tx)
+                .reward_to_voter(
+                    unbonded_reward_amount,
+                    identity_key,
+                    &voter,
+                    tx,
+                    incentivized_asset,
+                )
                 .await?;
             current_budget = current_budget
                 .checked_sub(&unbonded_reward_amount)
@@ -165,14 +171,14 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
             &state,
             &params.liquidity_tournament,
             current_epoch,
-            asset,
+            incentivized_asset,
         )
         .await?;
         let mut lp_stream = position_shares(
             &state,
             &params.liquidity_tournament,
             current_epoch,
-            asset,
+            incentivized_asset,
             total_volume,
         );
         while let Some((lp, lp_share)) = lp_stream.try_next().await? {
