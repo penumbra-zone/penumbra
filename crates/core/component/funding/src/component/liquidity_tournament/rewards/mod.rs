@@ -2,7 +2,6 @@ use anyhow::anyhow;
 use cnidarium::{StateRead, StateWrite};
 use futures::stream::StreamExt as _;
 use futures::{Stream, TryStreamExt};
-use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_community_pool::component::StateWriteExt as _;
 use penumbra_sdk_dex::{component::LqtRead as _, lp::position};
@@ -10,9 +9,11 @@ use penumbra_sdk_distributions::component::StateReadExt as _;
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::fixpoint::U128x128;
 use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::component::clock::EpochRead as _;
 use penumbra_sdk_stake::IdentityKey;
 use penumbra_sdk_txhash::TransactionId;
+use penumbra_sdk_proto::StateWriteProto;
 
 use super::bank::Bank as _;
 use super::votes::StateReadExt as _;
@@ -113,7 +114,7 @@ fn position_shares(
         .map_ok(move |(_, lp, volume)| (lp, volume, create_share(volume, total_volume)))
 }
 
-pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::Result<()> {
+pub async fn distribute_rewards(mut state: impl StateWrite) -> anyhow::Result<()> {
     let current_epoch = state.get_current_epoch().await?.index;
     let params = state.get_funding_params().await?;
 
@@ -199,7 +200,7 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
                 tournament_volume: total_volume,
                 position_volume: lp_volume,
             };
-            self.record_proto(event.to_proto());
+            state.record_proto(event.to_proto());
 
             state.reward_to_position(reward, lp).await?;
             current_budget = current_budget
