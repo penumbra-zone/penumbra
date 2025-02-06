@@ -152,6 +152,55 @@ service ViewService {
 
   // Gets the latest swaps controlled by the user's wallet. 
   rpc LatestSwaps(LatestSwapsRequest) returns (stream LatestSwapsResponse);
+
+  // Gets the total voted weights for each incentivized asset in a tournament.
+  rpc TournamentVotes(TournamentVotesRequest) returns (TournamentVotesResponse);
+
+  // Checks whether a voting note has already been used for voting in a specific epoch.
+  // TODO: support streaming responses in the future.  
+  rpc LqtVotingNotes(LqtVotingNotesRequest) returns (LqtVotingNotesResponse);
+}
+
+message LqtVotingNotesRequest {
+  // The epoch index to check for nullifier usage.
+  uint64 epoch_index = 1;
+  // The nullifier whose voting status is being queried.
+  core.component.sct.v1.Nullifier nullifier = 2;
+}
+
+message LqtVotingNotesResponse {
+  // The transaction ID of the vote, if the nullifier has been used.
+  // This field is always present if `already_voted` is true.
+  core.txhash.v1.TransactionId transaction = 1;
+  // Indicates whether the nullifier has already been used for voting in the given epoch.
+  bool already_voted = 2;
+  // The epoch index in which the nullifier was checked.
+  uint64 epoch_index = 3;
+}
+
+// Note: implementations must not accept messages with both `epoch_index`
+// and `block_height` set. This is a convenience API, to allow consumers
+// to defer epoch tracking to a view service.
+message TournamentVotesRequest {
+  // Retrieves votes for the specified epoch.
+  uint64 epoch_index = 1;
+  // Retrieves votes as of the specified block height.
+  uint64 block_height = 2;
+}
+
+// Retrieves associated voting power and rewards and 
+message TournamentVotesResponse {
+  message Vote {
+    // The incentivized asset receiving this vote.
+    core.asset.v1.AssetId incentivized_asset = 1;
+    // The total amount of voting power allocated to this asset.
+    core.num.v1.Amount vote_power = 2;
+    // The total amount of rewards issued for votes on this asset.
+    core.asset.v1.Value reward = 3;
+  }
+  
+  // A list of votes cast for different incentivized assets.
+  repeated Vote votes = 1;
 }
 
 // There's only one transparent address per wallet, so this request has no parameters;

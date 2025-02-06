@@ -3614,6 +3614,258 @@ impl<'de> serde::Deserialize<'de> for LatestSwapsResponse {
         deserializer.deserialize_struct("penumbra.view.v1.LatestSwapsResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for LqtVotingNotesRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.epoch_index != 0 {
+            len += 1;
+        }
+        if self.nullifier.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LqtVotingNotesRequest", len)?;
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        if let Some(v) = self.nullifier.as_ref() {
+            struct_ser.serialize_field("nullifier", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for LqtVotingNotesRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "epoch_index",
+            "epochIndex",
+            "nullifier",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            EpochIndex,
+            Nullifier,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            "nullifier" => Ok(GeneratedField::Nullifier),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = LqtVotingNotesRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.LqtVotingNotesRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<LqtVotingNotesRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut epoch_index__ = None;
+                let mut nullifier__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Nullifier => {
+                            if nullifier__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("nullifier"));
+                            }
+                            nullifier__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(LqtVotingNotesRequest {
+                    epoch_index: epoch_index__.unwrap_or_default(),
+                    nullifier: nullifier__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.LqtVotingNotesRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for LqtVotingNotesResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.transaction.is_some() {
+            len += 1;
+        }
+        if self.already_voted {
+            len += 1;
+        }
+        if self.epoch_index != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LqtVotingNotesResponse", len)?;
+        if let Some(v) = self.transaction.as_ref() {
+            struct_ser.serialize_field("transaction", v)?;
+        }
+        if self.already_voted {
+            struct_ser.serialize_field("alreadyVoted", &self.already_voted)?;
+        }
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for LqtVotingNotesResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "transaction",
+            "already_voted",
+            "alreadyVoted",
+            "epoch_index",
+            "epochIndex",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Transaction,
+            AlreadyVoted,
+            EpochIndex,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "transaction" => Ok(GeneratedField::Transaction),
+                            "alreadyVoted" | "already_voted" => Ok(GeneratedField::AlreadyVoted),
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = LqtVotingNotesResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.LqtVotingNotesResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<LqtVotingNotesResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut transaction__ = None;
+                let mut already_voted__ = None;
+                let mut epoch_index__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Transaction => {
+                            if transaction__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transaction"));
+                            }
+                            transaction__ = map_.next_value()?;
+                        }
+                        GeneratedField::AlreadyVoted => {
+                            if already_voted__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("alreadyVoted"));
+                            }
+                            already_voted__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(LqtVotingNotesResponse {
+                    transaction: transaction__,
+                    already_voted: already_voted__.unwrap_or_default(),
+                    epoch_index: epoch_index__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.LqtVotingNotesResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for NoteByCommitmentRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -5845,6 +6097,354 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1.SwapRecord", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for TournamentVotesRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.epoch_index != 0 {
+            len += 1;
+        }
+        if self.block_height != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TournamentVotesRequest", len)?;
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        if self.block_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("blockHeight", ToString::to_string(&self.block_height).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for TournamentVotesRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "epoch_index",
+            "epochIndex",
+            "block_height",
+            "blockHeight",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            EpochIndex,
+            BlockHeight,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            "blockHeight" | "block_height" => Ok(GeneratedField::BlockHeight),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = TournamentVotesRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.TournamentVotesRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TournamentVotesRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut epoch_index__ = None;
+                let mut block_height__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::BlockHeight => {
+                            if block_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockHeight"));
+                            }
+                            block_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(TournamentVotesRequest {
+                    epoch_index: epoch_index__.unwrap_or_default(),
+                    block_height: block_height__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.TournamentVotesRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for TournamentVotesResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.votes.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TournamentVotesResponse", len)?;
+        if !self.votes.is_empty() {
+            struct_ser.serialize_field("votes", &self.votes)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for TournamentVotesResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "votes",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Votes,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "votes" => Ok(GeneratedField::Votes),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = TournamentVotesResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.TournamentVotesResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TournamentVotesResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut votes__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Votes => {
+                            if votes__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("votes"));
+                            }
+                            votes__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(TournamentVotesResponse {
+                    votes: votes__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.TournamentVotesResponse", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for tournament_votes_response::Vote {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.incentivized_asset.is_some() {
+            len += 1;
+        }
+        if self.vote_power.is_some() {
+            len += 1;
+        }
+        if self.reward.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TournamentVotesResponse.Vote", len)?;
+        if let Some(v) = self.incentivized_asset.as_ref() {
+            struct_ser.serialize_field("incentivizedAsset", v)?;
+        }
+        if let Some(v) = self.vote_power.as_ref() {
+            struct_ser.serialize_field("votePower", v)?;
+        }
+        if let Some(v) = self.reward.as_ref() {
+            struct_ser.serialize_field("reward", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "incentivized_asset",
+            "incentivizedAsset",
+            "vote_power",
+            "votePower",
+            "reward",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            IncentivizedAsset,
+            VotePower,
+            Reward,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "incentivizedAsset" | "incentivized_asset" => Ok(GeneratedField::IncentivizedAsset),
+                            "votePower" | "vote_power" => Ok(GeneratedField::VotePower),
+                            "reward" => Ok(GeneratedField::Reward),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = tournament_votes_response::Vote;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.TournamentVotesResponse.Vote")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<tournament_votes_response::Vote, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut incentivized_asset__ = None;
+                let mut vote_power__ = None;
+                let mut reward__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::IncentivizedAsset => {
+                            if incentivized_asset__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("incentivizedAsset"));
+                            }
+                            incentivized_asset__ = map_.next_value()?;
+                        }
+                        GeneratedField::VotePower => {
+                            if vote_power__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("votePower"));
+                            }
+                            vote_power__ = map_.next_value()?;
+                        }
+                        GeneratedField::Reward => {
+                            if reward__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("reward"));
+                            }
+                            reward__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(tournament_votes_response::Vote {
+                    incentivized_asset: incentivized_asset__,
+                    vote_power: vote_power__,
+                    reward: reward__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.TournamentVotesResponse.Vote", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for TransactionInfo {
