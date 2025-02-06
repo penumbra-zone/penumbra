@@ -152,6 +152,50 @@ service ViewService {
 
   // Gets the latest swaps controlled by the user's wallet. 
   rpc LatestSwaps(LatestSwapsRequest) returns (stream LatestSwapsResponse);
+
+  // Gets details on the list votes cast in the current epoch for incentivized assets. 
+  rpc TournamentVotes(TournamentVotesRequest) returns (TournamentVotesResponse);
+
+  // Gets the spendable note records that are eligible for voting in the current epoch.
+  rpc LqtVotingNotes(LqtVotingNotesRequest) returns (stream LqtVotingNotesResponse);
+}
+
+message LqtVotingNotesRequest {
+  // The epoch index to check for nullifier usage.
+  uint64 epoch_index = 1;
+  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  core.keys.v1.AddressIndex account_filter = 2;
+}
+
+message LqtVotingNotesResponse {
+  // The delegation note that can be used to vote with in current epoch. 
+  SpendableNoteRecord note_record = 1;
+}
+
+// Note: implementations must not accept messages with both `epoch_index`
+// and `block_height` set. This is a convenience API, to allow consumers
+// to defer epoch tracking to a view service.
+message TournamentVotesRequest {
+  // Retrieves votes for the specified epoch.
+  uint64 epoch_index = 1;
+  // Retrieves votes as of the specified block height.
+  uint64 block_height = 2;
+}
+
+message TournamentVotesResponse {
+  message Vote {
+    // The incentivized asset receiving this vote.
+    core.asset.v1.AssetId incentivized_asset = 1;
+    // The amount of voting power that this specific vote contributed.
+    core.num.v1.Amount vote_power = 2;
+    // The amount of rewards issued for votes on this asset.
+    core.asset.v1.Value reward = 3;
+    // The transaction ID for the vote. 
+    core.txhash.v1.TransactionId transaction = 4;
+  }
+  
+  // A list of votes cast for different incentivized assets.
+  repeated Vote votes = 1;
 }
 
 // There's only one transparent address per wallet, so this request has no parameters;
