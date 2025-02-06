@@ -350,6 +350,31 @@ impl ::prost::Name for EventLqtPositionReward {
         "/penumbra.core.component.funding.v1.EventLqtPositionReward".into()
     }
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventLqtVote {
+    /// The tournament for which the vote was cast.
+    #[prost(uint64, tag = "1")]
+    pub epoch_index: u64,
+    /// The amount of voting power this vote carries.
+    #[prost(message, optional, tag = "2")]
+    pub voting_power: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The asset id of the asset being voted on.
+    #[prost(message, optional, tag = "3")]
+    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    /// The denom string of the asset being voted on.
+    #[prost(message, optional, tag = "4")]
+    pub incentivized: ::core::option::Option<super::super::super::asset::v1::Denom>,
+}
+impl ::prost::Name for EventLqtVote {
+    const NAME: &'static str = "EventLqtVote";
+    const PACKAGE: &'static str = "penumbra.core.component.funding.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.funding.v1.EventLqtVote".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.funding.v1.EventLqtVote".into()
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod funding_service_client {
