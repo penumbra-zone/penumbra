@@ -9,6 +9,10 @@ use serde::{Deserialize, Serialize};
 
 use decaf377_rdsa::{SpendAuth, VerificationKeyBytes};
 
+/// The length of an identity key in bytes.
+/// TODO(erwan): move this to the keys crate, one day.
+pub const IDENTITY_KEY_LEN_BYTES: usize = 32;
+
 /// The root of a validator's identity.
 ///
 /// This key is a [`SpendAuth`] [`VerificationKey`]; currently, the wallet
@@ -23,7 +27,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKeyBytes};
 pub struct IdentityKey(pub VerificationKeyBytes<SpendAuth>);
 
 impl IdentityKey {
-    pub fn to_bytes(&self) -> [u8; 32] {
+    pub fn to_bytes(&self) -> [u8; IDENTITY_KEY_LEN_BYTES] {
         self.0.into()
     }
 }

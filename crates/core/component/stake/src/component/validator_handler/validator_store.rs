@@ -10,6 +10,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::{Future, FutureExt};
+use penumbra_sdk_asset::Value;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::{
     state::future::DomainFuture, DomainType, StateReadProto, StateWriteProto,
@@ -233,6 +234,67 @@ pub trait ValidatorDataRead: StateRead {
 }
 
 impl<T: StateRead + ?Sized> ValidatorDataRead for T {}
+
+#[async_trait]
+pub trait ValidatorPoolDeposit: StateWrite {
+    /// Checked increase of the validator pool size by the given amount
+    /// of staking tokens (unbonded).
+    ///
+    /// On success, this method returns the bonded value
+    /// of the deposit, i.e, measured in delegation tokens.
+    ///
+    /// Returns `None` if the update failed.
+    async fn deposit_to_validator_pool(
+        &mut self,
+        validator_ik: &IdentityKey,
+        unbonded_deposit: Amount,
+    ) -> Option<Value> {
+        let state_path = state_key::validators::pool::balance::by_id(validator_ik);
+        let old_supply = self
+            .get(&state_path)
+            .await
+            .expect("no deserialization error expected")
+            .unwrap_or(Amount::zero());
+
+        tracing::debug!(validator_identity = %validator_ik, ?unbonded_deposit, ?old_supply, "depositing into validator pool");
+
+        // Simulate increasing the validator pool size, backing off on any error.
+        let new_supply = match old_supply.checked_add(&unbonded_deposit) {
+            Some(new_supply) => new_supply,
+            None => {
+                tracing::warn!(
+                    validator_identity = %validator_ik,
+                    ?unbonded_deposit,
+                    ?old_supply,
+                    "deposit failed: overflow"
+                );
+                return None;
+            }
+        };
+
+        // Get the validator rate data to calculate the bonded value.
+        let bonded_deposit = if let Some(rate) = self
+            .get_validator_rate(validator_ik)
+            .await
+            .expect("no deserialization error expected")
+        {
+            use penumbra_sdk_sct::component::clock::EpochRead;
+            let current_epoch = self.get_current_epoch().await.expect("epoch is always set");
+            rate.build_delegate(current_epoch, unbonded_deposit)
+                .delegation_value()
+        } else {
+            // If for whatever reason, the validator rate data is missing, we short-circuit.
+            return None;
+        };
+
+        // Finally, perform the necessary state update:
+        self.put(state_path, new_supply);
+
+        Some(bonded_deposit)
+    }
+}
+
+impl<T: StateWrite + ?Sized> ValidatorPoolDeposit for T {}
 
 #[async_trait]
 pub(crate) trait ValidatorDataWrite: StateWrite {

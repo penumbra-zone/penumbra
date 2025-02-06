@@ -41,6 +41,7 @@ pub use self::undelegate_claim::{
 pub use self::delegation_token::DelegationToken;
 pub use self::governance_key::GovernanceKey;
 pub use self::identity_key::IdentityKey;
+pub use self::identity_key::IDENTITY_KEY_LEN_BYTES;
 pub use self::penalty::Penalty;
 pub use self::unbonding_token::UnbondingToken;
 
