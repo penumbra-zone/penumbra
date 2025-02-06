@@ -180,6 +180,8 @@ message TournamentVotesRequest {
   uint64 epoch_index = 1;
   // Retrieves votes as of the specified block height.
   uint64 block_height = 2;
+  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  core.keys.v1.AddressIndex account_filter = 3;
 }
 
 message TournamentVotesResponse {
