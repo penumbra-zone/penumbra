@@ -51,7 +51,7 @@ use penumbra_sdk_proto::{
         view_service_server::{ViewService, ViewServiceServer},
         AppParametersResponse, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
         BroadcastTransactionResponse, FmdParametersResponse, GasPricesResponse,
-        LqtVotingNotesResponse, NoteByCommitmentResponse, StatusResponse, SwapByCommitmentResponse,
+        NoteByCommitmentResponse, StatusResponse, SwapByCommitmentResponse,
         TournamentVotesResponse, TransactionPlannerResponse, WalletIdRequest, WalletIdResponse,
         WitnessResponse,
     },
