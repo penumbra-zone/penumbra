@@ -1,10 +1,12 @@
 use anyhow::bail;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
+use penumbra_sdk_asset::asset;
 use penumbra_sdk_dex::component::PositionManager as _;
 use penumbra_sdk_dex::lp::position;
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_proto::StateWriteProto;
 use penumbra_sdk_sct::component::clock::EpochRead as _;
 use penumbra_sdk_sct::CommitmentSource;

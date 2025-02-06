@@ -161,7 +161,7 @@ impl From<EventLqtPositionReward> for pb::EventLqtPositionReward {
             epoch_index: value.epoch_index,
             reward_amount: Some(value.reward_amount.into()),
             position_id: Some(value.position_id.into()),
-            asset_id: Some(value.incentivized_asset_id.into()),
+            incentivized_asset_id: Some(value.incentivized_asset_id.into()),
             tournament_volume: Some(value.tournament_volume.into()),
             position_volume: Some(value.position_volume.into()),
         }
