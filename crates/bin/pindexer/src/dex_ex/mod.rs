@@ -5,7 +5,6 @@ use cometindex::{
     AppView, PgTransaction,
 };
 use penumbra_sdk_asset::asset;
-use penumbra_sdk_dex::lp::position::{Id as PositionId, Position};
 use penumbra_sdk_dex::{
     event::{
         EventBatchSwap, EventCandlestickData, EventPositionClose, EventPositionExecution,
@@ -13,6 +12,10 @@ use penumbra_sdk_dex::{
     },
     lp::Reserves,
     DirectedTradingPair, SwapExecution, TradingPair,
+};
+use penumbra_sdk_dex::{
+    event::{EventSwap, EventSwapClaim},
+    lp::position::{Id as PositionId, Position},
 };
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::event::EventDomainType;
@@ -682,6 +685,8 @@ struct Events {
     position_closes: Vec<EventPositionClose>,
     position_withdrawals: Vec<EventPositionWithdraw>,
     batch_swaps: Vec<EventBatchSwap>,
+    swaps: BTreeMap<TradingPair, Vec<EventSwap>>,
+    swap_claims: BTreeMap<TradingPair, Vec<EventSwapClaim>>,
     // Track transaction hashes by position ID
     position_open_txs: BTreeMap<PositionId, [u8; 32]>,
     position_close_txs: BTreeMap<PositionId, [u8; 32]>,
@@ -701,6 +706,8 @@ impl Events {
             position_closes: Vec::new(),
             position_withdrawals: Vec::new(),
             batch_swaps: Vec::new(),
+            swaps: BTreeMap::new(),
+            swap_claims: BTreeMap::new(),
             position_open_txs: BTreeMap::new(),
             position_close_txs: BTreeMap::new(),
             position_withdrawal_txs: BTreeMap::new(),
@@ -859,6 +866,16 @@ impl Events {
                 }
             } else if let Ok(e) = EventBatchSwap::try_from_event(&event.event) {
                 out.batch_swaps.push(e);
+            } else if let Ok(e) = EventSwap::try_from_event(&event.event) {
+                out.swaps
+                    .entry(e.trading_pair)
+                    .or_insert_with(Vec::new)
+                    .push(e);
+            } else if let Ok(e) = EventSwapClaim::try_from_event(&event.event) {
+                out.swap_claims
+                    .entry(e.trading_pair)
+                    .or_insert_with(Vec::new)
+                    .push(e);
             }
         }
         Ok(out)
@@ -1079,6 +1096,80 @@ impl Component {
         }
 
         Ok(())
+    }
+
+    async fn record_block_summary(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        time: DateTime,
+        height: i32,
+        events: &Events,
+    ) {
+        let num_opened_lps = events.position_opens.len();
+        let num_closed_lps = events.position_closes.len();
+        let num_withdrawn_lps = events.position_withdrawals.len();
+        let num_swaps: usize = events.swaps.iter().map(|(_, v)| v.len()).sum::<usize>();
+        let num_swap_claims = events
+            .swap_claims
+            .iter()
+            .map(|(_, v)| v.len())
+            .sum::<usize>();
+
+        let mut batch_swap_summaries = vec![];
+
+        // Deal with the batch summaries:
+        for event in &events.batch_swaps {
+            let trading_pair = event.batch_swap_output_data.trading_pair;
+
+            // TODO: refactor around a domain type for the sql schema.
+            if let Some(swap_1_2) = &event.swap_execution_1_for_2 {
+                let asset_start = swap_1_2.input.asset_id;
+                let asset_end = swap_1_2.output.asset_id;
+                let input = swap_1_2.input.amount;
+                let output = swap_1_2.output.amount;
+                let price_float = (output.value() as f64) / (input.value() as f64);
+
+                let swaps_for_pair = events.swaps.get(&trading_pair).unwrap_or_default();
+                let filtered_swaps = swaps_for_pair
+                    .iter()
+                    .filter(|swap| swap.delta_1_i != Amount::zero())
+                    .collect::<Vec<_>>();
+                let num_swaps = filtered_swaps.len();
+                batch_swap_summaries.push((
+                    trading_pair,
+                    asset_start,
+                    asset_end,
+                    input,
+                    output,
+                    price_float,
+                    num_swaps,
+                ));
+            }
+
+            if let Some(swap_2_1) = &event.swap_execution_2_for_1 {
+                let asset_start = swap_2_1.input.asset_id;
+                let asset_end = swap_2_1.output.asset_id;
+                let input = swap_2_1.input.amount;
+                let output = swap_2_1.output.amount;
+                let price_float = (output.value() as f64) / (input.value() as f64);
+
+                let swaps_for_pair = events.swaps.get(&trading_pair).unwrap_or(&vec![]);
+                let filtered_swaps = swaps_for_pair
+                    .iter()
+                    .filter(|swap| swap.delta_2_i != Amount::zero())
+                    .collect::<Vec<_>>();
+                let num_swaps = filtered_swaps.len();
+                batch_swap_summaries.push((
+                    trading_pair,
+                    asset_start,
+                    asset_end,
+                    input,
+                    output,
+                    price_float,
+                    num_swaps,
+                ));
+            }
+        }
     }
 
     async fn record_batch_swap_traces(
@@ -1303,6 +1394,10 @@ impl AppView for Component {
 
             // Load any missing positions before processing events
             events.load_positions(dbtx).await?;
+
+            // This is where we are going to build the block summary for the DEX.
+            self.record_block_summary(dbtx, time, block.height as i32, &events)
+                .await;
 
             // Record batch swap execution traces.
             for event in &events.batch_swaps {
