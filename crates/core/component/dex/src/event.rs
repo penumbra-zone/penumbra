@@ -661,3 +661,54 @@ impl From<EventCandlestickData> for pb::EventCandlestickData {
 impl DomainType for EventCandlestickData {
     type Proto = pb::EventCandlestickData;
 }
+
+#[derive(Clone, Debug)]
+pub struct EventLqtPositionVolume {
+    pub epoch_index: u64,
+    pub asset_id: asset::Id,
+    pub position_id: position::Id,
+    pub volume: Amount,
+    pub total_volume: Amount,
+}
+
+impl From<EventLqtPositionVolume> for pb::EventLqtPositionVolume {
+    fn from(value: EventLqtPositionVolume) -> Self {
+        Self {
+            epoch_index: value.epoch_index,
+            asset_id: Some(value.asset_id.into()),
+            position_id: Some(value.position_id.into()),
+            volume_amount: Some(value.volume.into()),
+            total_volume: Some(value.total_volume.into()),
+        }
+    }
+}
+
+impl TryFrom<pb::EventLqtPositionVolume> for EventLqtPositionVolume {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventLqtPositionVolume) -> Result<Self, Self::Error> {
+        Ok(EventLqtPositionVolume {
+            epoch_index: value.epoch_index,
+            asset_id: value
+                .asset_id
+                .ok_or(anyhow!("missing `asset_id`"))?
+                .try_into()?,
+            position_id: value
+                .position_id
+                .ok_or(anyhow!("missing `position_id`"))?
+                .try_into()?,
+            volume: value
+                .volume_amount
+                .ok_or(anyhow!("missing `volume`"))?
+                .try_into()?,
+            total_volume: value
+                .total_volume
+                .ok_or(anyhow!("missing `total_volume`"))?
+                .try_into()?,
+        })
+    }
+}
+
+impl DomainType for EventLqtPositionVolume {
+    type Proto = pb::EventLqtPositionVolume;
+}
