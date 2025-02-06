@@ -964,10 +964,10 @@ impl serde::Serialize for EventLqtVote {
         if self.incentivized.is_some() {
             len += 1;
         }
-        if self.voter_address.is_some() {
+        if self.rewards_recipient.is_some() {
             len += 1;
         }
-        if self.transaction.is_some() {
+        if self.tx_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.funding.v1.EventLqtVote", len)?;
@@ -985,11 +985,11 @@ impl serde::Serialize for EventLqtVote {
         if let Some(v) = self.incentivized.as_ref() {
             struct_ser.serialize_field("incentivized", v)?;
         }
-        if let Some(v) = self.voter_address.as_ref() {
-            struct_ser.serialize_field("voterAddress", v)?;
+        if let Some(v) = self.rewards_recipient.as_ref() {
+            struct_ser.serialize_field("rewardsRecipient", v)?;
         }
-        if let Some(v) = self.transaction.as_ref() {
-            struct_ser.serialize_field("transaction", v)?;
+        if let Some(v) = self.tx_id.as_ref() {
+            struct_ser.serialize_field("txId", v)?;
         }
         struct_ser.end()
     }
@@ -1008,9 +1008,10 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
             "incentivized_asset_id",
             "incentivizedAssetId",
             "incentivized",
-            "voter_address",
-            "voterAddress",
-            "transaction",
+            "rewards_recipient",
+            "rewardsRecipient",
+            "tx_id",
+            "txId",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1019,8 +1020,8 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
             VotingPower,
             IncentivizedAssetId,
             Incentivized,
-            VoterAddress,
-            Transaction,
+            RewardsRecipient,
+            TxId,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1047,8 +1048,8 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
                             "votingPower" | "voting_power" => Ok(GeneratedField::VotingPower),
                             "incentivizedAssetId" | "incentivized_asset_id" => Ok(GeneratedField::IncentivizedAssetId),
                             "incentivized" => Ok(GeneratedField::Incentivized),
-                            "voterAddress" | "voter_address" => Ok(GeneratedField::VoterAddress),
-                            "transaction" => Ok(GeneratedField::Transaction),
+                            "rewardsRecipient" | "rewards_recipient" => Ok(GeneratedField::RewardsRecipient),
+                            "txId" | "tx_id" => Ok(GeneratedField::TxId),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1072,8 +1073,8 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
                 let mut voting_power__ = None;
                 let mut incentivized_asset_id__ = None;
                 let mut incentivized__ = None;
-                let mut voter_address__ = None;
-                let mut transaction__ = None;
+                let mut rewards_recipient__ = None;
+                let mut tx_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::EpochIndex => {
@@ -1102,17 +1103,17 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
                             }
                             incentivized__ = map_.next_value()?;
                         }
-                        GeneratedField::VoterAddress => {
-                            if voter_address__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("voterAddress"));
+                        GeneratedField::RewardsRecipient => {
+                            if rewards_recipient__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rewardsRecipient"));
                             }
-                            voter_address__ = map_.next_value()?;
+                            rewards_recipient__ = map_.next_value()?;
                         }
-                        GeneratedField::Transaction => {
-                            if transaction__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("transaction"));
+                        GeneratedField::TxId => {
+                            if tx_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("txId"));
                             }
-                            transaction__ = map_.next_value()?;
+                            tx_id__ = map_.next_value()?;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -1124,8 +1125,8 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
                     voting_power: voting_power__,
                     incentivized_asset_id: incentivized_asset_id__,
                     incentivized: incentivized__,
-                    voter_address: voter_address__,
-                    transaction: transaction__,
+                    rewards_recipient: rewards_recipient__,
+                    tx_id: tx_id__,
                 })
             }
         }

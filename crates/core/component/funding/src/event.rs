@@ -7,6 +7,7 @@ use penumbra_sdk_dex::lp::position;
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::{penumbra::core::component::funding::v1 as pb, DomainType, Name as _};
+use penumbra_sdk_txhash::TransactionId;
 
 #[derive(Clone, Debug)]
 pub struct EventFundingStreamReward {
@@ -183,6 +184,10 @@ pub struct EventLqtVote {
     pub incentivized_asset_id: asset::Id,
     /// The denom string for the incentivized asset.
     pub incentivized: Denom,
+    /// The address of the beneficiary.
+    pub rewards_recipient: Address,
+    /// The transaction id that the vote is associated with.
+    pub tx_id: TransactionId,
 }
 
 impl TryFrom<pb::EventLqtVote> for EventLqtVote {
@@ -203,6 +208,14 @@ impl TryFrom<pb::EventLqtVote> for EventLqtVote {
                     .incentivized
                     .ok_or_else(|| anyhow!("missing `incentivized`"))?
                     .try_into()?,
+                rewards_recipient: value
+                    .rewards_recipient
+                    .ok_or_else(|| anyhow!("missing `voter_address`"))?
+                    .try_into()?,
+                tx_id: value
+                    .tx_id
+                    .ok_or_else(|| anyhow!("missing `tx`"))?
+                    .try_into()?,
             })
         }
         inner(value).context(format!("parsing {}", pb::EventLqtVote::NAME))
@@ -216,6 +229,8 @@ impl From<EventLqtVote> for pb::EventLqtVote {
             voting_power: Some(value.voting_power.into()),
             incentivized_asset_id: Some(value.incentivized_asset_id.into()),
             incentivized: Some(value.incentivized.into()),
+            rewards_recipient: Some(value.rewards_recipient.into()),
+            tx_id: Some(value.tx_id.into()),
         }
     }
 }

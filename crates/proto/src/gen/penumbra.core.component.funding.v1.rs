@@ -372,12 +372,12 @@ pub struct EventLqtVote {
     pub incentivized: ::core::option::Option<super::super::super::asset::v1::Denom>,
     /// The beneficiary of the rewards this vote might receive.
     #[prost(message, optional, tag = "5")]
-    pub voter_address: ::core::option::Option<super::super::super::keys::v1::Address>,
+    pub rewards_recipient: ::core::option::Option<
+        super::super::super::keys::v1::Address,
+    >,
     /// The transaction ID of the vote.
     #[prost(message, optional, tag = "6")]
-    pub transaction: ::core::option::Option<
-        super::super::super::txhash::v1::TransactionId,
-    >,
+    pub tx_id: ::core::option::Option<super::super::super::txhash::v1::TransactionId>,
 }
 impl ::prost::Name for EventLqtVote {
     const NAME: &'static str = "EventLqtVote";

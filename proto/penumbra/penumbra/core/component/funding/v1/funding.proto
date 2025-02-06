@@ -163,7 +163,7 @@ message EventLqtVote {
   // The denom string of the asset being voted on.
   asset.v1.Denom incentivized = 4;
   // The beneficiary of the rewards this vote might receive.
-  keys.v1.Address voter_address = 5;
+  keys.v1.Address rewards_recipient = 5;
   // The transaction ID of the vote.
-  txhash.v1.TransactionId transaction = 6;
+  txhash.v1.TransactionId tx_id = 6;
 }
