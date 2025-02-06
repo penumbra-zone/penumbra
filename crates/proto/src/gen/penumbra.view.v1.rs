@@ -58,7 +58,6 @@ impl ::prost::Name for TournamentVotesRequest {
         "/penumbra.view.v1.TournamentVotesRequest".into()
     }
 }
-/// Retrieves associated voting power and rewards and
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TournamentVotesResponse {
     /// A list of votes cast for different incentivized assets.

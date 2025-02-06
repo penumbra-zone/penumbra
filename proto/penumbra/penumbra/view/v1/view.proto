@@ -182,7 +182,6 @@ message TournamentVotesRequest {
   uint64 block_height = 2;
 }
 
-// Retrieves associated voting power and rewards and 
 message TournamentVotesResponse {
   message Vote {
     // The incentivized asset receiving this vote.
