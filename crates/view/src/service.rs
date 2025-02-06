@@ -51,8 +51,9 @@ use penumbra_sdk_proto::{
         view_service_server::{ViewService, ViewServiceServer},
         AppParametersResponse, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
         BroadcastTransactionResponse, FmdParametersResponse, GasPricesResponse,
-        NoteByCommitmentResponse, StatusResponse, SwapByCommitmentResponse,
-        TransactionPlannerResponse, WalletIdRequest, WalletIdResponse, WitnessResponse,
+        LqtVotingNotesResponse, NoteByCommitmentResponse, StatusResponse, SwapByCommitmentResponse,
+        TournamentVotesResponse, TransactionPlannerResponse, WalletIdRequest, WalletIdResponse,
+        WitnessResponse,
     },
     DomainType,
 };
@@ -1869,6 +1870,22 @@ impl ViewService for ViewServer {
         _request: tonic::Request<pb::LatestSwapsRequest>,
     ) -> Result<tonic::Response<Self::LatestSwapsStream>, tonic::Status> {
         unimplemented!("latest_swaps currently only implemented on web")
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn tournament_votes(
+        &self,
+        _request: tonic::Request<pb::TournamentVotesRequest>,
+    ) -> Result<tonic::Response<TournamentVotesResponse>, tonic::Status> {
+        unimplemented!("tournament_votes currently only implemented on web")
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn lqt_voting_notes(
+        &self,
+        _request: tonic::Request<pb::LqtVotingNotesRequest>,
+    ) -> Result<tonic::Response<LqtVotingNotesResponse>, tonic::Status> {
+        unimplemented!("lqt_voting_notes currently only implemented on web")
     }
 }
 
