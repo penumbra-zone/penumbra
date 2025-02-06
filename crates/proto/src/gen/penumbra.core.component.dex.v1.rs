@@ -1435,6 +1435,34 @@ impl ::prost::Name for EventSwap {
         "/penumbra.core.component.dex.v1.EventSwap".into()
     }
 }
+/// Tracks the LQT eligible volume for a position.
+/// The volume corresponds to the outflow of staking tokens from
+/// the position.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventLqtPositionVolume {
+    /// The epoch for which the volume was recorded.
+    #[prost(uint64, tag = "1")]
+    pub epoch_index: u64,
+    /// The incentivized asset.
+    #[prost(message, optional, tag = "2")]
+    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    /// The position ID.
+    #[prost(message, optional, tag = "3")]
+    pub position_id: ::core::option::Option<PositionId>,
+    /// The volume amount.
+    #[prost(message, optional, tag = "4")]
+    pub volume_amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventLqtPositionVolume {
+    const NAME: &'static str = "EventLqtPositionVolume";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.dex.v1.EventLqtPositionVolume".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.dex.v1.EventLqtPositionVolume".into()
+    }
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventSwapClaim {
     /// The trading pair that is subject of the swap claim.

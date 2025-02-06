@@ -583,6 +583,367 @@ impl<'de> serde::Deserialize<'de> for EventFundingStreamReward {
         deserializer.deserialize_struct("penumbra.core.component.funding.v1.EventFundingStreamReward", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventLqtDelegatorReward {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.epoch_index != 0 {
+            len += 1;
+        }
+        if self.reward_amount.is_some() {
+            len += 1;
+        }
+        if self.delegation_tokens.is_some() {
+            len += 1;
+        }
+        if self.address.is_some() {
+            len += 1;
+        }
+        if self.asset_id.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.funding.v1.EventLqtDelegatorReward", len)?;
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        if let Some(v) = self.reward_amount.as_ref() {
+            struct_ser.serialize_field("rewardAmount", v)?;
+        }
+        if let Some(v) = self.delegation_tokens.as_ref() {
+            struct_ser.serialize_field("delegationTokens", v)?;
+        }
+        if let Some(v) = self.address.as_ref() {
+            struct_ser.serialize_field("address", v)?;
+        }
+        if let Some(v) = self.asset_id.as_ref() {
+            struct_ser.serialize_field("assetId", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventLqtDelegatorReward {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "epoch_index",
+            "epochIndex",
+            "reward_amount",
+            "rewardAmount",
+            "delegation_tokens",
+            "delegationTokens",
+            "address",
+            "asset_id",
+            "assetId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            EpochIndex,
+            RewardAmount,
+            DelegationTokens,
+            Address,
+            AssetId,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            "rewardAmount" | "reward_amount" => Ok(GeneratedField::RewardAmount),
+                            "delegationTokens" | "delegation_tokens" => Ok(GeneratedField::DelegationTokens),
+                            "address" => Ok(GeneratedField::Address),
+                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventLqtDelegatorReward;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.funding.v1.EventLqtDelegatorReward")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventLqtDelegatorReward, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut epoch_index__ = None;
+                let mut reward_amount__ = None;
+                let mut delegation_tokens__ = None;
+                let mut address__ = None;
+                let mut asset_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::RewardAmount => {
+                            if reward_amount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rewardAmount"));
+                            }
+                            reward_amount__ = map_.next_value()?;
+                        }
+                        GeneratedField::DelegationTokens => {
+                            if delegation_tokens__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("delegationTokens"));
+                            }
+                            delegation_tokens__ = map_.next_value()?;
+                        }
+                        GeneratedField::Address => {
+                            if address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("address"));
+                            }
+                            address__ = map_.next_value()?;
+                        }
+                        GeneratedField::AssetId => {
+                            if asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetId"));
+                            }
+                            asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventLqtDelegatorReward {
+                    epoch_index: epoch_index__.unwrap_or_default(),
+                    reward_amount: reward_amount__,
+                    delegation_tokens: delegation_tokens__,
+                    address: address__,
+                    asset_id: asset_id__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.funding.v1.EventLqtDelegatorReward", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventLqtPositionReward {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.epoch_index != 0 {
+            len += 1;
+        }
+        if self.reward_amount.is_some() {
+            len += 1;
+        }
+        if self.position_id.is_some() {
+            len += 1;
+        }
+        if self.asset_id.is_some() {
+            len += 1;
+        }
+        if self.tournament_volume.is_some() {
+            len += 1;
+        }
+        if self.position_volume.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.funding.v1.EventLqtPositionReward", len)?;
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        if let Some(v) = self.reward_amount.as_ref() {
+            struct_ser.serialize_field("rewardAmount", v)?;
+        }
+        if let Some(v) = self.position_id.as_ref() {
+            struct_ser.serialize_field("positionId", v)?;
+        }
+        if let Some(v) = self.asset_id.as_ref() {
+            struct_ser.serialize_field("assetId", v)?;
+        }
+        if let Some(v) = self.tournament_volume.as_ref() {
+            struct_ser.serialize_field("tournamentVolume", v)?;
+        }
+        if let Some(v) = self.position_volume.as_ref() {
+            struct_ser.serialize_field("positionVolume", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventLqtPositionReward {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "epoch_index",
+            "epochIndex",
+            "reward_amount",
+            "rewardAmount",
+            "position_id",
+            "positionId",
+            "asset_id",
+            "assetId",
+            "tournament_volume",
+            "tournamentVolume",
+            "position_volume",
+            "positionVolume",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            EpochIndex,
+            RewardAmount,
+            PositionId,
+            AssetId,
+            TournamentVolume,
+            PositionVolume,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            "rewardAmount" | "reward_amount" => Ok(GeneratedField::RewardAmount),
+                            "positionId" | "position_id" => Ok(GeneratedField::PositionId),
+                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "tournamentVolume" | "tournament_volume" => Ok(GeneratedField::TournamentVolume),
+                            "positionVolume" | "position_volume" => Ok(GeneratedField::PositionVolume),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventLqtPositionReward;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.funding.v1.EventLqtPositionReward")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventLqtPositionReward, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut epoch_index__ = None;
+                let mut reward_amount__ = None;
+                let mut position_id__ = None;
+                let mut asset_id__ = None;
+                let mut tournament_volume__ = None;
+                let mut position_volume__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::RewardAmount => {
+                            if reward_amount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rewardAmount"));
+                            }
+                            reward_amount__ = map_.next_value()?;
+                        }
+                        GeneratedField::PositionId => {
+                            if position_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionId"));
+                            }
+                            position_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::AssetId => {
+                            if asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetId"));
+                            }
+                            asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::TournamentVolume => {
+                            if tournament_volume__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tournamentVolume"));
+                            }
+                            tournament_volume__ = map_.next_value()?;
+                        }
+                        GeneratedField::PositionVolume => {
+                            if position_volume__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionVolume"));
+                            }
+                            position_volume__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventLqtPositionReward {
+                    epoch_index: epoch_index__.unwrap_or_default(),
+                    reward_amount: reward_amount__,
+                    position_id: position_id__,
+                    asset_id: asset_id__,
+                    tournament_volume: tournament_volume__,
+                    position_volume: position_volume__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.funding.v1.EventLqtPositionReward", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for FundingParameters {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
