@@ -151,9 +151,8 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
                 ((U128x128::from(params.liquidity_tournament.delegator_share) * asset_share)?
                     * voter_share)?
                     .apply_to_amount(&initial_budget)?;
-            // We compute a reward in staking tokens, our work is done.
-            // It is the responsibility of the `Bank::reward_to_voter` implementation to
-            // decide the modalities of how and in what form the reward is minted.
+
+            // We ask the bank to mint rewards.
             state
                 .reward_to_voter(unbonded_reward_amount, identity_key, &voter, tx)
                 .await?;
