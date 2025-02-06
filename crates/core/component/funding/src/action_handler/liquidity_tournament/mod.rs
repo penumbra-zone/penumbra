@@ -1,14 +1,15 @@
-use anyhow::{anyhow, Context as _};
+use anyhow::{anyhow, ensure, Context as _};
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
-use penumbra_sdk_asset::{asset::Denom, Value};
+use penumbra_sdk_asset::asset::Denom;
 use penumbra_sdk_governance::StateReadExt as _;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
 use penumbra_sdk_sct::component::{clock::EpochRead as _, source::SourceContext as _};
 use penumbra_sdk_sct::epoch::Epoch;
 use penumbra_sdk_stake::component::validator_handler::ValidatorDataRead as _;
+use penumbra_sdk_stake::validator::State;
 use penumbra_sdk_tct::Position;
 use penumbra_sdk_txhash::TransactionContext;
 
@@ -43,20 +44,6 @@ async fn start_position_good_for_epoch(epoch: Epoch, start: Position) -> anyhow:
         "position {start:?} is not before epoch {epoch:?}"
     );
     Ok(())
-}
-
-/// Fetch the unbonded equivalent of some purported delegation token.
-///
-/// Will fail if (either):
-///  - the token is not for a known validator,
-///  - the validator does not have any rate data.
-async fn unbonded_amount(state: impl StateRead, value: Value) -> anyhow::Result<Amount> {
-    let validator = state.validator_by_delegation_asset(value.asset_id).await?;
-    let rate = state
-        .get_validator_rate(&validator)
-        .await?
-        .ok_or_else(|| anyhow!("{} has no rate data", &validator))?;
-    Ok(rate.unbonded_amount(value.amount))
 }
 
 // This isolates the logic for how we should handle out of bounds amounts.
@@ -131,17 +118,49 @@ impl ActionHandler for ActionLiquidityTournamentVote {
             .get_current_source()
             .expect("source transaction id should be set");
         state.put_lqt_spent_nullifier(current_epoch.index, nullifier, tx_id);
-        // 3. Ok, actually tally.
-        let power = voting_power(unbonded_amount(&state, self.body.value).await?);
+        // 3. Validate that the delegation asset is for a known validator.
+        let validator = state
+            .validator_by_delegation_asset(self.body.value.asset_id)
+            .await?;
+        // The ZK proof asserts that we own the delegation notes, so no further checks are needed
+        // for the IK.
+
+        // 4. Check that the validator state is not `Defined` or `Tombstoned`
+        let Some(validator_state) = state.get_validator_state(&validator).await? else {
+            anyhow::bail!("validator {} is unknown", validator)
+        };
+
+        ensure!(
+            !matches!(validator_state, State::Defined | State::Tombstoned),
+            "validator {} is not in a valid state (Defined or Tombstoned)",
+            validator
+        );
+
+        // 5. Check that the validator rate exists and that the unbonded amount is non-zero.
+        let validator_rate = state
+            .get_validator_rate(&validator)
+            .await?
+            .ok_or_else(|| anyhow!("{} has no rate data", validator))?;
+        let unbonded_amount = validator_rate.unbonded_amount(self.body.value.amount);
+
+        ensure!(
+            unbonded_amount > Amount::zero(),
+            "unbonded amount of delegation token is zero"
+        );
+
+        // 6. Ok, actually tally.
+        let power = voting_power(unbonded_amount);
         let incentivized = self
             .body
             .incentivized_id()
             .ok_or_else(|| anyhow!("{:?} is not a base denom", self.body.incentivized))?;
+
         state
             .tally(
                 current_epoch.index,
                 incentivized,
                 power,
+                validator,
                 &self.body.rewards_recipient,
             )
             .await;
