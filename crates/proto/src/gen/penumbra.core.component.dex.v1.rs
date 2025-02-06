@@ -1452,6 +1452,9 @@ pub struct EventLqtPositionVolume {
     /// The volume amount.
     #[prost(message, optional, tag = "4")]
     pub volume_amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The total volume for the pair thus far.
+    #[prost(message, optional, tag = "5")]
+    pub total_volume: ::core::option::Option<super::super::super::num::v1::Amount>,
 }
 impl ::prost::Name for EventLqtPositionVolume {
     const NAME: &'static str = "EventLqtPositionVolume";

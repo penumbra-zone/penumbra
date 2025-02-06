@@ -2370,6 +2370,9 @@ impl serde::Serialize for EventLqtPositionVolume {
         if self.volume_amount.is_some() {
             len += 1;
         }
+        if self.total_volume.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventLqtPositionVolume", len)?;
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
@@ -2384,6 +2387,9 @@ impl serde::Serialize for EventLqtPositionVolume {
         }
         if let Some(v) = self.volume_amount.as_ref() {
             struct_ser.serialize_field("volumeAmount", v)?;
+        }
+        if let Some(v) = self.total_volume.as_ref() {
+            struct_ser.serialize_field("totalVolume", v)?;
         }
         struct_ser.end()
     }
@@ -2403,6 +2409,8 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
             "positionId",
             "volume_amount",
             "volumeAmount",
+            "total_volume",
+            "totalVolume",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2411,6 +2419,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
             AssetId,
             PositionId,
             VolumeAmount,
+            TotalVolume,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2437,6 +2446,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
                             "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
                             "positionId" | "position_id" => Ok(GeneratedField::PositionId),
                             "volumeAmount" | "volume_amount" => Ok(GeneratedField::VolumeAmount),
+                            "totalVolume" | "total_volume" => Ok(GeneratedField::TotalVolume),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2460,6 +2470,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
                 let mut asset_id__ = None;
                 let mut position_id__ = None;
                 let mut volume_amount__ = None;
+                let mut total_volume__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::EpochIndex => {
@@ -2488,6 +2499,12 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
                             }
                             volume_amount__ = map_.next_value()?;
                         }
+                        GeneratedField::TotalVolume => {
+                            if total_volume__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("totalVolume"));
+                            }
+                            total_volume__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -2498,6 +2515,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
                     asset_id: asset_id__,
                     position_id: position_id__,
                     volume_amount: volume_amount__,
+                    total_volume: total_volume__,
                 })
             }
         }
