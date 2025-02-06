@@ -678,7 +678,7 @@ impl From<EventLqtPositionVolume> for pb::EventLqtPositionVolume {
             asset_id: Some(value.asset_id.into()),
             position_id: Some(value.position_id.into()),
             volume_amount: Some(value.volume.into()),
-            total_volume_amount: Some(value.total_volume.into()),
+            total_volume: Some(value.total_volume.into()),
         }
     }
 }
@@ -702,7 +702,7 @@ impl TryFrom<pb::EventLqtPositionVolume> for EventLqtPositionVolume {
                 .ok_or(anyhow!("missing `volume`"))?
                 .try_into()?,
             total_volume: value
-                .total_volume_amount
+                .total_volume
                 .ok_or(anyhow!("missing `total_volume`"))?
                 .try_into()?,
         })
