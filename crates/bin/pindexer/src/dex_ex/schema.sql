@@ -209,6 +209,48 @@ CREATE INDEX ON dex_ex_batch_swap_traces (time, height);
 CREATE INDEX ON dex_ex_batch_swap_traces (asset_start, asset_end);
 -- TODO(erwan): We can add a GIN index on the position id later.
 
+CREATE TYPE batch_swap AS (
+    -- The directed start asset of the batch swap.
+    asset_start BYTEA,
+    -- The directed end asset of the batch swap.
+    asset_end BYTEA,
+    -- The amount of asset was consumed by the batch swap.
+    input NUMERIC(39),
+    -- The amount of asset was produced by the batch swap.
+    output NUMERIC(39),
+    -- The number of swaps in the batch swap.
+    num_swaps INTEGER,
+    -- The price with `asset_end` as the quote asset.
+    price_float DOUBLE PRECISION NOT NULL
+);
+
+
+-- A summary of block data with a bias for DEX data.
+CREATE TABLE IF NOT EXISTS block_summary (
+    -- Primary key
+    rowid SERIAL PRIMARY KEY,
+    -- The height of the block.
+    height INTEGER PRIMARY KEY,
+    -- The timestamp for the block.
+    time TIMESTAMPTZ NOT NULL,
+    
+    batch_swaps batch_swap[] NOT NULL,
+    -- The number of opened LPs in this block.
+    num_open_lps     INTEGER NOT NULL,
+    -- The number of closed LPs in this block.
+    num_closed_lps   INTEGER NOT NULL,
+    -- The number of withdrawn LPs in this block.
+    num_withdrawn_lps INTEGER NOT NULL,
+    -- The number of swaps in this block.
+    num_swaps        INTEGER NOT NULL,
+    -- The number of swap claims in this block.
+    num_swap_claims  INTEGER NOT NULL,
+    -- The number of transactions in this block.
+    num_txs          INTEGER NOT NULL
+);
+
+CREATE INDEX ON dex_ex_batch_swap_traces (time, height);
+
 ALTER TABLE dex_ex_position_executions
   ADD CONSTRAINT fk_position_executions
   FOREIGN KEY (position_id) REFERENCES dex_ex_position_state(position_id);
