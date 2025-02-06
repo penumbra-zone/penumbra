@@ -10,10 +10,10 @@ use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::fixpoint::U128x128;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::DomainType;
+use penumbra_sdk_proto::StateWriteProto;
 use penumbra_sdk_sct::component::clock::EpochRead as _;
 use penumbra_sdk_stake::IdentityKey;
 use penumbra_sdk_txhash::TransactionId;
-use penumbra_sdk_proto::StateWriteProto;
 
 use super::bank::Bank as _;
 use super::votes::StateReadExt as _;
