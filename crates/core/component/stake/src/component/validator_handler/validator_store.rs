@@ -11,7 +11,6 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::{Future, FutureExt};
 use penumbra_sdk_asset::Value;
-use penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::{
     state::future::DomainFuture, DomainType, StateReadProto, StateWriteProto,
@@ -238,31 +237,24 @@ impl<T: StateRead + ?Sized> ValidatorDataRead for T {}
 
 #[async_trait]
 pub trait ValidatorPoolDeposit: StateWrite {
-    /// Checked increase of the validator pool size by the given amount.
+    /// Checked increase of the validator pool size by the given amount
+    /// of staking tokens (unbonded).
     ///
-    /// On success, this method returns a tuple consisting of:
-    /// - the new delegation pool size (measured in staking tokens)
-    /// - the bonded value of the deposit (measured in delegation tokens)
+    /// On success, this method returns the bonded value
+    /// of the deposit, i.e, measured in delegation tokens.
     ///
     /// Returns `None` if the update failed.
     async fn deposit_to_validator_pool(
         &mut self,
         validator_ik: &IdentityKey,
-        deposit: Value,
-    ) -> Option<(Amount, Value)> {
+        unbonded_deposit: Amount,
+    ) -> Option<Value> {
         let state_path = state_key::validators::pool::balance::by_id(validator_ik);
         let old_supply = self
             .get(&state_path)
             .await
             .expect("no deserialization error expected")
             .unwrap_or(Amount::zero());
-
-        let unbonded_deposit = if deposit.asset_id == *STAKING_TOKEN_ASSET_ID {
-            deposit.amount
-        } else {
-            tracing::warn!("depositing non-staking tokens into validator pool");
-            return None;
-        };
 
         tracing::debug!(validator_identity = %validator_ik, ?unbonded_deposit, ?old_supply, "depositing into validator pool");
 
@@ -298,7 +290,7 @@ pub trait ValidatorPoolDeposit: StateWrite {
         // Finally, perform the necessary state update:
         self.put(state_path, new_supply);
 
-        Some((new_supply, bonded_deposit))
+        Some(bonded_deposit)
     }
 }
 

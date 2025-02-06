@@ -155,15 +155,7 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
             // It is the responsibility of the `Bank::reward_to_voter` implementation to
             // decide the modalities of how and in what form the reward is minted.
             state
-                .reward_to_voter(
-                    Value {
-                        asset_id: *STAKING_TOKEN_ASSET_ID,
-                        amount: unbonded_reward_amount,
-                    },
-                    identity_key,
-                    &voter,
-                    tx,
-                )
+                .reward_to_voter(unbonded_reward_amount, identity_key, &voter, tx)
                 .await?;
             current_budget = current_budget
                 .checked_sub(&unbonded_reward_amount)
