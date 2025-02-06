@@ -3,4 +3,4 @@ pub mod nullifier;
 mod rewards;
 pub mod votes;
 
-pub use rewards::distribute_rewards;
+pub(crate) use rewards::distribute_rewards;

@@ -6,6 +6,7 @@ use penumbra_sdk_asset::asset::Denom;
 use penumbra_sdk_governance::StateReadExt as _;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
+use penumbra_sdk_proto::{DomainType, StateWriteProto};
 use penumbra_sdk_sct::component::{clock::EpochRead as _, source::SourceContext as _};
 use penumbra_sdk_sct::epoch::Epoch;
 use penumbra_sdk_stake::component::validator_handler::ValidatorDataRead as _;
@@ -17,6 +18,7 @@ use crate::component::liquidity_tournament::{
     nullifier::{NullifierRead as _, NullifierWrite as _},
     votes::StateWriteExt as _,
 };
+use crate::event;
 use crate::liquidity_tournament::{
     proof::LiquidityTournamentVoteProofPublic, ActionLiquidityTournamentVote,
     LiquidityTournamentVoteBody, LIQUIDITY_TOURNAMENT_VOTE_DENOM_MAX_BYTES,
@@ -154,6 +156,19 @@ impl ActionHandler for ActionLiquidityTournamentVote {
             .body
             .incentivized_id()
             .ok_or_else(|| anyhow!("{:?} is not a base denom", self.body.incentivized))?;
+
+        // We emit a little event
+        state.record_proto(
+            event::EventLqtVote {
+                epoch_index: current_epoch.index,
+                voting_power: power.into(),
+                incentivized_asset_id: incentivized,
+                incentivized: self.body.incentivized.clone(),
+                rewards_recipient: self.body.rewards_recipient.clone(),
+                tx_id,
+            }
+            .to_proto(),
+        );
 
         state
             .tally(

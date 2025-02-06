@@ -1,12 +1,15 @@
 use cnidarium::StateWrite;
 use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::StateWriteProto;
 use tracing::instrument;
 
 use crate::component::lqt::LqtRead;
+use crate::event;
 use crate::lp::position::{self, Position};
 use crate::state_key::lqt;
 use async_trait::async_trait;
+use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::component::clock::EpochRead;
 
 #[async_trait]
@@ -74,6 +77,17 @@ pub(crate) trait PositionVolumeTracker: StateWrite {
         } else {
             trading_pair.asset_1()
         };
+
+        self.record_proto(
+            event::EventLqtPositionVolume {
+                epoch_index,
+                position_id: position_id.clone(),
+                asset_id: other_asset,
+                volume: staking_token_outflow,
+                total_volume: new_volume,
+            }
+            .to_proto(),
+        );
 
         self.update_volume(
             epoch_index,

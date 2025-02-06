@@ -632,6 +632,22 @@ message EventSwap {
   crypto.tct.v1.StateCommitment swap_commitment = 4;
 }
 
+// Tracks the LQT eligible volume for a position.
+// The volume corresponds to the outflow of staking tokens from
+// the position.
+message EventLqtPositionVolume {
+  // The epoch for which the volume was recorded.
+  uint64 epoch_index = 1;
+  // The incentivized asset.
+  asset.v1.AssetId asset_id = 2;
+  // The position ID.
+  dex.v1.PositionId position_id = 3;
+  // The volume amount.
+  num.v1.Amount volume_amount = 4;
+  // The total volume for the pair thus far.
+  num.v1.Amount total_volume = 5;
+}
+
 message EventSwapClaim {
   // The trading pair that is subject of the swap claim.
   TradingPair trading_pair = 1;

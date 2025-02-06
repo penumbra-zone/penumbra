@@ -9,6 +9,8 @@ use penumbra_sdk_distributions::component::StateReadExt as _;
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::fixpoint::U128x128;
 use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::DomainType;
+use penumbra_sdk_proto::StateWriteProto;
 use penumbra_sdk_sct::component::clock::EpochRead as _;
 use penumbra_sdk_stake::IdentityKey;
 use penumbra_sdk_txhash::TransactionId;
@@ -16,6 +18,7 @@ use penumbra_sdk_txhash::TransactionId;
 use super::bank::Bank as _;
 use super::votes::StateReadExt as _;
 use crate::component::StateReadExt as _;
+use crate::event;
 use crate::params::LiquidityTournamentParameters;
 
 fn create_share(portion: impl Into<U128x128>, total: impl Into<U128x128>) -> U128x128 {
@@ -103,15 +106,15 @@ fn position_shares(
     epoch: u64,
     asset: asset::Id,
     total_volume: Amount,
-) -> impl Stream<Item = anyhow::Result<(position::Id, U128x128)>> + Send + 'static {
+) -> impl Stream<Item = anyhow::Result<(position::Id, Amount, U128x128)>> + Send + 'static {
     state
         .positions_by_volume_stream(epoch, asset)
         .expect("should be able to create positions by volume stream")
         .take(usize::try_from(params.max_positions).expect("max positions should fit in a usize"))
-        .map_ok(move |(_, lp, volume)| (lp, create_share(volume, total_volume)))
+        .map_ok(move |(_, lp, volume)| (lp, volume, create_share(volume, total_volume)))
 }
 
-pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::Result<()> {
+pub async fn distribute_rewards(mut state: impl StateWrite) -> anyhow::Result<()> {
     let current_epoch = state.get_current_epoch().await?.index;
     let params = state.get_funding_params().await?;
 
@@ -135,14 +138,14 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
     let asset_totals = asset_totals(&state, &params.liquidity_tournament, current_epoch).await?;
     let total_votes: Amount = asset_totals.iter().map(|(_, v)| *v).sum();
     // Now, iterate over each asset, and it's share of the total.
-    for (asset, asset_votes) in asset_totals {
+    for (incentivized_asset, asset_votes) in asset_totals {
         let asset_share = create_share(asset_votes, total_votes);
         // Next, distribute rewards to voters.
         let mut voter_stream = voter_shares_of_asset(
             &state,
             &params.liquidity_tournament,
             current_epoch,
-            asset,
+            incentivized_asset,
             asset_votes,
         );
         while let Some((voter, voter_share, identity_key, tx)) = voter_stream.try_next().await? {
@@ -154,7 +157,13 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
 
             // We ask the bank to mint rewards.
             state
-                .reward_to_voter(unbonded_reward_amount, identity_key, &voter, tx)
+                .reward_to_voter(
+                    unbonded_reward_amount,
+                    identity_key,
+                    &voter,
+                    tx,
+                    incentivized_asset,
+                )
                 .await?;
             current_budget = current_budget
                 .checked_sub(&unbonded_reward_amount)
@@ -165,22 +174,34 @@ pub async fn distribute_rewards(mut state: impl StateWrite + Sized) -> anyhow::R
             &state,
             &params.liquidity_tournament,
             current_epoch,
-            asset,
+            incentivized_asset,
         )
         .await?;
         let mut lp_stream = position_shares(
             &state,
             &params.liquidity_tournament,
             current_epoch,
-            asset,
+            incentivized_asset,
             total_volume,
         );
-        while let Some((lp, lp_share)) = lp_stream.try_next().await? {
+        while let Some((lp, lp_volume, lp_share)) = lp_stream.try_next().await? {
             // What fraction goes to lps, then of that, to this asset, then of that, to this lp.
             let lp_reward_share =
                 U128x128::from(params.liquidity_tournament.delegator_share.complement());
             let reward =
                 ((lp_reward_share * asset_share)? * lp_share)?.apply_to_amount(&initial_budget)?;
+
+            // TODO(erwan): we should probably internalize this.
+            let event = event::EventLqtPositionReward {
+                epoch_index: current_epoch,
+                reward_amount: reward,
+                position_id: lp,
+                incentivized_asset_id: incentivized_asset,
+                tournament_volume: total_volume,
+                position_volume: lp_volume,
+            };
+            state.record_proto(event.to_proto());
+
             state.reward_to_position(reward, lp).await?;
             current_budget = current_budget
                 .checked_sub(&reward)

@@ -2,12 +2,13 @@ syntax = "proto3";
 package penumbra.core.component.funding.v1;
 
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
-import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
 import "penumbra/core/txhash/v1/txhash.proto";
+import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
 
 // Query operations for the funding component.
 service FundingService {
@@ -47,7 +48,7 @@ message FundingParameters {
     uint64 max_positions = 2;
     // The maximum number of delegators that can be rewarded.
     //
-    // Also avoids potential DoS vectors 
+    // Also avoids potential DoS vectors
     uint64 max_delegators = 3;
     // The share of rewards which will go to delegators, opposed with positions.
     //
@@ -116,10 +117,53 @@ message ActionLiquidityTournamentVoteView {
     shielded_pool.v1.NoteView note = 2;
   }
   message Opaque {
-    ActionLiquidityTournamentVote vote = 1;    
+    ActionLiquidityTournamentVote vote = 1;
   }
   oneof liquidity_tournament_vote {
     Visible visible = 1;
     Opaque opaque = 2;
   }
+}
+
+message EventLqtDelegatorReward {
+  // The epoch for which the reward was paid.
+  uint64 epoch_index = 1;
+  // The amount of reward, in staking tokens.
+  num.v1.Amount reward_amount = 2;
+  // The amount of reward, in delegation tokens.
+  asset.v1.Value delegation_tokens = 3;
+  // The recipient of the reward
+  keys.v1.Address address = 4;
+  // The incentivized asset.
+  asset.v1.AssetId incentivized_asset_id = 5;
+}
+
+message EventLqtPositionReward {
+  // The epoch for which the reward was paid.
+  uint64 epoch_index = 1;
+  // The amount of the reward, in staking tokens.
+  num.v1.Amount reward_amount = 2;
+  // The liquidity position receiving the reward
+  dex.v1.PositionId position_id = 3;
+  // The incentivized asset.
+  asset.v1.AssetId incentivized_asset_id = 4;
+  // The total volume for the pair during the tournament, in staking tokens.
+  num.v1.Amount tournament_volume = 10;
+  // The cumulative volume for the LP, in staking tokens.
+  num.v1.Amount position_volume = 11;
+}
+
+message EventLqtVote {
+  // The tournament for which the vote was cast.
+  uint64 epoch_index = 1;
+  // The amount of voting power this vote carries.
+  core.num.v1.Amount voting_power = 2;
+  // The asset id of the asset being voted on.
+  core.asset.v1.AssetId incentivized_asset_id = 3;
+  // The denom string of the asset being voted on.
+  asset.v1.Denom incentivized = 4;
+  // The beneficiary of the rewards this vote might receive.
+  keys.v1.Address rewards_recipient = 5;
+  // The transaction ID of the vote.
+  txhash.v1.TransactionId tx_id = 6;
 }
