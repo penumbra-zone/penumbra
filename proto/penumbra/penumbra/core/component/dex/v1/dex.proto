@@ -644,6 +644,8 @@ message EventLqtPositionVolume {
   dex.v1.PositionId position_id = 3;
   // The volume amount.
   num.v1.Amount volume_amount = 4;
+  // The total volume for the pair thus far.
+  num.v1.Amount total_volume = 5;
 }
 
 message EventSwapClaim {
