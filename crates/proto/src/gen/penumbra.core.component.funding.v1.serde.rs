@@ -603,7 +603,7 @@ impl serde::Serialize for EventLqtDelegatorReward {
         if self.address.is_some() {
             len += 1;
         }
-        if self.asset_id.is_some() {
+        if self.incentivized_asset_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.funding.v1.EventLqtDelegatorReward", len)?;
@@ -621,8 +621,8 @@ impl serde::Serialize for EventLqtDelegatorReward {
         if let Some(v) = self.address.as_ref() {
             struct_ser.serialize_field("address", v)?;
         }
-        if let Some(v) = self.asset_id.as_ref() {
-            struct_ser.serialize_field("assetId", v)?;
+        if let Some(v) = self.incentivized_asset_id.as_ref() {
+            struct_ser.serialize_field("incentivizedAssetId", v)?;
         }
         struct_ser.end()
     }
@@ -641,8 +641,8 @@ impl<'de> serde::Deserialize<'de> for EventLqtDelegatorReward {
             "delegation_tokens",
             "delegationTokens",
             "address",
-            "asset_id",
-            "assetId",
+            "incentivized_asset_id",
+            "incentivizedAssetId",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -651,7 +651,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtDelegatorReward {
             RewardAmount,
             DelegationTokens,
             Address,
-            AssetId,
+            IncentivizedAssetId,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -678,7 +678,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtDelegatorReward {
                             "rewardAmount" | "reward_amount" => Ok(GeneratedField::RewardAmount),
                             "delegationTokens" | "delegation_tokens" => Ok(GeneratedField::DelegationTokens),
                             "address" => Ok(GeneratedField::Address),
-                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "incentivizedAssetId" | "incentivized_asset_id" => Ok(GeneratedField::IncentivizedAssetId),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -702,7 +702,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtDelegatorReward {
                 let mut reward_amount__ = None;
                 let mut delegation_tokens__ = None;
                 let mut address__ = None;
-                let mut asset_id__ = None;
+                let mut incentivized_asset_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::EpochIndex => {
@@ -731,11 +731,11 @@ impl<'de> serde::Deserialize<'de> for EventLqtDelegatorReward {
                             }
                             address__ = map_.next_value()?;
                         }
-                        GeneratedField::AssetId => {
-                            if asset_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("assetId"));
+                        GeneratedField::IncentivizedAssetId => {
+                            if incentivized_asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("incentivizedAssetId"));
                             }
-                            asset_id__ = map_.next_value()?;
+                            incentivized_asset_id__ = map_.next_value()?;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -747,7 +747,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtDelegatorReward {
                     reward_amount: reward_amount__,
                     delegation_tokens: delegation_tokens__,
                     address: address__,
-                    asset_id: asset_id__,
+                    incentivized_asset_id: incentivized_asset_id__,
                 })
             }
         }
@@ -771,7 +771,7 @@ impl serde::Serialize for EventLqtPositionReward {
         if self.position_id.is_some() {
             len += 1;
         }
-        if self.asset_id.is_some() {
+        if self.incentivized_asset_id.is_some() {
             len += 1;
         }
         if self.tournament_volume.is_some() {
@@ -792,8 +792,8 @@ impl serde::Serialize for EventLqtPositionReward {
         if let Some(v) = self.position_id.as_ref() {
             struct_ser.serialize_field("positionId", v)?;
         }
-        if let Some(v) = self.asset_id.as_ref() {
-            struct_ser.serialize_field("assetId", v)?;
+        if let Some(v) = self.incentivized_asset_id.as_ref() {
+            struct_ser.serialize_field("incentivizedAssetId", v)?;
         }
         if let Some(v) = self.tournament_volume.as_ref() {
             struct_ser.serialize_field("tournamentVolume", v)?;
@@ -817,8 +817,8 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionReward {
             "rewardAmount",
             "position_id",
             "positionId",
-            "asset_id",
-            "assetId",
+            "incentivized_asset_id",
+            "incentivizedAssetId",
             "tournament_volume",
             "tournamentVolume",
             "position_volume",
@@ -830,7 +830,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionReward {
             EpochIndex,
             RewardAmount,
             PositionId,
-            AssetId,
+            IncentivizedAssetId,
             TournamentVolume,
             PositionVolume,
             __SkipField__,
@@ -858,7 +858,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionReward {
                             "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
                             "rewardAmount" | "reward_amount" => Ok(GeneratedField::RewardAmount),
                             "positionId" | "position_id" => Ok(GeneratedField::PositionId),
-                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "incentivizedAssetId" | "incentivized_asset_id" => Ok(GeneratedField::IncentivizedAssetId),
                             "tournamentVolume" | "tournament_volume" => Ok(GeneratedField::TournamentVolume),
                             "positionVolume" | "position_volume" => Ok(GeneratedField::PositionVolume),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -883,7 +883,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionReward {
                 let mut epoch_index__ = None;
                 let mut reward_amount__ = None;
                 let mut position_id__ = None;
-                let mut asset_id__ = None;
+                let mut incentivized_asset_id__ = None;
                 let mut tournament_volume__ = None;
                 let mut position_volume__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -908,11 +908,11 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionReward {
                             }
                             position_id__ = map_.next_value()?;
                         }
-                        GeneratedField::AssetId => {
-                            if asset_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("assetId"));
+                        GeneratedField::IncentivizedAssetId => {
+                            if incentivized_asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("incentivizedAssetId"));
                             }
-                            asset_id__ = map_.next_value()?;
+                            incentivized_asset_id__ = map_.next_value()?;
                         }
                         GeneratedField::TournamentVolume => {
                             if tournament_volume__.is_some() {
@@ -935,7 +935,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionReward {
                     epoch_index: epoch_index__.unwrap_or_default(),
                     reward_amount: reward_amount__,
                     position_id: position_id__,
-                    asset_id: asset_id__,
+                    incentivized_asset_id: incentivized_asset_id__,
                     tournament_volume: tournament_volume__,
                     position_volume: position_volume__,
                 })
@@ -958,7 +958,7 @@ impl serde::Serialize for EventLqtVote {
         if self.voting_power.is_some() {
             len += 1;
         }
-        if self.asset_id.is_some() {
+        if self.incentivized_asset_id.is_some() {
             len += 1;
         }
         if self.incentivized.is_some() {
@@ -973,8 +973,8 @@ impl serde::Serialize for EventLqtVote {
         if let Some(v) = self.voting_power.as_ref() {
             struct_ser.serialize_field("votingPower", v)?;
         }
-        if let Some(v) = self.asset_id.as_ref() {
-            struct_ser.serialize_field("assetId", v)?;
+        if let Some(v) = self.incentivized_asset_id.as_ref() {
+            struct_ser.serialize_field("incentivizedAssetId", v)?;
         }
         if let Some(v) = self.incentivized.as_ref() {
             struct_ser.serialize_field("incentivized", v)?;
@@ -993,8 +993,8 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
             "epochIndex",
             "voting_power",
             "votingPower",
-            "asset_id",
-            "assetId",
+            "incentivized_asset_id",
+            "incentivizedAssetId",
             "incentivized",
         ];
 
@@ -1002,7 +1002,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
         enum GeneratedField {
             EpochIndex,
             VotingPower,
-            AssetId,
+            IncentivizedAssetId,
             Incentivized,
             __SkipField__,
         }
@@ -1028,7 +1028,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
                         match value {
                             "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
                             "votingPower" | "voting_power" => Ok(GeneratedField::VotingPower),
-                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "incentivizedAssetId" | "incentivized_asset_id" => Ok(GeneratedField::IncentivizedAssetId),
                             "incentivized" => Ok(GeneratedField::Incentivized),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -1051,7 +1051,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
             {
                 let mut epoch_index__ = None;
                 let mut voting_power__ = None;
-                let mut asset_id__ = None;
+                let mut incentivized_asset_id__ = None;
                 let mut incentivized__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
@@ -1069,11 +1069,11 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
                             }
                             voting_power__ = map_.next_value()?;
                         }
-                        GeneratedField::AssetId => {
-                            if asset_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("assetId"));
+                        GeneratedField::IncentivizedAssetId => {
+                            if incentivized_asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("incentivizedAssetId"));
                             }
-                            asset_id__ = map_.next_value()?;
+                            incentivized_asset_id__ = map_.next_value()?;
                         }
                         GeneratedField::Incentivized => {
                             if incentivized__.is_some() {
@@ -1089,7 +1089,7 @@ impl<'de> serde::Deserialize<'de> for EventLqtVote {
                 Ok(EventLqtVote {
                     epoch_index: epoch_index__.unwrap_or_default(),
                     voting_power: voting_power__,
-                    asset_id: asset_id__,
+                    incentivized_asset_id: incentivized_asset_id__,
                     incentivized: incentivized__,
                 })
             }

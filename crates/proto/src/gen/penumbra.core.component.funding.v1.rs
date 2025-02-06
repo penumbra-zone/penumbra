@@ -307,7 +307,9 @@ pub struct EventLqtDelegatorReward {
     pub address: ::core::option::Option<super::super::super::keys::v1::Address>,
     /// The incentivized asset.
     #[prost(message, optional, tag = "5")]
-    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    pub incentivized_asset_id: ::core::option::Option<
+        super::super::super::asset::v1::AssetId,
+    >,
 }
 impl ::prost::Name for EventLqtDelegatorReward {
     const NAME: &'static str = "EventLqtDelegatorReward";
@@ -332,7 +334,9 @@ pub struct EventLqtPositionReward {
     pub position_id: ::core::option::Option<super::super::dex::v1::PositionId>,
     /// The incentivized asset.
     #[prost(message, optional, tag = "4")]
-    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    pub incentivized_asset_id: ::core::option::Option<
+        super::super::super::asset::v1::AssetId,
+    >,
     /// The total volume for the pair during the tournament, in staking tokens.
     #[prost(message, optional, tag = "10")]
     pub tournament_volume: ::core::option::Option<super::super::super::num::v1::Amount>,
@@ -360,7 +364,9 @@ pub struct EventLqtVote {
     pub voting_power: ::core::option::Option<super::super::super::num::v1::Amount>,
     /// The asset id of the asset being voted on.
     #[prost(message, optional, tag = "3")]
-    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    pub incentivized_asset_id: ::core::option::Option<
+        super::super::super::asset::v1::AssetId,
+    >,
     /// The denom string of the asset being voted on.
     #[prost(message, optional, tag = "4")]
     pub incentivized: ::core::option::Option<super::super::super::asset::v1::Denom>,
