@@ -165,7 +165,7 @@ impl ActionHandler for ActionLiquidityTournamentVote {
                 incentivized_asset_id: incentivized,
                 incentivized: self.body.incentivized.clone(),
                 rewards_recipient: self.body.rewards_recipient.clone(),
-                tx: tx_id,
+                tx_id,
             }
             .to_proto(),
         );
