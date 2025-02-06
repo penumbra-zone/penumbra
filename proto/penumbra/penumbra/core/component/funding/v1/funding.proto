@@ -152,3 +152,14 @@ message EventLqtPositionReward {
   // The cumulative volume for the LP, in staking tokens.
   num.v1.Amount position_volume = 11;
 }
+
+message EventLqtVote {
+  // The tournament for which the vote was cast.
+  uint64 epoch_index = 1;
+  // The amount of voting power this vote carries.
+  core.num.v1.Amount voting_power = 2;
+  // The asset id of the asset being voted on.
+  core.asset.v1.AssetId asset_id = 3;
+  // The denom string of the asset being voted on.
+  asset.v1.Denom incentivized = 4;
+}
