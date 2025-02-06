@@ -8,6 +8,7 @@ pub mod validator_handler;
 pub use self::{
     metrics::register_metrics,
     stake::{ConsensusIndexRead, SlashingData, Staking, StateReadExt, StateWriteExt},
+    validator_handler::validator_store::ValidatorPoolDeposit,
 };
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
