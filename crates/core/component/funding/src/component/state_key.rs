@@ -135,6 +135,8 @@ pub mod lqt {
 
                 pub mod total {
 
+                    use penumbra_sdk_stake::IdentityKey;
+
                     use super::*;
 
                     const PART2: &'static str = "total/";
@@ -149,6 +151,7 @@ pub mod lqt {
                         epoch_index: u64,
                         asset: asset::Id,
                         addr: &Address,
+                        validator: &IdentityKey,
                     ) -> Vec<u8> {
                         let mut bytes = Vec::with_capacity(KEY_LEN);
 
@@ -158,6 +161,7 @@ pub mod lqt {
                         bytes.extend_from_slice(PART2.as_bytes());
                         bytes.extend_from_slice(asset.to_bytes().as_slice());
                         bytes.extend_from_slice(addr.to_vec().as_slice());
+                        bytes.extend_from_slice(validator.to_bytes().as_slice());
 
                         bytes
                     }

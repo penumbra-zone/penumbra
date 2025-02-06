@@ -62,12 +62,14 @@ async fn get_voter_total(
     epoch_index: u64,
     asset: asset::Id,
     voter: &Address,
+    validator: &IdentityKey,
 ) -> u64 {
     state
         .nonverifiable_get_proto(&state_key::lqt::v1::votes::by_voter::total::key(
             epoch_index,
             asset,
             voter,
+            validator,
         ))
         .await
         .expect("should be able to read u64")
@@ -80,9 +82,10 @@ fn put_voter_total(
     asset: asset::Id,
     voter: &Address,
     total: u64,
+    validator: &IdentityKey,
 ) {
     state.nonverifiable_put_proto(
-        state_key::lqt::v1::votes::by_voter::total::key(epoch_index, asset, voter),
+        state_key::lqt::v1::votes::by_voter::total::key(epoch_index, asset, voter, validator),
         total,
     )
 }
@@ -93,8 +96,8 @@ fn put_ranked_voter(
     asset: asset::Id,
     power: u64,
     voter: &Address,
-    tx: TransactionId,
     validator: &IdentityKey,
+    tx: TransactionId,
 ) {
     state.nonverifiable_put(
         state_key::lqt::v1::votes::by_voter::ranked::key(
@@ -114,12 +117,14 @@ fn delete_ranked_voter(
     asset: asset::Id,
     power: u64,
     voter: &Address,
+    validator: &IdentityKey,
 ) {
     state.nonverifiable_delete(state_key::lqt::v1::votes::by_voter::ranked::key(
         epoch_index,
         asset,
         power,
         voter,
+        validator,
     ));
 }
 
@@ -174,7 +179,6 @@ fn add_power(total: u64, power: u64) -> u64 {
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite + Sized {
-    // Keeping this as returning a result to not have to touch other code if it changes to return an error.
     async fn tally(
         &mut self,
         epoch: u64,
@@ -199,11 +203,11 @@ pub trait StateWriteExt: StateWrite + Sized {
         }
         // Adjust voter indices.
         {
-            let current = get_voter_total(&self, epoch, asset, voter).await;
-            delete_ranked_voter(&mut *self, epoch, asset, current, voter);
+            let current = get_voter_total(&self, epoch, asset, voter, &validator).await;
+            delete_ranked_voter(&mut *self, epoch, asset, current, voter, &validator);
             let new = add_power(current, power);
-            put_voter_total(&mut *self, epoch, asset, voter, new);
-            put_ranked_voter(&mut self, epoch, asset, new, voter, tx, validator);
+            put_voter_total(&mut *self, epoch, asset, voter, new, &validator);
+            put_ranked_voter(&mut self, epoch, asset, new, voter, &validator, tx);
         }
     }
 }
