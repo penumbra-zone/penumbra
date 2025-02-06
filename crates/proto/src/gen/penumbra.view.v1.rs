@@ -39,7 +39,7 @@ impl ::prost::Name for LqtVotingNotesResponse {
 /// Note: implementations must not accept messages with both `epoch_index`
 /// and `block_height` set. This is a convenience API, to allow consumers
 /// to defer epoch tracking to a view service.
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TournamentVotesRequest {
     /// Retrieves votes for the specified epoch.
     #[prost(uint64, tag = "1")]
@@ -47,6 +47,11 @@ pub struct TournamentVotesRequest {
     /// Retrieves votes as of the specified block height.
     #[prost(uint64, tag = "2")]
     pub block_height: u64,
+    /// If present, filter balances to only include the account specified by the `AddressIndex`.
+    #[prost(message, optional, tag = "3")]
+    pub account_filter: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
 }
 impl ::prost::Name for TournamentVotesRequest {
     const NAME: &'static str = "TournamentVotesRequest";
