@@ -40,11 +40,18 @@ fn is_valid_denom(denom: &Denom) -> anyhow::Result<()> {
 }
 
 // Check that the start position is early enough to vote in the current epoch.
-async fn start_position_good_for_epoch(epoch: Epoch, start: Position) -> anyhow::Result<()> {
-    anyhow::ensure!(
-        epoch.index > u64::from(start.epoch()),
-        "position {start:?} is not before epoch {epoch:?}"
-    );
+async fn start_position_good_for_epoch(current: Epoch, start: Position) -> anyhow::Result<()> {
+    let ok = match (u64::from(start.epoch()), start.block(), start.commitment()) {
+        // Anything before now is definitely fine.
+        (e, _, _) if e < current.index => true,
+        // The ZK proof will check that note being spent is *strictly* earlier than this position,
+        // so we can allow the position to be the very first one in this epoch, and this will not
+        // allow anything in this epoch to be used *even* if the first created note this epoch
+        // is a delegated token.
+        (e, 0, 0) if e == current.index => true,
+        _ => false,
+    };
+    anyhow::ensure!(ok, "position {start:?} is not before epoch {current:?}");
     Ok(())
 }
 
