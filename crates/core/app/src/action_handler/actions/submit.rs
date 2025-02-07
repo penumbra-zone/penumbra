@@ -93,6 +93,7 @@ impl AppActionHandler for ProposalSubmit {
                             anyhow::bail!("invalid action in Community Pool spend proposal (not allowed to manipulate proposals from within proposals)")
                         }
                         ValidatorDefinition(_)
+                        | ActionLiquidityTournamentVote(_)
                         | IbcAction(_)
                         | ValidatorVote(_)
                         | PositionOpen(_)

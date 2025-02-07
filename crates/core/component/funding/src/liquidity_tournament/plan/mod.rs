@@ -1,13 +1,24 @@
 use anyhow::{anyhow, Context};
 use decaf377::{Fq, Fr};
+use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_sdk_asset::asset::Denom;
-use penumbra_sdk_keys::Address;
+use penumbra_sdk_keys::{Address, FullViewingKey};
+use penumbra_sdk_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_sdk_proto::{core::component::funding::v1 as pb, DomainType};
+use penumbra_sdk_sct::Nullifier;
 use penumbra_sdk_shielded_pool::note::Note;
-use penumbra_sdk_tct as tct;
+use penumbra_sdk_tct::{self as tct};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::convert::{From, TryFrom};
+
+use super::{
+    proof::{
+        LiquidityTournamentVoteProof, LiquidityTournamentVoteProofPrivate,
+        LiquidityTournamentVoteProofPublic,
+    },
+    ActionLiquidityTournamentVote, LiquidityTournamentVoteBody,
+};
 
 /// A plan to vote in the liquidity tournament.
 ///
@@ -57,6 +68,74 @@ impl ActionLiquidityTournamentVotePlan {
             randomizer: Fr::rand(rng),
             proof_blinding_r: Fq::rand(rng),
             proof_blinding_s: Fq::rand(rng),
+        }
+    }
+
+    pub fn to_body(&self, fvk: &FullViewingKey) -> LiquidityTournamentVoteBody {
+        let commitment = self.staked_note.commit();
+
+        let nk = fvk.nullifier_key();
+        let nullifier = Nullifier::derive(nk, self.staked_note_position, &commitment);
+        let ak = fvk.spend_verification_key();
+        let rk = ak.randomize(&self.randomizer);
+        let value = self.staked_note.value();
+
+        LiquidityTournamentVoteBody {
+            incentivized: self.incentivized.clone(),
+            rewards_recipient: self.rewards_recipient.clone(),
+            start_position: self.start_position,
+            value,
+            nullifier,
+            rk,
+        }
+    }
+
+    /// Convert this plan into an action.
+    ///
+    /// * `fvk`: [`FullViewingKey`], in order to derive keys.
+    /// * `auth_sig`: [`Signature<SpendAuth>`], as the signature for the transaction.
+    /// * `auth_path`: [`tct::Proof`], witnessing the inclusion of the spent note.
+    pub fn to_action(
+        self,
+        fvk: &FullViewingKey,
+        auth_sig: Signature<SpendAuth>,
+        auth_path: tct::Proof,
+    ) -> ActionLiquidityTournamentVote {
+        let commitment = self.staked_note.commit();
+
+        let nk = fvk.nullifier_key();
+        let nullifier = Nullifier::derive(nk, self.staked_note_position, &commitment);
+        let ak = fvk.spend_verification_key();
+        let rk = ak.randomize(&self.randomizer);
+        let value = self.staked_note.value();
+
+        let public = LiquidityTournamentVoteProofPublic {
+            anchor: auth_path.root(),
+            value,
+            nullifier,
+            rk,
+            start_position: self.start_position,
+        };
+        let private = LiquidityTournamentVoteProofPrivate {
+            state_commitment_proof: auth_path,
+            note: self.staked_note.clone(),
+            spend_auth_randomizer: self.randomizer,
+            ak: *ak,
+            nk: *nk,
+        };
+        let proof = LiquidityTournamentVoteProof::prove(
+            self.proof_blinding_r,
+            self.proof_blinding_s,
+            &DELEGATOR_VOTE_PROOF_PROVING_KEY,
+            public,
+            private,
+        )
+        .expect("can generate ZK LQT voting proof");
+
+        ActionLiquidityTournamentVote {
+            body: self.to_body(fvk),
+            auth_sig,
+            proof,
         }
     }
 }
