@@ -18,6 +18,7 @@ fn version_to_software_version(version: u64) -> &'static str {
         8 => "v0.80.x",
         9 => "v0.81.x",
         10 => "v1.4.x",
+        11 => "v2.0.x",
         _ => "unknown",
     }
 }
