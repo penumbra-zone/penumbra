@@ -7,6 +7,7 @@
 mod mainnet1;
 mod mainnet2;
 mod mainnet3;
+mod mainnet4;
 mod reset_halt_bit;
 mod simple;
 mod testnet72;
@@ -64,6 +65,11 @@ pub enum Migration {
     /// Mainnet-3 migration:
     /// - no-op
     Mainnet3,
+    /// Mainnet-4 migration:
+    /// - no-op
+    ///
+    /// Intended to support code upgrades for Liquidity Tournament support.
+    Mainnet4,
 }
 
 impl Migration {
@@ -118,6 +124,9 @@ impl Migration {
             }
             Migration::Mainnet3 => {
                 mainnet3::migrate(storage, pd_home.clone(), genesis_start).await?;
+            }
+            Migration::Mainnet4 => {
+                mainnet4::migrate(storage, pd_home.clone(), genesis_start).await?;
             }
             // We keep historical migrations around for now, this will help inform an abstracted
             // design. Feel free to remove it if it's causing you trouble.
