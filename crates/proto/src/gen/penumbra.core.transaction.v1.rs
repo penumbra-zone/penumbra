@@ -674,7 +674,7 @@ impl ::prost::Name for DetectionDataPlan {
 pub struct ActionPlan {
     #[prost(
         oneof = "action_plan::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70"
     )]
     pub action: ::core::option::Option<action_plan::Action>,
 }
@@ -761,6 +761,11 @@ pub mod action_plan {
         #[prost(message, tag = "55")]
         ActionDutchAuctionWithdraw(
             super::super::super::component::auction::v1::ActionDutchAuctionWithdrawPlan,
+        ),
+        /// Funding
+        #[prost(message, tag = "70")]
+        ActionLiquidityTournamentVotePlan(
+            super::super::super::component::funding::v1::ActionLiquidityTournamentVotePlan,
         ),
     }
 }
