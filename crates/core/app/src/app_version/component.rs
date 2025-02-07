@@ -31,7 +31,9 @@ enum CheckContext {
 
 /// Check that the expected version matches the found version, if it set.
 /// This will return an error if the versions do not match.
+#[tracing::instrument]
 fn check_version(ctx: CheckContext, expected: u64, found: Option<u64>) -> anyhow::Result<()> {
+    tracing::debug!("running version check");
     let found = found.unwrap_or(expected);
     if found == expected {
         return Ok(());
