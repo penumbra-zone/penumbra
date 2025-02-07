@@ -6,6 +6,7 @@
 //! in order to be compatible with the network post-chain-upgrade.
 mod mainnet1;
 mod mainnet2;
+mod mainnet3;
 mod reset_halt_bit;
 mod simple;
 mod testnet72;
@@ -60,6 +61,9 @@ pub enum Migration {
     /// Mainnet-2 migration:
     /// - no-op
     Mainnet2,
+    /// Mainnet-3 migration:
+    /// - no-op
+    Mainnet3,
 }
 
 impl Migration {
@@ -111,6 +115,9 @@ impl Migration {
             }
             Migration::Mainnet2 => {
                 mainnet2::migrate(storage, pd_home.clone(), genesis_start).await?;
+            }
+            Migration::Mainnet3 => {
+                mainnet3::migrate(storage, pd_home.clone(), genesis_start).await?;
             }
             // We keep historical migrations around for now, this will help inform an abstracted
             // design. Feel free to remove it if it's causing you trouble.
