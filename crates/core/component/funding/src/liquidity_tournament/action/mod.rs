@@ -96,6 +96,12 @@ impl From<LiquidityTournamentVoteBody> for pb::LiquidityTournamentVoteBody {
     }
 }
 
+impl EffectingData for LiquidityTournamentVoteBody {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+
 /// The action used to vote in the liquidity tournament.
 ///
 /// This vote is towards a particular asset whose liquidity should be incentivized,
@@ -148,7 +154,7 @@ impl From<ActionLiquidityTournamentVote> for pb::ActionLiquidityTournamentVote {
 
 impl EffectingData for ActionLiquidityTournamentVote {
     fn effect_hash(&self) -> EffectHash {
-        EffectHash::from_proto_effecting_data(&self.to_proto())
+        self.body.effect_hash()
     }
 }
 
