@@ -8,6 +8,7 @@ use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionEnd;
 use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionSchedule;
 use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVotePlan;
 use penumbra_sdk_txhash::{EffectHash, EffectingData};
 
 use penumbra_sdk_dex::{
@@ -82,6 +83,8 @@ pub enum ActionPlan {
     ActionDutchAuctionSchedule(ActionDutchAuctionSchedule),
     ActionDutchAuctionEnd(ActionDutchAuctionEnd),
     ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawPlan),
+
+    ActionLiquidityTournamentVote(ActionLiquidityTournamentVotePlan),
 }
 
 impl ActionPlan {
@@ -165,6 +168,18 @@ impl ActionPlan {
             ActionDutchAuctionWithdraw(plan) => {
                 Action::ActionDutchAuctionWithdraw(plan.to_action())
             }
+            ActionLiquidityTournamentVote(plan) => {
+                let note_commitment = plan.staked_note.commit();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+                Action::ActionLiquidityTournamentVote(plan.to_action(
+                    fvk,
+                    [0; 64].into(),
+                    auth_path.clone(),
+                ))
+            }
         })
     }
 
@@ -195,6 +210,7 @@ impl ActionPlan {
             ActionPlan::ActionDutchAuctionSchedule(_) => 53,
             ActionPlan::ActionDutchAuctionEnd(_) => 54,
             ActionPlan::ActionDutchAuctionWithdraw(_) => 55,
+            ActionPlan::ActionLiquidityTournamentVote(_) => 70,
         }
     }
 
@@ -225,7 +241,10 @@ impl ActionPlan {
             ActionDutchAuctionWithdraw(action) => action.balance(),
 
             // None of these contribute to transaction balance:
-            IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
+            IbcAction(_)
+            | ValidatorDefinition(_)
+            | ValidatorVote(_)
+            | ActionLiquidityTournamentVote(_) => Balance::default(),
         }
     }
 
@@ -257,6 +276,7 @@ impl ActionPlan {
             ActionDutchAuctionSchedule(_) => Fr::zero(),
             ActionDutchAuctionEnd(_) => Fr::zero(),
             ActionDutchAuctionWithdraw(_) => Fr::zero(),
+            ActionLiquidityTournamentVote(_) => Fr::zero(),
         }
     }
 
@@ -289,6 +309,7 @@ impl ActionPlan {
             ActionDutchAuctionSchedule(plan) => plan.effect_hash(),
             ActionDutchAuctionEnd(plan) => plan.effect_hash(),
             ActionDutchAuctionWithdraw(plan) => plan.to_action().effect_hash(),
+            ActionLiquidityTournamentVote(plan) => plan.to_body(fvk).effect_hash(),
         }
     }
 }
@@ -439,6 +460,12 @@ impl From<ProposalDepositClaim> for ActionPlan {
     }
 }
 
+impl From<ActionLiquidityTournamentVotePlan> for ActionPlan {
+    fn from(inner: ActionLiquidityTournamentVotePlan) -> ActionPlan {
+        ActionPlan::ActionLiquidityTournamentVote(inner)
+    }
+}
+
 impl DomainType for ActionPlan {
     type Proto = pb_t::ActionPlan;
 }
@@ -532,6 +559,11 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                     inner.into(),
                 )),
             },
+            ActionPlan::ActionLiquidityTournamentVote(inner) => pb_t::ActionPlan {
+                action: Some(
+                    pb_t::action_plan::Action::ActionLiquidityTournamentVotePlan(inner.into()),
+                ),
+            },
         }
     }
 }
@@ -616,6 +648,9 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::Ics20Withdrawal(inner) => {
                 Ok(ActionPlan::Ics20Withdrawal(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ActionLiquidityTournamentVotePlan(inner) => {
+                Ok(ActionPlan::ActionLiquidityTournamentVote(inner.try_into()?))
             }
         }
     }

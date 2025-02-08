@@ -140,3 +140,9 @@ CREATE TABLE auctions (
      auction_state          BIGINT NOT NULL,
      note_commitment        BLOB
 );
+
+CREATE TABLE epochs (
+    epoch_index BIGINT PRIMARY KEY,
+    root BLOB,
+    start_height BIGINT
+);

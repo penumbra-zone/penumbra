@@ -236,6 +236,17 @@ impl Worker {
             // Lock the SCT only while processing this block.
             let mut sct_guard = self.sct.write().await;
 
+            if let Some(root) = block.epoch_root {
+                // We now know the root for this epoch.
+                self.storage
+                    .update_epoch(block.epoch_index, Some(root), None)
+                    .await?;
+                // And also where the next epoch starts, since this block is the last.
+                self.storage
+                    .update_epoch(block.epoch_index + 1, None, Some(block.height + 1))
+                    .await?;
+            }
+
             if !block.requires_scanning() {
                 // Optimization: if the block is empty, seal the in-memory SCT,
                 // and skip touching the database:

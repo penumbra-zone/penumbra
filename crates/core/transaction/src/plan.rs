@@ -10,6 +10,7 @@ use penumbra_sdk_dex::{
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
 };
+use penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVotePlan;
 use penumbra_sdk_governance::{
     DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
@@ -206,6 +207,16 @@ impl TransactionPlan {
     pub fn delegator_vote_plans(&self) -> impl Iterator<Item = &DelegatorVotePlan> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::DelegatorVote(v) = action {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn lqt_vote_plans(&self) -> impl Iterator<Item = &ActionLiquidityTournamentVotePlan> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::ActionLiquidityTournamentVote(v) = action {
                 Some(v)
             } else {
                 None

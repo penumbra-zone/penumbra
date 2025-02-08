@@ -710,6 +710,7 @@ mod test {
             ActionPlan::ActionDutchAuctionEnd(_) => None,
             ActionPlan::ActionDutchAuctionWithdraw(_) => None,
             ActionPlan::IbcAction(_) => todo!(),
+            ActionPlan::ActionLiquidityTournamentVote(_) => todo!(),
         }
     }
 

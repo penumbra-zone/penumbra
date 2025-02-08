@@ -262,6 +262,8 @@ message AuthorizationData {
   // The required delegator vote authorizations, returned in the same order as the
   // DelegatorVote actions in the original request.
   repeated crypto.decaf377_rdsa.v1.SpendAuthSignature delegator_vote_auths = 3;
+  // The required LQT vote authorizations, in the same order as the original request.
+  repeated crypto.decaf377_rdsa.v1.SpendAuthSignature lqt_vote_auths = 4;
 }
 
 // The data required for proving when building a transaction from a plan.
@@ -341,6 +343,9 @@ message ActionPlan {
     component.auction.v1.ActionDutchAuctionSchedule action_dutch_auction_schedule = 53;
     component.auction.v1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
     component.auction.v1.ActionDutchAuctionWithdrawPlan action_dutch_auction_withdraw = 55;
+
+    // Funding
+    component.funding.v1.ActionLiquidityTournamentVotePlan action_liquidity_tournament_vote_plan = 70;
   }
 }
 

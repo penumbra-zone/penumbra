@@ -371,6 +371,7 @@ impl GasCost for ActionPlan {
             ActionPlan::CommunityPoolOutput(d) => d.gas_cost(),
             ActionPlan::CommunityPoolDeposit(dd) => dd.gas_cost(),
             ActionPlan::Ics20Withdrawal(w) => w.gas_cost(),
+            ActionPlan::ActionLiquidityTournamentVote(_) => liquidity_tournament_vote_gas_cost(),
         }
     }
 }

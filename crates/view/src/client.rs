@@ -338,6 +338,13 @@ pub trait ViewClient {
     fn unclaimed_swaps(
         &mut self,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<SwapRecord>>> + Send + 'static>>;
+
+    /// Get all of the notes that can be used for voting
+    fn lqt_voting_notes(
+        &mut self,
+        epoch: u64,
+        filter: Option<AddressIndex>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<SpendableNoteRecord>>> + Send + 'static>>;
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
@@ -1056,6 +1063,35 @@ where
                 .collect();
 
             Ok(resp)
+        }
+        .boxed()
+    }
+
+    fn lqt_voting_notes(
+        &mut self,
+        epoch: u64,
+        filter: Option<AddressIndex>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<SpendableNoteRecord>>> + Send + 'static>> {
+        let mut client = self.clone();
+        async move {
+            let request = tonic::Request::new(pb::LqtVotingNotesRequest {
+                epoch_index: epoch,
+                account_filter: filter.map(|x| x.into()),
+            });
+            let response = client.lqt_voting_notes(request).await?;
+            let pb_notes: Vec<pb::LqtVotingNotesResponse> =
+                response.into_inner().try_collect().await?;
+
+            pb_notes
+                .into_iter()
+                .map(|note_rsp| {
+                    let note_record = note_rsp
+                        .note_record
+                        .ok_or_else(|| anyhow::anyhow!("empty LqtVotingNotesResponse message"))?
+                        .try_into()?;
+                    Ok(note_record)
+                })
+                .collect()
         }
         .boxed()
     }

@@ -128,6 +128,246 @@ impl<'de> serde::Deserialize<'de> for ActionLiquidityTournamentVote {
         deserializer.deserialize_struct("penumbra.core.component.funding.v1.ActionLiquidityTournamentVote", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for ActionLiquidityTournamentVotePlan {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.incentivized.is_some() {
+            len += 1;
+        }
+        if self.rewards_recipient.is_some() {
+            len += 1;
+        }
+        if self.staked_note.is_some() {
+            len += 1;
+        }
+        if self.staked_note_position != 0 {
+            len += 1;
+        }
+        if self.start_position != 0 {
+            len += 1;
+        }
+        if !self.randomizer.is_empty() {
+            len += 1;
+        }
+        if !self.proof_blinding_r.is_empty() {
+            len += 1;
+        }
+        if !self.proof_blinding_s.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.funding.v1.ActionLiquidityTournamentVotePlan", len)?;
+        if let Some(v) = self.incentivized.as_ref() {
+            struct_ser.serialize_field("incentivized", v)?;
+        }
+        if let Some(v) = self.rewards_recipient.as_ref() {
+            struct_ser.serialize_field("rewardsRecipient", v)?;
+        }
+        if let Some(v) = self.staked_note.as_ref() {
+            struct_ser.serialize_field("stakedNote", v)?;
+        }
+        if self.staked_note_position != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("stakedNotePosition", ToString::to_string(&self.staked_note_position).as_str())?;
+        }
+        if self.start_position != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
+        }
+        if !self.randomizer.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("randomizer", pbjson::private::base64::encode(&self.randomizer).as_str())?;
+        }
+        if !self.proof_blinding_r.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
+        }
+        if !self.proof_blinding_s.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for ActionLiquidityTournamentVotePlan {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "incentivized",
+            "rewards_recipient",
+            "rewardsRecipient",
+            "staked_note",
+            "stakedNote",
+            "staked_note_position",
+            "stakedNotePosition",
+            "start_position",
+            "startPosition",
+            "randomizer",
+            "proof_blinding_r",
+            "proofBlindingR",
+            "proof_blinding_s",
+            "proofBlindingS",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Incentivized,
+            RewardsRecipient,
+            StakedNote,
+            StakedNotePosition,
+            StartPosition,
+            Randomizer,
+            ProofBlindingR,
+            ProofBlindingS,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "incentivized" => Ok(GeneratedField::Incentivized),
+                            "rewardsRecipient" | "rewards_recipient" => Ok(GeneratedField::RewardsRecipient),
+                            "stakedNote" | "staked_note" => Ok(GeneratedField::StakedNote),
+                            "stakedNotePosition" | "staked_note_position" => Ok(GeneratedField::StakedNotePosition),
+                            "startPosition" | "start_position" => Ok(GeneratedField::StartPosition),
+                            "randomizer" => Ok(GeneratedField::Randomizer),
+                            "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
+                            "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = ActionLiquidityTournamentVotePlan;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.funding.v1.ActionLiquidityTournamentVotePlan")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ActionLiquidityTournamentVotePlan, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut incentivized__ = None;
+                let mut rewards_recipient__ = None;
+                let mut staked_note__ = None;
+                let mut staked_note_position__ = None;
+                let mut start_position__ = None;
+                let mut randomizer__ = None;
+                let mut proof_blinding_r__ = None;
+                let mut proof_blinding_s__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Incentivized => {
+                            if incentivized__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("incentivized"));
+                            }
+                            incentivized__ = map_.next_value()?;
+                        }
+                        GeneratedField::RewardsRecipient => {
+                            if rewards_recipient__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rewardsRecipient"));
+                            }
+                            rewards_recipient__ = map_.next_value()?;
+                        }
+                        GeneratedField::StakedNote => {
+                            if staked_note__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stakedNote"));
+                            }
+                            staked_note__ = map_.next_value()?;
+                        }
+                        GeneratedField::StakedNotePosition => {
+                            if staked_note_position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stakedNotePosition"));
+                            }
+                            staked_note_position__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::StartPosition => {
+                            if start_position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startPosition"));
+                            }
+                            start_position__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Randomizer => {
+                            if randomizer__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("randomizer"));
+                            }
+                            randomizer__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ProofBlindingR => {
+                            if proof_blinding_r__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proofBlindingR"));
+                            }
+                            proof_blinding_r__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ProofBlindingS => {
+                            if proof_blinding_s__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proofBlindingS"));
+                            }
+                            proof_blinding_s__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(ActionLiquidityTournamentVotePlan {
+                    incentivized: incentivized__,
+                    rewards_recipient: rewards_recipient__,
+                    staked_note: staked_note__,
+                    staked_note_position: staked_note_position__.unwrap_or_default(),
+                    start_position: start_position__.unwrap_or_default(),
+                    randomizer: randomizer__.unwrap_or_default(),
+                    proof_blinding_r: proof_blinding_r__.unwrap_or_default(),
+                    proof_blinding_s: proof_blinding_s__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.funding.v1.ActionLiquidityTournamentVotePlan", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for ActionLiquidityTournamentVoteView {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

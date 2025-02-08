@@ -105,6 +105,24 @@ message LiquidityTournamentVoteBody {
   crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 6;
 }
 
+// The plan associated with a `ActionLiquidityTournamentVote`.
+message ActionLiquidityTournamentVotePlan {
+  // The asset the user wants to vote for.
+  asset.v1.Denom incentivized = 1;
+  // Where to send any rewards for participating in the tournament.
+  keys.v1.Address rewards_recipient = 2;
+  // The note containing the staked note used for voting.
+  penumbra.core.component.shielded_pool.v1.Note staked_note = 3;
+  // The position of the staked note.
+  uint64 staked_note_position = 4;
+  // The start position of the tournament.
+  uint64 start_position = 5;
+  // Randomizer for proof of spend capability.
+  bytes randomizer = 6;
+  bytes proof_blinding_r = 7;
+  bytes proof_blinding_s = 8;
+}
+
 // A proof of the validity of a liquidity vote, wrt private state.
 message ZKLiquidityTournamentVoteProof {
   bytes inner = 1;

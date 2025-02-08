@@ -206,6 +206,44 @@ impl ::prost::Name for LiquidityTournamentVoteBody {
         "/penumbra.core.component.funding.v1.LiquidityTournamentVoteBody".into()
     }
 }
+/// The plan associated with a `ActionLiquidityTournamentVote`.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionLiquidityTournamentVotePlan {
+    /// The asset the user wants to vote for.
+    #[prost(message, optional, tag = "1")]
+    pub incentivized: ::core::option::Option<super::super::super::asset::v1::Denom>,
+    /// Where to send any rewards for participating in the tournament.
+    #[prost(message, optional, tag = "2")]
+    pub rewards_recipient: ::core::option::Option<
+        super::super::super::keys::v1::Address,
+    >,
+    /// The note containing the staked note used for voting.
+    #[prost(message, optional, tag = "3")]
+    pub staked_note: ::core::option::Option<super::super::shielded_pool::v1::Note>,
+    /// The position of the staked note.
+    #[prost(uint64, tag = "4")]
+    pub staked_note_position: u64,
+    /// The start position of the tournament.
+    #[prost(uint64, tag = "5")]
+    pub start_position: u64,
+    /// Randomizer for proof of spend capability.
+    #[prost(bytes = "vec", tag = "6")]
+    pub randomizer: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "7")]
+    pub proof_blinding_r: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "8")]
+    pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ActionLiquidityTournamentVotePlan {
+    const NAME: &'static str = "ActionLiquidityTournamentVotePlan";
+    const PACKAGE: &'static str = "penumbra.core.component.funding.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.funding.v1.ActionLiquidityTournamentVotePlan".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.funding.v1.ActionLiquidityTournamentVotePlan".into()
+    }
+}
 /// A proof of the validity of a liquidity vote, wrt private state.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ZkLiquidityTournamentVoteProof {
