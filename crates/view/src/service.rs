@@ -57,13 +57,13 @@ use penumbra_sdk_proto::{
     },
     DomainType,
 };
-use penumbra_sdk_stake::rate::RateData;
+use penumbra_sdk_stake::{rate::RateData, IdentityKey};
 use penumbra_sdk_tct::{Proof, StateCommitment};
 use penumbra_sdk_transaction::{
     AuthorizationData, Transaction, TransactionPerspective, TransactionPlan, WitnessData,
 };
 
-use crate::{worker::Worker, Planner, Storage};
+use crate::{worker::Worker, Planner, SpendableNoteRecord, Storage};
 
 /// A [`futures::Stream`] of broadcast transaction responses.
 ///
@@ -1888,9 +1888,36 @@ impl ViewService for ViewServer {
     #[instrument(skip_all, level = "trace")]
     async fn lqt_voting_notes(
         &self,
-        _request: tonic::Request<pb::LqtVotingNotesRequest>,
+        request: tonic::Request<pb::LqtVotingNotesRequest>,
     ) -> Result<tonic::Response<Self::LqtVotingNotesStream>, tonic::Status> {
-        unimplemented!("lqt_voting_notes currently only implemented on web")
+        async fn inner(
+            this: &ViewServer,
+            epoch: u64,
+            filter: Option<AddressIndex>,
+        ) -> anyhow::Result<Vec<(SpendableNoteRecord, IdentityKey)>> {
+            let (_, start_height) = this.storage.get_epoch(epoch).await?;
+            let start_height =
+                start_height.ok_or_else(|| anyhow!("missing height for epoch {epoch}"))?;
+            let notes = this.storage.notes_for_voting(filter, start_height).await?;
+            Ok(notes)
+        }
+
+        let request = request.into_inner();
+        let epoch = request.epoch_index;
+        let filter = request
+            .account_filter
+            .map(|x| AddressIndex::try_from(x))
+            .transpose()
+            .map_err(|_| tonic::Status::invalid_argument("invalid account filter"))?;
+        let notes = inner(self, epoch, filter).await.map_err(|e| {
+            tonic::Status::internal(format!("error fetching voting notes: {:#}", e))
+        })?;
+        let stream = tokio_stream::iter(notes.into_iter().map(|(note, _)| {
+            Result::<_, tonic::Status>::Ok(pb::LqtVotingNotesResponse {
+                note_record: Some(note.into()),
+            })
+        }));
+        Ok(tonic::Response::new(stream.boxed()))
     }
 }
 
