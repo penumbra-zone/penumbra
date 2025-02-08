@@ -1558,7 +1558,7 @@ impl TxCmd {
 
                 println!("Noble response: {:?}", r);
             }
-            TxCmd::LqtVote(cmd) => cmd.exec(app).await?,
+            TxCmd::LqtVote(cmd) => cmd.exec(app, gas_prices).await?,
         }
 
         Ok(())
