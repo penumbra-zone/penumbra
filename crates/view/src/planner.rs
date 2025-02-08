@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVotePlan;
 use penumbra_sdk_sct::epoch::Epoch;
 use rand::{CryptoRng, RngCore};
 use rand_core::OsRng;
@@ -12,7 +13,10 @@ use tracing::instrument;
 
 use crate::{SpendableNoteRecord, ViewClient};
 use anyhow::anyhow;
-use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_asset::{
+    asset::{self, Denom},
+    Value,
+};
 use penumbra_sdk_auction::auction::dutch::DutchAuctionDescription;
 use penumbra_sdk_auction::auction::dutch::{actions::ActionDutchAuctionWithdrawPlan, DutchAuction};
 use penumbra_sdk_auction::auction::{
@@ -474,6 +478,29 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self, plan))]
     pub fn delegator_vote_precise(&mut self, plan: DelegatorVotePlan) -> &mut Self {
         self.action_list.push(plan);
+        self
+    }
+
+    #[instrument(skip(self))]
+    pub fn lqt_vote(
+        &mut self,
+        epoch_index: u16,
+        incentivized: Denom,
+        rewards_recipient: Address,
+        notes: &[SpendableNoteRecord],
+    ) -> &mut Self {
+        let start_position = tct::Position::from((epoch_index, 0, 0));
+        for note in notes {
+            self.action_list
+                .push(ActionLiquidityTournamentVotePlan::new(
+                    &mut self.rng,
+                    incentivized.clone(),
+                    rewards_recipient.clone(),
+                    note.note.clone(),
+                    note.position,
+                    start_position,
+                ));
+        }
         self
     }
 
