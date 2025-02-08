@@ -93,6 +93,7 @@ impl AppActionHandler for ProposalSubmit {
                             anyhow::bail!("invalid action in Community Pool spend proposal (not allowed to manipulate proposals from within proposals)")
                         }
                         ValidatorDefinition(_)
+                        | ActionLiquidityTournamentVote(_)
                         | IbcAction(_)
                         | ValidatorVote(_)
                         | PositionOpen(_)
@@ -356,6 +357,7 @@ async fn build_community_pool_transaction(
             effect_hash: Some(effect_hash),
             spend_auths: Default::default(),
             delegator_vote_auths: Default::default(),
+            lqt_vote_auths: Default::default(),
         },
     )
 }
