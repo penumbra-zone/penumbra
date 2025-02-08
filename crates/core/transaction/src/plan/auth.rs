@@ -17,6 +17,7 @@ impl TransactionPlan {
         let effect_hash = self.effect_hash(sk.full_viewing_key())?;
         let mut spend_auths = Vec::new();
         let mut delegator_vote_auths = Vec::new();
+        let mut lqt_vote_auths = Vec::new();
 
         for spend_plan in self.spend_plans() {
             let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
@@ -30,10 +31,16 @@ impl TransactionPlan {
             let auth_sig = rsk.sign(&mut rng, effect_hash.as_ref());
             delegator_vote_auths.push(auth_sig);
         }
+        for lqt_vote_plan in self.lqt_vote_plans() {
+            let rsk = sk.spend_auth_key().randomize(&lqt_vote_plan.randomizer);
+            let auth_sig = rsk.sign(&mut rng, effect_hash.as_ref());
+            lqt_vote_auths.push(auth_sig);
+        }
         Ok(AuthorizationData {
             effect_hash: Some(effect_hash),
             spend_auths,
             delegator_vote_auths,
+            lqt_vote_auths,
         })
     }
 }
