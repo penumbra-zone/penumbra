@@ -160,6 +160,7 @@ fn pretty_print_transaction_plan(
             ActionPlan::ActionDutchAuctionEnd(_) => None,
             ActionPlan::ActionDutchAuctionWithdraw(_) => None,
             ActionPlan::IbcAction(_) => todo!(),
+            ActionPlan::ActionLiquidityTournamentVote(_) => None,
         }
     }
 
