@@ -37,7 +37,7 @@ use penumbra_sdk_proto::{
 use penumbra_sdk_sct::{CommitmentSource, Nullifier};
 use penumbra_sdk_shielded_pool::{fmd, note, Note, Rseed};
 use penumbra_sdk_stake::{DelegationToken, IdentityKey};
-use penumbra_sdk_tct as tct;
+use penumbra_sdk_tct::{self as tct, builder::epoch::Root};
 use penumbra_sdk_transaction::Transaction;
 use sct::TreeStore;
 use tct::StateCommitment;
@@ -207,7 +207,7 @@ impl Storage {
         // Connect to the database (or create it)
         let pool = Self::connect(storage_path)?;
 
-        spawn_blocking(move || {
+        let out = spawn_blocking(move || {
             // In one database transaction, populate everything
             let mut conn = pool.get()?;
             let tx = conn.transaction()?;
@@ -244,7 +244,7 @@ impl Storage {
             tx.commit()?;
             drop(conn);
 
-            Ok(Storage {
+            anyhow::Ok(Storage {
                 pool,
                 uncommitted_height: Arc::new(Mutex::new(None)),
                 scanned_notes_tx: broadcast::channel(128).0,
@@ -252,7 +252,11 @@ impl Storage {
                 scanned_swaps_tx: broadcast::channel(128).0,
             })
         })
-        .await?
+        .await??;
+
+        out.update_epoch(0, None, Some(0)).await?;
+
+        Ok(out)
     }
 
     /// Loads asset metadata from a JSON file and use to update the database.
@@ -1782,6 +1786,63 @@ impl Storage {
                     anyhow::Ok((block_height, tx_hash, tx, memo_text))
                 })?
                 .collect()
+        })
+        .await?
+    }
+
+    /// Update information about an epoch.
+    pub async fn update_epoch(
+        &self,
+        epoch: u64,
+        root: Option<Root>,
+        start_height: Option<u64>,
+    ) -> anyhow::Result<()> {
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            pool.get()?
+                .execute(
+                    r#"
+                    INSERT INTO epochs(epoch_index, root, start_height)
+                    VALUES (?1, ?2, ?3)
+                    ON CONFLICT(epoch_index)
+                    DO UPDATE SET
+                        root = COALESCE(?2, root),
+                        start_height = COALESCE(?3, start_height)
+                    "#,
+                    (epoch, root.map(|x| x.encode_to_vec()), start_height),
+                )
+                .map_err(anyhow::Error::from)
+        })
+        .await??;
+
+        Ok(())
+    }
+
+    /// Fetch information about the current epoch.
+    ///
+    /// This will return the root of the epoch, if present,
+    /// and the start height of the epoch, if present.
+    pub async fn get_epoch(&self, epoch: u64) -> anyhow::Result<(Option<Root>, Option<u64>)> {
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            pool.get()?
+                .query_row_and_then(
+                    r#"
+                    SELECT root, start_height
+                    FROM epochs
+                    WHERE epoch_index = ?1
+                    "#,
+                    (epoch,),
+                    |row| {
+                        let root_raw: Option<Vec<u8>> = row.get("root")?;
+                        let start_height: Option<u64> = row.get("start_height")?;
+                        let root = root_raw.map(|x| Root::decode(x.as_slice())).transpose()?;
+                        anyhow::Ok((root, start_height))
+                    },
+                )
+                .map_err(anyhow::Error::from)
         })
         .await?
     }

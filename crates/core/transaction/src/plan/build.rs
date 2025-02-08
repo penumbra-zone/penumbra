@@ -100,6 +100,22 @@ impl TransactionPlan {
             delegator_vote.auth_sig = auth_sig;
         }
 
+        for (lqt_vote, auth_sig) in transaction
+            .transaction_body
+            .actions
+            .iter_mut()
+            .filter_map(|action| {
+                if let Action::ActionLiquidityTournamentVote(s) = action {
+                    Some(s)
+                } else {
+                    None
+                }
+            })
+            .zip(auth_data.lqt_vote_auths.clone().into_iter())
+        {
+            lqt_vote.auth_sig = auth_sig;
+        }
+
         // Compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
         let auth_hash = transaction.transaction_body.auth_hash();
