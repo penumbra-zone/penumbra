@@ -15,6 +15,9 @@ pub struct AuthorizationData {
     /// The required delegator vote authorization signatures, returned in the same order as the
     /// DelegatorVote actions in the original request.
     pub delegator_vote_auths: Vec<Signature<SpendAuth>>,
+    /// The required LQT vote authorization signatures, returned in the same order as the
+    /// actions in the original request
+    pub lqt_vote_auths: Vec<Signature<SpendAuth>>,
 }
 
 impl DomainType for AuthorizationData {
@@ -31,6 +34,7 @@ impl From<AuthorizationData> for pb::AuthorizationData {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
+            lqt_vote_auths: msg.lqt_vote_auths.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -47,6 +51,11 @@ impl TryFrom<pb::AuthorizationData> for AuthorizationData {
                 .collect::<Result<_, _>>()?,
             delegator_vote_auths: value
                 .delegator_vote_auths
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+            lqt_vote_auths: value
+                .lqt_vote_auths
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
