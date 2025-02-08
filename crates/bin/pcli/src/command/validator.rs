@@ -225,7 +225,7 @@ impl ValidatorCmd {
                     );
                 } else {
                     println!(
-                        "Signed validator defintion #{} for {}\nTo upload the definition, use the below command with the exact same definition file:\n\n  $ pcli validator definition upload --file {:?} \\\n      --signature {}",
+                        "Signed validator definition #{} for {}\nTo upload the definition, use the below command with the exact same definition file:\n\n  $ pcli validator definition upload --file {:?} \\\n      --signature {}",
                         new_validator.sequence_number,
                         new_validator.identity_key,
                         input_file_name,

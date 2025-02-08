@@ -34,7 +34,7 @@
     - [Distributed Key Generation](./crypto/flow-encryption/dkg.md)
     - [Homomorphic Threshold Encryption](./crypto/flow-encryption/threshold-encryption.md)
     - [Flow Encryption and Consensus](./crypto/flow-encryption/flow-consensus.md)
-- [Groth 16 Setup Ceremony](./setup.md)
+[Groth 16 Setup Ceremony](./setup.md)
   - [Groth16 Recap](./setup/groth16_recap.md)
   - [Discrete Logarithm Proofs](./setup/dlog_proofs.md)
   - [Contributions](./setup/contributions.md)

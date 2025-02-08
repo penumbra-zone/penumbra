@@ -232,7 +232,7 @@ ORDER BY
                         .into_iter()
                         .filter_map(|(k, v)| match v {
                             serde_json::Value::String(s) => Some((k, s)),
-                            // we never hit this becasue of how we constructed the query
+                            // we never hit this because of how we constructed the query
                             _ => None,
                         })
                         .map(Into::into)

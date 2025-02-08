@@ -5,7 +5,7 @@ and AMM mechanism itself, and the batching procedure, which allows multiple
 users' swaps to be batched into a single trade executed against the trading
 function.  This section focuses on the batching procedure, leaving the mechanics of the trading function for later.
 
-Penumbra V1 provides swaps wherein the user publically burns their input assets, and privately mints the output assets. In a future upgrade, Penumbra will use sealed-bid batch swaps, protecting the privacy of the input assets to the trade, described further in the [section below](#sealed-bid-batch-swaps).
+Penumbra V1 provides swaps wherein the user publicly burns their input assets, and privately mints the output assets. In a future upgrade, Penumbra will use sealed-bid batch swaps, protecting the privacy of the input assets to the trade, described further in the [section below](#sealed-bid-batch-swaps).
 
 ### `Swap` actions
 
