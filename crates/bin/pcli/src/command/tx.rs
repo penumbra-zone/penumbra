@@ -22,6 +22,7 @@ use ibc_types::core::{
     client::Height as IbcHeight,
 };
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use lqt_vote::LqtVoteCmd;
 use rand_core::OsRng;
 use regex::Regex;
 
@@ -82,6 +83,7 @@ use clap::Parser;
 
 mod auction;
 mod liquidity_position;
+mod lqt_vote;
 mod proposal;
 mod replicate;
 
@@ -311,6 +313,8 @@ pub enum TxCmd {
         /// The transaction to be broadcast
         transaction: PathBuf,
     },
+    #[clap(display_order = 700)]
+    LqtVote(LqtVoteCmd),
 }
 
 /// Vote on a governance proposal.
@@ -368,6 +372,7 @@ impl TxCmd {
             TxCmd::Auction(_) => false,
             TxCmd::Broadcast { .. } => false,
             TxCmd::RegisterForwardingAccount { .. } => false,
+            TxCmd::LqtVote(cmd) => cmd.offline(),
         }
     }
 
@@ -1553,6 +1558,7 @@ impl TxCmd {
 
                 println!("Noble response: {:?}", r);
             }
+            TxCmd::LqtVote(cmd) => cmd.exec(app, gas_prices).await?,
         }
 
         Ok(())
