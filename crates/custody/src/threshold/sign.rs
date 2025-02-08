@@ -499,8 +499,11 @@ pub fn coordinator_round3(
                     )
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            let mut delegator_vote_auths = spend_auths.split_off(plan.spend_plans().count());
-            let lqt_vote_auths = delegator_vote_auths.split_off(plan.spend_plans().count());
+            let num_spend_auths = plan.spend_plans().count();
+            let num_delegator_auths = plan.delegator_vote_plans().count();
+
+            let lqt_vote_auths = spend_auths.split_off(num_spend_auths + num_delegator_auths);
+            let delegator_vote_auths = spend_auths.split_off(num_spend_auths);
             Ok(SigningResponse::Transaction(AuthorizationData {
                 effect_hash: {
                     let ToBeSigned::EffectHash(effect_hash) = state.to_be_signed else {
