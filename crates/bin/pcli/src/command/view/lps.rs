@@ -30,7 +30,7 @@ impl LiquidityPositionsCmd {
             })
             .await?
             .into_inner()
-            .map_err(|e| anyhow!("eror fetching liquidity positions: {}", e))
+            .map_err(|e| anyhow!("error fetching liquidity positions: {}", e))
             .and_then(|msg| async move {
                 msg.data
                     .ok_or_else(|| anyhow!("missing liquidity position in response"))

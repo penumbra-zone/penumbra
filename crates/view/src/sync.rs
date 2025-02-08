@@ -205,7 +205,7 @@ pub async fn scan_block(
         // End the block in the commitment tree
         state_commitment_tree
             .end_block()
-            .expect("ending the block must succed");
+            .expect("ending the block must succeed");
     }
 
     // If we've also reached the end of the epoch, end the epoch in the commitment tree
