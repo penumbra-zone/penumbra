@@ -460,6 +460,12 @@ impl From<ProposalDepositClaim> for ActionPlan {
     }
 }
 
+impl From<ActionLiquidityTournamentVotePlan> for ActionPlan {
+    fn from(inner: ActionLiquidityTournamentVotePlan) -> ActionPlan {
+        ActionPlan::ActionLiquidityTournamentVote(inner)
+    }
+}
+
 impl DomainType for ActionPlan {
     type Proto = pb_t::ActionPlan;
 }
