@@ -649,8 +649,8 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             pb_t::action_plan::Action::Ics20Withdrawal(inner) => {
                 Ok(ActionPlan::Ics20Withdrawal(inner.try_into()?))
             }
-            pb_t::action_plan::Action::ActionLiquidityTournamentVotePlan(_) => {
-                unimplemented!()
+            pb_t::action_plan::Action::ActionLiquidityTournamentVotePlan(inner) => {
+                Ok(ActionPlan::ActionLiquidityTournamentVote(inner.try_into()?))
             }
         }
     }
