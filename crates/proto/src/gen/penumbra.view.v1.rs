@@ -6,7 +6,9 @@ pub struct LqtVotingNotesRequest {
     pub epoch_index: u64,
     /// If present, filter balances to only include the account specified by the `AddressIndex`.
     #[prost(message, optional, tag = "2")]
-    pub account_filter: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub account_filter: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
 }
 impl ::prost::Name for LqtVotingNotesRequest {
     const NAME: &'static str = "LqtVotingNotesRequest";
@@ -47,7 +49,9 @@ pub struct TournamentVotesRequest {
     pub block_height: u64,
     /// If present, filter balances to only include the account specified by the `AddressIndex`.
     #[prost(message, optional, tag = "3")]
-    pub account_filter: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub account_filter: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
 }
 impl ::prost::Name for TournamentVotesRequest {
     const NAME: &'static str = "TournamentVotesRequest";
@@ -71,18 +75,22 @@ pub mod tournament_votes_response {
     pub struct Vote {
         /// The incentivized asset receiving this vote.
         #[prost(message, optional, tag = "1")]
-        pub incentivized_asset:
-            ::core::option::Option<super::super::super::core::asset::v1::AssetId>,
+        pub incentivized_asset: ::core::option::Option<
+            super::super::super::core::asset::v1::AssetId,
+        >,
         /// The amount of voting power that this specific vote contributed.
         #[prost(message, optional, tag = "2")]
-        pub vote_power: ::core::option::Option<super::super::super::core::num::v1::Amount>,
+        pub vote_power: ::core::option::Option<
+            super::super::super::core::num::v1::Amount,
+        >,
         /// The amount of rewards issued for votes on this asset.
         #[prost(message, optional, tag = "3")]
         pub reward: ::core::option::Option<super::super::super::core::asset::v1::Value>,
         /// The transaction ID for the vote.
         #[prost(message, optional, tag = "4")]
-        pub transaction:
-            ::core::option::Option<super::super::super::core::txhash::v1::TransactionId>,
+        pub transaction: ::core::option::Option<
+            super::super::super::core::txhash::v1::TransactionId,
+        >,
     }
     impl ::prost::Name for Vote {
         const NAME: &'static str = "Vote";
@@ -144,7 +152,9 @@ impl ::prost::Name for TransparentAddressResponse {
 pub struct AuctionsRequest {
     /// If present, filter balances to only include the account specified by the `AddressIndex`.
     #[prost(message, optional, tag = "1")]
-    pub account_filter: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub account_filter: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
     /// If present, include inactive auctions as well as active ones.
     #[prost(bool, tag = "2")]
     pub include_inactive: bool,
@@ -153,8 +163,9 @@ pub struct AuctionsRequest {
     pub query_latest_state: bool,
     /// If present, filter to only include auctions whose IDs are in this array.
     #[prost(message, repeated, tag = "4")]
-    pub auction_ids_filter:
-        ::prost::alloc::vec::Vec<super::super::core::component::auction::v1::AuctionId>,
+    pub auction_ids_filter: ::prost::alloc::vec::Vec<
+        super::super::core::component::auction::v1::AuctionId,
+    >,
 }
 impl ::prost::Name for AuctionsRequest {
     const NAME: &'static str = "AuctionsRequest";
@@ -169,7 +180,9 @@ impl ::prost::Name for AuctionsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuctionsResponse {
     #[prost(message, optional, tag = "1")]
-    pub id: ::core::option::Option<super::super::core::component::auction::v1::AuctionId>,
+    pub id: ::core::option::Option<
+        super::super::core::component::auction::v1::AuctionId,
+    >,
     /// The state of the returned auction.
     ///
     /// Only present when `query_latest_state` was provided.
@@ -180,7 +193,9 @@ pub struct AuctionsResponse {
     /// Only present when `query_latest_state` was provided.
     /// Could be empty, depending on the auction state.
     #[prost(message, repeated, tag = "3")]
-    pub positions: ::prost::alloc::vec::Vec<super::super::core::component::dex::v1::Position>,
+    pub positions: ::prost::alloc::vec::Vec<
+        super::super::core::component::dex::v1::Position,
+    >,
     /// The note recording the auction NFT.
     #[prost(message, optional, tag = "4")]
     pub note_record: ::core::option::Option<SpendableNoteRecord>,
@@ -210,8 +225,9 @@ impl ::prost::Name for AuctionsResponse {
 pub struct AuthorizeAndBuildRequest {
     /// The transaction plan to authorize and build.
     #[prost(message, optional, tag = "1")]
-    pub transaction_plan:
-        ::core::option::Option<super::super::core::transaction::v1::TransactionPlan>,
+    pub transaction_plan: ::core::option::Option<
+        super::super::core::transaction::v1::TransactionPlan,
+    >,
 }
 impl ::prost::Name for AuthorizeAndBuildRequest {
     const NAME: &'static str = "AuthorizeAndBuildRequest";
@@ -252,8 +268,9 @@ pub mod authorize_and_build_response {
     pub struct Complete {
         /// The finished transaction.
         #[prost(message, optional, tag = "1")]
-        pub transaction:
-            ::core::option::Option<super::super::super::core::transaction::v1::Transaction>,
+        pub transaction: ::core::option::Option<
+            super::super::super::core::transaction::v1::Transaction,
+        >,
     }
     impl ::prost::Name for Complete {
         const NAME: &'static str = "Complete";
@@ -287,7 +304,9 @@ impl ::prost::Name for AuthorizeAndBuildResponse {
 pub struct BroadcastTransactionRequest {
     /// The transaction to broadcast.
     #[prost(message, optional, tag = "1")]
-    pub transaction: ::core::option::Option<super::super::core::transaction::v1::Transaction>,
+    pub transaction: ::core::option::Option<
+        super::super::core::transaction::v1::Transaction,
+    >,
     /// If true, wait for the view service to detect the transaction during sync.
     #[prost(bool, tag = "2")]
     pub await_detection: bool,
@@ -314,7 +333,9 @@ pub mod broadcast_transaction_response {
     pub struct BroadcastSuccess {
         /// The hash of the transaction that was broadcast.
         #[prost(message, optional, tag = "1")]
-        pub id: ::core::option::Option<super::super::super::core::txhash::v1::TransactionId>,
+        pub id: ::core::option::Option<
+            super::super::super::core::txhash::v1::TransactionId,
+        >,
     }
     impl ::prost::Name for BroadcastSuccess {
         const NAME: &'static str = "BroadcastSuccess";
@@ -333,7 +354,9 @@ pub mod broadcast_transaction_response {
     pub struct Confirmed {
         /// The hash of the transaction that was broadcast.
         #[prost(message, optional, tag = "1")]
-        pub id: ::core::option::Option<super::super::super::core::txhash::v1::TransactionId>,
+        pub id: ::core::option::Option<
+            super::super::super::core::txhash::v1::TransactionId,
+        >,
         /// The height in which the transaction was detected as included in the chain, if any.
         #[prost(uint64, tag = "2")]
         pub detection_height: u64,
@@ -392,30 +415,45 @@ pub struct TransactionPlannerRequest {
     #[prost(message, repeated, tag = "50")]
     pub undelegations: ::prost::alloc::vec::Vec<transaction_planner_request::Undelegate>,
     #[prost(message, repeated, tag = "51")]
-    pub undelegation_claims: ::prost::alloc::vec::Vec<transaction_planner_request::UndelegateClaim>,
+    pub undelegation_claims: ::prost::alloc::vec::Vec<
+        transaction_planner_request::UndelegateClaim,
+    >,
     #[prost(message, repeated, tag = "60")]
-    pub ibc_relay_actions:
-        ::prost::alloc::vec::Vec<super::super::core::component::ibc::v1::IbcRelay>,
+    pub ibc_relay_actions: ::prost::alloc::vec::Vec<
+        super::super::core::component::ibc::v1::IbcRelay,
+    >,
     #[prost(message, repeated, tag = "61")]
-    pub ics20_withdrawals:
-        ::prost::alloc::vec::Vec<super::super::core::component::ibc::v1::Ics20Withdrawal>,
+    pub ics20_withdrawals: ::prost::alloc::vec::Vec<
+        super::super::core::component::ibc::v1::Ics20Withdrawal,
+    >,
     #[prost(message, repeated, tag = "70")]
-    pub position_opens: ::prost::alloc::vec::Vec<transaction_planner_request::PositionOpen>,
+    pub position_opens: ::prost::alloc::vec::Vec<
+        transaction_planner_request::PositionOpen,
+    >,
     #[prost(message, repeated, tag = "71")]
-    pub position_closes: ::prost::alloc::vec::Vec<transaction_planner_request::PositionClose>,
+    pub position_closes: ::prost::alloc::vec::Vec<
+        transaction_planner_request::PositionClose,
+    >,
     #[prost(message, repeated, tag = "72")]
-    pub position_withdraws: ::prost::alloc::vec::Vec<transaction_planner_request::PositionWithdraw>,
+    pub position_withdraws: ::prost::alloc::vec::Vec<
+        transaction_planner_request::PositionWithdraw,
+    >,
     #[prost(message, repeated, tag = "73")]
-    pub dutch_auction_schedule_actions:
-        ::prost::alloc::vec::Vec<transaction_planner_request::ActionDutchAuctionSchedule>,
+    pub dutch_auction_schedule_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionSchedule,
+    >,
     #[prost(message, repeated, tag = "74")]
-    pub dutch_auction_end_actions:
-        ::prost::alloc::vec::Vec<transaction_planner_request::ActionDutchAuctionEnd>,
+    pub dutch_auction_end_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionEnd,
+    >,
     #[prost(message, repeated, tag = "75")]
-    pub dutch_auction_withdraw_actions:
-        ::prost::alloc::vec::Vec<transaction_planner_request::ActionDutchAuctionWithdraw>,
+    pub dutch_auction_withdraw_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionWithdraw,
+    >,
     #[prost(message, repeated, tag = "76")]
-    pub delegator_votes: ::prost::alloc::vec::Vec<transaction_planner_request::DelegatorVote>,
+    pub delegator_votes: ::prost::alloc::vec::Vec<
+        transaction_planner_request::DelegatorVote,
+    >,
     /// The epoch index of the transaction being planned.
     #[deprecated]
     #[prost(uint64, tag = "200")]
@@ -437,7 +475,9 @@ pub mod transaction_planner_request {
         pub value: ::core::option::Option<super::super::super::core::asset::v1::Value>,
         /// The address to which Output will be sent.
         #[prost(message, optional, tag = "2")]
-        pub address: ::core::option::Option<super::super::super::core::keys::v1::Address>,
+        pub address: ::core::option::Option<
+            super::super::super::core::keys::v1::Address,
+        >,
     }
     impl ::prost::Name for Output {
         const NAME: &'static str = "Output";
@@ -456,7 +496,9 @@ pub mod transaction_planner_request {
         pub value: ::core::option::Option<super::super::super::core::asset::v1::Value>,
         /// The source address from which the Spend will be sent.
         #[prost(message, optional, tag = "2")]
-        pub address: ::core::option::Option<super::super::super::core::keys::v1::Address>,
+        pub address: ::core::option::Option<
+            super::super::super::core::keys::v1::Address,
+        >,
     }
     impl ::prost::Name for Spend {
         const NAME: &'static str = "Spend";
@@ -475,13 +517,19 @@ pub mod transaction_planner_request {
         pub value: ::core::option::Option<super::super::super::core::asset::v1::Value>,
         /// The denomination to be received as a Output of the Swap.
         #[prost(message, optional, tag = "2")]
-        pub target_asset: ::core::option::Option<super::super::super::core::asset::v1::AssetId>,
+        pub target_asset: ::core::option::Option<
+            super::super::super::core::asset::v1::AssetId,
+        >,
         /// The pre-paid fee to be paid for claiming the Swap outputs.
         #[prost(message, optional, tag = "3")]
-        pub fee: ::core::option::Option<super::super::super::core::component::fee::v1::Fee>,
+        pub fee: ::core::option::Option<
+            super::super::super::core::component::fee::v1::Fee,
+        >,
         /// The address to which swap claim output will be sent.
         #[prost(message, optional, tag = "4")]
-        pub claim_address: ::core::option::Option<super::super::super::core::keys::v1::Address>,
+        pub claim_address: ::core::option::Option<
+            super::super::super::core::keys::v1::Address,
+        >,
     }
     impl ::prost::Name for Swap {
         const NAME: &'static str = "Swap";
@@ -499,8 +547,9 @@ pub mod transaction_planner_request {
         /// Use the commitment from the Swap message:
         /// penumbra.core.component.dex.v1.Swap.body.payload.commitment.
         #[prost(message, optional, tag = "1")]
-        pub swap_commitment:
-            ::core::option::Option<super::super::super::crypto::tct::v1::StateCommitment>,
+        pub swap_commitment: ::core::option::Option<
+            super::super::super::crypto::tct::v1::StateCommitment,
+        >,
     }
     impl ::prost::Name for SwapClaim {
         const NAME: &'static str = "SwapClaim";
@@ -517,8 +566,9 @@ pub mod transaction_planner_request {
         #[prost(message, optional, tag = "1")]
         pub amount: ::core::option::Option<super::super::super::core::num::v1::Amount>,
         #[prost(message, optional, tag = "3")]
-        pub rate_data:
-            ::core::option::Option<super::super::super::core::component::stake::v1::RateData>,
+        pub rate_data: ::core::option::Option<
+            super::super::super::core::component::stake::v1::RateData,
+        >,
     }
     impl ::prost::Name for Delegate {
         const NAME: &'static str = "Delegate";
@@ -535,8 +585,9 @@ pub mod transaction_planner_request {
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<super::super::super::core::asset::v1::Value>,
         #[prost(message, optional, tag = "2")]
-        pub rate_data:
-            ::core::option::Option<super::super::super::core::component::stake::v1::RateData>,
+        pub rate_data: ::core::option::Option<
+            super::super::super::core::component::stake::v1::RateData,
+        >,
     }
     impl ::prost::Name for Undelegate {
         const NAME: &'static str = "Undelegate";
@@ -552,8 +603,9 @@ pub mod transaction_planner_request {
     pub struct UndelegateClaim {
         /// The identity key of the validator to finish undelegating from.
         #[prost(message, optional, tag = "1")]
-        pub validator_identity:
-            ::core::option::Option<super::super::super::core::keys::v1::IdentityKey>,
+        pub validator_identity: ::core::option::Option<
+            super::super::super::core::keys::v1::IdentityKey,
+        >,
         /// The epoch in which unbonding began, used to verify the penalty.
         #[deprecated]
         #[prost(uint64, tag = "2")]
@@ -561,12 +613,15 @@ pub mod transaction_planner_request {
         /// The penalty applied to undelegation, in bps^2 (10e-8).
         /// In the happy path (no slashing), this is 0.
         #[prost(message, optional, tag = "3")]
-        pub penalty:
-            ::core::option::Option<super::super::super::core::component::stake::v1::Penalty>,
+        pub penalty: ::core::option::Option<
+            super::super::super::core::component::stake::v1::Penalty,
+        >,
         /// The amount of unbonding tokens to claim.
         /// This is a bare number because its denom is determined by the preceding data.
         #[prost(message, optional, tag = "4")]
-        pub unbonding_amount: ::core::option::Option<super::super::super::core::num::v1::Amount>,
+        pub unbonding_amount: ::core::option::Option<
+            super::super::super::core::num::v1::Amount,
+        >,
         /// The height at which unbonding began.
         #[prost(uint64, tag = "5")]
         pub unbonding_start_height: u64,
@@ -588,8 +643,9 @@ pub mod transaction_planner_request {
         /// Positions are immutable, so the `PositionData` (and hence the `PositionId`)
         /// are unchanged over the entire lifetime of the position.
         #[prost(message, optional, tag = "1")]
-        pub position:
-            ::core::option::Option<super::super::super::core::component::dex::v1::Position>,
+        pub position: ::core::option::Option<
+            super::super::super::core::component::dex::v1::Position,
+        >,
     }
     impl ::prost::Name for PositionOpen {
         const NAME: &'static str = "PositionOpen";
@@ -605,8 +661,9 @@ pub mod transaction_planner_request {
     pub struct PositionClose {
         /// The position to close.
         #[prost(message, optional, tag = "1")]
-        pub position_id:
-            ::core::option::Option<super::super::super::core::component::dex::v1::PositionId>,
+        pub position_id: ::core::option::Option<
+            super::super::super::core::component::dex::v1::PositionId,
+        >,
     }
     impl ::prost::Name for PositionClose {
         const NAME: &'static str = "PositionClose";
@@ -622,16 +679,19 @@ pub mod transaction_planner_request {
     pub struct PositionWithdraw {
         /// The position to withdraw.
         #[prost(message, optional, tag = "1")]
-        pub position_id:
-            ::core::option::Option<super::super::super::core::component::dex::v1::PositionId>,
+        pub position_id: ::core::option::Option<
+            super::super::super::core::component::dex::v1::PositionId,
+        >,
         /// The position's final reserves.
         #[prost(message, optional, tag = "2")]
-        pub reserves:
-            ::core::option::Option<super::super::super::core::component::dex::v1::Reserves>,
+        pub reserves: ::core::option::Option<
+            super::super::super::core::component::dex::v1::Reserves,
+        >,
         /// The trading pair of the position.
         #[prost(message, optional, tag = "3")]
-        pub trading_pair:
-            ::core::option::Option<super::super::super::core::component::dex::v1::TradingPair>,
+        pub trading_pair: ::core::option::Option<
+            super::super::super::core::component::dex::v1::TradingPair,
+        >,
     }
     impl ::prost::Name for PositionWithdraw {
         const NAME: &'static str = "PositionWithdraw";
@@ -655,18 +715,21 @@ pub mod transaction_planner_request {
         const NAME: &'static str = "ActionDutchAuctionSchedule";
         const PACKAGE: &'static str = "penumbra.view.v1";
         fn full_name() -> ::prost::alloc::string::String {
-            "penumbra.view.v1.TransactionPlannerRequest.ActionDutchAuctionSchedule".into()
+            "penumbra.view.v1.TransactionPlannerRequest.ActionDutchAuctionSchedule"
+                .into()
         }
         fn type_url() -> ::prost::alloc::string::String {
-            "/penumbra.view.v1.TransactionPlannerRequest.ActionDutchAuctionSchedule".into()
+            "/penumbra.view.v1.TransactionPlannerRequest.ActionDutchAuctionSchedule"
+                .into()
         }
     }
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ActionDutchAuctionEnd {
         /// The unique id of the auction to close.
         #[prost(message, optional, tag = "1")]
-        pub auction_id:
-            ::core::option::Option<super::super::super::core::component::auction::v1::AuctionId>,
+        pub auction_id: ::core::option::Option<
+            super::super::super::core::component::auction::v1::AuctionId,
+        >,
     }
     impl ::prost::Name for ActionDutchAuctionEnd {
         const NAME: &'static str = "ActionDutchAuctionEnd";
@@ -682,8 +745,9 @@ pub mod transaction_planner_request {
     pub struct ActionDutchAuctionWithdraw {
         /// The auction to withdraw funds from.
         #[prost(message, optional, tag = "1")]
-        pub auction_id:
-            ::core::option::Option<super::super::super::core::component::auction::v1::AuctionId>,
+        pub auction_id: ::core::option::Option<
+            super::super::super::core::component::auction::v1::AuctionId,
+        >,
         /// The sequence number of the withdrawal.
         #[prost(uint64, tag = "2")]
         pub seq: u64,
@@ -692,10 +756,12 @@ pub mod transaction_planner_request {
         const NAME: &'static str = "ActionDutchAuctionWithdraw";
         const PACKAGE: &'static str = "penumbra.view.v1";
         fn full_name() -> ::prost::alloc::string::String {
-            "penumbra.view.v1.TransactionPlannerRequest.ActionDutchAuctionWithdraw".into()
+            "penumbra.view.v1.TransactionPlannerRequest.ActionDutchAuctionWithdraw"
+                .into()
         }
         fn type_url() -> ::prost::alloc::string::String {
-            "/penumbra.view.v1.TransactionPlannerRequest.ActionDutchAuctionWithdraw".into()
+            "/penumbra.view.v1.TransactionPlannerRequest.ActionDutchAuctionWithdraw"
+                .into()
         }
     }
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -705,8 +771,9 @@ pub mod transaction_planner_request {
         pub proposal: u64,
         /// The vote.
         #[prost(message, optional, tag = "2")]
-        pub vote:
-            ::core::option::Option<super::super::super::core::component::governance::v1::Vote>,
+        pub vote: ::core::option::Option<
+            super::super::super::core::component::governance::v1::Vote,
+        >,
         /// The block height at which the proposal started voting.
         #[prost(uint64, tag = "3")]
         pub start_block_height: u64,
@@ -715,8 +782,9 @@ pub mod transaction_planner_request {
         pub start_position: u64,
         /// The validators rate data for the proposal.
         #[prost(message, repeated, tag = "5")]
-        pub rate_data:
-            ::prost::alloc::vec::Vec<super::super::super::core::component::stake::v1::RateData>,
+        pub rate_data: ::prost::alloc::vec::Vec<
+            super::super::super::core::component::stake::v1::RateData,
+        >,
     }
     impl ::prost::Name for DelegatorVote {
         const NAME: &'static str = "DelegatorVote";
@@ -752,7 +820,9 @@ impl ::prost::Name for TransactionPlannerRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionPlannerResponse {
     #[prost(message, optional, tag = "1")]
-    pub plan: ::core::option::Option<super::super::core::transaction::v1::TransactionPlan>,
+    pub plan: ::core::option::Option<
+        super::super::core::transaction::v1::TransactionPlan,
+    >,
 }
 impl ::prost::Name for TransactionPlannerResponse {
     const NAME: &'static str = "TransactionPlannerResponse";
@@ -767,7 +837,9 @@ impl ::prost::Name for TransactionPlannerResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AddressByIndexRequest {
     #[prost(message, optional, tag = "1")]
-    pub address_index: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
 }
 impl ::prost::Name for AddressByIndexRequest {
     const NAME: &'static str = "AddressByIndexRequest";
@@ -840,7 +912,9 @@ impl ::prost::Name for IndexByAddressRequest {
 pub struct IndexByAddressResponse {
     /// Will be absent if given an address not viewable by this viewing service
     #[prost(message, optional, tag = "1")]
-    pub address_index: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
 }
 impl ::prost::Name for IndexByAddressResponse {
     const NAME: &'static str = "IndexByAddressResponse";
@@ -855,7 +929,9 @@ impl ::prost::Name for IndexByAddressResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EphemeralAddressRequest {
     #[prost(message, optional, tag = "1")]
-    pub address_index: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
 }
 impl ::prost::Name for EphemeralAddressRequest {
     const NAME: &'static str = "EphemeralAddressRequest";
@@ -886,7 +962,9 @@ impl ::prost::Name for EphemeralAddressResponse {
 pub struct BalancesRequest {
     /// If present, filter balances to only include the account specified by the `AddressIndex`.
     #[prost(message, optional, tag = "1")]
-    pub account_filter: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub account_filter: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
     /// If present, filter balances to only include the specified asset ID.
     #[prost(message, optional, tag = "2")]
     pub asset_id_filter: ::core::option::Option<super::super::core::asset::v1::AssetId>,
@@ -916,7 +994,9 @@ pub struct BalancesResponse {
     /// Note that the returned balance is for all funds sent to the account,
     /// not just funds sent to its default address.
     #[prost(message, optional, tag = "3")]
-    pub account_address: ::core::option::Option<super::super::core::keys::v1::AddressView>,
+    pub account_address: ::core::option::Option<
+        super::super::core::keys::v1::AddressView,
+    >,
     /// The account's balance, with metadata.
     #[prost(message, optional, tag = "4")]
     pub balance_view: ::core::option::Option<super::super::core::asset::v1::ValueView>,
@@ -1017,7 +1097,9 @@ pub struct NotesRequest {
     pub asset_id: ::core::option::Option<super::super::core::asset::v1::AssetId>,
     /// If set, only return notes with the specified address incore.component.dex.v1.
     #[prost(message, optional, tag = "4")]
-    pub address_index: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
     /// If set, stop returning notes once the total exceeds this amount.
     ///
     /// Ignored if `asset_id` is unset or if `include_spent` is set.
@@ -1042,7 +1124,9 @@ pub struct NotesForVotingRequest {
     pub votable_at_height: u64,
     /// If set, only return notes with the specified asset id.
     #[prost(message, optional, tag = "3")]
-    pub address_index: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
 }
 impl ::prost::Name for NotesForVotingRequest {
     const NAME: &'static str = "NotesForVotingRequest";
@@ -1058,8 +1142,9 @@ impl ::prost::Name for NotesForVotingRequest {
 pub struct WitnessRequest {
     /// The transaction plan to witness
     #[prost(message, optional, tag = "3")]
-    pub transaction_plan:
-        ::core::option::Option<super::super::core::transaction::v1::TransactionPlan>,
+    pub transaction_plan: ::core::option::Option<
+        super::super::core::transaction::v1::TransactionPlan,
+    >,
 }
 impl ::prost::Name for WitnessRequest {
     const NAME: &'static str = "WitnessRequest";
@@ -1074,7 +1159,9 @@ impl ::prost::Name for WitnessRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessResponse {
     #[prost(message, optional, tag = "1")]
-    pub witness_data: ::core::option::Option<super::super::core::transaction::v1::WitnessData>,
+    pub witness_data: ::core::option::Option<
+        super::super::core::transaction::v1::WitnessData,
+    >,
 }
 impl ::prost::Name for WitnessResponse {
     const NAME: &'static str = "WitnessResponse";
@@ -1089,11 +1176,13 @@ impl ::prost::Name for WitnessResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessAndBuildRequest {
     #[prost(message, optional, tag = "1")]
-    pub transaction_plan:
-        ::core::option::Option<super::super::core::transaction::v1::TransactionPlan>,
+    pub transaction_plan: ::core::option::Option<
+        super::super::core::transaction::v1::TransactionPlan,
+    >,
     #[prost(message, optional, tag = "2")]
-    pub authorization_data:
-        ::core::option::Option<super::super::core::transaction::v1::AuthorizationData>,
+    pub authorization_data: ::core::option::Option<
+        super::super::core::transaction::v1::AuthorizationData,
+    >,
 }
 impl ::prost::Name for WitnessAndBuildRequest {
     const NAME: &'static str = "WitnessAndBuildRequest";
@@ -1134,8 +1223,9 @@ pub mod witness_and_build_response {
     pub struct Complete {
         /// The finished transaction.
         #[prost(message, optional, tag = "1")]
-        pub transaction:
-            ::core::option::Option<super::super::super::core::transaction::v1::Transaction>,
+        pub transaction: ::core::option::Option<
+            super::super::super::core::transaction::v1::Transaction,
+        >,
     }
     impl ::prost::Name for Complete {
         const NAME: &'static str = "Complete";
@@ -1174,8 +1264,9 @@ pub struct AssetsRequest {
     pub filtered: bool,
     /// Include these specific denominations in the response.
     #[prost(message, repeated, tag = "2")]
-    pub include_specific_denominations:
-        ::prost::alloc::vec::Vec<super::super::core::asset::v1::Denom>,
+    pub include_specific_denominations: ::prost::alloc::vec::Vec<
+        super::super::core::asset::v1::Denom,
+    >,
     /// Include all delegation tokens, to any validator, in the response.
     #[prost(bool, tag = "3")]
     pub include_delegation_tokens: bool,
@@ -1263,10 +1354,14 @@ impl ::prost::Name for GasPricesRequest {
 pub struct GasPricesResponse {
     /// The current gas prices, in the preferred (native) token.
     #[prost(message, optional, tag = "1")]
-    pub gas_prices: ::core::option::Option<super::super::core::component::fee::v1::GasPrices>,
+    pub gas_prices: ::core::option::Option<
+        super::super::core::component::fee::v1::GasPrices,
+    >,
     /// Other gas prices for other accepted tokens.
     #[prost(message, repeated, tag = "2")]
-    pub alt_gas_prices: ::prost::alloc::vec::Vec<super::super::core::component::fee::v1::GasPrices>,
+    pub alt_gas_prices: ::prost::alloc::vec::Vec<
+        super::super::core::component::fee::v1::GasPrices,
+    >,
 }
 impl ::prost::Name for GasPricesResponse {
     const NAME: &'static str = "GasPricesResponse";
@@ -1294,8 +1389,9 @@ impl ::prost::Name for FmdParametersRequest {
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct FmdParametersResponse {
     #[prost(message, optional, tag = "1")]
-    pub parameters:
-        ::core::option::Option<super::super::core::component::shielded_pool::v1::FmdParameters>,
+    pub parameters: ::core::option::Option<
+        super::super::core::component::shielded_pool::v1::FmdParameters,
+    >,
 }
 impl ::prost::Name for FmdParametersResponse {
     const NAME: &'static str = "FMDParametersResponse";
@@ -1310,7 +1406,9 @@ impl ::prost::Name for FmdParametersResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteByCommitmentRequest {
     #[prost(message, optional, tag = "2")]
-    pub note_commitment: ::core::option::Option<super::super::crypto::tct::v1::StateCommitment>,
+    pub note_commitment: ::core::option::Option<
+        super::super::crypto::tct::v1::StateCommitment,
+    >,
     /// If set to true, waits to return until the requested note is detected.
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
@@ -1343,7 +1441,9 @@ impl ::prost::Name for NoteByCommitmentResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapByCommitmentRequest {
     #[prost(message, optional, tag = "2")]
-    pub swap_commitment: ::core::option::Option<super::super::crypto::tct::v1::StateCommitment>,
+    pub swap_commitment: ::core::option::Option<
+        super::super::crypto::tct::v1::StateCommitment,
+    >,
     /// If set to true, waits to return until the requested swap is detected.
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
@@ -1403,7 +1503,9 @@ impl ::prost::Name for UnclaimedSwapsResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NullifierStatusRequest {
     #[prost(message, optional, tag = "2")]
-    pub nullifier: ::core::option::Option<super::super::core::component::sct::v1::Nullifier>,
+    pub nullifier: ::core::option::Option<
+        super::super::core::component::sct::v1::Nullifier,
+    >,
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
 }
@@ -1477,14 +1579,19 @@ pub struct TransactionInfo {
     pub id: ::core::option::Option<super::super::core::txhash::v1::TransactionId>,
     /// The transaction data itself.
     #[prost(message, optional, tag = "3")]
-    pub transaction: ::core::option::Option<super::super::core::transaction::v1::Transaction>,
+    pub transaction: ::core::option::Option<
+        super::super::core::transaction::v1::Transaction,
+    >,
     /// The transaction perspective, as seen by this view server.
     #[prost(message, optional, tag = "4")]
-    pub perspective:
-        ::core::option::Option<super::super::core::transaction::v1::TransactionPerspective>,
+    pub perspective: ::core::option::Option<
+        super::super::core::transaction::v1::TransactionPerspective,
+    >,
     /// A precomputed transaction view of `transaction` from `perspective`, included for convenience of clients that don't have support for viewing transactions on their own.
     #[prost(message, optional, tag = "5")]
-    pub view: ::core::option::Option<super::super::core::transaction::v1::TransactionView>,
+    pub view: ::core::option::Option<
+        super::super::core::transaction::v1::TransactionView,
+    >,
 }
 impl ::prost::Name for TransactionInfo {
     const NAME: &'static str = "TransactionInfo";
@@ -1563,16 +1670,24 @@ impl ::prost::Name for NotesForVotingResponse {
 pub struct SpendableNoteRecord {
     /// The note commitment, identifying the note.
     #[prost(message, optional, tag = "1")]
-    pub note_commitment: ::core::option::Option<super::super::crypto::tct::v1::StateCommitment>,
+    pub note_commitment: ::core::option::Option<
+        super::super::crypto::tct::v1::StateCommitment,
+    >,
     /// The note plaintext itself.
     #[prost(message, optional, tag = "2")]
-    pub note: ::core::option::Option<super::super::core::component::shielded_pool::v1::Note>,
+    pub note: ::core::option::Option<
+        super::super::core::component::shielded_pool::v1::Note,
+    >,
     /// A precomputed decryption of the note's address incore.component.dex.v1.
     #[prost(message, optional, tag = "3")]
-    pub address_index: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
     /// The note's nullifier.
     #[prost(message, optional, tag = "4")]
-    pub nullifier: ::core::option::Option<super::super::core::component::sct::v1::Nullifier>,
+    pub nullifier: ::core::option::Option<
+        super::super::core::component::sct::v1::Nullifier,
+    >,
     /// The height at which the note was created.
     #[prost(uint64, tag = "5")]
     pub height_created: u64,
@@ -1584,10 +1699,14 @@ pub struct SpendableNoteRecord {
     pub position: u64,
     /// The source of the note
     #[prost(message, optional, tag = "8")]
-    pub source: ::core::option::Option<super::super::core::component::sct::v1::CommitmentSource>,
+    pub source: ::core::option::Option<
+        super::super::core::component::sct::v1::CommitmentSource,
+    >,
     /// The sender's return address, if known.
     #[prost(message, optional, tag = "9")]
-    pub return_address: ::core::option::Option<super::super::core::keys::v1::AddressView>,
+    pub return_address: ::core::option::Option<
+        super::super::core::keys::v1::AddressView,
+    >,
 }
 impl ::prost::Name for SpendableNoteRecord {
     const NAME: &'static str = "SpendableNoteRecord";
@@ -1602,20 +1721,29 @@ impl ::prost::Name for SpendableNoteRecord {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapRecord {
     #[prost(message, optional, tag = "1")]
-    pub swap_commitment: ::core::option::Option<super::super::crypto::tct::v1::StateCommitment>,
+    pub swap_commitment: ::core::option::Option<
+        super::super::crypto::tct::v1::StateCommitment,
+    >,
     #[prost(message, optional, tag = "2")]
-    pub swap: ::core::option::Option<super::super::core::component::dex::v1::SwapPlaintext>,
+    pub swap: ::core::option::Option<
+        super::super::core::component::dex::v1::SwapPlaintext,
+    >,
     #[prost(uint64, tag = "3")]
     pub position: u64,
     #[prost(message, optional, tag = "4")]
-    pub nullifier: ::core::option::Option<super::super::core::component::sct::v1::Nullifier>,
+    pub nullifier: ::core::option::Option<
+        super::super::core::component::sct::v1::Nullifier,
+    >,
     #[prost(message, optional, tag = "5")]
-    pub output_data:
-        ::core::option::Option<super::super::core::component::dex::v1::BatchSwapOutputData>,
+    pub output_data: ::core::option::Option<
+        super::super::core::component::dex::v1::BatchSwapOutputData,
+    >,
     #[prost(uint64, tag = "6")]
     pub height_claimed: u64,
     #[prost(message, optional, tag = "7")]
-    pub source: ::core::option::Option<super::super::core::component::sct::v1::CommitmentSource>,
+    pub source: ::core::option::Option<
+        super::super::core::component::sct::v1::CommitmentSource,
+    >,
 }
 impl ::prost::Name for SwapRecord {
     const NAME: &'static str = "SwapRecord";
@@ -1631,11 +1759,14 @@ impl ::prost::Name for SwapRecord {
 pub struct OwnedPositionIdsRequest {
     /// If present, return only positions with this position state.
     #[prost(message, optional, tag = "1")]
-    pub position_state:
-        ::core::option::Option<super::super::core::component::dex::v1::PositionState>,
+    pub position_state: ::core::option::Option<
+        super::super::core::component::dex::v1::PositionState,
+    >,
     /// If present, return only positions for this trading pair.
     #[prost(message, optional, tag = "2")]
-    pub trading_pair: ::core::option::Option<super::super::core::component::dex::v1::TradingPair>,
+    pub trading_pair: ::core::option::Option<
+        super::super::core::component::dex::v1::TradingPair,
+    >,
     /// If present, return only positions for this subaccount index.
     #[prost(message, optional, tag = "3")]
     pub subaccount: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
@@ -1653,7 +1784,9 @@ impl ::prost::Name for OwnedPositionIdsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OwnedPositionIdsResponse {
     #[prost(message, optional, tag = "1")]
-    pub position_id: ::core::option::Option<super::super::core::component::dex::v1::PositionId>,
+    pub position_id: ::core::option::Option<
+        super::super::core::component::dex::v1::PositionId,
+    >,
     /// The subaccount this position belongs to.
     #[prost(message, optional, tag = "2")]
     pub subaccount: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
@@ -1710,16 +1843,25 @@ impl ::prost::Name for AssetMetadataByIdResponse {
 pub struct DelegationsByAddressIndexRequest {
     /// The address index to fetch delegation balances for.
     #[prost(message, optional, tag = "1")]
-    pub address_index: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
-    #[prost(
-        enumeration = "delegations_by_address_index_request::Filter",
-        tag = "2"
-    )]
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
+    #[prost(enumeration = "delegations_by_address_index_request::Filter", tag = "2")]
     pub filter: i32,
 }
 /// Nested message and enum types in `DelegationsByAddressIndexRequest`.
 pub mod delegations_by_address_index_request {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
     #[repr(i32)]
     pub enum Filter {
         /// By default, returns delegations for all active validators. For validators
@@ -1742,7 +1884,9 @@ pub mod delegations_by_address_index_request {
         pub fn as_str_name(&self) -> &'static str {
             match self {
                 Self::Unspecified => "FILTER_UNSPECIFIED",
-                Self::AllActiveWithNonzeroBalances => "FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES",
+                Self::AllActiveWithNonzeroBalances => {
+                    "FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES"
+                }
                 Self::All => "FILTER_ALL",
             }
         }
@@ -1798,11 +1942,23 @@ pub struct UnbondingTokensByAddressIndexRequest {
     pub filter: i32,
     /// The address index to fetch unbonding tokens for.
     #[prost(message, optional, tag = "2")]
-    pub address_index: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
 }
 /// Nested message and enum types in `UnbondingTokensByAddressIndexRequest`.
 pub mod unbonding_tokens_by_address_index_request {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
     #[repr(i32)]
     pub enum Filter {
         /// Return all unbonding tokens, regardless of whether they're claimable
@@ -1878,10 +2034,14 @@ impl ::prost::Name for UnbondingTokensByAddressIndexResponse {
 pub struct LatestSwapsRequest {
     /// If present, filter balances to only include the account specified by the `AddressIndex`.
     #[prost(message, optional, tag = "1")]
-    pub account_filter: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    pub account_filter: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
     /// If present, filter balances to only include trading activity on the specified pair.
     #[prost(message, optional, tag = "2")]
-    pub pair: ::core::option::Option<super::super::core::component::dex::v1::DirectedTradingPair>,
+    pub pair: ::core::option::Option<
+        super::super::core::component::dex::v1::DirectedTradingPair,
+    >,
     /// If present, limit the responses to activity that occured after this block height.
     #[prost(uint64, tag = "3")]
     pub after_height: u64,
@@ -1903,7 +2063,9 @@ impl ::prost::Name for LatestSwapsRequest {
 pub struct LatestSwapsResponse {
     /// The trading pair involved in this swap.
     #[prost(message, optional, tag = "1")]
-    pub pair: ::core::option::Option<super::super::core::component::dex::v1::DirectedTradingPair>,
+    pub pair: ::core::option::Option<
+        super::super::core::component::dex::v1::DirectedTradingPair,
+    >,
     /// The input value for the swap.
     #[prost(message, optional, tag = "2")]
     pub input: ::core::option::Option<super::super::core::asset::v1::Value>,
@@ -1935,10 +2097,10 @@ pub mod view_service_client {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
-    use tonic::codegen::http::Uri;
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     /// The view RPC is used by a view client, who wants to do some
     /// transaction-related actions, to request data from a view service, which is
     /// responsible for synchronizing and scanning the public chain state with one or
@@ -1986,8 +2148,9 @@ pub mod view_service_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
-                Into<StdError> + std::marker::Send + std::marker::Sync,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+            >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             ViewServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -2027,11 +2190,18 @@ pub mod view_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::StatusRequest>,
         ) -> std::result::Result<tonic::Response<super::StatusResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/Status");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/Status",
+            );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "Status"));
@@ -2046,17 +2216,21 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::StatusStreamResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/StatusStream");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/StatusStream",
+            );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "StatusStream",
-            ));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "StatusStream"));
             self.inner.server_streaming(req, path, codec).await
         }
         /// Queries for notes that have been accepted by the chain.
@@ -2068,11 +2242,18 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::NotesResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/Notes");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/Notes",
+            );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "Notes"));
@@ -2086,18 +2267,23 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::NotesForVotingResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/NotesForVoting",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "NotesForVoting",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "NotesForVoting"),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
         /// Queries for metadata about known assets.
@@ -2109,11 +2295,18 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::AssetsResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/Assets");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/Assets",
+            );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "Assets"));
@@ -2127,52 +2320,76 @@ pub mod view_service_client {
         pub async fn asset_metadata_by_id(
             &mut self,
             request: impl tonic::IntoRequest<super::AssetMetadataByIdRequest>,
-        ) -> std::result::Result<tonic::Response<super::AssetMetadataByIdResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::AssetMetadataByIdResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/AssetMetadataById",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "AssetMetadataById",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "AssetMetadataById"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Query for the current app parameters.
         pub async fn app_parameters(
             &mut self,
             request: impl tonic::IntoRequest<super::AppParametersRequest>,
-        ) -> std::result::Result<tonic::Response<super::AppParametersResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::AppParametersResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/AppParameters");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/AppParameters",
+            );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "AppParameters",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "AppParameters"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Query for the current gas prices.
         pub async fn gas_prices(
             &mut self,
             request: impl tonic::IntoRequest<super::GasPricesRequest>,
-        ) -> std::result::Result<tonic::Response<super::GasPricesResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::GasPricesResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/GasPrices");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/GasPrices",
+            );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "GasPrices"));
@@ -2182,72 +2399,103 @@ pub mod view_service_client {
         pub async fn fmd_parameters(
             &mut self,
             request: impl tonic::IntoRequest<super::FmdParametersRequest>,
-        ) -> std::result::Result<tonic::Response<super::FmdParametersResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::FmdParametersResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/FMDParameters");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/FMDParameters",
+            );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "FMDParameters",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "FMDParameters"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Query for an address given an address index
         pub async fn address_by_index(
             &mut self,
             request: impl tonic::IntoRequest<super::AddressByIndexRequest>,
-        ) -> std::result::Result<tonic::Response<super::AddressByIndexResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::AddressByIndexResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/AddressByIndex",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "AddressByIndex",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "AddressByIndex"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Returns the transparent address for the user's wallet.
         pub async fn transparent_address(
             &mut self,
             request: impl tonic::IntoRequest<super::TransparentAddressRequest>,
-        ) -> std::result::Result<tonic::Response<super::TransparentAddressResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::TransparentAddressResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/TransparentAddress",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "TransparentAddress",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "TransparentAddress"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Query for wallet id
         pub async fn wallet_id(
             &mut self,
             request: impl tonic::IntoRequest<super::WalletIdRequest>,
-        ) -> std::result::Result<tonic::Response<super::WalletIdResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::WalletIdResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/WalletId");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/WalletId",
+            );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "WalletId"));
@@ -2257,40 +2505,54 @@ pub mod view_service_client {
         pub async fn index_by_address(
             &mut self,
             request: impl tonic::IntoRequest<super::IndexByAddressRequest>,
-        ) -> std::result::Result<tonic::Response<super::IndexByAddressResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::IndexByAddressResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/IndexByAddress",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "IndexByAddress",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "IndexByAddress"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Query for an ephemeral address
         pub async fn ephemeral_address(
             &mut self,
             request: impl tonic::IntoRequest<super::EphemeralAddressRequest>,
-        ) -> std::result::Result<tonic::Response<super::EphemeralAddressResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::EphemeralAddressResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/EphemeralAddress",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "EphemeralAddress",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "EphemeralAddress"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Query for balance of a given address.
@@ -2302,12 +2564,18 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::BalancesResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/Balances");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/Balances",
+            );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "Balances"));
@@ -2317,40 +2585,54 @@ pub mod view_service_client {
         pub async fn note_by_commitment(
             &mut self,
             request: impl tonic::IntoRequest<super::NoteByCommitmentRequest>,
-        ) -> std::result::Result<tonic::Response<super::NoteByCommitmentResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::NoteByCommitmentResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/NoteByCommitment",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "NoteByCommitment",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "NoteByCommitment"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Query for a swap by its swap commitment, optionally waiting until the swap is detected.
         pub async fn swap_by_commitment(
             &mut self,
             request: impl tonic::IntoRequest<super::SwapByCommitmentRequest>,
-        ) -> std::result::Result<tonic::Response<super::SwapByCommitmentResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::SwapByCommitmentResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/SwapByCommitment",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "SwapByCommitment",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "SwapByCommitment"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Query for all unclaimed swaps.
@@ -2361,58 +2643,80 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::UnclaimedSwapsResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/UnclaimedSwaps",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "UnclaimedSwaps",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "UnclaimedSwaps"),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
         /// Query for whether a nullifier has been spent, optionally waiting until it is spent.
         pub async fn nullifier_status(
             &mut self,
             request: impl tonic::IntoRequest<super::NullifierStatusRequest>,
-        ) -> std::result::Result<tonic::Response<super::NullifierStatusResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::NullifierStatusResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/NullifierStatus",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "NullifierStatus",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "NullifierStatus"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Query for a given transaction by its hash.
         pub async fn transaction_info_by_hash(
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionInfoByHashRequest>,
-        ) -> std::result::Result<tonic::Response<super::TransactionInfoByHashResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::TransactionInfoByHashResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/TransactionInfoByHash",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "TransactionInfoByHash",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "TransactionInfoByHash",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Query for the full transactions in the given range of blocks.
@@ -2424,18 +2728,23 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::TransactionInfoResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/TransactionInfo",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "TransactionInfo",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "TransactionInfo"),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
         /// Query for owned position IDs for the given trading pair and in the given position state.
@@ -2446,38 +2755,50 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::OwnedPositionIdsResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/OwnedPositionIds",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "OwnedPositionIds",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "OwnedPositionIds"),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
         /// Translates a high-level intent ("send X funds to Y address") into a complete transaction plan.
         pub async fn transaction_planner(
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionPlannerRequest>,
-        ) -> std::result::Result<tonic::Response<super::TransactionPlannerResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::TransactionPlannerResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/TransactionPlanner",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "TransactionPlanner",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "TransactionPlanner"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Returns authentication data for the given transaction plan.
@@ -2489,13 +2810,22 @@ pub mod view_service_client {
         pub async fn witness(
             &mut self,
             request: impl tonic::IntoRequest<super::WitnessRequest>,
-        ) -> std::result::Result<tonic::Response<super::WitnessResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::WitnessResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/Witness");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/Witness",
+            );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "Witness"));
@@ -2515,18 +2845,23 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::WitnessAndBuildResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/WitnessAndBuild",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "WitnessAndBuild",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "WitnessAndBuild"),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
         /// Authorize a transaction plan and build the transaction.
@@ -2547,18 +2882,23 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::AuthorizeAndBuildResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/AuthorizeAndBuild",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "AuthorizeAndBuild",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "AuthorizeAndBuild"),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
         /// Broadcast a transaction to the network, optionally waiting for full confirmation.
@@ -2568,21 +2908,31 @@ pub mod view_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::BroadcastTransactionRequest>,
         ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::BroadcastTransactionResponse>>,
+            tonic::Response<
+                tonic::codec::Streaming<super::BroadcastTransactionResponse>,
+            >,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/BroadcastTransaction",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "BroadcastTransaction",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "BroadcastTransaction",
+                    ),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
         /// Get delegation tokens for a given address index. Each delegation token will
@@ -2593,21 +2943,31 @@ pub mod view_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::DelegationsByAddressIndexRequest>,
         ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::DelegationsByAddressIndexResponse>>,
+            tonic::Response<
+                tonic::codec::Streaming<super::DelegationsByAddressIndexResponse>,
+            >,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/DelegationsByAddressIndex",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "DelegationsByAddressIndex",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "DelegationsByAddressIndex",
+                    ),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
         /// Get unbonding tokens for the given address index, optionally filtered by
@@ -2616,21 +2976,31 @@ pub mod view_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::UnbondingTokensByAddressIndexRequest>,
         ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::UnbondingTokensByAddressIndexResponse>>,
+            tonic::Response<
+                tonic::codec::Streaming<super::UnbondingTokensByAddressIndexResponse>,
+            >,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/UnbondingTokensByAddressIndex",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "UnbondingTokensByAddressIndex",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "UnbondingTokensByAddressIndex",
+                    ),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
         /// Gets the auctions controlled by the user's wallet.
@@ -2641,12 +3011,18 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::AuctionsResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/Auctions");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/Auctions",
+            );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "Auctions"));
@@ -2660,37 +3036,48 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::LatestSwapsResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/penumbra.view.v1.ViewService/LatestSwaps");
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/LatestSwaps",
+            );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "LatestSwaps",
-            ));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "LatestSwaps"));
             self.inner.server_streaming(req, path, codec).await
         }
         /// Gets details on the list votes cast in the current epoch for incentivized assets.
         pub async fn tournament_votes(
             &mut self,
             request: impl tonic::IntoRequest<super::TournamentVotesRequest>,
-        ) -> std::result::Result<tonic::Response<super::TournamentVotesResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::TournamentVotesResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/TournamentVotes",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "TournamentVotes",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "TournamentVotes"),
+                );
             self.inner.unary(req, path, codec).await
         }
         /// Gets the spendable note records that are eligible for voting in the current epoch.
@@ -2701,18 +3088,23 @@ pub mod view_service_client {
             tonic::Response<tonic::codec::Streaming<super::LqtVotingNotesResponse>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1.ViewService/LqtVotingNotes",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.view.v1.ViewService",
-                "LqtVotingNotes",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "LqtVotingNotes"),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
     }
@@ -2725,7 +3117,7 @@ pub mod view_service_server {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with ViewServiceServer.
@@ -2739,18 +3131,23 @@ pub mod view_service_server {
         /// Server streaming response type for the StatusStream method.
         type StatusStreamStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::StatusStreamResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Stream sync status updates until the view service has caught up with the chain.
         /// Returns a stream of `StatusStreamResponse`s.
         async fn status_stream(
             &self,
             request: tonic::Request<super::StatusStreamRequest>,
-        ) -> std::result::Result<tonic::Response<Self::StatusStreamStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::StatusStreamStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the Notes method.
         type NotesStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::NotesResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Queries for notes that have been accepted by the chain.
         /// Returns a stream of `NotesResponse`s.
@@ -2761,17 +3158,22 @@ pub mod view_service_server {
         /// Server streaming response type for the NotesForVoting method.
         type NotesForVotingStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::NotesForVotingResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Returns a stream of `NotesForVotingResponse`s.
         async fn notes_for_voting(
             &self,
             request: tonic::Request<super::NotesForVotingRequest>,
-        ) -> std::result::Result<tonic::Response<Self::NotesForVotingStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::NotesForVotingStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the Assets method.
         type AssetsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::AssetsResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Queries for metadata about known assets.
         /// Returns a stream of `AssetsResponse`s.
@@ -2787,51 +3189,79 @@ pub mod view_service_server {
         async fn asset_metadata_by_id(
             &self,
             request: tonic::Request<super::AssetMetadataByIdRequest>,
-        ) -> std::result::Result<tonic::Response<super::AssetMetadataByIdResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::AssetMetadataByIdResponse>,
+            tonic::Status,
+        >;
         /// Query for the current app parameters.
         async fn app_parameters(
             &self,
             request: tonic::Request<super::AppParametersRequest>,
-        ) -> std::result::Result<tonic::Response<super::AppParametersResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::AppParametersResponse>,
+            tonic::Status,
+        >;
         /// Query for the current gas prices.
         async fn gas_prices(
             &self,
             request: tonic::Request<super::GasPricesRequest>,
-        ) -> std::result::Result<tonic::Response<super::GasPricesResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::GasPricesResponse>,
+            tonic::Status,
+        >;
         /// Query for the current FMD parameters.
         async fn fmd_parameters(
             &self,
             request: tonic::Request<super::FmdParametersRequest>,
-        ) -> std::result::Result<tonic::Response<super::FmdParametersResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::FmdParametersResponse>,
+            tonic::Status,
+        >;
         /// Query for an address given an address index
         async fn address_by_index(
             &self,
             request: tonic::Request<super::AddressByIndexRequest>,
-        ) -> std::result::Result<tonic::Response<super::AddressByIndexResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::AddressByIndexResponse>,
+            tonic::Status,
+        >;
         /// Returns the transparent address for the user's wallet.
         async fn transparent_address(
             &self,
             request: tonic::Request<super::TransparentAddressRequest>,
-        ) -> std::result::Result<tonic::Response<super::TransparentAddressResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::TransparentAddressResponse>,
+            tonic::Status,
+        >;
         /// Query for wallet id
         async fn wallet_id(
             &self,
             request: tonic::Request<super::WalletIdRequest>,
-        ) -> std::result::Result<tonic::Response<super::WalletIdResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::WalletIdResponse>,
+            tonic::Status,
+        >;
         /// Query for an address given an address index
         async fn index_by_address(
             &self,
             request: tonic::Request<super::IndexByAddressRequest>,
-        ) -> std::result::Result<tonic::Response<super::IndexByAddressResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::IndexByAddressResponse>,
+            tonic::Status,
+        >;
         /// Query for an ephemeral address
         async fn ephemeral_address(
             &self,
             request: tonic::Request<super::EphemeralAddressRequest>,
-        ) -> std::result::Result<tonic::Response<super::EphemeralAddressResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::EphemeralAddressResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the Balances method.
         type BalancesStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::BalancesResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Query for balance of a given address.
         /// Returns a stream of `BalancesResponses`.
@@ -2843,58 +3273,88 @@ pub mod view_service_server {
         async fn note_by_commitment(
             &self,
             request: tonic::Request<super::NoteByCommitmentRequest>,
-        ) -> std::result::Result<tonic::Response<super::NoteByCommitmentResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::NoteByCommitmentResponse>,
+            tonic::Status,
+        >;
         /// Query for a swap by its swap commitment, optionally waiting until the swap is detected.
         async fn swap_by_commitment(
             &self,
             request: tonic::Request<super::SwapByCommitmentRequest>,
-        ) -> std::result::Result<tonic::Response<super::SwapByCommitmentResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::SwapByCommitmentResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the UnclaimedSwaps method.
         type UnclaimedSwapsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::UnclaimedSwapsResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Query for all unclaimed swaps.
         async fn unclaimed_swaps(
             &self,
             request: tonic::Request<super::UnclaimedSwapsRequest>,
-        ) -> std::result::Result<tonic::Response<Self::UnclaimedSwapsStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::UnclaimedSwapsStream>,
+            tonic::Status,
+        >;
         /// Query for whether a nullifier has been spent, optionally waiting until it is spent.
         async fn nullifier_status(
             &self,
             request: tonic::Request<super::NullifierStatusRequest>,
-        ) -> std::result::Result<tonic::Response<super::NullifierStatusResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::NullifierStatusResponse>,
+            tonic::Status,
+        >;
         /// Query for a given transaction by its hash.
         async fn transaction_info_by_hash(
             &self,
             request: tonic::Request<super::TransactionInfoByHashRequest>,
-        ) -> std::result::Result<tonic::Response<super::TransactionInfoByHashResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::TransactionInfoByHashResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the TransactionInfo method.
         type TransactionInfoStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::TransactionInfoResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Query for the full transactions in the given range of blocks.
         /// Returns a stream of `TransactionInfoResponse`s.
         async fn transaction_info(
             &self,
             request: tonic::Request<super::TransactionInfoRequest>,
-        ) -> std::result::Result<tonic::Response<Self::TransactionInfoStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::TransactionInfoStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the OwnedPositionIds method.
         type OwnedPositionIdsStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<super::OwnedPositionIdsResponse, tonic::Status>,
-            > + std::marker::Send
+                Item = std::result::Result<
+                    super::OwnedPositionIdsResponse,
+                    tonic::Status,
+                >,
+            >
+            + std::marker::Send
             + 'static;
         /// Query for owned position IDs for the given trading pair and in the given position state.
         async fn owned_position_ids(
             &self,
             request: tonic::Request<super::OwnedPositionIdsRequest>,
-        ) -> std::result::Result<tonic::Response<Self::OwnedPositionIdsStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::OwnedPositionIdsStream>,
+            tonic::Status,
+        >;
         /// Translates a high-level intent ("send X funds to Y address") into a complete transaction plan.
         async fn transaction_planner(
             &self,
             request: tonic::Request<super::TransactionPlannerRequest>,
-        ) -> std::result::Result<tonic::Response<super::TransactionPlannerResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::TransactionPlannerResponse>,
+            tonic::Status,
+        >;
         /// Returns authentication data for the given transaction plan.
         ///
         /// This method takes a complete transaction plan, so that the client can get a
@@ -2908,7 +3368,8 @@ pub mod view_service_server {
         /// Server streaming response type for the WitnessAndBuild method.
         type WitnessAndBuildStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::WitnessAndBuildResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Like `Witness`, but immediately uses the witness data to build (prove) the transaction.
         ///
@@ -2920,11 +3381,18 @@ pub mod view_service_server {
         async fn witness_and_build(
             &self,
             request: tonic::Request<super::WitnessAndBuildRequest>,
-        ) -> std::result::Result<tonic::Response<Self::WitnessAndBuildStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::WitnessAndBuildStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the AuthorizeAndBuild method.
         type AuthorizeAndBuildStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<super::AuthorizeAndBuildResponse, tonic::Status>,
-            > + std::marker::Send
+                Item = std::result::Result<
+                    super::AuthorizeAndBuildResponse,
+                    tonic::Status,
+                >,
+            >
+            + std::marker::Send
             + 'static;
         /// Authorize a transaction plan and build the transaction.
         ///
@@ -2940,11 +3408,18 @@ pub mod view_service_server {
         async fn authorize_and_build(
             &self,
             request: tonic::Request<super::AuthorizeAndBuildRequest>,
-        ) -> std::result::Result<tonic::Response<Self::AuthorizeAndBuildStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::AuthorizeAndBuildStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the BroadcastTransaction method.
         type BroadcastTransactionStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<super::BroadcastTransactionResponse, tonic::Status>,
-            > + std::marker::Send
+                Item = std::result::Result<
+                    super::BroadcastTransactionResponse,
+                    tonic::Status,
+                >,
+            >
+            + std::marker::Send
             + 'static;
         /// Broadcast a transaction to the network, optionally waiting for full confirmation.
         ///
@@ -2952,11 +3427,18 @@ pub mod view_service_server {
         async fn broadcast_transaction(
             &self,
             request: tonic::Request<super::BroadcastTransactionRequest>,
-        ) -> std::result::Result<tonic::Response<Self::BroadcastTransactionStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::BroadcastTransactionStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the DelegationsByAddressIndex method.
         type DelegationsByAddressIndexStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<super::DelegationsByAddressIndexResponse, tonic::Status>,
-            > + std::marker::Send
+                Item = std::result::Result<
+                    super::DelegationsByAddressIndexResponse,
+                    tonic::Status,
+                >,
+            >
+            + std::marker::Send
             + 'static;
         /// Get delegation tokens for a given address index. Each delegation token will
         /// be represented by a `ValueView` with the given address index's balance of
@@ -2975,7 +3457,8 @@ pub mod view_service_server {
                     super::UnbondingTokensByAddressIndexResponse,
                     tonic::Status,
                 >,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Get unbonding tokens for the given address index, optionally filtered by
         /// whether the tokens are currently claimable.
@@ -2989,7 +3472,8 @@ pub mod view_service_server {
         /// Server streaming response type for the Auctions method.
         type AuctionsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::AuctionsResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Gets the auctions controlled by the user's wallet.
         async fn auctions(
@@ -2999,28 +3483,39 @@ pub mod view_service_server {
         /// Server streaming response type for the LatestSwaps method.
         type LatestSwapsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::LatestSwapsResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Gets the latest swaps controlled by the user's wallet.
         async fn latest_swaps(
             &self,
             request: tonic::Request<super::LatestSwapsRequest>,
-        ) -> std::result::Result<tonic::Response<Self::LatestSwapsStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::LatestSwapsStream>,
+            tonic::Status,
+        >;
         /// Gets details on the list votes cast in the current epoch for incentivized assets.
         async fn tournament_votes(
             &self,
             request: tonic::Request<super::TournamentVotesRequest>,
-        ) -> std::result::Result<tonic::Response<super::TournamentVotesResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::TournamentVotesResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the LqtVotingNotes method.
         type LqtVotingNotesStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::LqtVotingNotesResponse, tonic::Status>,
-            > + std::marker::Send
+            >
+            + std::marker::Send
             + 'static;
         /// Gets the spendable note records that are eligible for voting in the current epoch.
         async fn lqt_voting_notes(
             &self,
             request: tonic::Request<super::LqtVotingNotesRequest>,
-        ) -> std::result::Result<tonic::Response<Self::LqtVotingNotesStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::LqtVotingNotesStream>,
+            tonic::Status,
+        >;
     }
     /// The view RPC is used by a view client, who wants to do some
     /// transaction-related actions, to request data from a view service, which is
@@ -3047,7 +3542,10 @@ pub mod view_service_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -3102,16 +3600,23 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/Status" => {
                     #[allow(non_camel_case_types)]
                     struct StatusSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::StatusRequest> for StatusSvc<T> {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::StatusRequest>
+                    for StatusSvc<T> {
                         type Response = super::StatusResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::StatusRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as ViewService>::status(&inner, request).await };
+                            let fut = async move {
+                                <T as ViewService>::status(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -3140,14 +3645,16 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/StatusStream" => {
                     #[allow(non_camel_case_types)]
                     struct StatusStreamSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::StatusStreamRequest>
-                        for StatusStreamSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::StatusStreamRequest>
+                    for StatusStreamSvc<T> {
                         type Response = super::StatusStreamResponse;
                         type ResponseStream = T::StatusStreamStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::StatusStreamRequest>,
@@ -3184,18 +3691,24 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/Notes" => {
                     #[allow(non_camel_case_types)]
                     struct NotesSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::ServerStreamingService<super::NotesRequest> for NotesSvc<T> {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::NotesRequest>
+                    for NotesSvc<T> {
                         type Response = super::NotesResponse;
                         type ResponseStream = T::NotesStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::NotesRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as ViewService>::notes(&inner, request).await };
+                            let fut = async move {
+                                <T as ViewService>::notes(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -3224,14 +3737,16 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/NotesForVoting" => {
                     #[allow(non_camel_case_types)]
                     struct NotesForVotingSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::NotesForVotingRequest>
-                        for NotesForVotingSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::NotesForVotingRequest>
+                    for NotesForVotingSvc<T> {
                         type Response = super::NotesForVotingResponse;
                         type ResponseStream = T::NotesForVotingStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::NotesForVotingRequest>,
@@ -3268,18 +3783,24 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/Assets" => {
                     #[allow(non_camel_case_types)]
                     struct AssetsSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::ServerStreamingService<super::AssetsRequest> for AssetsSvc<T> {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::AssetsRequest>
+                    for AssetsSvc<T> {
                         type Response = super::AssetsResponse;
                         type ResponseStream = T::AssetsStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AssetsRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as ViewService>::assets(&inner, request).await };
+                            let fut = async move {
+                                <T as ViewService>::assets(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -3308,19 +3829,23 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/AssetMetadataById" => {
                     #[allow(non_camel_case_types)]
                     struct AssetMetadataByIdSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::UnaryService<super::AssetMetadataByIdRequest>
-                        for AssetMetadataByIdSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::AssetMetadataByIdRequest>
+                    for AssetMetadataByIdSvc<T> {
                         type Response = super::AssetMetadataByIdResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AssetMetadataByIdRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ViewService>::asset_metadata_by_id(&inner, request).await
+                                <T as ViewService>::asset_metadata_by_id(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3350,11 +3875,15 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/AppParameters" => {
                     #[allow(non_camel_case_types)]
                     struct AppParametersSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::AppParametersRequest>
-                        for AppParametersSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::AppParametersRequest>
+                    for AppParametersSvc<T> {
                         type Response = super::AppParametersResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AppParametersRequest>,
@@ -3391,9 +3920,15 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/GasPrices" => {
                     #[allow(non_camel_case_types)]
                     struct GasPricesSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::GasPricesRequest> for GasPricesSvc<T> {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::GasPricesRequest>
+                    for GasPricesSvc<T> {
                         type Response = super::GasPricesResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::GasPricesRequest>,
@@ -3430,11 +3965,15 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/FMDParameters" => {
                     #[allow(non_camel_case_types)]
                     struct FMDParametersSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::FmdParametersRequest>
-                        for FMDParametersSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::FmdParametersRequest>
+                    for FMDParametersSvc<T> {
                         type Response = super::FmdParametersResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::FmdParametersRequest>,
@@ -3471,11 +4010,15 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/AddressByIndex" => {
                     #[allow(non_camel_case_types)]
                     struct AddressByIndexSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::AddressByIndexRequest>
-                        for AddressByIndexSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::AddressByIndexRequest>
+                    for AddressByIndexSvc<T> {
                         type Response = super::AddressByIndexResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AddressByIndexRequest>,
@@ -3512,19 +4055,23 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/TransparentAddress" => {
                     #[allow(non_camel_case_types)]
                     struct TransparentAddressSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::UnaryService<super::TransparentAddressRequest>
-                        for TransparentAddressSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::TransparentAddressRequest>
+                    for TransparentAddressSvc<T> {
                         type Response = super::TransparentAddressResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::TransparentAddressRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ViewService>::transparent_address(&inner, request).await
+                                <T as ViewService>::transparent_address(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3554,16 +4101,23 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/WalletId" => {
                     #[allow(non_camel_case_types)]
                     struct WalletIdSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::WalletIdRequest> for WalletIdSvc<T> {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::WalletIdRequest>
+                    for WalletIdSvc<T> {
                         type Response = super::WalletIdResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::WalletIdRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as ViewService>::wallet_id(&inner, request).await };
+                            let fut = async move {
+                                <T as ViewService>::wallet_id(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -3592,11 +4146,15 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/IndexByAddress" => {
                     #[allow(non_camel_case_types)]
                     struct IndexByAddressSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::IndexByAddressRequest>
-                        for IndexByAddressSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::IndexByAddressRequest>
+                    for IndexByAddressSvc<T> {
                         type Response = super::IndexByAddressResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::IndexByAddressRequest>,
@@ -3633,11 +4191,15 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/EphemeralAddress" => {
                     #[allow(non_camel_case_types)]
                     struct EphemeralAddressSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::EphemeralAddressRequest>
-                        for EphemeralAddressSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::EphemeralAddressRequest>
+                    for EphemeralAddressSvc<T> {
                         type Response = super::EphemeralAddressResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::EphemeralAddressRequest>,
@@ -3674,21 +4236,24 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/Balances" => {
                     #[allow(non_camel_case_types)]
                     struct BalancesSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::BalancesRequest>
-                        for BalancesSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::BalancesRequest>
+                    for BalancesSvc<T> {
                         type Response = super::BalancesResponse;
                         type ResponseStream = T::BalancesStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::BalancesRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as ViewService>::balances(&inner, request).await };
+                            let fut = async move {
+                                <T as ViewService>::balances(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -3717,18 +4282,23 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/NoteByCommitment" => {
                     #[allow(non_camel_case_types)]
                     struct NoteByCommitmentSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::NoteByCommitmentRequest>
-                        for NoteByCommitmentSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::NoteByCommitmentRequest>
+                    for NoteByCommitmentSvc<T> {
                         type Response = super::NoteByCommitmentResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::NoteByCommitmentRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ViewService>::note_by_commitment(&inner, request).await
+                                <T as ViewService>::note_by_commitment(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3758,18 +4328,23 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/SwapByCommitment" => {
                     #[allow(non_camel_case_types)]
                     struct SwapByCommitmentSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::SwapByCommitmentRequest>
-                        for SwapByCommitmentSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::SwapByCommitmentRequest>
+                    for SwapByCommitmentSvc<T> {
                         type Response = super::SwapByCommitmentResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::SwapByCommitmentRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ViewService>::swap_by_commitment(&inner, request).await
+                                <T as ViewService>::swap_by_commitment(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3799,14 +4374,16 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/UnclaimedSwaps" => {
                     #[allow(non_camel_case_types)]
                     struct UnclaimedSwapsSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::UnclaimedSwapsRequest>
-                        for UnclaimedSwapsSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::UnclaimedSwapsRequest>
+                    for UnclaimedSwapsSvc<T> {
                         type Response = super::UnclaimedSwapsResponse;
                         type ResponseStream = T::UnclaimedSwapsStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::UnclaimedSwapsRequest>,
@@ -3843,11 +4420,15 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/NullifierStatus" => {
                     #[allow(non_camel_case_types)]
                     struct NullifierStatusSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::NullifierStatusRequest>
-                        for NullifierStatusSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::NullifierStatusRequest>
+                    for NullifierStatusSvc<T> {
                         type Response = super::NullifierStatusResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::NullifierStatusRequest>,
@@ -3884,19 +4465,26 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/TransactionInfoByHash" => {
                     #[allow(non_camel_case_types)]
                     struct TransactionInfoByHashSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::UnaryService<super::TransactionInfoByHashRequest>
-                        for TransactionInfoByHashSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::TransactionInfoByHashRequest>
+                    for TransactionInfoByHashSvc<T> {
                         type Response = super::TransactionInfoByHashResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::TransactionInfoByHashRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ViewService>::transaction_info_by_hash(&inner, request).await
+                                <T as ViewService>::transaction_info_by_hash(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3926,14 +4514,17 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/TransactionInfo" => {
                     #[allow(non_camel_case_types)]
                     struct TransactionInfoSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::TransactionInfoRequest>
-                        for TransactionInfoSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::TransactionInfoRequest,
+                    > for TransactionInfoSvc<T> {
                         type Response = super::TransactionInfoResponse;
                         type ResponseStream = T::TransactionInfoStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::TransactionInfoRequest>,
@@ -3970,21 +4561,25 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/OwnedPositionIds" => {
                     #[allow(non_camel_case_types)]
                     struct OwnedPositionIdsSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::OwnedPositionIdsRequest>
-                        for OwnedPositionIdsSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::OwnedPositionIdsRequest,
+                    > for OwnedPositionIdsSvc<T> {
                         type Response = super::OwnedPositionIdsResponse;
                         type ResponseStream = T::OwnedPositionIdsStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::OwnedPositionIdsRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ViewService>::owned_position_ids(&inner, request).await
+                                <T as ViewService>::owned_position_ids(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -4014,19 +4609,23 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/TransactionPlanner" => {
                     #[allow(non_camel_case_types)]
                     struct TransactionPlannerSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::UnaryService<super::TransactionPlannerRequest>
-                        for TransactionPlannerSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::TransactionPlannerRequest>
+                    for TransactionPlannerSvc<T> {
                         type Response = super::TransactionPlannerResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::TransactionPlannerRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ViewService>::transaction_planner(&inner, request).await
+                                <T as ViewService>::transaction_planner(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -4056,16 +4655,23 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/Witness" => {
                     #[allow(non_camel_case_types)]
                     struct WitnessSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::WitnessRequest> for WitnessSvc<T> {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::WitnessRequest>
+                    for WitnessSvc<T> {
                         type Response = super::WitnessResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::WitnessRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as ViewService>::witness(&inner, request).await };
+                            let fut = async move {
+                                <T as ViewService>::witness(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -4094,14 +4700,17 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/WitnessAndBuild" => {
                     #[allow(non_camel_case_types)]
                     struct WitnessAndBuildSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::WitnessAndBuildRequest>
-                        for WitnessAndBuildSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::WitnessAndBuildRequest,
+                    > for WitnessAndBuildSvc<T> {
                         type Response = super::WitnessAndBuildResponse;
                         type ResponseStream = T::WitnessAndBuildStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::WitnessAndBuildRequest>,
@@ -4138,21 +4747,25 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/AuthorizeAndBuild" => {
                     #[allow(non_camel_case_types)]
                     struct AuthorizeAndBuildSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::AuthorizeAndBuildRequest>
-                        for AuthorizeAndBuildSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::AuthorizeAndBuildRequest,
+                    > for AuthorizeAndBuildSvc<T> {
                         type Response = super::AuthorizeAndBuildResponse;
                         type ResponseStream = T::AuthorizeAndBuildStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AuthorizeAndBuildRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ViewService>::authorize_and_build(&inner, request).await
+                                <T as ViewService>::authorize_and_build(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -4182,21 +4795,25 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/BroadcastTransaction" => {
                     #[allow(non_camel_case_types)]
                     struct BroadcastTransactionSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::BroadcastTransactionRequest>
-                        for BroadcastTransactionSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::BroadcastTransactionRequest,
+                    > for BroadcastTransactionSvc<T> {
                         type Response = super::BroadcastTransactionResponse;
                         type ResponseStream = T::BroadcastTransactionStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::BroadcastTransactionRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ViewService>::broadcast_transaction(&inner, request).await
+                                <T as ViewService>::broadcast_transaction(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -4226,22 +4843,29 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/DelegationsByAddressIndex" => {
                     #[allow(non_camel_case_types)]
                     struct DelegationsByAddressIndexSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<
-                            super::DelegationsByAddressIndexRequest,
-                        > for DelegationsByAddressIndexSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::DelegationsByAddressIndexRequest,
+                    > for DelegationsByAddressIndexSvc<T> {
                         type Response = super::DelegationsByAddressIndexResponse;
                         type ResponseStream = T::DelegationsByAddressIndexStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::DelegationsByAddressIndexRequest>,
+                            request: tonic::Request<
+                                super::DelegationsByAddressIndexRequest,
+                            >,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as ViewService>::delegations_by_address_index(&inner, request)
+                                <T as ViewService>::delegations_by_address_index(
+                                        &inner,
+                                        request,
+                                    )
                                     .await
                             };
                             Box::pin(fut)
@@ -4272,25 +4896,30 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/UnbondingTokensByAddressIndex" => {
                     #[allow(non_camel_case_types)]
                     struct UnbondingTokensByAddressIndexSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<
-                            super::UnbondingTokensByAddressIndexRequest,
-                        > for UnbondingTokensByAddressIndexSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::UnbondingTokensByAddressIndexRequest,
+                    > for UnbondingTokensByAddressIndexSvc<T> {
                         type Response = super::UnbondingTokensByAddressIndexResponse;
                         type ResponseStream = T::UnbondingTokensByAddressIndexStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::UnbondingTokensByAddressIndexRequest>,
+                            request: tonic::Request<
+                                super::UnbondingTokensByAddressIndexRequest,
+                            >,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 <T as ViewService>::unbonding_tokens_by_address_index(
-                                    &inner, request,
-                                )
-                                .await
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -4320,21 +4949,24 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/Auctions" => {
                     #[allow(non_camel_case_types)]
                     struct AuctionsSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::AuctionsRequest>
-                        for AuctionsSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::AuctionsRequest>
+                    for AuctionsSvc<T> {
                         type Response = super::AuctionsResponse;
                         type ResponseStream = T::AuctionsStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AuctionsRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut =
-                                async move { <T as ViewService>::auctions(&inner, request).await };
+                            let fut = async move {
+                                <T as ViewService>::auctions(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -4363,14 +4995,16 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/LatestSwaps" => {
                     #[allow(non_camel_case_types)]
                     struct LatestSwapsSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::LatestSwapsRequest>
-                        for LatestSwapsSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::LatestSwapsRequest>
+                    for LatestSwapsSvc<T> {
                         type Response = super::LatestSwapsResponse;
                         type ResponseStream = T::LatestSwapsStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::LatestSwapsRequest>,
@@ -4407,11 +5041,15 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/TournamentVotes" => {
                     #[allow(non_camel_case_types)]
                     struct TournamentVotesSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService> tonic::server::UnaryService<super::TournamentVotesRequest>
-                        for TournamentVotesSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::TournamentVotesRequest>
+                    for TournamentVotesSvc<T> {
                         type Response = super::TournamentVotesResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::TournamentVotesRequest>,
@@ -4448,14 +5086,16 @@ pub mod view_service_server {
                 "/penumbra.view.v1.ViewService/LqtVotingNotes" => {
                     #[allow(non_camel_case_types)]
                     struct LqtVotingNotesSvc<T: ViewService>(pub Arc<T>);
-                    impl<T: ViewService>
-                        tonic::server::ServerStreamingService<super::LqtVotingNotesRequest>
-                        for LqtVotingNotesSvc<T>
-                    {
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::LqtVotingNotesRequest>
+                    for LqtVotingNotesSvc<T> {
                         type Response = super::LqtVotingNotesResponse;
                         type ResponseStream = T::LqtVotingNotesStream;
-                        type Future =
-                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::LqtVotingNotesRequest>,
@@ -4489,19 +5129,23 @@ pub mod view_service_server {
                     };
                     Box::pin(fut)
                 }
-                _ => Box::pin(async move {
-                    let mut response = http::Response::new(empty_body());
-                    let headers = response.headers_mut();
-                    headers.insert(
-                        tonic::Status::GRPC_STATUS,
-                        (tonic::Code::Unimplemented as i32).into(),
-                    );
-                    headers.insert(
-                        http::header::CONTENT_TYPE,
-                        tonic::metadata::GRPC_CONTENT_TYPE,
-                    );
-                    Ok(response)
-                }),
+                _ => {
+                    Box::pin(async move {
+                        let mut response = http::Response::new(empty_body());
+                        let headers = response.headers_mut();
+                        headers
+                            .insert(
+                                tonic::Status::GRPC_STATUS,
+                                (tonic::Code::Unimplemented as i32).into(),
+                            );
+                        headers
+                            .insert(
+                                http::header::CONTENT_TYPE,
+                                tonic::metadata::GRPC_CONTENT_TYPE,
+                            );
+                        Ok(response)
+                    })
+                }
             }
         }
     }
