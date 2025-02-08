@@ -321,7 +321,9 @@ impl DomainType for FollowerRound2 {
 fn required_signatures(request: &SigningRequest) -> usize {
     match request {
         SigningRequest::TransactionPlan(plan) => {
-            plan.spend_plans().count() + plan.delegator_vote_plans().count()
+            plan.spend_plans().count()
+                + plan.delegator_vote_plans().count()
+                + plan.lqt_vote_plans().count()
         }
         SigningRequest::ValidatorDefinition(_) => 1,
         SigningRequest::ValidatorVote(_) => 1,
@@ -339,6 +341,7 @@ pub fn no_signature_response(
                 effect_hash: Some(plan.effect_hash(fvk)?),
                 spend_auths: Vec::new(),
                 delegator_vote_auths: Vec::new(),
+                lqt_vote_auths: Vec::new(),
             })))
         }
         _ => Ok(None),
@@ -484,6 +487,7 @@ pub fn coordinator_round3(
                 .spend_plans()
                 .map(|x| x.randomizer)
                 .chain(plan.delegator_vote_plans().map(|x| x.randomizer))
+                .chain(plan.lqt_vote_plans().map(|x| x.randomizer))
                 .zip(share_maps.iter())
                 .zip(state.signing_packages.iter())
                 .map(|((randomizer, share_map), signing_package)| {
@@ -495,7 +499,8 @@ pub fn coordinator_round3(
                     )
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            let delegator_vote_auths = spend_auths.split_off(plan.spend_plans().count());
+            let mut delegator_vote_auths = spend_auths.split_off(plan.spend_plans().count());
+            let lqt_vote_auths = delegator_vote_auths.split_off(plan.spend_plans().count());
             Ok(SigningResponse::Transaction(AuthorizationData {
                 effect_hash: {
                     let ToBeSigned::EffectHash(effect_hash) = state.to_be_signed else {
@@ -505,6 +510,7 @@ pub fn coordinator_round3(
                 },
                 spend_auths,
                 delegator_vote_auths,
+                lqt_vote_auths,
             }))
         }
         SigningRequest::ValidatorDefinition(_) => {

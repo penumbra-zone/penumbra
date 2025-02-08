@@ -587,6 +587,11 @@ pub struct AuthorizationData {
     pub delegator_vote_auths: ::prost::alloc::vec::Vec<
         super::super::super::crypto::decaf377_rdsa::v1::SpendAuthSignature,
     >,
+    /// The required LQT vote authorizations, in the same order as the original request.
+    #[prost(message, repeated, tag = "4")]
+    pub lqt_vote_auths: ::prost::alloc::vec::Vec<
+        super::super::super::crypto::decaf377_rdsa::v1::SpendAuthSignature,
+    >,
 }
 impl ::prost::Name for AuthorizationData {
     const NAME: &'static str = "AuthorizationData";
