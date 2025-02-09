@@ -18,7 +18,6 @@ import "penumbra/core/num/v1/num.proto";
 import "penumbra/core/transaction/v1/transaction.proto";
 import "penumbra/core/txhash/v1/txhash.proto";
 import "penumbra/crypto/tct/v1/tct.proto";
-import "penumbra/core/component/funding/v1/funding.proto";
 
 // The view RPC is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
