@@ -450,10 +450,8 @@ message TransactionPlannerRequest {
     core.keys.v1.Address rewards_recipient = 2;
     // The note containing the staked note used for voting.
     SpendableNoteRecord staked_note = 3;
-    // The position of the staked note.
-    uint64 staked_note_position = 4;
-    // The start position of the tournament.
-    uint64 start_position = 5;
+    // The epoch index of the tournament.
+    uint64 epoch_position = 4;
   }
 }
 
