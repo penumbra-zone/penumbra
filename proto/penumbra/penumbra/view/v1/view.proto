@@ -451,7 +451,7 @@ message TransactionPlannerRequest {
     // The note containing the staked note used for voting.
     SpendableNoteRecord staked_note = 3;
     // The epoch index of the tournament.
-    uint64 epoch_position = 4;
+    uint64 epoch_index = 4;
   }
 }
 

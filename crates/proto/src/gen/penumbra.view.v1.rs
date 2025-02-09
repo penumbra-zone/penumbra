@@ -817,7 +817,7 @@ pub mod transaction_planner_request {
         pub staked_note: ::core::option::Option<super::SpendableNoteRecord>,
         /// The epoch index of the tournament.
         #[prost(uint64, tag = "4")]
-        pub epoch_position: u64,
+        pub epoch_index: u64,
     }
     impl ::prost::Name for ActionLiquidityTournamentVote {
         const NAME: &'static str = "ActionLiquidityTournamentVote";
