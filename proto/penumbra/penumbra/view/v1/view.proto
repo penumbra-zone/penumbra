@@ -18,6 +18,7 @@ import "penumbra/core/num/v1/num.proto";
 import "penumbra/core/transaction/v1/transaction.proto";
 import "penumbra/core/txhash/v1/txhash.proto";
 import "penumbra/crypto/tct/v1/tct.proto";
+import "penumbra/core/component/funding/v1/funding.proto";
 
 // The view RPC is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
@@ -326,6 +327,7 @@ message TransactionPlannerRequest {
   repeated ActionDutchAuctionEnd dutch_auction_end_actions = 74;
   repeated ActionDutchAuctionWithdraw dutch_auction_withdraw_actions = 75;
   repeated DelegatorVote delegator_votes = 76;
+  repeated ActionLiquidityTournamentVote action_liquidity_tournament_vote = 77;
 
   // Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
   oneof fee_mode {
@@ -440,6 +442,19 @@ message TransactionPlannerRequest {
     uint64 start_position = 4;
     // The validators rate data for the proposal.
     repeated core.component.stake.v1.RateData rate_data = 5;
+  }
+
+  message ActionLiquidityTournamentVote {
+    // The asset the user wants to vote for.
+    repeated core.asset.v1.Denom incentivized = 1;
+    // The address the user wants potential rewards to go to.
+    core.keys.v1.Address rewards_recipient = 2;
+    // The note containing the staked note used for voting.
+    SpendableNoteRecord staked_note = 3;
+    // The position of the staked note.
+    uint64 staked_note_position = 4;
+    // The start position of the tournament.
+    uint64 start_position = 5;
   }
 }
 
