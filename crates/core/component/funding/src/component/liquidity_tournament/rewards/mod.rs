@@ -48,17 +48,20 @@ async fn relevant_votes_for_asset(
 ///
 /// This will only count votes from the top N voters, as per the params,
 /// and only include assets which clear the threshold.
+#[tracing::instrument(skip(state))]
 async fn asset_totals(
     state: &impl StateRead,
     params: &LiquidityTournamentParameters,
     epoch: u64,
 ) -> anyhow::Result<Vec<(asset::Id, Amount)>> {
     let total_votes = state.total_votes(epoch).await;
+    tracing::debug!(?total_votes);
     // 100 should be ample, but also not a huge amount to allocate.
     let mut out = Vec::with_capacity(100);
     let mut stream = state.ranked_assets(epoch);
     while let Some((_, asset)) = stream.try_next().await? {
         let votes = relevant_votes_for_asset(state, params, epoch, asset).await?;
+        tracing::debug!(?asset, ?votes, "found votes");
         // The assets are ranked by descending power, so we can stop here.
         if create_share(votes, total_votes) < U128x128::from(params.gauge_threshold) {
             break;
@@ -114,6 +117,7 @@ fn position_shares(
         .map_ok(move |(_, lp, volume)| (lp, volume, create_share(volume, total_volume)))
 }
 
+#[tracing::instrument(skip(state))]
 pub async fn distribute_rewards(mut state: impl StateWrite) -> anyhow::Result<()> {
     let current_epoch = state.get_current_epoch().await?.index;
     let params = state.get_funding_params().await?;
@@ -129,6 +133,7 @@ pub async fn distribute_rewards(mut state: impl StateWrite) -> anyhow::Result<()
             amount: initial_budget,
         })
         .await?;
+    tracing::debug!(?initial_budget);
     // Now, we keep a running mutable current budget, because we distribute fractions of
     // the initial budget, which should not be modified.
     let mut current_budget = initial_budget;
