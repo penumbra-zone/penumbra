@@ -1104,16 +1104,17 @@ impl Component {
         time: DateTime,
         height: i32,
         events: &Events,
-    ) {
-        let num_opened_lps = events.position_opens.len();
-        let num_closed_lps = events.position_closes.len();
-        let num_withdrawn_lps = events.position_withdrawals.len();
-        let num_swaps: usize = events.swaps.iter().map(|(_, v)| v.len()).sum::<usize>();
+    ) -> anyhow::Result<()> {
+        let num_opened_lps = events.position_opens.len() as i32;
+        let num_closed_lps = events.position_closes.len() as i32;
+        let num_withdrawn_lps = events.position_withdrawals.len() as i32;
+        let num_swaps = events.swaps.iter().map(|(_, v)| v.len()).sum::<usize>() as i32;
         let num_swap_claims = events
             .swap_claims
             .iter()
             .map(|(_, v)| v.len())
-            .sum::<usize>();
+            .sum::<usize>() as i32;
+        let num_txs = events.batch_swaps.len() as i32;
 
         let mut batch_swap_summaries = vec![];
 
@@ -1129,20 +1130,20 @@ impl Component {
                 let output = swap_1_2.output.amount;
                 let price_float = (output.value() as f64) / (input.value() as f64);
 
-                let swaps_for_pair = events.swaps.get(&trading_pair).unwrap_or_default();
-                let filtered_swaps = swaps_for_pair
+                let empty_vec = vec![];
+                let swaps_for_pair = events.swaps.get(&trading_pair).unwrap_or(&empty_vec);
+                let filtered_swaps: Vec<_> = swaps_for_pair
                     .iter()
                     .filter(|swap| swap.delta_1_i != Amount::zero())
                     .collect::<Vec<_>>();
                 let num_swaps = filtered_swaps.len();
                 batch_swap_summaries.push((
-                    trading_pair,
                     asset_start,
                     asset_end,
                     input,
                     output,
-                    price_float,
                     num_swaps,
+                    price_float,
                 ));
             }
 
@@ -1153,23 +1154,50 @@ impl Component {
                 let output = swap_2_1.output.amount;
                 let price_float = (output.value() as f64) / (input.value() as f64);
 
-                let swaps_for_pair = events.swaps.get(&trading_pair).unwrap_or(&vec![]);
-                let filtered_swaps = swaps_for_pair
+                let empty_vec = vec![];
+                let swaps_for_pair = events.swaps.get(&trading_pair).unwrap_or(&empty_vec);
+                let filtered_swaps: Vec<_> = swaps_for_pair
                     .iter()
                     .filter(|swap| swap.delta_2_i != Amount::zero())
                     .collect::<Vec<_>>();
                 let num_swaps = filtered_swaps.len();
                 batch_swap_summaries.push((
-                    trading_pair,
                     asset_start,
                     asset_end,
                     input,
                     output,
-                    price_float,
                     num_swaps,
+                    price_float,
                 ));
             }
         }
+
+        sqlx::query(
+            "INSERT INTO dex_ex_block_summary (
+            height,
+            time,
+            batch_swaps,
+            num_open_lps,
+            num_closed_lps,
+            num_withdrawn_lps,
+            num_swaps,
+            num_swap_claims
+            num_txs
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        )
+        .bind(height)
+        .bind(time)
+        .bind(serde_json::to_value(&batch_swap_summaries).unwrap())
+        .bind(num_opened_lps)
+        .bind(num_closed_lps)
+        .bind(num_withdrawn_lps)
+        .bind(num_swaps)
+        .bind(num_swap_claims)
+        .bind(num_txs)
+        .execute(dbtx.as_mut())
+        .await?;
+
+        Ok(())
     }
 
     async fn record_batch_swap_traces(
@@ -1397,7 +1425,7 @@ impl AppView for Component {
 
             // This is where we are going to build the block summary for the DEX.
             self.record_block_summary(dbtx, time, block.height as i32, &events)
-                .await;
+                .await?;
 
             // Record batch swap execution traces.
             for event in &events.batch_swaps {
