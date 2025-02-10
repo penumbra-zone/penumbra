@@ -703,6 +703,8 @@ struct Events {
     position_open_txs: BTreeMap<PositionId, [u8; 32]>,
     position_close_txs: BTreeMap<PositionId, [u8; 32]>,
     position_withdrawal_txs: BTreeMap<PositionId, [u8; 32]>,
+    // Track transactions
+    transactions: HashMap<TransactionId, Transaction>,
 }
 
 impl Events {
@@ -723,6 +725,7 @@ impl Events {
             position_open_txs: BTreeMap::new(),
             position_close_txs: BTreeMap::new(),
             position_withdrawal_txs: BTreeMap::new(),
+            transactions: HashMap::new(),
         }
     }
 
@@ -888,6 +891,8 @@ impl Events {
                     .entry(e.trading_pair)
                     .or_insert_with(Vec::new)
                     .push(e);
+            } else if let Ok(e) = EventBlockTransaction::try_from_event(&event.event) {
+                out.transactions.insert(e.transaction_id, e.transaction);
             }
         }
         Ok(out)
@@ -1397,6 +1402,32 @@ impl Component {
 
         Ok(())
     }
+
+    async fn record_transaction(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        time: DateTime,
+        height: i32,
+        transaction_id: [u8; 32],
+        transaction: Transaction,
+    ) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO dex_ex_transactions (
+                transaction_id,
+                transaction,
+                height,
+                time
+            ) VALUES ($1, $2, $3, $4)",
+        )
+        .bind(transaction_id)
+        .bind(transaction)
+        .bind(height)
+        .bind(time)
+        .execute(dbtx.as_mut())
+        .await?;
+
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -1472,6 +1503,12 @@ impl AppView for Component {
                     .get(&event.position_id)
                     .copied();
                 self.record_position_withdraw(dbtx, time, events.height, tx_hash, event)
+                    .await?;
+            }
+
+            // Record transactions
+            for (transaction_id, transaction) in &events.transactions {
+                self.record_transaction(dbtx, time, events.height, transaction_id, transaction)
                     .await?;
             }
 

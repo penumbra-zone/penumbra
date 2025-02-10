@@ -251,6 +251,22 @@ CREATE TABLE IF NOT EXISTS dex_ex_block_summary (
 
 CREATE INDEX ON dex_ex_block_summary (time, height);
 
+CREATE TABLE IF NOT EXISTS dex_ex_transactions (
+  -- The primary key
+  rowid SERIAL PRIMARY KEY,
+  -- The unique identifier of the transaction
+  transaction_id BYTEA NOT NULL UNIQUE,
+  -- The raw transaction bytes
+  transaction BYTEA NOT NULL,
+  -- The block height at which this transaction was included
+  height INTEGER NOT NULL,
+  -- The timestamp when this transaction was included in a block
+  time TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY (transaction_id)
+);
+
+CREATE INDEX ON dex_ex_transactions (time, height);
+
 ALTER TABLE dex_ex_position_executions
   ADD CONSTRAINT fk_position_executions
   FOREIGN KEY (position_id) REFERENCES dex_ex_position_state(position_id);
