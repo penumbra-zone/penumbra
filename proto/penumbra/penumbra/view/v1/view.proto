@@ -326,6 +326,7 @@ message TransactionPlannerRequest {
   repeated ActionDutchAuctionEnd dutch_auction_end_actions = 74;
   repeated ActionDutchAuctionWithdraw dutch_auction_withdraw_actions = 75;
   repeated DelegatorVote delegator_votes = 76;
+  repeated ActionLiquidityTournamentVote action_liquidity_tournament_vote = 77;
 
   // Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
   oneof fee_mode {
@@ -440,6 +441,17 @@ message TransactionPlannerRequest {
     uint64 start_position = 4;
     // The validators rate data for the proposal.
     repeated core.component.stake.v1.RateData rate_data = 5;
+  }
+
+  message ActionLiquidityTournamentVote {
+    // The asset the user wants to vote for.
+    repeated core.asset.v1.Denom incentivized = 1;
+    // The address the user wants potential rewards to go to.
+    core.keys.v1.Address rewards_recipient = 2;
+    // The note containing the staked note used for voting.
+    repeated SpendableNoteRecord staked_notes = 3;
+    // The epoch index of the tournament.
+    uint64 epoch_index = 4;
   }
 }
 

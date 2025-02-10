@@ -454,6 +454,10 @@ pub struct TransactionPlannerRequest {
     pub delegator_votes: ::prost::alloc::vec::Vec<
         transaction_planner_request::DelegatorVote,
     >,
+    #[prost(message, repeated, tag = "77")]
+    pub action_liquidity_tournament_vote: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionLiquidityTournamentVote,
+    >,
     /// The epoch index of the transaction being planned.
     #[deprecated]
     #[prost(uint64, tag = "200")]
@@ -794,6 +798,37 @@ pub mod transaction_planner_request {
         }
         fn type_url() -> ::prost::alloc::string::String {
             "/penumbra.view.v1.TransactionPlannerRequest.DelegatorVote".into()
+        }
+    }
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ActionLiquidityTournamentVote {
+        /// The asset the user wants to vote for.
+        #[prost(message, repeated, tag = "1")]
+        pub incentivized: ::prost::alloc::vec::Vec<
+            super::super::super::core::asset::v1::Denom,
+        >,
+        /// The address the user wants potential rewards to go to.
+        #[prost(message, optional, tag = "2")]
+        pub rewards_recipient: ::core::option::Option<
+            super::super::super::core::keys::v1::Address,
+        >,
+        /// The note containing the staked note used for voting.
+        #[prost(message, repeated, tag = "3")]
+        pub staked_notes: ::prost::alloc::vec::Vec<super::SpendableNoteRecord>,
+        /// The epoch index of the tournament.
+        #[prost(uint64, tag = "4")]
+        pub epoch_index: u64,
+    }
+    impl ::prost::Name for ActionLiquidityTournamentVote {
+        const NAME: &'static str = "ActionLiquidityTournamentVote";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            "penumbra.view.v1.TransactionPlannerRequest.ActionLiquidityTournamentVote"
+                .into()
+        }
+        fn type_url() -> ::prost::alloc::string::String {
+            "/penumbra.view.v1.TransactionPlannerRequest.ActionLiquidityTournamentVote"
+                .into()
         }
     }
     /// Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
