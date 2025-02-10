@@ -449,7 +449,7 @@ message TransactionPlannerRequest {
     // The address the user wants potential rewards to go to.
     core.keys.v1.Address rewards_recipient = 2;
     // The note containing the staked note used for voting.
-    SpendableNoteRecord staked_note = 3;
+    repeated SpendableNoteRecord staked_notes = 3;
     // The epoch index of the tournament.
     uint64 epoch_index = 4;
   }

@@ -813,8 +813,8 @@ pub mod transaction_planner_request {
             super::super::super::core::keys::v1::Address,
         >,
         /// The note containing the staked note used for voting.
-        #[prost(message, optional, tag = "3")]
-        pub staked_note: ::core::option::Option<super::SpendableNoteRecord>,
+        #[prost(message, repeated, tag = "3")]
+        pub staked_notes: ::prost::alloc::vec::Vec<super::SpendableNoteRecord>,
         /// The epoch index of the tournament.
         #[prost(uint64, tag = "4")]
         pub epoch_index: u64,

@@ -7853,7 +7853,7 @@ impl serde::Serialize for transaction_planner_request::ActionLiquidityTournament
         if self.rewards_recipient.is_some() {
             len += 1;
         }
-        if self.staked_note.is_some() {
+        if !self.staked_notes.is_empty() {
             len += 1;
         }
         if self.epoch_index != 0 {
@@ -7866,8 +7866,8 @@ impl serde::Serialize for transaction_planner_request::ActionLiquidityTournament
         if let Some(v) = self.rewards_recipient.as_ref() {
             struct_ser.serialize_field("rewardsRecipient", v)?;
         }
-        if let Some(v) = self.staked_note.as_ref() {
-            struct_ser.serialize_field("stakedNote", v)?;
+        if !self.staked_notes.is_empty() {
+            struct_ser.serialize_field("stakedNotes", &self.staked_notes)?;
         }
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
@@ -7887,8 +7887,8 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionLiquidi
             "incentivized",
             "rewards_recipient",
             "rewardsRecipient",
-            "staked_note",
-            "stakedNote",
+            "staked_notes",
+            "stakedNotes",
             "epoch_index",
             "epochIndex",
         ];
@@ -7897,7 +7897,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionLiquidi
         enum GeneratedField {
             Incentivized,
             RewardsRecipient,
-            StakedNote,
+            StakedNotes,
             EpochIndex,
             __SkipField__,
         }
@@ -7923,7 +7923,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionLiquidi
                         match value {
                             "incentivized" => Ok(GeneratedField::Incentivized),
                             "rewardsRecipient" | "rewards_recipient" => Ok(GeneratedField::RewardsRecipient),
-                            "stakedNote" | "staked_note" => Ok(GeneratedField::StakedNote),
+                            "stakedNotes" | "staked_notes" => Ok(GeneratedField::StakedNotes),
                             "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -7946,7 +7946,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionLiquidi
             {
                 let mut incentivized__ = None;
                 let mut rewards_recipient__ = None;
-                let mut staked_note__ = None;
+                let mut staked_notes__ = None;
                 let mut epoch_index__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
@@ -7962,11 +7962,11 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionLiquidi
                             }
                             rewards_recipient__ = map_.next_value()?;
                         }
-                        GeneratedField::StakedNote => {
-                            if staked_note__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("stakedNote"));
+                        GeneratedField::StakedNotes => {
+                            if staked_notes__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stakedNotes"));
                             }
-                            staked_note__ = map_.next_value()?;
+                            staked_notes__ = Some(map_.next_value()?);
                         }
                         GeneratedField::EpochIndex => {
                             if epoch_index__.is_some() {
@@ -7984,7 +7984,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionLiquidi
                 Ok(transaction_planner_request::ActionLiquidityTournamentVote {
                     incentivized: incentivized__.unwrap_or_default(),
                     rewards_recipient: rewards_recipient__,
-                    staked_note: staked_note__,
+                    staked_notes: staked_notes__.unwrap_or_default(),
                     epoch_index: epoch_index__.unwrap_or_default(),
                 })
             }
