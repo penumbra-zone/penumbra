@@ -7085,6 +7085,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.delegator_votes.is_empty() {
             len += 1;
         }
+        if !self.action_liquidity_tournament_vote.is_empty() {
+            len += 1;
+        }
         if self.epoch_index != 0 {
             len += 1;
         }
@@ -7154,6 +7157,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.delegator_votes.is_empty() {
             struct_ser.serialize_field("delegatorVotes", &self.delegator_votes)?;
         }
+        if !self.action_liquidity_tournament_vote.is_empty() {
+            struct_ser.serialize_field("actionLiquidityTournamentVote", &self.action_liquidity_tournament_vote)?;
+        }
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
@@ -7213,6 +7219,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "dutchAuctionWithdrawActions",
             "delegator_votes",
             "delegatorVotes",
+            "action_liquidity_tournament_vote",
+            "actionLiquidityTournamentVote",
             "epoch_index",
             "epochIndex",
             "epoch",
@@ -7243,6 +7251,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             DutchAuctionEndActions,
             DutchAuctionWithdrawActions,
             DelegatorVotes,
+            ActionLiquidityTournamentVote,
             EpochIndex,
             Epoch,
             AutoFee,
@@ -7288,6 +7297,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "dutchAuctionEndActions" | "dutch_auction_end_actions" => Ok(GeneratedField::DutchAuctionEndActions),
                             "dutchAuctionWithdrawActions" | "dutch_auction_withdraw_actions" => Ok(GeneratedField::DutchAuctionWithdrawActions),
                             "delegatorVotes" | "delegator_votes" => Ok(GeneratedField::DelegatorVotes),
+                            "actionLiquidityTournamentVote" | "action_liquidity_tournament_vote" => Ok(GeneratedField::ActionLiquidityTournamentVote),
                             "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
                             "epoch" => Ok(GeneratedField::Epoch),
                             "autoFee" | "auto_fee" => Ok(GeneratedField::AutoFee),
@@ -7330,6 +7340,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut dutch_auction_end_actions__ = None;
                 let mut dutch_auction_withdraw_actions__ = None;
                 let mut delegator_votes__ = None;
+                let mut action_liquidity_tournament_vote__ = None;
                 let mut epoch_index__ = None;
                 let mut epoch__ = None;
                 let mut fee_mode__ = None;
@@ -7451,6 +7462,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             delegator_votes__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::ActionLiquidityTournamentVote => {
+                            if action_liquidity_tournament_vote__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("actionLiquidityTournamentVote"));
+                            }
+                            action_liquidity_tournament_vote__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::EpochIndex => {
                             if epoch_index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("epochIndex"));
@@ -7504,6 +7521,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     dutch_auction_end_actions: dutch_auction_end_actions__.unwrap_or_default(),
                     dutch_auction_withdraw_actions: dutch_auction_withdraw_actions__.unwrap_or_default(),
                     delegator_votes: delegator_votes__.unwrap_or_default(),
+                    action_liquidity_tournament_vote: action_liquidity_tournament_vote__.unwrap_or_default(),
                     epoch_index: epoch_index__.unwrap_or_default(),
                     epoch: epoch__,
                     fee_mode: fee_mode__,
@@ -7819,6 +7837,159 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionDutchAu
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1.TransactionPlannerRequest.ActionDutchAuctionWithdraw", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_planner_request::ActionLiquidityTournamentVote {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.incentivized.is_empty() {
+            len += 1;
+        }
+        if self.rewards_recipient.is_some() {
+            len += 1;
+        }
+        if !self.staked_notes.is_empty() {
+            len += 1;
+        }
+        if self.epoch_index != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest.ActionLiquidityTournamentVote", len)?;
+        if !self.incentivized.is_empty() {
+            struct_ser.serialize_field("incentivized", &self.incentivized)?;
+        }
+        if let Some(v) = self.rewards_recipient.as_ref() {
+            struct_ser.serialize_field("rewardsRecipient", v)?;
+        }
+        if !self.staked_notes.is_empty() {
+            struct_ser.serialize_field("stakedNotes", &self.staked_notes)?;
+        }
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionLiquidityTournamentVote {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "incentivized",
+            "rewards_recipient",
+            "rewardsRecipient",
+            "staked_notes",
+            "stakedNotes",
+            "epoch_index",
+            "epochIndex",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Incentivized,
+            RewardsRecipient,
+            StakedNotes,
+            EpochIndex,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "incentivized" => Ok(GeneratedField::Incentivized),
+                            "rewardsRecipient" | "rewards_recipient" => Ok(GeneratedField::RewardsRecipient),
+                            "stakedNotes" | "staked_notes" => Ok(GeneratedField::StakedNotes),
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_planner_request::ActionLiquidityTournamentVote;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.TransactionPlannerRequest.ActionLiquidityTournamentVote")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::ActionLiquidityTournamentVote, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut incentivized__ = None;
+                let mut rewards_recipient__ = None;
+                let mut staked_notes__ = None;
+                let mut epoch_index__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Incentivized => {
+                            if incentivized__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("incentivized"));
+                            }
+                            incentivized__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::RewardsRecipient => {
+                            if rewards_recipient__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rewardsRecipient"));
+                            }
+                            rewards_recipient__ = map_.next_value()?;
+                        }
+                        GeneratedField::StakedNotes => {
+                            if staked_notes__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stakedNotes"));
+                            }
+                            staked_notes__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(transaction_planner_request::ActionLiquidityTournamentVote {
+                    incentivized: incentivized__.unwrap_or_default(),
+                    rewards_recipient: rewards_recipient__,
+                    staked_notes: staked_notes__.unwrap_or_default(),
+                    epoch_index: epoch_index__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.TransactionPlannerRequest.ActionLiquidityTournamentVote", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for transaction_planner_request::Delegate {
