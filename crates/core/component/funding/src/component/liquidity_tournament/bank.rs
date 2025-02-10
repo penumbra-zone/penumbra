@@ -26,6 +26,7 @@ use crate::event;
 /// and credited towards the appropriate destination (i.e. positions or new notes).
 pub trait Bank: StateWrite + Sized {
     /// Move a fraction of our issuance budget towards an address, by minting a note.
+    #[tracing::instrument(skip(self))]
     async fn reward_to_voter(
         &mut self,
         unbonded_reward: Amount,
@@ -34,6 +35,7 @@ pub trait Bank: StateWrite + Sized {
         tx_hash: TransactionId,
         incentivized_asset_id: asset::Id,
     ) -> anyhow::Result<()> {
+        tracing::debug!("rewarding voter");
         if unbonded_reward == Amount::zero() {
             return Ok(());
         }
@@ -73,7 +75,9 @@ pub trait Bank: StateWrite + Sized {
     }
 
     /// Move a fraction of our issuance budget towards a position, increasing its reserves.
+    #[tracing::instrument(skip(self))]
     async fn reward_to_position(&mut self, reward: Amount, lp: position::Id) -> anyhow::Result<()> {
+        tracing::debug!("rewarding position");
         if reward == Amount::default() {
             return Ok(());
         }
