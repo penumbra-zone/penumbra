@@ -661,3 +661,42 @@ impl From<EventCandlestickData> for pb::EventCandlestickData {
 impl DomainType for EventCandlestickData {
     type Proto = pb::EventCandlestickData;
 }
+
+#[derive(Clone, Debug)]
+pub struct EventBlockTransaction {
+    pub transaction_id: TransactionId,
+    pub transaction: Transaction,
+}
+
+impl TryFrom<pb::EventBlockTransaction> for EventBlockTransaction {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventBlockTransaction) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventBlockTransaction) -> anyhow::Result<EventBlockTransaction> {
+            Ok(EventBlockTransaction {
+                transaction_id: value
+                    .transaction_id
+                    .ok_or(anyhow!("missing `transaction_id`"))?
+                    .try_into()?,
+                transaction: value
+                    .transaction
+                    .ok_or(anyhow!("missing `transaction`"))?
+                    .try_into()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventBlockTransaction::NAME))
+    }
+}
+
+impl From<EventBlockTransaction> for pb::EventBlockTransaction {
+    fn from(value: EventBlockTransaction) -> Self {
+        Self {
+            transaction_id: Some(value.transaction_id.into()),
+            transaction: Some(value.transaction.into()),
+        }
+    }
+}
+
+impl DomainType for EventBlockTransaction {
+    type Proto = pb::EventBlockTransaction;
+}

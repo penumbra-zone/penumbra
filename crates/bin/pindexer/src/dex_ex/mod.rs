@@ -1408,7 +1408,7 @@ impl Component {
         dbtx: &mut PgTransaction<'_>,
         time: DateTime,
         height: i32,
-        transaction_id: [u8; 32],
+        transaction_id: TransactionId,
         transaction: Transaction,
     ) -> anyhow::Result<()> {
         sqlx::query(
