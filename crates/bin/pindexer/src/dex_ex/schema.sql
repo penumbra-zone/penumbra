@@ -226,7 +226,7 @@ CREATE TYPE batch_swap_summary AS (
 );
 
 -- A summary of block data with a bias for DEX data.
-CREATE TABLE IF NOT EXISTS block_summary (
+CREATE TABLE IF NOT EXISTS dex_ex_block_summary (
     -- Primary key
     rowid SERIAL PRIMARY KEY,
     -- The height of the block.
