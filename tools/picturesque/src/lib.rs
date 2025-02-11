@@ -69,12 +69,12 @@ async fn run_devnet(ctx: Context) -> anyhow::Result<()> {
     let postgres = tokio::spawn(postgres::run(root.clone()));
     let cometbft = tokio::spawn(cometbft::run(
         root.clone(),
-        Some(Duration::from_millis(4000)),
+        Some(Duration::from_millis(2000)),
     ));
     let pd = tokio::spawn(pd::run(
         root.clone(),
         ctx.log_level,
-        Some(Duration::from_millis(8000)),
+        Some(Duration::from_millis(4000)),
     ));
     tokio::select! {
         x = postgres => x??,
