@@ -7,13 +7,15 @@ use tokio::process::Command;
 struct Context {
     pd_home: PathBuf,
     log_file: PathBuf,
+    log_level: tracing::Level,
 }
 
 impl Context {
-    fn new(root: PathBuf) -> Self {
+    fn new(root: PathBuf, log_level: tracing::Level) -> Self {
         Self {
             pd_home: root.join("nodes/node0/pd"),
             log_file: root.join("log/pd.txt"),
+            log_level,
         }
     }
 
@@ -36,7 +38,7 @@ impl Context {
             .try_into_std()
             .map_err(|e| anyhow!("{:?}", e))?;
         let mut child = Command::new("pd")
-            .env("RUST_LOG", "info")
+            .env("RUST_LOG", self.log_level.to_string())
             .args([
                 "start".as_ref(),
                 "--home".as_ref(),
@@ -51,12 +53,16 @@ impl Context {
 }
 
 #[tracing::instrument]
-pub async fn run(root: PathBuf, delay: Option<Duration>) -> anyhow::Result<()> {
+pub async fn run(
+    root: PathBuf,
+    log_level: tracing::Level,
+    delay: Option<Duration>,
+) -> anyhow::Result<()> {
     if let Some(delay) = delay {
         tracing::debug!(delay = ?delay, "sleeping");
         tokio::time::sleep(delay).await;
     }
-    let ctx = Context::new(root);
+    let ctx = Context::new(root, log_level);
     ctx.create_directories()?;
     ctx.run().await.with_context(|| "while running pd")?;
     Ok(())
