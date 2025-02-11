@@ -1,5 +1,8 @@
 use clap::Parser;
-use std::{path::PathBuf, time::Duration};
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 mod cometbft;
 mod pd;
@@ -9,6 +12,16 @@ mod postgres;
 struct Context {
     directory: PathBuf,
     log_level: tracing::Level,
+}
+
+impl Context {
+    fn new(path: &Path, log_level: tracing::Level) -> anyhow::Result<Self> {
+        let directory = path.canonicalize()?;
+        Ok(Self {
+            directory,
+            log_level,
+        })
+    }
 }
 
 #[derive(Clone, Debug, Parser)]
@@ -45,15 +58,12 @@ pub struct Options {
 }
 
 impl Options {
-    fn context(&self) -> Context {
-        Context {
-            directory: self.directory.clone(),
-            log_level: self.log_level,
-        }
+    fn context(&self) -> anyhow::Result<Context> {
+        Context::new(self.directory.as_path(), self.log_level)
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
-        let ctx = self.context();
+        let ctx = self.context()?;
         match self.command {
             Command::Create { epoch_duration } => create_devnet(ctx, epoch_duration).await?,
             Command::Start => run_devnet(ctx).await?,
@@ -65,14 +75,13 @@ impl Options {
 #[tracing::instrument(skip_all)]
 async fn run_devnet(ctx: Context) -> anyhow::Result<()> {
     tracing::info!("spawning postgres");
-    let root = ctx.directory.canonicalize()?;
-    let postgres = tokio::spawn(postgres::run(root.clone()));
+    let postgres = tokio::spawn(postgres::run(ctx.directory.clone()));
     let cometbft = tokio::spawn(cometbft::run(
-        root.clone(),
+        ctx.directory.clone(),
         Some(Duration::from_millis(2000)),
     ));
     let pd = tokio::spawn(pd::run(
-        root.clone(),
+        ctx.directory.clone(),
         ctx.log_level,
         Some(Duration::from_millis(4000)),
     ));
