@@ -21,10 +21,10 @@ use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::event::EventDomainType;
 use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::event::EventBlockRoot;
+use serde::{Deserialize, Serialize};
 use sqlx::types::BigDecimal;
 use sqlx::Row;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use serde::{Deserialize, Serialize};
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
 
