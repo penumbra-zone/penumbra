@@ -24,6 +24,11 @@ use penumbra_sdk_sct::event::EventBlockRoot;
 use serde::{Deserialize, Serialize};
 use sqlx::types::BigDecimal;
 use sqlx::Row;
+use sqlx::{encode::IsNull, postgres::PgArgumentBuffer, Encode, Postgres};
+
+use sqlx::postgres::PgHasArrayType;
+use sqlx::postgres::PgTypeInfo;
+// use sqlx::types::ArrayType;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
@@ -706,6 +711,45 @@ where
     serializer.serialize_str(&amount.value().to_string())
 }
 
+/// Ensure that the domain type [BatchSwapSummary] can be stored
+/// directly in Postgres as a custom type.
+///
+/// The per-field encodings must match what's declared in the `CREATE TYPE batch_swap_summary`
+/// statement in the SQL schema.
+impl Encode<'_, Postgres> for BatchSwapSummary {
+    fn encode_by_ref(
+        &self,
+        buf: &mut PgArgumentBuffer,
+    ) -> Result<IsNull, Box<dyn std::error::Error + Send + Sync>> {
+        // Convert asset_start and asset_end to bytes
+        let asset_start_bytes = self.asset_start.to_bytes(); // or however you get bytes from asset::Id
+        let asset_end_bytes = self.asset_end.to_bytes();
+
+        // Convert Amount to Decimal/Numeric
+        let input_decimal = BigDecimal::from(self.input.value());
+        let output_decimal = BigDecimal::from(self.output.value());
+
+        // Encode each field
+        asset_start_bytes.encode_by_ref(buf);
+        asset_end_bytes.encode_by_ref(buf);
+        input_decimal.encode_by_ref(buf);
+        output_decimal.encode_by_ref(buf);
+
+        // Encode the primitive types directly
+        <i32 as sqlx::Encode<'_, Postgres>>::encode(self.num_swaps, buf);
+        <f64 as sqlx::Encode<'_, Postgres>>::encode(self.price_float, buf);
+
+        Ok(IsNull::No)
+    }
+}
+
+/// Make sure that we can reference arrays of the [BatchSwapSummary] types.
+impl PgHasArrayType for BatchSwapSummary {
+    fn array_type_info() -> PgTypeInfo {
+        PgTypeInfo::with_name("_batch_swap_summary") // Note the underscore prefix for array type
+    }
+}
+
 #[derive(Debug)]
 struct Events {
     time: Option<DateTime>,
@@ -1223,7 +1267,7 @@ impl Component {
         )
         .bind(height)
         .bind(time)
-        .bind(serde_json::to_value(&batch_swap_summaries)?)
+        .bind(&batch_swap_summaries)
         .bind(num_opened_lps)
         .bind(num_closed_lps)
         .bind(num_withdrawn_lps)
