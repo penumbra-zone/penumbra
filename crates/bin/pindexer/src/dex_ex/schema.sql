@@ -225,13 +225,12 @@ CREATE TYPE batch_swap_summary AS (
     price_float DOUBLE PRECISION NOT NULL
 );
 
-
 -- A summary of block data with a bias for DEX data.
 CREATE TABLE IF NOT EXISTS block_summary (
     -- Primary key
     rowid SERIAL PRIMARY KEY,
     -- The height of the block.
-    height INTEGER PRIMARY KEY,
+    height INTEGER UNIQUE NOT NULL,
     -- The timestamp for the block.
     time TIMESTAMPTZ NOT NULL,
     -- A list of batch swap summaries that occurred in this block.
