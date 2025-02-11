@@ -687,7 +687,10 @@ struct BatchSwapSummary {
 }
 
 // Add these serialization helper functions
-fn serialize_asset_id<S>(asset_id: &penumbra_sdk_asset::asset::Id, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_asset_id<S>(
+    asset_id: &penumbra_sdk_asset::asset::Id,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
