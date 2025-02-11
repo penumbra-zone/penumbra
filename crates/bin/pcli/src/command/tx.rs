@@ -34,6 +34,9 @@ use penumbra_sdk_governance::{
 };
 use penumbra_sdk_keys::{keys::AddressIndex, Address};
 use penumbra_sdk_num::Amount;
+use penumbra_sdk_proto::core::app::v1::{
+    query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
+};
 use penumbra_sdk_proto::{
     core::component::{
         dex::v1::{
@@ -50,7 +53,7 @@ use penumbra_sdk_proto::{
         },
         stake::v1::{
             query_service_client::QueryServiceClient as StakeQueryServiceClient,
-            ValidatorPenaltyRequest,
+            ValidatorPenaltyRequest, ValidatorStatusRequest,
         },
     },
     cosmos::tx::v1beta1::{
@@ -65,7 +68,10 @@ use penumbra_sdk_proto::{
     Message, Name as _,
 };
 use penumbra_sdk_shielded_pool::Ics20Withdrawal;
-use penumbra_sdk_stake::rate::RateData;
+use penumbra_sdk_stake::{
+    rate::RateData,
+    validator::{self},
+};
 use penumbra_sdk_stake::{
     DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan,
 };
@@ -746,15 +752,6 @@ impl TxCmd {
                     .context("view service must be initialized")?;
 
                 let current_height = view.status().await?.full_sync_height;
-                let mut client = SctQueryServiceClient::new(channel.clone());
-                let current_epoch = client
-                    .epoch_by_height(EpochByHeightRequest {
-                        height: current_height,
-                    })
-                    .await?
-                    .into_inner()
-                    .epoch
-                    .context("unable to get epoch for current height")?;
                 let asset_cache = view.assets().await?;
 
                 // Query the view client for the list of undelegations that are ready to be claimed.
@@ -795,10 +792,59 @@ impl TxCmd {
 
                         let validator_identity = token.validator();
                         let unbonding_start_height = token.unbonding_start_height();
-                        let end_epoch_index = current_epoch.index;
 
+                        let mut app_client = AppQueryServiceClient::new(channel.clone());
+                        let mut stake_client = StakeQueryServiceClient::new(channel.clone());
                         let mut sct_client = SctQueryServiceClient::new(channel.clone());
-                        let epoch_start = sct_client
+
+                        let min_block_delay = app_client
+                            .app_parameters(AppParametersRequest {})
+                            .await?
+                            .into_inner()
+                            .app_parameters
+                            .expect("app parameters must be available")
+                            .stake_params
+                            .expect("stake params must be available")
+                            .unbonding_delay;
+
+                        // Fetch the validator pool's state at present:
+                        let bonding_state = stake_client
+                            .validator_status(ValidatorStatusRequest {
+                                identity_key: Some(validator_identity.into()),
+                            })
+                            .await?
+                            .into_inner()
+                            .status
+                            .context("unable to get validator status")?
+                            .bonding_state
+                            .expect("bonding state must be available")
+                            .try_into()
+                            .expect("valid bonding state");
+
+                        let upper_bound_block_delay = unbonding_start_height + min_block_delay;
+
+                        // We have to be cautious to compute the penalty over the exact range of epochs
+                        // because we could be processing old unbonding tokens that are bound to a validator
+                        // that transitioned to a variety of states, incurring penalties that do not apply
+                        // to these tokens.
+                        // We can replace this with a single gRPC call to the staking component.
+                        // For now, this is sufficient.
+                        let unbonding_height = match bonding_state {
+                            validator::BondingState::Bonded => upper_bound_block_delay,
+                            validator::BondingState::Unbonding { unbonds_at_height } => {
+                                if unbonds_at_height > unbonding_start_height {
+                                    unbonds_at_height.min(upper_bound_block_delay)
+                                } else {
+                                    current_height
+                                }
+                            }
+                            validator::BondingState::Unbonded => current_height,
+                        };
+
+                        // if the unbonding height is in the future we clamp to the current height:
+                        let unbonding_height = unbonding_height.min(current_height);
+
+                        let start_epoch_index = sct_client
                             .epoch_by_height(EpochByHeightRequest {
                                 height: unbonding_start_height,
                             })
@@ -806,13 +852,24 @@ impl TxCmd {
                             .expect("can get epoch by height")
                             .into_inner()
                             .epoch
-                            .context("unable to get epoch for unbonding start height")?;
+                            .context("unable to get epoch for unbonding start height")?
+                            .index;
 
-                        let mut stake_client = StakeQueryServiceClient::new(channel.clone());
+                        let end_epoch_index = sct_client
+                            .epoch_by_height(EpochByHeightRequest {
+                                height: unbonding_height,
+                            })
+                            .await
+                            .expect("can get epoch by height")
+                            .into_inner()
+                            .epoch
+                            .context("unable to get epoch for unbonding end height")?
+                            .index;
+
                         let penalty: Penalty = stake_client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
                                 identity_key: Some(validator_identity.into()),
-                                start_epoch_index: epoch_start.index,
+                                start_epoch_index,
                                 end_epoch_index,
                             }))
                             .await?
