@@ -249,7 +249,7 @@ CREATE TABLE IF NOT EXISTS dex_ex_block_summary (
     num_txs          INTEGER NOT NULL
 );
 
-CREATE INDEX ON dex_ex_batch_swap_traces (time, height);
+CREATE INDEX ON dex_ex_block_summary (time, height);
 
 ALTER TABLE dex_ex_position_executions
   ADD CONSTRAINT fk_position_executions
