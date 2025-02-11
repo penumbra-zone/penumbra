@@ -1181,7 +1181,7 @@ impl Component {
             num_closed_lps,
             num_withdrawn_lps,
             num_swaps,
-            num_swap_claims
+            num_swap_claims,
             num_txs
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         )
