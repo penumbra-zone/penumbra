@@ -6115,6 +6115,7 @@ dependencies = [
  "prost-reflect",
  "reqwest 0.12.9",
  "rstest",
+ "serde",
  "serde_json",
  "sqlx",
  "tokio",

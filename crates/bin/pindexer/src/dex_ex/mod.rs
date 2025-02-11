@@ -24,6 +24,7 @@ use penumbra_sdk_sct::event::EventBlockRoot;
 use sqlx::types::BigDecimal;
 use sqlx::Row;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use serde::{Deserialize, Serialize};
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
 
@@ -671,6 +672,37 @@ struct PairMetrics {
     liquidity_change: f64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct BatchSwapSummary {
+    #[serde(serialize_with = "serialize_asset_id")]
+    asset_start: penumbra_sdk_asset::asset::Id,
+    #[serde(serialize_with = "serialize_asset_id")]
+    asset_end: penumbra_sdk_asset::asset::Id,
+    #[serde(serialize_with = "serialize_amount")]
+    input: Amount,
+    #[serde(serialize_with = "serialize_amount")]
+    output: Amount,
+    num_swaps: i32,
+    price_float: f64,
+}
+
+// Add these serialization helper functions
+fn serialize_asset_id<S>(asset_id: &penumbra_sdk_asset::asset::Id, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    // Serialize the asset ID as bytes
+    serializer.serialize_bytes(asset_id.to_bytes().as_ref())
+}
+
+fn serialize_amount<S>(amount: &Amount, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    // Serialize the amount as a string to preserve precision
+    serializer.serialize_str(&amount.value().to_string())
+}
+
 #[derive(Debug)]
 struct Events {
     time: Option<DateTime>,
@@ -1116,13 +1148,12 @@ impl Component {
             .sum::<usize>() as i32;
         let num_txs = events.batch_swaps.len() as i32;
 
-        let mut batch_swap_summaries = vec![];
+        let mut batch_swap_summaries = Vec::<BatchSwapSummary>::new();
 
         // Deal with the batch summaries:
         for event in &events.batch_swaps {
             let trading_pair = event.batch_swap_output_data.trading_pair;
 
-            // TODO: refactor around a domain type for the sql schema.
             if let Some(swap_1_2) = &event.swap_execution_1_for_2 {
                 let asset_start = swap_1_2.input.asset_id;
                 let asset_end = swap_1_2.output.asset_id;
@@ -1136,15 +1167,16 @@ impl Component {
                     .iter()
                     .filter(|swap| swap.delta_1_i != Amount::zero())
                     .collect::<Vec<_>>();
-                let num_swaps = filtered_swaps.len();
-                batch_swap_summaries.push((
+                let num_swaps = filtered_swaps.len() as i32;
+
+                batch_swap_summaries.push(BatchSwapSummary {
                     asset_start,
                     asset_end,
                     input,
                     output,
                     num_swaps,
                     price_float,
-                ));
+                });
             }
 
             if let Some(swap_2_1) = &event.swap_execution_2_for_1 {
@@ -1160,15 +1192,16 @@ impl Component {
                     .iter()
                     .filter(|swap| swap.delta_2_i != Amount::zero())
                     .collect::<Vec<_>>();
-                let num_swaps = filtered_swaps.len();
-                batch_swap_summaries.push((
+                let num_swaps = filtered_swaps.len() as i32;
+
+                batch_swap_summaries.push(BatchSwapSummary {
                     asset_start,
                     asset_end,
                     input,
                     output,
                     num_swaps,
                     price_float,
-                ));
+                });
             }
         }
 
@@ -1187,7 +1220,7 @@ impl Component {
         )
         .bind(height)
         .bind(time)
-        .bind(serde_json::to_value(&batch_swap_summaries).unwrap())
+        .bind(serde_json::to_value(&batch_swap_summaries)?)
         .bind(num_opened_lps)
         .bind(num_closed_lps)
         .bind(num_withdrawn_lps)

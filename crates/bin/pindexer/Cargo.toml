@@ -21,7 +21,7 @@ network-integration = []
 [dependencies]
 anyhow = {workspace = true}
 clap = {workspace = true}
-chrono = {workspace = true}
+chrono = {workspace = true, features = ["serde"] }
 cometindex = {workspace = true}
 ethnum = {workspace = true}
 num-bigint = { version = "0.4" }
@@ -42,6 +42,7 @@ prost = {workspace = true}
 tracing = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 serde_json = {workspace = true}
+serde = { workspace = true, features = ["derive"] }
 sqlx = { workspace = true, features = ["chrono", "postgres"] }
 
 [dev-dependencies]
