@@ -222,7 +222,7 @@ CREATE TYPE batch_swap_summary AS (
     -- The number of swaps in the batch swap.
     num_swaps INTEGER,
     -- The price with `asset_end` as the quote asset.
-    price_float DOUBLE PRECISION NOT NULL
+    price_float DOUBLE PRECISION
 );
 
 -- A summary of block data with a bias for DEX data.
