@@ -5,6 +5,7 @@ use std::{
 };
 
 mod cometbft;
+mod pcli;
 mod pd;
 mod postgres;
 
@@ -16,7 +17,7 @@ struct Context {
 
 impl Context {
     fn new(path: &Path, log_level: tracing::Level) -> anyhow::Result<Self> {
-        let directory = path.canonicalize()?;
+        let directory = std::path::absolute(path)?;
         Ok(Self {
             directory,
             log_level,
@@ -51,7 +52,7 @@ pub struct Options {
     #[clap(short, long)]
     pub directory: PathBuf,
     /// The log level for this program, and the child processes.
-    #[clap(long, env = "RUST_LOG")]
+    #[clap(long, env = "RUST_LOG", default_value = "info")]
     pub log_level: tracing::Level,
     #[clap(subcommand)]
     pub command: Command,
@@ -93,7 +94,10 @@ async fn run_devnet(ctx: Context) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[tracing::instrument(skip(_ctx))]
-async fn create_devnet(_ctx: Context, _epoch_duration: u32) -> anyhow::Result<()> {
-    todo!()
+#[tracing::instrument(skip(ctx))]
+async fn create_devnet(ctx: Context, epoch_duration: u32) -> anyhow::Result<()> {
+    tracing::info!("creating devnet");
+    pcli::init_with_test_keys(ctx.directory.clone()).await?;
+    pd::generate(ctx.directory, ctx.log_level, epoch_duration).await?;
+    Ok(())
 }
