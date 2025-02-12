@@ -13,7 +13,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
 use penumbra_sdk_num::Amount;
-use penumbra_sdk_proto::StateWriteProto;
+use penumbra_sdk_proto::{DomainType as _, StateWriteProto};
 use penumbra_sdk_sct::component::clock::EpochRead;
 use tendermint::v0_37::abci;
 use tracing::instrument;
@@ -52,24 +52,26 @@ impl Component for Distributions {
             .get_current_epoch()
             .await
             .expect("failed to retrieve current epoch from state");
+        let epoch_index = current_epoch.index;
 
-        let new_issuance: Amount = state
+        let increase: Amount = state
             .get_distributions_params()
             .await
             .expect("distribution parameters should be available")
             .liquidity_tournament_incentive_per_block
             .into();
 
-        let new_total = state
-            .increment_lqt_issuance(current_epoch.index, new_issuance)
-            .await;
+        let new_total = state.increment_lqt_issuance(epoch_index, increase).await;
 
         // Emit an event for LQT pool size increase at the end of the block.
-        state.record_proto(event::event_lqt_pool_size_increase(
-            current_epoch.index,
-            new_issuance,
-            new_total,
-        ))
+        state.record_proto(
+            event::EventLqtPoolSizeIncrease {
+                epoch_index,
+                increase,
+                new_total,
+            }
+            .to_proto(),
+        )
     }
 
     #[instrument(name = "distributions", skip(state))]
