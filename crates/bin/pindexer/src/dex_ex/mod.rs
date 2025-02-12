@@ -672,6 +672,7 @@ struct PairMetrics {
 }
 
 #[derive(Debug, Clone, Type)]
+#[sqlx(type_name = "batch_swap_summary")]
 struct BatchSwapSummary {
     asset_start: Vec<u8>,
     asset_end: Vec<u8>,
