@@ -230,7 +230,7 @@ CREATE TABLE IF NOT EXISTS dex_ex_block_summary (
     -- Primary key
     rowid SERIAL PRIMARY KEY,
     -- The height of the block.
-    height INTEGER UNIQUE NOT NULL,
+    height INTEGER NOT NULL,
     -- The timestamp for the block.
     time TIMESTAMPTZ NOT NULL,
     -- A list of batch swap summaries that occurred in this block.
