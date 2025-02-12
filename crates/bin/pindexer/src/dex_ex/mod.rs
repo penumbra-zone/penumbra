@@ -21,8 +21,8 @@ use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::event::EventDomainType;
 use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::event::EventBlockRoot;
+use sqlx::types::BigDecimal;
 use sqlx::{prelude::Type, Row};
-use sqlx::{types::BigDecimal};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
@@ -1128,7 +1128,6 @@ impl Component {
 
         let mut batch_swap_summaries = Vec::<BatchSwapSummary>::new();
 
-        // Deal with the batch summaries:
         for event in &events.batch_swaps {
             let trading_pair = event.batch_swap_output_data.trading_pair;
 
