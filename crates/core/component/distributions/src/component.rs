@@ -14,7 +14,7 @@ use cnidarium::StateWrite;
 use cnidarium_component::Component;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::StateWriteProto;
-use penumbra_sdk_sct::{component::clock::EpochRead, epoch::Epoch};
+use penumbra_sdk_sct::component::clock::EpochRead;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
@@ -52,27 +52,23 @@ impl Component for Distributions {
             .get_current_epoch()
             .await
             .expect("failed to retrieve current epoch from state");
-        let current_block_height = end_block
-            .height
-            .try_into()
-            .expect("block height should not be negative");
 
-        let new_issuance = state
+        let new_issuance: Amount = state
             .get_distributions_params()
             .await
             .expect("distribution parameters should be available")
-            .staking_issuance_per_block as u128;
+            .liquidity_tournament_incentive_per_block
+            .into();
 
-        let total_new_issuance = state
-            .compute_lqt_issuance_from_blocks(current_epoch, current_block_height)
-            .await
-            .expect("should be able to compute LQT issuance from block");
+        let new_total = state
+            .increment_lqt_issuance(current_epoch.index, new_issuance)
+            .await;
 
         // Emit an event for LQT pool size increase at the end of the block.
         state.record_proto(event::event_lqt_pool_size_increase(
             current_epoch.index,
-            new_issuance.into(),
-            total_new_issuance,
+            new_issuance,
+            new_total,
         ))
     }
 
@@ -83,8 +79,7 @@ impl Component for Distributions {
         // Define staking budget.
         state.define_staking_budget().await?;
 
-        // Define LQT budget.
-        state.define_lqt_budget().await?;
+        // The lqt issuance budget is adjusted every block instead.
 
         Ok(())
     }
@@ -137,62 +132,21 @@ trait DistributionManager: StateWriteExt {
         Ok(self.set_staking_token_issuance_for_epoch(new_issuance))
     }
 
-    /// Helper function that computes the LQT issuance for the current block height in the epoch.
-    async fn compute_lqt_issuance_from_blocks(
-        &self,
-        current_epoch: Epoch,
-        current_block_height: u64,
-    ) -> Result<Amount> {
-        let epoch_length = current_block_height
-            .checked_sub(current_epoch.start_height)
-            .unwrap_or_else(|| panic!("epoch start height is greater than current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
-
-        let lqt_block_reward_rate = self
-            .get_distributions_params()
-            .await?
-            .liquidity_tournament_incentive_per_block as u64;
-
+    async fn increment_lqt_issuance(&mut self, epoch_index: u64, by: Amount) -> Amount {
+        let current = self.get_lqt_reward_issuance_for_epoch(epoch_index).await;
+        let new = current
+            .unwrap_or_default()
+            .checked_add(&by)
+            .expect("LQT issuance should never exceed an Amount");
         tracing::debug!(
-            number_of_blocks_in_epoch = epoch_length,
-            lqt_block_reward_rate,
-            "calculating lqt reward issuance per epoch"
+            ?by,
+            ?current,
+            ?new,
+            epoch_index,
+            "incrementing lqt issuance"
         );
-
-        let total_pool_size_for_epoch = lqt_block_reward_rate
-            .checked_mul(epoch_length as u64)
-            .expect("infallible unless issuance is pathological");
-
-        tracing::debug!(
-            ?total_pool_size_for_epoch,
-            "computed new reward lqt issuance for epoch"
-        );
-
-        Ok(Amount::from(total_pool_size_for_epoch))
-    }
-
-    /// Computes total LQT reward issuance for the epoch.
-    async fn compute_new_lqt_issuance(&self, current_epoch: Epoch) -> Result<Amount> {
-        let current_block_height = self.get_block_height().await?;
-
-        Ok(self
-            .compute_lqt_issuance_from_blocks(current_epoch, current_block_height)
-            .await?)
-    }
-
-    /// Update the nonverifiable storage with the newly issued LQT rewards for the current epoch.
-    async fn define_lqt_budget(&mut self) -> Result<()> {
-        // Grab the ambient epoch index.
-        let current_epoch = self.get_current_epoch().await?;
-
-        // New issuance for the current epoch.
-        let new_issuance = self.compute_new_lqt_issuance(current_epoch).await?;
-        tracing::debug!(
-            ?new_issuance,
-            "computed new lqt reward issuance for current epoch {}",
-            current_epoch.index
-        );
-
-        Ok(self.set_lqt_reward_issuance_for_epoch(current_epoch.index, new_issuance))
+        self.set_lqt_reward_issuance_for_epoch(epoch_index, new);
+        new
     }
 }
 
