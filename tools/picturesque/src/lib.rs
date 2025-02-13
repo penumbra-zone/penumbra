@@ -77,8 +77,10 @@ impl Options {
 async fn run_devnet(ctx: Context) -> anyhow::Result<()> {
     tracing::info!("spawning postgres");
     let postgres = tokio::spawn(postgres::run(ctx.directory.clone()));
+    let postgres_connection_string = postgres::go_connection_string(&ctx.directory);
     let cometbft = tokio::spawn(cometbft::run(
         ctx.directory.clone(),
+        postgres_connection_string,
         Some(Duration::from_millis(2000)),
     ));
     let pd = tokio::spawn(pd::run(
