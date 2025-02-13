@@ -13,6 +13,8 @@ const VENDOR_SQL: &'static str = include_str!(concat!(
     "/../../crates/util/cometindex/vendor/schema.sql"
 ));
 
+const DB_NAME: &'static str = "penumbra_raw";
+
 #[derive(Clone, Debug)]
 struct Context {
     /// Where postgres should put its data.
@@ -34,7 +36,7 @@ impl Context {
             data_dir,
             sock_dir,
             log_file,
-            db_name: "penumbra_raw".to_string(),
+            db_name: DB_NAME.to_string(),
         }
     }
 
@@ -193,6 +195,14 @@ impl Context {
         tracing::info!(database = self.db_name, "created and initialized");
         Ok(())
     }
+
+    fn go_connection_string(&self) -> String {
+        format!(
+            "host={} dbname={} sslmode=disable",
+            self.sock_dir.to_string_lossy(),
+            self.db_name.as_str()
+        )
+    }
 }
 
 /// Run postgres until it terminates.
@@ -219,4 +229,11 @@ pub async fn run(root: PathBuf) -> anyhow::Result<()> {
     init_db.await??;
     // Then, we block this process on postgres.
     postgres.await?
+}
+
+/// Given a root directory, return a connection string suitable for Go programs.
+///
+/// We need this because cometbft will use it.
+pub fn go_connection_string(root: &Path) -> String {
+    Context::new(root).go_connection_string()
 }
