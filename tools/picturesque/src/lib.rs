@@ -35,7 +35,7 @@ pub enum Command {
     /// before then spinning up the devnet.
     Create {
         /// How long epochs last, in blocks.
-        #[clap(long)]
+        #[clap(long, default_value = "50")]
         epoch_duration: u32,
     },
     /// Start up a devnet.
