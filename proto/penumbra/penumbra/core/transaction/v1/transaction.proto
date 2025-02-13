@@ -345,7 +345,7 @@ message ActionPlan {
     component.auction.v1.ActionDutchAuctionWithdrawPlan action_dutch_auction_withdraw = 55;
 
     // Funding
-    component.funding.v1.ActionLiquidityTournamentVotePlan action_liquidity_tournament_vote_plan = 70;
+    component.funding.v1.ActionLiquidityTournamentVotePlan action_liquidity_tournament_vote = 70;
   }
 }
 

@@ -769,7 +769,7 @@ pub mod action_plan {
         ),
         /// Funding
         #[prost(message, tag = "70")]
-        ActionLiquidityTournamentVotePlan(
+        ActionLiquidityTournamentVote(
             super::super::super::component::funding::v1::ActionLiquidityTournamentVotePlan,
         ),
     }
