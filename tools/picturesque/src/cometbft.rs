@@ -47,16 +47,39 @@ impl Context {
         child.wait().await?;
         Ok(())
     }
+
+    /// Patch the config of cometbft to use the postgres indexer with a given connection string.
+    async fn patch_indexing_config(&self, connection_string: String) -> anyhow::Result<()> {
+        let config_file_path = self.cometbft_home.join("config/config.toml");
+        let raw_config = tokio::fs::read_to_string(&config_file_path).await?;
+        let mut config: toml::Value = toml::from_str(&raw_config)?;
+        let tx_index_mut = config
+            .get_mut("tx_index")
+            .ok_or(anyhow!("expected `tx_index`"))?;
+        *tx_index_mut = toml::Value::Table(toml::Table::from_iter([
+            ("indexer".into(), "psql".into()),
+            ("psql-conn".into(), connection_string.into()),
+        ]));
+        tokio::fs::write(&config_file_path, toml::to_string_pretty(&config)?).await?;
+
+        Ok(())
+    }
 }
 
 #[tracing::instrument]
-pub async fn run(root: PathBuf, delay: Option<Duration>) -> anyhow::Result<()> {
+pub async fn run(
+    root: PathBuf,
+    postgres_connection_string: String,
+    delay: Option<Duration>,
+) -> anyhow::Result<()> {
     if let Some(delay) = delay {
         tracing::debug!(delay = ?delay, "sleeping");
         tokio::time::sleep(delay).await;
     }
     let ctx = Context::new(root);
     ctx.create_directories()?;
+    ctx.patch_indexing_config(postgres_connection_string)
+        .await?;
     ctx.run().await.with_context(|| "while running cometbft")?;
     Ok(())
 }
