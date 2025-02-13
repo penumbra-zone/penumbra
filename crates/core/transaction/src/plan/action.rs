@@ -560,9 +560,9 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                 )),
             },
             ActionPlan::ActionLiquidityTournamentVote(inner) => pb_t::ActionPlan {
-                action: Some(
-                    pb_t::action_plan::Action::ActionLiquidityTournamentVotePlan(inner.into()),
-                ),
+                action: Some(pb_t::action_plan::Action::ActionLiquidityTournamentVote(
+                    inner.into(),
+                )),
             },
         }
     }
@@ -649,7 +649,7 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             pb_t::action_plan::Action::Ics20Withdrawal(inner) => {
                 Ok(ActionPlan::Ics20Withdrawal(inner.try_into()?))
             }
-            pb_t::action_plan::Action::ActionLiquidityTournamentVotePlan(inner) => {
+            pb_t::action_plan::Action::ActionLiquidityTournamentVote(inner) => {
                 Ok(ActionPlan::ActionLiquidityTournamentVote(inner.try_into()?))
             }
         }
