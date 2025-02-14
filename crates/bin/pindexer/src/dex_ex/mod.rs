@@ -483,8 +483,8 @@ mod summary {
         now AS (
             SELECT price, liquidity            
             FROM snapshots
-            WHERE time >= $3
-            ORDER BY time ASC
+            WHERE time <= $3
+            ORDER BY time DESC
             LIMIT 1
         ),
         sums AS (
@@ -549,6 +549,7 @@ mod summary {
                 SELECT asset_start as asset, price
                 FROM dex_ex_pairs_summary
                 WHERE asset_end = $1
+                AND liquidity >= $2
                 UNION VALUES ($1, 1.0)
             ),
             converted_pairs_summary AS (
