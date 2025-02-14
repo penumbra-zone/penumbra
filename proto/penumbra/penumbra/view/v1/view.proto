@@ -445,7 +445,7 @@ message TransactionPlannerRequest {
 
   message ActionLiquidityTournamentVote {
     // The asset the user wants to vote for.
-    repeated core.asset.v1.Denom incentivized = 1;
+    core.asset.v1.Denom incentivized = 1;
     // The address the user wants potential rewards to go to.
     core.keys.v1.Address rewards_recipient = 2;
     // The note containing the staked note used for voting.
