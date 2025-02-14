@@ -803,8 +803,8 @@ pub mod transaction_planner_request {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ActionLiquidityTournamentVote {
         /// The asset the user wants to vote for.
-        #[prost(message, repeated, tag = "1")]
-        pub incentivized: ::prost::alloc::vec::Vec<
+        #[prost(message, optional, tag = "1")]
+        pub incentivized: ::core::option::Option<
             super::super::super::core::asset::v1::Denom,
         >,
         /// The address the user wants potential rewards to go to.
