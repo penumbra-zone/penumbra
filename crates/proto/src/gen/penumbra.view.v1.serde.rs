@@ -7864,7 +7864,7 @@ impl serde::Serialize for transaction_planner_request::ActionLiquidityTournament
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.incentivized.is_empty() {
+        if self.incentivized.is_some() {
             len += 1;
         }
         if self.rewards_recipient.is_some() {
@@ -7877,8 +7877,8 @@ impl serde::Serialize for transaction_planner_request::ActionLiquidityTournament
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest.ActionLiquidityTournamentVote", len)?;
-        if !self.incentivized.is_empty() {
-            struct_ser.serialize_field("incentivized", &self.incentivized)?;
+        if let Some(v) = self.incentivized.as_ref() {
+            struct_ser.serialize_field("incentivized", v)?;
         }
         if let Some(v) = self.rewards_recipient.as_ref() {
             struct_ser.serialize_field("rewardsRecipient", v)?;
@@ -7971,7 +7971,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionLiquidi
                             if incentivized__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("incentivized"));
                             }
-                            incentivized__ = Some(map_.next_value()?);
+                            incentivized__ = map_.next_value()?;
                         }
                         GeneratedField::RewardsRecipient => {
                             if rewards_recipient__.is_some() {
@@ -7999,7 +7999,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionLiquidi
                     }
                 }
                 Ok(transaction_planner_request::ActionLiquidityTournamentVote {
-                    incentivized: incentivized__.unwrap_or_default(),
+                    incentivized: incentivized__,
                     rewards_recipient: rewards_recipient__,
                     staked_notes: staked_notes__.unwrap_or_default(),
                     epoch_index: epoch_index__.unwrap_or_default(),
