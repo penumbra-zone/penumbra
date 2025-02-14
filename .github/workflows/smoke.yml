@@ -67,26 +67,27 @@ jobs:
         run: nix develop --command just integration-pmonitor
 
   # Integration tests that run against the public testnet endpoints.
-  # Temporarily enabling these in CI, to provide assurance during refactoring.
-  testnet:
-    runs-on: buildjet-16vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-
-      - name: install nix
-        uses: nixbuild/nix-quick-install-action@v28
-
-      - name: setup nix cache
-        uses: nix-community/cache-nix-action@v5
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          backend: buildjet
-
-      - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
-
-      - name: run the testnet integration tests
-        run: nix develop --command just integration-testnet
+  # Temporarily disabling these in CI, as the testnet endpoints are
+  # incompatible with `main`, given GH5010.
+  # testnet:
+  #   runs-on: buildjet-16vcpu-ubuntu-2204
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         lfs: true
+  #
+  #     - name: install nix
+  #       uses: nixbuild/nix-quick-install-action@v28
+  #
+  #     - name: setup nix cache
+  #       uses: nix-community/cache-nix-action@v5
+  #       with:
+  #         primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+  #         restore-prefixes-first-match: nix-${{ runner.os }}-
+  #         backend: buildjet
+  #
+  #     - name: Load rust cache
+  #       uses: astriaorg/buildjet-rust-cache@v2.5.1
+  #
+  #     - name: run the testnet integration tests
+  #       run: nix develop --command just integration-testnet
