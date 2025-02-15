@@ -265,11 +265,11 @@ ORDER BY
             assert!(e.block_height >= height);
             if e.block_height > height {
                 by_height.push(current_batch);
+                height = e.block_height;
                 current_batch = BlockEvents {
                     height,
                     events: Vec::with_capacity(WORKING_CAPACITY),
                 };
-                height = e.block_height;
             }
             current_batch.events.push(e);
         }
@@ -285,11 +285,11 @@ ORDER BY
         // the final block.
         while height <= last.0 {
             by_height.push(current_batch);
+            height += 1;
             current_batch = BlockEvents {
                 height,
                 events: Vec::new(),
             };
-            height += 1;
         }
         Ok(EventBatch::new(by_height))
     }
