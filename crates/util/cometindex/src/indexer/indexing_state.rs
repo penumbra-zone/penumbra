@@ -268,6 +268,15 @@ ORDER BY
             current_batch.events.push(e);
         }
         // Flush the current block, and create empty ones for the remaining heights.
+        //
+        // This is the correct behavior *assuming* that the caller has already checked
+        // that the raw events database has indexed all the blocks up to and including
+        // the provided last height. In that case, imagine if there were never any events
+        // at all. In that case, what we would need to do is to push empty blocks
+        // starting from `first` and up to and including `last`.
+        //
+        // Usually, there are events every block, so this code just serves to push
+        // the final block.
         while height <= last.0 {
             by_height.push(current_batch);
             current_batch = BlockEvents {
