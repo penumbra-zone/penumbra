@@ -1425,7 +1425,7 @@ impl AppView for Component {
         let mut charts = HashMap::new();
         let mut snapshots = HashMap::new();
         let mut last_time = None;
-        for block in batch.by_height.iter() {
+        for block in batch.events_by_block() {
             let mut events = Events::extract(&block)?;
             let time = events
                 .time

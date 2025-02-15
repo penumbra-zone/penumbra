@@ -19,17 +19,60 @@ pub struct BlockEvents {
 
 #[derive(Clone, Debug)]
 pub struct EventBatch {
-    pub first_height: u64,
-    pub last_height: u64,
+    first_height: u64,
+    last_height: u64,
     /// The batch of events, ordered by increasing height.
     ///
     /// The heights are guaranteed to be increasing, and to be contiguous.
-    pub by_height: Arc<Vec<BlockEvents>>,
+    by_height: Arc<Vec<BlockEvents>>,
 }
 
 impl EventBatch {
+    /// Create a new [`EventBatch`].
+    pub fn new(block_events: Vec<BlockEvents>) -> Self {
+        Self {
+            first_height: block_events.first().map(|x| x.height).unwrap_or_default(),
+            last_height: block_events.last().map(|x| x.height).unwrap_or_default(),
+            by_height: Arc::new(block_events),
+        }
+    }
+
+    pub(crate) fn first_height(&self) -> u64 {
+        self.first_height
+    }
+
+    pub(crate) fn last_height(&self) -> u64 {
+        self.last_height
+    }
+
+    /// Check if this batch has no blocks in it.
+    ///
+    /// Most commonly, this is the result when [`start_later`] is called with a height
+    /// past that inside the batch.
+    pub fn empty(&self) -> bool {
+        self.first_height > self.last_height
+    }
+
+    /// Modify this batch to start at a greater height.
+    ///
+    /// This will have no effect if the new start height is *before* the current start height.
+    pub fn start_later(&mut self, new_start: u64) {
+        self.first_height = new_start.max(self.first_height);
+    }
+
+    pub fn events_by_block(&self) -> impl Iterator<Item = &'_ BlockEvents> {
+        // Assuming the first height is past the first height in our vec,
+        // we need to skip the difference.
+        let skip = self
+            .by_height
+            .first()
+            .map(|x| self.first_height.saturating_sub(x.height) as usize)
+            .unwrap_or_default();
+        self.by_height.iter().skip(skip)
+    }
+
     pub fn events(&self) -> impl Iterator<Item = &'_ ContextualizedEvent> {
-        self.by_height.iter().flat_map(|x| x.events.iter())
+        self.events_by_block().flat_map(|x| x.events.iter())
     }
 }
 

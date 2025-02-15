@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use futures::TryStreamExt;
 use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, Transaction};
@@ -55,6 +55,12 @@ impl Height {
 impl From<u64> for Height {
     fn from(value: u64) -> Self {
         Self(value)
+    }
+}
+
+impl From<Height> for u64 {
+    fn from(value: Height) -> Self {
+        value.0
     }
 }
 
@@ -285,11 +291,7 @@ ORDER BY
             };
             height += 1;
         }
-        Ok(EventBatch {
-            first_height: first.0,
-            last_height: last.0,
-            by_height: Arc::new(by_height),
-        })
+        Ok(EventBatch::new(by_height))
     }
 
     pub async fn init(src_url: &str, dst_url: &str) -> anyhow::Result<Self> {

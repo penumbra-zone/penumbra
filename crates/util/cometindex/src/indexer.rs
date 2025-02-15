@@ -51,24 +51,27 @@ async fn catchup(
             } else {
                 tracing::info!(?name, "already initialized");
             }
-            while let Some(events) = rx.recv().await {
+            while let Some(mut events) = rx.recv().await {
                 let mut dbtx = state_cp.begin_transaction().await?;
-                let last_height = events.last_height;
-                if index_height >= Height::from(last_height) {
+                // We only ever want to index events past our current height.
+                // We might receive a batch with more events because other indices are behind us.
+                events.start_later(index_height.next().into());
+                if events.empty() {
                     tracing::info!(
-                        first = events.first_height,
-                        last = events.last_height,
+                        first = events.first_height(),
+                        last = events.last_height(),
                         index_name = &name,
                         "skipping batch"
                     );
                     continue;
                 }
                 tracing::info!(
-                    first = events.first_height,
-                    last = events.last_height,
+                    first = events.first_height(),
+                    last = events.last_height(),
                     index_name = &name,
                     "indexing batch"
                 );
+                let last_height = events.last_height();
                 index.index_batch(&mut dbtx, events).await?;
                 tracing::debug!(index_name = &name, "committing batch");
                 IndexingState::update_index_height(&mut dbtx, &name, Height::from(last_height))
