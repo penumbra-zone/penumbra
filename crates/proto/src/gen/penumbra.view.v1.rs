@@ -89,7 +89,7 @@ pub struct AuctionsResponse {
     /// service*. Note that the local view service may lag behind the fullnode. For
     /// example, if the chain hits an auction's `end_height`, but the user hasn't
     /// yet exchanged their sequence-0 (opened) auction NFT for a sequence-1
-    /// (closed) auction NFT, the local view service will have a sequnce number of
+    /// (closed) auction NFT, the local view service will have a sequence number of
     /// 0.
     ///
     /// Dutch auctions move from:
@@ -1928,7 +1928,7 @@ pub struct LatestSwapsRequest {
     pub pair: ::core::option::Option<
         super::super::core::component::dex::v1::DirectedTradingPair,
     >,
-    /// If present, limit the responses to activity that occured after this block height.
+    /// If present, limit the responses to activity that occurred after this block height.
     #[prost(uint64, tag = "3")]
     pub after_height: u64,
     /// Limit the response to the last entries within `response_limit`.
