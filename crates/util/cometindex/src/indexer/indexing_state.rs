@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use futures::TryStreamExt;
 use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, Transaction};
@@ -55,6 +55,12 @@ impl Height {
 impl From<u64> for Height {
     fn from(value: u64) -> Self {
         Self(value)
+    }
+}
+
+impl From<Height> for u64 {
+    fn from(value: Height) -> Self {
+        value.0
     }
 }
 
@@ -259,28 +265,33 @@ ORDER BY
             assert!(e.block_height >= height);
             if e.block_height > height {
                 by_height.push(current_batch);
+                height = e.block_height;
                 current_batch = BlockEvents {
                     height,
                     events: Vec::with_capacity(WORKING_CAPACITY),
                 };
-                height = e.block_height;
             }
             current_batch.events.push(e);
         }
         // Flush the current block, and create empty ones for the remaining heights.
+        //
+        // This is the correct behavior *assuming* that the caller has already checked
+        // that the raw events database has indexed all the blocks up to and including
+        // the provided last height. In that case, imagine if there were never any events
+        // at all. In that case, what we would need to do is to push empty blocks
+        // starting from `first` and up to and including `last`.
+        //
+        // Usually, there are events every block, so this code just serves to push
+        // the final block.
         while height <= last.0 {
             by_height.push(current_batch);
+            height += 1;
             current_batch = BlockEvents {
                 height,
                 events: Vec::new(),
             };
-            height += 1;
         }
-        Ok(EventBatch {
-            first_height: first.0,
-            last_height: last.0,
-            by_height: Arc::new(by_height),
-        })
+        Ok(EventBatch::new(by_height))
     }
 
     pub async fn init(src_url: &str, dst_url: &str) -> anyhow::Result<Self> {
