@@ -244,10 +244,13 @@ toml                             = { version = "0.7" }
 tonic                            = { version = "0.12.3" }
 tonic-reflection                 = { version = "0.12.3" }
 tonic-web                        = { version = "0.12.3" }
-tower                            = { version = "0.4.0" }
+tower                            = { version = "0.5.2" }
 tower-http                       = { version = "0.6.2" }
 tower-service                    = { version = "0.3.2" }
 tracing                          = { version = "0.1" }
 tracing-subscriber               = { version = "0.3.17", features = ["env-filter"] }
 url                              = { version = "2.2" }
 getrandom                        = { version = "0.2", default-features = false }
+
+[patch.crates-io]
+tower-actor = { git = "https://github.com/penumbra-zone/tower-actor", rev = "refs/pull/5/head" }
