@@ -89,7 +89,7 @@ message ParticipateResponse {
     CeremonyCrs parent = 1;
   }
 
-  // Sent to the participant to confim their contribution was accepted.
+  // Sent to the participant to confirm their contribution was accepted.
   message Confirm {
     uint64 slot = 1;
   }
