@@ -30,7 +30,7 @@ impl GovernanceProposals {
     async fn index_event(
         &self,
         dbtx: &mut PgTransaction<'_>,
-        event: &ContextualizedEvent,
+        event: ContextualizedEvent<'_>,
     ) -> Result<(), anyhow::Error> {
         match event.event.kind.as_str() {
             EVENT_PROPOSAL_SUBMIT => {

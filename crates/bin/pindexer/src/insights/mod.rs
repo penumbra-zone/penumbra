@@ -290,7 +290,7 @@ impl Component {
     async fn index_event(
         &self,
         dbtx: &mut PgTransaction<'_>,
-        event: &ContextualizedEvent,
+        event: ContextualizedEvent<'_>,
     ) -> Result<(), anyhow::Error> {
         let height = event.block_height;
         if let Ok(e) = EventUndelegate::try_from_event(&event.event) {

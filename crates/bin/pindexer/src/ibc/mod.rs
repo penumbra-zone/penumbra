@@ -71,10 +71,10 @@ enum Event {
     },
 }
 
-impl TryFrom<&ContextualizedEvent> for Event {
+impl TryFrom<ContextualizedEvent<'_>> for Event {
     type Error = anyhow::Error;
 
-    fn try_from(event: &ContextualizedEvent) -> Result<Self, Self::Error> {
+    fn try_from(event: ContextualizedEvent<'_>) -> Result<Self, Self::Error> {
         match EventKind::try_from(event.event.kind.as_str())? {
             EventKind::InboundTransfer => {
                 let pe = pb::EventInboundFungibleTokenTransfer::from_event(&event.event)?;

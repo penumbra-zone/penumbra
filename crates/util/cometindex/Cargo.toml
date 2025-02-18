@@ -18,7 +18,9 @@ tracing = {workspace = true}
 tracing-subscriber = {workspace = true}
 sqlx = {workspace = true, features = ["postgres", "json", "runtime-tokio", "tls-rustls"] }
 async-trait = {workspace = true}
+prost = {workspace = true}
 tendermint = {workspace = true}
+tendermint-proto = {workspace = true}
 serde_json = {workspace = true}
 futures = {workspace = true}
 hex = {workspace = true}

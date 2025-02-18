@@ -23,7 +23,7 @@ impl ValidatorSet {
     async fn index_event(
         &self,
         dbtx: &mut PgTransaction<'_>,
-        event: &ContextualizedEvent,
+        event: ContextualizedEvent<'_>,
     ) -> Result<(), anyhow::Error> {
         match event.event.kind.as_str() {
             "penumbra.core.component.stake.v1.EventValidatorDefinitionUpload" => {

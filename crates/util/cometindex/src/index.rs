@@ -1,20 +1,88 @@
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
 use async_trait::async_trait;
 pub use sqlx::PgPool;
 use sqlx::{Postgres, Transaction};
+use tendermint::abci::Event;
 
 use crate::ContextualizedEvent;
 
 pub type PgTransaction<'a> = Transaction<'a, Postgres>;
 
+#[derive(Clone, Copy, Debug)]
+struct EventReference {
+    /// Which event in the block this is.
+    pub event_index: usize,
+    pub tx_hash: Option<[u8; 32]>,
+    pub local_rowid: i64,
+}
+
 /// Represents all of the events in a given block
 #[derive(Clone, Debug)]
 pub struct BlockEvents {
-    /// The height of this block.
-    pub height: u64,
-    /// The events contained in this block, in order.
-    pub events: Vec<ContextualizedEvent>,
+    height: u64,
+    event_refs: Vec<EventReference>,
+    events: Vec<Event>,
+    transactions: BTreeMap<[u8; 32], Vec<u8>>,
+}
+
+// The builder interface for our own crate.
+impl BlockEvents {
+    pub(crate) fn new(height: u64) -> Self {
+        const EXPECTED_EVENTS: usize = 32;
+
+        Self {
+            height,
+            event_refs: Vec::with_capacity(EXPECTED_EVENTS),
+            events: Vec::with_capacity(EXPECTED_EVENTS),
+            transactions: BTreeMap::new(),
+        }
+    }
+
+    /// Register a transaction in this block.
+    pub(crate) fn push_tx(&mut self, hash: [u8; 32], data: Vec<u8>) {
+        self.transactions.insert(hash, data);
+    }
+
+    /// Register an event in this block.
+    pub(crate) fn push_event(&mut self, event: Event, tx_hash: Option<[u8; 32]>, local_rowid: i64) {
+        let event_index = self.events.len();
+        self.events.push(event);
+        self.event_refs.push(EventReference {
+            event_index,
+            tx_hash,
+            local_rowid,
+        });
+    }
+}
+
+impl BlockEvents {
+    pub fn height(&self) -> u64 {
+        self.height
+    }
+
+    fn contextualize(&self, event_ref: EventReference) -> ContextualizedEvent<'_> {
+        let event = &self.events[event_ref.event_index];
+        let tx = event_ref
+            .tx_hash
+            .and_then(|h| Some((h, self.transactions.get(&h)?.as_slice())));
+        ContextualizedEvent {
+            event,
+            block_height: self.height,
+            tx,
+            local_rowid: event_ref.local_rowid,
+        }
+    }
+
+    /// Iterate over the events in this block, in the order that they appear.
+    pub fn events(&self) -> impl Iterator<Item = ContextualizedEvent<'_>> {
+        self.event_refs.iter().map(|x| self.contextualize(*x))
+    }
+
+    /// Iterate over transactions (and their hashes) in the order they appear in the block.
+    pub fn transactions(&self) -> impl Iterator<Item = ([u8; 32], &'_ [u8])> {
+        self.transactions.iter().map(|x| (*x.0, x.1.as_slice()))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -71,8 +139,8 @@ impl EventBatch {
         self.by_height.iter().skip(skip)
     }
 
-    pub fn events(&self) -> impl Iterator<Item = &'_ ContextualizedEvent> {
-        self.events_by_block().flat_map(|x| x.events.iter())
+    pub fn events(&self) -> impl Iterator<Item = ContextualizedEvent<'_>> {
+        self.events_by_block().flat_map(|x| x.events())
     }
 }
 
