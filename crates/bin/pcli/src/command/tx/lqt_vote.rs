@@ -1,13 +1,7 @@
-use std::collections::BTreeMap;
-
 use anyhow::anyhow;
-use penumbra_sdk_asset::{
-    asset::{self, REGISTRY},
-    Value,
-};
+use penumbra_sdk_asset::asset::REGISTRY;
 use penumbra_sdk_fee::{FeeTier, GasPrices};
 use penumbra_sdk_keys::Address;
-use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::core::component::sct::v1::{
     query_service_client::QueryServiceClient as SctQueryServiceClient, EpochByHeightRequest,
 };
@@ -104,21 +98,17 @@ impl LqtVoteCmd {
         // to reduce the number of votes we need in the next epoch.
         // To do so, we need to spend all of these notes, and produce one output per
         // delegator token.
-        let mut totals: BTreeMap<asset::Id, Amount> = Default::default();
         for note in voting_notes {
-            let value = note.note.value();
             planner.spend(note.note, note.position);
-            *totals.entry(value.asset_id).or_insert(Amount::zero()) += value.amount;
         }
+        // By setting the change address, all of the excess balance we've created
+        // from spending the notes will be directed back to our account.
         let change_addr = app
             .config
             .full_viewing_key
             .ephemeral_address(OsRng, Default::default())
             .0;
         planner.change_address(change_addr.clone());
-        for (asset_id, amount) in totals {
-            planner.output(Value { asset_id, amount }, change_addr.clone());
-        }
 
         let plan = planner.plan(app.view(), Default::default()).await?;
         app.build_and_submit_transaction(plan).await?;
