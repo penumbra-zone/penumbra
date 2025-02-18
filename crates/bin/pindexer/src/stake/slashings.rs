@@ -13,7 +13,7 @@ impl Slashings {
     async fn index_event(
         &self,
         dbtx: &mut PgTransaction<'_>,
-        event: &ContextualizedEvent,
+        event: ContextualizedEvent<'_>,
     ) -> Result<(), anyhow::Error> {
         let pe = match pb::EventSlashingPenaltyApplied::from_event(event.as_ref()) {
             Ok(pe) => pe,

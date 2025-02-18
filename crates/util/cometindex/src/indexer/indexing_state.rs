@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-
-use futures::TryStreamExt;
+use anyhow::anyhow;
+use futures::{Stream, StreamExt, TryStreamExt};
+use prost::Message as _;
 use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, Transaction};
-use tendermint::abci;
+use std::collections::HashMap;
+use tendermint::abci::{self, Event};
 
-use crate::{
-    index::{BlockEvents, EventBatch},
-    ContextualizedEvent,
-};
+use crate::index::{BlockEvents, EventBatch};
 
 /// Create a Database, with, for sanity, some read only settings.
 ///
@@ -158,24 +156,60 @@ impl IndexingState {
         Ok(())
     }
 
-    pub async fn event_batch(&self, first: Height, last: Height) -> anyhow::Result<EventBatch> {
-        // The amount of events we expect a block to have.
-        const WORKING_CAPACITY: usize = 32;
+    fn transactions_between(
+        &self,
+        first: Height,
+        last: Height,
+    ) -> impl Stream<Item = anyhow::Result<(Height, [u8; 32], Vec<u8>)>> + '_ {
+        async fn parse_row(
+            row: (i64, String, Vec<u8>),
+        ) -> anyhow::Result<(Height, [u8; 32], Vec<u8>)> {
+            let tx_hash: [u8; 32] = hex::decode(row.1)?
+                .try_into()
+                .map_err(|_| anyhow!("expected 32 byte hash"))?;
+            let tx_result = tendermint_proto::v0_37::abci::TxResult::decode(row.2.as_slice())?;
+            let transaction = tx_result.tx.to_vec();
+            let height = Height::try_from(row.0)?;
+            Ok((height, tx_hash, transaction))
+        }
 
-        let mut by_height = Vec::with_capacity((last.0 - first.0 + 1) as usize);
-        let mut event_stream =
-            sqlx::query_as::<_, (i64, String, i64, Option<String>, serde_json::Value)>(
-                // This query does some shenanigans to ensure good performance.
-                // The main trick is that we know that each event has 1 block and <= 1 transaction associated
-                // with it, so we can "encourage" (force) Postgres to avoid doing a hash join and
-                // then a sort, and instead work from the events in a linear fashion.
-                // Basically, this query ends up doing:
-                //
-                // for event in events >= id:
-                //   attach attributes
-                //   attach block
-                //   attach transaction?
-                r#"
+        sqlx::query_as::<_, (i64, String, Vec<u8>)>(
+            r#"
+SELECT height, tx_hash, tx_result
+FROM tx_results
+LEFT JOIN LATERAL (
+    SELECT height FROM blocks WHERE blocks.rowid = tx_results.block_id LIMIT 1
+) ON TRUE
+WHERE
+    block_id >= (SELECT rowid FROM blocks where height = $1)
+AND
+    block_id <= (SELECT rowid FROM blocks where height = $2)
+"#,
+        )
+        .bind(first)
+        .bind(last)
+        .fetch(&self.src)
+        .map_err(|e| anyhow::Error::from(e).context("error reading from database"))
+        .and_then(parse_row)
+    }
+
+    fn events_between(
+        &self,
+        first: Height,
+        last: Height,
+    ) -> impl Stream<Item = anyhow::Result<(Height, Event, Option<[u8; 32]>, i64)>> + '_ {
+        sqlx::query_as::<_, (i64, String, i64, Option<String>, serde_json::Value)>(
+            // This query does some shenanigans to ensure good performance.
+            // The main trick is that we know that each event has 1 block and <= 1 transaction associated
+            // with it, so we can "encourage" (force) Postgres to avoid doing a hash join and
+            // then a sort, and instead work from the events in a linear fashion.
+            // Basically, this query ends up doing:
+            //
+            // for event in events >= id:
+            //   attach attributes
+            //   attach block
+            //   attach transaction hash?
+            r#"
 SELECT
     events.rowid,
     events.type,
@@ -213,85 +247,54 @@ ON TRUE
 ORDER BY
     events.rowid ASC
         "#,
-            )
-            .bind(first)
-            .bind(last)
-            .fetch(&self.src)
-            .map_ok(|(local_rowid, type_str, height, tx_hash, attrs)| {
-                tracing::debug!(?local_rowid, type_str, height, ?tx_hash);
-                let tx_hash: Option<[u8; 32]> = tx_hash.map(|s| {
-                    hex::decode(s)
-                        .expect("invalid tx_hash")
-                        .try_into()
-                        .expect("expected 32 bytes")
-                });
-                let block_height = height as u64;
-
-                let serde_json::Value::Object(attrs) = attrs else {
-                    // saves an allocation below bc we can take ownership
-                    panic!("expected JSON object");
-                };
-
-                let event = abci::Event {
-                    kind: type_str,
-                    attributes: attrs
-                        .into_iter()
-                        .filter_map(|(k, v)| match v {
-                            serde_json::Value::String(s) => Some((k, s)),
-                            // we never hit this because of how we constructed the query
-                            _ => None,
-                        })
-                        .map(Into::into)
-                        .collect(),
-                };
-
-                let ce = ContextualizedEvent {
-                    event,
-                    block_height,
-                    tx_hash,
-                    local_rowid,
-                };
-
-                ce
-            })
-            .map_err(|e| anyhow::Error::from(e).context("error reading from database"));
-
-        let mut height = first.0;
-        let mut current_batch = BlockEvents {
-            height: first.0,
-            events: Vec::with_capacity(WORKING_CAPACITY),
-        };
-        while let Some(e) = event_stream.try_next().await? {
-            assert!(e.block_height >= height);
-            if e.block_height > height {
-                by_height.push(current_batch);
-                height = e.block_height;
-                current_batch = BlockEvents {
-                    height,
-                    events: Vec::with_capacity(WORKING_CAPACITY),
-                };
-            }
-            current_batch.events.push(e);
-        }
-        // Flush the current block, and create empty ones for the remaining heights.
-        //
-        // This is the correct behavior *assuming* that the caller has already checked
-        // that the raw events database has indexed all the blocks up to and including
-        // the provided last height. In that case, imagine if there were never any events
-        // at all. In that case, what we would need to do is to push empty blocks
-        // starting from `first` and up to and including `last`.
-        //
-        // Usually, there are events every block, so this code just serves to push
-        // the final block.
-        while height <= last.0 {
-            by_height.push(current_batch);
-            height += 1;
-            current_batch = BlockEvents {
-                height,
-                events: Vec::new(),
+        )
+        .bind(first)
+        .bind(last)
+        .fetch(&self.src)
+        .map_ok(|(local_rowid, type_str, height, tx_hash, attrs)| {
+            tracing::debug!(?local_rowid, type_str, height, ?tx_hash);
+            let tx_hash: Option<[u8; 32]> = tx_hash.map(|s| {
+                hex::decode(s)
+                    .expect("invalid tx_hash")
+                    .try_into()
+                    .expect("expected 32 bytes")
+            });
+            let serde_json::Value::Object(attrs) = attrs else {
+                // saves an allocation below bc we can take ownership
+                panic!("expected JSON object");
             };
+
+            let event = abci::Event {
+                kind: type_str,
+                attributes: attrs
+                    .into_iter()
+                    .filter_map(|(k, v)| match v {
+                        serde_json::Value::String(s) => Some((k, s)),
+                        // we never hit this because of how we constructed the query
+                        _ => None,
+                    })
+                    .map(Into::into)
+                    .collect(),
+            };
+            let height = Height::try_from(height).expect("failed to decode height");
+            (height, event, tx_hash, local_rowid)
+        })
+        .map_err(|e| anyhow::Error::from(e).context("error reading from database"))
+    }
+
+    pub async fn event_batch(&self, first: Height, last: Height) -> anyhow::Result<EventBatch> {
+        let mut out = (first.0..=last.0)
+            .map(|height| BlockEvents::new(height))
+            .collect::<Vec<_>>();
+        let mut tx_stream = self.transactions_between(first, last).boxed();
+        while let Some((height, tx_hash, tx_data)) = tx_stream.try_next().await? {
+            out[(height.0 - first.0) as usize].push_tx(tx_hash, tx_data);
         }
-        Ok(EventBatch::new(by_height))
+        let mut events_stream = self.events_between(first, last).boxed();
+        while let Some((height, event, tx_hash, local_rowid)) = events_stream.try_next().await? {
+            out[(height.0 - first.0) as usize].push_event(event, tx_hash, local_rowid);
+        }
+        Ok(EventBatch::new(out))
     }
 
     pub async fn init(src_url: &str, dst_url: &str) -> anyhow::Result<Self> {

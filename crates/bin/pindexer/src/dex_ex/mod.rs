@@ -796,9 +796,9 @@ impl Events {
 
     pub fn extract(block: &BlockEvents) -> anyhow::Result<Self> {
         let mut out = Self::new();
-        out.height = block.height as i32;
+        out.height = block.height() as i32;
 
-        for event in &block.events {
+        for event in block.events() {
             if let Ok(e) = EventCandlestickData::try_from_event(&event.event) {
                 let candle = Candle::from_candlestick_data(&e.stick);
                 out.with_candle(e.pair, candle);
@@ -818,7 +818,7 @@ impl Events {
                     },
                     false,
                 );
-                if let Some(tx_hash) = event.tx_hash {
+                if let Some(tx_hash) = event.tx_hash() {
                     out.position_open_txs.insert(e.position_id, tx_hash);
                 }
                 // A newly opened position might be executed against in this block,
@@ -838,7 +838,7 @@ impl Events {
                     },
                     true,
                 );
-                if let Some(tx_hash) = event.tx_hash {
+                if let Some(tx_hash) = event.tx_hash() {
                     out.position_withdrawal_txs.insert(e.position_id, tx_hash);
                 }
                 out.position_withdrawals.push(e);
@@ -873,7 +873,7 @@ impl Events {
             } else if let Ok(e) = EventQueuePositionClose::try_from_event(&event.event) {
                 // The position close event is emitted by the dex module at EOB,
                 // so we need to track it with the tx hash of the closure tx.
-                if let Some(tx_hash) = event.tx_hash {
+                if let Some(tx_hash) = event.tx_hash() {
                     out.position_close_txs.insert(e.position_id, tx_hash);
                 }
             } else if let Ok(e) = EventBatchSwap::try_from_event(&event.event) {
@@ -1429,19 +1429,19 @@ impl AppView for Component {
             let mut events = Events::extract(&block)?;
             let time = events
                 .time
-                .expect(&format!("no block root event at height {}", block.height));
+                .expect(&format!("no block root event at height {}", block.height()));
             last_time = Some(time);
 
             // Load any missing positions before processing events
             events.load_positions(dbtx).await?;
 
             // This is where we are going to build the block summary for the DEX.
-            self.record_block_summary(dbtx, time, block.height as i32, &events)
+            self.record_block_summary(dbtx, time, block.height() as i32, &events)
                 .await?;
 
             // Record batch swap execution traces.
             for event in &events.batch_swaps {
-                self.record_batch_swap_traces(dbtx, time, block.height as i32, event)
+                self.record_batch_swap_traces(dbtx, time, block.height() as i32, event)
                     .await?;
             }
 

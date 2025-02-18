@@ -74,7 +74,7 @@ impl AppView for UndelegationTxs {
         .bind(ik.to_string())
         .bind(amount.value() as i64)
         .bind(event.block_height as i64)
-        .bind(event.tx_hash.ok_or_else(|| anyhow!("missing tx hash in event"))?)
+        .bind(event.tx_hash().ok_or_else(|| anyhow!("missing tx hash in event"))?)
         .execute(dbtx.as_mut())
         .await?;
         }
