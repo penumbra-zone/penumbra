@@ -252,17 +252,14 @@ CREATE TABLE IF NOT EXISTS dex_ex_block_summary (
 CREATE INDEX ON dex_ex_block_summary (time, height);
 
 CREATE TABLE IF NOT EXISTS dex_ex_transactions (
-  -- The primary key
-  rowid SERIAL PRIMARY KEY,
   -- The unique identifier of the transaction
-  transaction_id BYTEA NOT NULL UNIQUE,
+  transaction_id BYTEA NOT NULL PRIMARY KEY,
   -- The raw transaction bytes
   transaction BYTEA NOT NULL,
   -- The block height at which this transaction was included
   height INTEGER NOT NULL,
   -- The timestamp when this transaction was included in a block
-  time TIMESTAMPTZ NOT NULL,
-  PRIMARY KEY (transaction_id)
+  time TIMESTAMPTZ NOT NULL
 );
 
 CREATE INDEX ON dex_ex_transactions (time, height);

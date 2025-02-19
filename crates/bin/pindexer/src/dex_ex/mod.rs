@@ -21,6 +21,7 @@ use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::event::EventDomainType;
 use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::event::EventBlockRoot;
+use penumbra_sdk_transaction::Transaction;
 use sqlx::types::BigDecimal;
 use sqlx::{prelude::Type, Row};
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -703,8 +704,6 @@ struct Events {
     position_open_txs: BTreeMap<PositionId, [u8; 32]>,
     position_close_txs: BTreeMap<PositionId, [u8; 32]>,
     position_withdrawal_txs: BTreeMap<PositionId, [u8; 32]>,
-    // Track transactions
-    transactions: HashMap<TransactionId, Transaction>,
 }
 
 impl Events {
@@ -725,7 +724,6 @@ impl Events {
             position_open_txs: BTreeMap::new(),
             position_close_txs: BTreeMap::new(),
             position_withdrawal_txs: BTreeMap::new(),
-            transactions: HashMap::new(),
         }
     }
 
@@ -891,8 +889,6 @@ impl Events {
                     .entry(e.trading_pair)
                     .or_insert_with(Vec::new)
                     .push(e);
-            } else if let Ok(e) = EventBlockTransaction::try_from_event(&event.event) {
-                out.transactions.insert(e.transaction_id, e.transaction);
             }
         }
         Ok(out)
@@ -1407,7 +1403,7 @@ impl Component {
         &self,
         dbtx: &mut PgTransaction<'_>,
         time: DateTime,
-        height: i32,
+        height: u64,
         transaction_id: [u8; 32],
         transaction: Transaction,
     ) -> anyhow::Result<()> {
@@ -1420,12 +1416,27 @@ impl Component {
             ) VALUES ($1, $2, $3, $4)",
         )
         .bind(transaction_id)
-        .bind(transaction)
-        .bind(height)
+        .bind(transaction.encode_to_vec())
+        .bind(i32::try_from(height)?)
         .bind(time)
         .execute(dbtx.as_mut())
         .await?;
 
+        Ok(())
+    }
+
+    async fn record_all_transactions(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        time: DateTime,
+        block: &BlockEvents,
+    ) -> anyhow::Result<()> {
+        for (tx_id, tx_bytes) in block.transactions() {
+            let tx = Transaction::try_from(tx_bytes)?;
+            let height = block.height();
+            self.record_transaction(dbtx, time, height, tx_id, tx)
+                .await?;
+        }
         Ok(())
     }
 }
@@ -1462,6 +1473,8 @@ impl AppView for Component {
                 .time
                 .expect(&format!("no block root event at height {}", block.height()));
             last_time = Some(time);
+
+            self.record_all_transactions(dbtx, time, block).await?;
 
             // Load any missing positions before processing events
             events.load_positions(dbtx).await?;
@@ -1503,12 +1516,6 @@ impl AppView for Component {
                     .get(&event.position_id)
                     .copied();
                 self.record_position_withdraw(dbtx, time, events.height, tx_hash, event)
-                    .await?;
-            }
-
-            // Record transactions
-            for (transaction_id, transaction) in &events.transactions {
-                self.record_transaction(dbtx, time, events.height, transaction_id, transaction)
                     .await?;
             }
 

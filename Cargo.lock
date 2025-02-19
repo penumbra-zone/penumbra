@@ -6112,6 +6112,7 @@ dependencies = [
  "penumbra-sdk-sct",
  "penumbra-sdk-shielded-pool",
  "penumbra-sdk-stake",
+ "penumbra-sdk-transaction",
  "predicates 2.1.5",
  "prost 0.13.4",
  "prost-reflect",
