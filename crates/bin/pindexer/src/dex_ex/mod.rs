@@ -20,7 +20,6 @@ use penumbra_sdk_dex::{
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::event::EventDomainType;
 use penumbra_sdk_proto::DomainType;
-use penumbra_sdk_proto::Message;
 use penumbra_sdk_sct::event::EventBlockRoot;
 use sqlx::types::BigDecimal;
 use sqlx::{prelude::Type, Row};
@@ -242,8 +241,6 @@ mod candle {
     }
 }
 pub use candle::{Candle, Window, WindowedCandle};
-use penumbra_sdk_dex::event::EventBlockTransaction;
-use penumbra_sdk_proto::core::transaction::v1::Transaction;
 
 mod price_chart {
     use super::*;
@@ -707,7 +704,7 @@ struct Events {
     position_close_txs: BTreeMap<PositionId, [u8; 32]>,
     position_withdrawal_txs: BTreeMap<PositionId, [u8; 32]>,
     // Track transactions
-    transactions: HashMap<Vec<u8>, Transaction>,
+    transactions: HashMap<TransactionId, Transaction>,
 }
 
 impl Events {
@@ -895,8 +892,7 @@ impl Events {
                     .or_insert_with(Vec::new)
                     .push(e);
             } else if let Ok(e) = EventBlockTransaction::try_from_event(&event.event) {
-                out.transactions
-                    .insert(e.transaction_id.0.to_vec(), e.transaction);
+                out.transactions.insert(e.transaction_id, e.transaction);
             }
         }
         Ok(out)
@@ -1412,12 +1408,9 @@ impl Component {
         dbtx: &mut PgTransaction<'_>,
         time: DateTime,
         height: i32,
-        transaction_id: Option<[u8; 32]>,
+        transaction_id: TransactionId,
         transaction: Transaction,
     ) -> anyhow::Result<()> {
-        // Serialize the transaction to bytes using prost
-        let transaction_bytes = transaction.encode_to_vec();
-
         sqlx::query(
             "INSERT INTO dex_ex_transactions (
                 transaction_id,
@@ -1426,8 +1419,8 @@ impl Component {
                 time
             ) VALUES ($1, $2, $3, $4)",
         )
-        .bind(transaction_id.map(|id| id.as_ref().to_vec()))
-        .bind(transaction_bytes)
+        .bind(transaction_id)
+        .bind(transaction)
         .bind(height)
         .bind(time)
         .execute(dbtx.as_mut())
@@ -1515,15 +1508,8 @@ impl AppView for Component {
 
             // Record transactions
             for (transaction_id, transaction) in &events.transactions {
-                let tx_id_bytes: [u8; 32] = transaction_id.as_slice().try_into()?;
-                self.record_transaction(
-                    dbtx,
-                    time,
-                    events.height,
-                    Some(tx_id_bytes),
-                    transaction.clone(),
-                )
-                .await?;
+                self.record_transaction(dbtx, time, events.height, transaction_id, transaction)
+                    .await?;
             }
 
             for (pair, candle) in &events.candles {

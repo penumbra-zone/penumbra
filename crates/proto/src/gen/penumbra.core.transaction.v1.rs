@@ -6,8 +6,9 @@ pub struct Transaction {
     pub body: ::core::option::Option<TransactionBody>,
     /// The binding signature is stored separately from the transaction body that it signs.
     #[prost(message, optional, tag = "2")]
-    pub binding_sig:
-        ::core::option::Option<super::super::super::crypto::decaf377_rdsa::v1::BindingSignature>,
+    pub binding_sig: ::core::option::Option<
+        super::super::super::crypto::decaf377_rdsa::v1::BindingSignature,
+    >,
     /// The root of some previous state of the state commitment tree, used as an anchor for all
     /// ZK state transition proofs.
     #[prost(message, optional, tag = "3")]
@@ -119,7 +120,9 @@ impl ::prost::Name for TransactionSummary {
 pub struct DetectionData {
     /// A list of clues for use with Fuzzy Message Detection.
     #[prost(message, repeated, tag = "4")]
-    pub fmd_clues: ::prost::alloc::vec::Vec<super::super::super::crypto::decaf377_fmd::v1::Clue>,
+    pub fmd_clues: ::prost::alloc::vec::Vec<
+        super::super::super::crypto::decaf377_fmd::v1::Clue,
+    >,
 }
 impl ::prost::Name for DetectionData {
     const NAME: &'static str = "DetectionData";
@@ -154,20 +157,26 @@ pub mod action {
         #[prost(message, tag = "4")]
         SwapClaim(super::super::super::component::dex::v1::SwapClaim),
         #[prost(message, tag = "16")]
-        ValidatorDefinition(super::super::super::component::stake::v1::ValidatorDefinition),
+        ValidatorDefinition(
+            super::super::super::component::stake::v1::ValidatorDefinition,
+        ),
         #[prost(message, tag = "17")]
         IbcRelayAction(super::super::super::component::ibc::v1::IbcRelay),
         /// Governance:
         #[prost(message, tag = "18")]
         ProposalSubmit(super::super::super::component::governance::v1::ProposalSubmit),
         #[prost(message, tag = "19")]
-        ProposalWithdraw(super::super::super::component::governance::v1::ProposalWithdraw),
+        ProposalWithdraw(
+            super::super::super::component::governance::v1::ProposalWithdraw,
+        ),
         #[prost(message, tag = "20")]
         ValidatorVote(super::super::super::component::governance::v1::ValidatorVote),
         #[prost(message, tag = "21")]
         DelegatorVote(super::super::super::component::governance::v1::DelegatorVote),
         #[prost(message, tag = "22")]
-        ProposalDepositClaim(super::super::super::component::governance::v1::ProposalDepositClaim),
+        ProposalDepositClaim(
+            super::super::super::component::governance::v1::ProposalDepositClaim,
+        ),
         /// Positions
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::component::dex::v1::PositionOpen),
@@ -176,7 +185,9 @@ pub mod action {
         #[prost(message, tag = "32")]
         PositionWithdraw(super::super::super::component::dex::v1::PositionWithdraw),
         #[prost(message, tag = "34")]
-        PositionRewardClaim(super::super::super::component::dex::v1::PositionRewardClaim),
+        PositionRewardClaim(
+            super::super::super::component::dex::v1::PositionRewardClaim,
+        ),
         /// (un)delegation
         #[prost(message, tag = "40")]
         Delegate(super::super::super::component::stake::v1::Delegate),
@@ -186,18 +197,26 @@ pub mod action {
         UndelegateClaim(super::super::super::component::stake::v1::UndelegateClaim),
         /// Community Pool
         #[prost(message, tag = "50")]
-        CommunityPoolSpend(super::super::super::component::governance::v1::CommunityPoolSpend),
+        CommunityPoolSpend(
+            super::super::super::component::governance::v1::CommunityPoolSpend,
+        ),
         #[prost(message, tag = "51")]
-        CommunityPoolOutput(super::super::super::component::governance::v1::CommunityPoolOutput),
+        CommunityPoolOutput(
+            super::super::super::component::governance::v1::CommunityPoolOutput,
+        ),
         #[prost(message, tag = "52")]
-        CommunityPoolDeposit(super::super::super::component::governance::v1::CommunityPoolDeposit),
+        CommunityPoolDeposit(
+            super::super::super::component::governance::v1::CommunityPoolDeposit,
+        ),
         /// Dutch auctions
         #[prost(message, tag = "53")]
         ActionDutchAuctionSchedule(
             super::super::super::component::auction::v1::ActionDutchAuctionSchedule,
         ),
         #[prost(message, tag = "54")]
-        ActionDutchAuctionEnd(super::super::super::component::auction::v1::ActionDutchAuctionEnd),
+        ActionDutchAuctionEnd(
+            super::super::super::component::auction::v1::ActionDutchAuctionEnd,
+        ),
         #[prost(message, tag = "55")]
         ActionDutchAuctionWithdraw(
             super::super::super::component::auction::v1::ActionDutchAuctionWithdraw,
@@ -227,7 +246,9 @@ pub struct TransactionPerspective {
     /// The openings of note commitments referred to in the transaction
     /// but not included in the transaction.
     #[prost(message, repeated, tag = "3")]
-    pub advice_notes: ::prost::alloc::vec::Vec<super::super::component::shielded_pool::v1::Note>,
+    pub advice_notes: ::prost::alloc::vec::Vec<
+        super::super::component::shielded_pool::v1::Note,
+    >,
     /// Any relevant address views.
     #[prost(message, repeated, tag = "4")]
     pub address_views: ::prost::alloc::vec::Vec<super::super::keys::v1::AddressView>,
@@ -242,19 +263,24 @@ pub struct TransactionPerspective {
     pub prices: ::prost::alloc::vec::Vec<super::super::asset::v1::EstimatedPrice>,
     /// Any relevant extended metadata, indexed by asset id.
     #[prost(message, repeated, tag = "30")]
-    pub extended_metadata: ::prost::alloc::vec::Vec<transaction_perspective::ExtendedMetadataById>,
+    pub extended_metadata: ::prost::alloc::vec::Vec<
+        transaction_perspective::ExtendedMetadataById,
+    >,
     #[prost(message, repeated, tag = "40")]
-    pub creation_transaction_ids_by_nullifier:
-        ::prost::alloc::vec::Vec<transaction_perspective::CreationTransactionIdByNullifier>,
+    pub creation_transaction_ids_by_nullifier: ::prost::alloc::vec::Vec<
+        transaction_perspective::CreationTransactionIdByNullifier,
+    >,
     #[prost(message, repeated, tag = "50")]
-    pub nullification_transaction_ids_by_commitment:
-        ::prost::alloc::vec::Vec<transaction_perspective::NullificationTransactionIdByCommitment>,
+    pub nullification_transaction_ids_by_commitment: ::prost::alloc::vec::Vec<
+        transaction_perspective::NullificationTransactionIdByCommitment,
+    >,
     /// Any relevant BatchSwapOutputData to the transaction.
     ///
     /// This can be used to fill in information about swap outputs.
     #[prost(message, repeated, tag = "60")]
-    pub batch_swap_output_data:
-        ::prost::alloc::vec::Vec<super::super::component::dex::v1::BatchSwapOutputData>,
+    pub batch_swap_output_data: ::prost::alloc::vec::Vec<
+        super::super::component::dex::v1::BatchSwapOutputData,
+    >,
 }
 /// Nested message and enum types in `TransactionPerspective`.
 pub mod transaction_perspective {
@@ -269,10 +295,12 @@ pub mod transaction_perspective {
         const NAME: &'static str = "ExtendedMetadataById";
         const PACKAGE: &'static str = "penumbra.core.transaction.v1";
         fn full_name() -> ::prost::alloc::string::String {
-            "penumbra.core.transaction.v1.TransactionPerspective.ExtendedMetadataById".into()
+            "penumbra.core.transaction.v1.TransactionPerspective.ExtendedMetadataById"
+                .into()
         }
         fn type_url() -> ::prost::alloc::string::String {
-            "/penumbra.core.transaction.v1.TransactionPerspective.ExtendedMetadataById".into()
+            "/penumbra.core.transaction.v1.TransactionPerspective.ExtendedMetadataById"
+                .into()
         }
     }
     /// Associates a nullifier with the transaction ID that created the nullified state commitment.
@@ -283,9 +311,13 @@ pub mod transaction_perspective {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct CreationTransactionIdByNullifier {
         #[prost(message, optional, tag = "1")]
-        pub nullifier: ::core::option::Option<super::super::super::component::sct::v1::Nullifier>,
+        pub nullifier: ::core::option::Option<
+            super::super::super::component::sct::v1::Nullifier,
+        >,
         #[prost(message, optional, tag = "2")]
-        pub transaction_id: ::core::option::Option<super::super::super::txhash::v1::TransactionId>,
+        pub transaction_id: ::core::option::Option<
+            super::super::super::txhash::v1::TransactionId,
+        >,
     }
     impl ::prost::Name for CreationTransactionIdByNullifier {
         const NAME: &'static str = "CreationTransactionIdByNullifier";
@@ -305,10 +337,13 @@ pub mod transaction_perspective {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct NullificationTransactionIdByCommitment {
         #[prost(message, optional, tag = "1")]
-        pub commitment:
-            ::core::option::Option<super::super::super::super::crypto::tct::v1::StateCommitment>,
+        pub commitment: ::core::option::Option<
+            super::super::super::super::crypto::tct::v1::StateCommitment,
+        >,
         #[prost(message, optional, tag = "2")]
-        pub transaction_id: ::core::option::Option<super::super::super::txhash::v1::TransactionId>,
+        pub transaction_id: ::core::option::Option<
+            super::super::super::txhash::v1::TransactionId,
+        >,
     }
     impl ::prost::Name for NullificationTransactionIdByCommitment {
         const NAME: &'static str = "NullificationTransactionIdByCommitment";
@@ -338,7 +373,9 @@ pub struct PayloadKeyWithCommitment {
     #[prost(message, optional, tag = "1")]
     pub payload_key: ::core::option::Option<super::super::keys::v1::PayloadKey>,
     #[prost(message, optional, tag = "2")]
-    pub commitment: ::core::option::Option<super::super::super::crypto::tct::v1::StateCommitment>,
+    pub commitment: ::core::option::Option<
+        super::super::super::crypto::tct::v1::StateCommitment,
+    >,
 }
 impl ::prost::Name for PayloadKeyWithCommitment {
     const NAME: &'static str = "PayloadKeyWithCommitment";
@@ -375,8 +412,9 @@ pub struct TransactionView {
     pub body_view: ::core::option::Option<TransactionBodyView>,
     /// The binding signature is stored separately from the transaction body that it signs.
     #[prost(message, optional, tag = "2")]
-    pub binding_sig:
-        ::core::option::Option<super::super::super::crypto::decaf377_rdsa::v1::BindingSignature>,
+    pub binding_sig: ::core::option::Option<
+        super::super::super::crypto::decaf377_rdsa::v1::BindingSignature,
+    >,
     /// The root of some previous state of the state commitment tree, used as an anchor for all
     /// ZK state transition proofs.
     #[prost(message, optional, tag = "3")]
@@ -445,18 +483,24 @@ pub mod action_view {
         DelegatorVote(super::super::super::component::governance::v1::DelegatorVoteView),
         /// Action types without visible/opaque variants
         #[prost(message, tag = "16")]
-        ValidatorDefinition(super::super::super::component::stake::v1::ValidatorDefinition),
+        ValidatorDefinition(
+            super::super::super::component::stake::v1::ValidatorDefinition,
+        ),
         #[prost(message, tag = "17")]
         IbcRelayAction(super::super::super::component::ibc::v1::IbcRelay),
         /// Governance:
         #[prost(message, tag = "18")]
         ProposalSubmit(super::super::super::component::governance::v1::ProposalSubmit),
         #[prost(message, tag = "19")]
-        ProposalWithdraw(super::super::super::component::governance::v1::ProposalWithdraw),
+        ProposalWithdraw(
+            super::super::super::component::governance::v1::ProposalWithdraw,
+        ),
         #[prost(message, tag = "20")]
         ValidatorVote(super::super::super::component::governance::v1::ValidatorVote),
         #[prost(message, tag = "22")]
-        ProposalDepositClaim(super::super::super::component::governance::v1::ProposalDepositClaim),
+        ProposalDepositClaim(
+            super::super::super::component::governance::v1::ProposalDepositClaim,
+        ),
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::component::dex::v1::PositionOpen),
         #[prost(message, tag = "31")]
@@ -464,25 +508,35 @@ pub mod action_view {
         #[prost(message, tag = "32")]
         PositionWithdraw(super::super::super::component::dex::v1::PositionWithdraw),
         #[prost(message, tag = "34")]
-        PositionRewardClaim(super::super::super::component::dex::v1::PositionRewardClaim),
+        PositionRewardClaim(
+            super::super::super::component::dex::v1::PositionRewardClaim,
+        ),
         #[prost(message, tag = "41")]
         Delegate(super::super::super::component::stake::v1::Delegate),
         #[prost(message, tag = "42")]
         Undelegate(super::super::super::component::stake::v1::Undelegate),
         /// Community Pool
         #[prost(message, tag = "50")]
-        CommunityPoolSpend(super::super::super::component::governance::v1::CommunityPoolSpend),
+        CommunityPoolSpend(
+            super::super::super::component::governance::v1::CommunityPoolSpend,
+        ),
         #[prost(message, tag = "51")]
-        CommunityPoolOutput(super::super::super::component::governance::v1::CommunityPoolOutput),
+        CommunityPoolOutput(
+            super::super::super::component::governance::v1::CommunityPoolOutput,
+        ),
         #[prost(message, tag = "52")]
-        CommunityPoolDeposit(super::super::super::component::governance::v1::CommunityPoolDeposit),
+        CommunityPoolDeposit(
+            super::super::super::component::governance::v1::CommunityPoolDeposit,
+        ),
         /// Dutch auctions
         #[prost(message, tag = "53")]
         ActionDutchAuctionSchedule(
             super::super::super::component::auction::v1::ActionDutchAuctionScheduleView,
         ),
         #[prost(message, tag = "54")]
-        ActionDutchAuctionEnd(super::super::super::component::auction::v1::ActionDutchAuctionEnd),
+        ActionDutchAuctionEnd(
+            super::super::super::component::auction::v1::ActionDutchAuctionEnd,
+        ),
         #[prost(message, tag = "55")]
         ActionDutchAuctionWithdraw(
             super::super::super::component::auction::v1::ActionDutchAuctionWithdrawView,
@@ -544,8 +598,9 @@ pub struct WitnessData {
     /// The auth paths for the notes the transaction spends, in the
     /// same order as the spends in the transaction plan.
     #[prost(message, repeated, tag = "2")]
-    pub state_commitment_proofs:
-        ::prost::alloc::vec::Vec<super::super::super::crypto::tct::v1::StateCommitmentProof>,
+    pub state_commitment_proofs: ::prost::alloc::vec::Vec<
+        super::super::super::crypto::tct::v1::StateCommitmentProof,
+    >,
 }
 impl ::prost::Name for WitnessData {
     const NAME: &'static str = "WitnessData";
@@ -628,7 +683,9 @@ pub mod action_plan {
         SwapClaim(super::super::super::component::dex::v1::SwapClaimPlan),
         /// This is just a message relayed to the chain.
         #[prost(message, tag = "16")]
-        ValidatorDefinition(super::super::super::component::stake::v1::ValidatorDefinition),
+        ValidatorDefinition(
+            super::super::super::component::stake::v1::ValidatorDefinition,
+        ),
         /// This is just a message relayed to the chain.
         #[prost(message, tag = "17")]
         IbcRelayAction(super::super::super::component::ibc::v1::IbcRelay),
@@ -636,13 +693,17 @@ pub mod action_plan {
         #[prost(message, tag = "18")]
         ProposalSubmit(super::super::super::component::governance::v1::ProposalSubmit),
         #[prost(message, tag = "19")]
-        ProposalWithdraw(super::super::super::component::governance::v1::ProposalWithdraw),
+        ProposalWithdraw(
+            super::super::super::component::governance::v1::ProposalWithdraw,
+        ),
         #[prost(message, tag = "20")]
         ValidatorVote(super::super::super::component::governance::v1::ValidatorVote),
         #[prost(message, tag = "21")]
         DelegatorVote(super::super::super::component::governance::v1::DelegatorVotePlan),
         #[prost(message, tag = "22")]
-        ProposalDepositClaim(super::super::super::component::governance::v1::ProposalDepositClaim),
+        ProposalDepositClaim(
+            super::super::super::component::governance::v1::ProposalDepositClaim,
+        ),
         #[prost(message, tag = "200")]
         Ics20Withdrawal(super::super::super::component::ibc::v1::Ics20Withdrawal),
         #[prost(message, tag = "30")]
@@ -653,7 +714,9 @@ pub mod action_plan {
         #[prost(message, tag = "32")]
         PositionWithdraw(super::super::super::component::dex::v1::PositionWithdrawPlan),
         #[prost(message, tag = "34")]
-        PositionRewardClaim(super::super::super::component::dex::v1::PositionRewardClaimPlan),
+        PositionRewardClaim(
+            super::super::super::component::dex::v1::PositionRewardClaimPlan,
+        ),
         /// We don't need any extra information (yet) to understand delegations,
         /// because we don't yet use flow encryption.
         #[prost(message, tag = "40")]
@@ -666,18 +729,26 @@ pub mod action_plan {
         UndelegateClaim(super::super::super::component::stake::v1::UndelegateClaimPlan),
         /// Community Pool
         #[prost(message, tag = "50")]
-        CommunityPoolSpend(super::super::super::component::governance::v1::CommunityPoolSpend),
+        CommunityPoolSpend(
+            super::super::super::component::governance::v1::CommunityPoolSpend,
+        ),
         #[prost(message, tag = "51")]
-        CommunityPoolOutput(super::super::super::component::governance::v1::CommunityPoolOutput),
+        CommunityPoolOutput(
+            super::super::super::component::governance::v1::CommunityPoolOutput,
+        ),
         #[prost(message, tag = "52")]
-        CommunityPoolDeposit(super::super::super::component::governance::v1::CommunityPoolDeposit),
+        CommunityPoolDeposit(
+            super::super::super::component::governance::v1::CommunityPoolDeposit,
+        ),
         /// Dutch auctions
         #[prost(message, tag = "53")]
         ActionDutchAuctionSchedule(
             super::super::super::component::auction::v1::ActionDutchAuctionSchedule,
         ),
         #[prost(message, tag = "54")]
-        ActionDutchAuctionEnd(super::super::super::component::auction::v1::ActionDutchAuctionEnd),
+        ActionDutchAuctionEnd(
+            super::super::super::component::auction::v1::ActionDutchAuctionEnd,
+        ),
         #[prost(message, tag = "55")]
         ActionDutchAuctionWithdraw(
             super::super::super::component::auction::v1::ActionDutchAuctionWithdrawPlan,
@@ -849,23 +920,5 @@ impl ::prost::Name for MemoView {
     }
     fn type_url() -> ::prost::alloc::string::String {
         "/penumbra.core.transaction.v1.MemoView".into()
-    }
-}
-/// Event emitted when a transaction is included in a block
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventBlockTransaction {
-    #[prost(message, optional, tag = "1")]
-    pub transaction_id: ::core::option::Option<super::super::txhash::v1::TransactionId>,
-    #[prost(message, optional, tag = "2")]
-    pub transaction: ::core::option::Option<Transaction>,
-}
-impl ::prost::Name for EventBlockTransaction {
-    const NAME: &'static str = "EventBlockTransaction";
-    const PACKAGE: &'static str = "penumbra.core.transaction.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        "penumbra.core.transaction.v1.EventBlockTransaction".into()
-    }
-    fn type_url() -> ::prost::alloc::string::String {
-        "/penumbra.core.transaction.v1.EventBlockTransaction".into()
     }
 }

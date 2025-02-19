@@ -22,7 +22,7 @@ use penumbra_sdk_governance::component::{Governance, StateReadExt as _, StateWri
 use penumbra_sdk_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_sdk_ibc::StateReadExt as _;
 use penumbra_sdk_proto::core::app::v1::TransactionsByHeightResponse;
-use penumbra_sdk_proto::{DomainType, StateWriteProto};
+use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::component::clock::EpochRead;
 use penumbra_sdk_sct::component::sct::Sct;
 use penumbra_sdk_sct::component::{StateReadExt as _, StateWriteExt as _};
@@ -35,16 +35,16 @@ use penumbra_sdk_transaction::Transaction;
 use prost::Message as _;
 use tendermint::abci::{self, Event};
 
+use tendermint::v0_37::abci::{request, response};
+use tendermint::validator::Update;
+use tokio::time::sleep;
+use tracing::{instrument, Instrument};
+
 use crate::action_handler::AppActionHandler;
 use crate::genesis::AppState;
 use crate::params::change::ParameterChangeExt as _;
 use crate::params::AppParameters;
 use crate::{CommunityPoolStateReadExt, PenumbraHost};
-use penumbra_sdk_proto::core::transaction::v1::EventBlockTransaction;
-use tendermint::v0_37::abci::{request, response};
-use tendermint::validator::Update;
-use tokio::time::sleep;
-use tracing::{instrument, Instrument};
 
 pub mod state_key;
 
@@ -451,10 +451,6 @@ impl App {
             .put_block_transaction(height, transaction.into())
             .await
             .context("storing transactions")?;
-        state_tx.record_proto(EventBlockTransaction {
-            transaction_id: Some(tx.id().into()),
-            transaction: Some(Arc::as_ref(&tx).clone().into()),
-        });
 
         tx.check_and_execute(&mut state_tx)
             .await

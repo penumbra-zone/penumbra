@@ -391,9 +391,3 @@ message MemoView {
     Opaque opaque = 2;
   }
 }
-
-// Event emitted when a transaction is included in a block
-message EventBlockTransaction {
-  txhash.v1.TransactionId transaction_id = 1;
-  Transaction transaction = 2;
-}

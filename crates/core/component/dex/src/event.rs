@@ -7,14 +7,9 @@ use crate::{
 use anyhow::{anyhow, Context};
 use penumbra_sdk_asset::asset;
 use penumbra_sdk_num::Amount;
-use penumbra_sdk_proto::core::transaction::v1::Transaction;
-use penumbra_sdk_proto::{
-    penumbra::core::{component::dex::v1 as pb, transaction::v1 as pb_tx},
-    DomainType,
-};
+use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use penumbra_sdk_sct::Nullifier;
 use penumbra_sdk_tct::StateCommitment;
-use penumbra_sdk_txhash::TransactionId;
 use prost::Name as _;
 
 #[derive(Clone, Debug)]
@@ -673,11 +668,11 @@ pub struct EventBlockTransaction {
     pub transaction: Transaction,
 }
 
-impl TryFrom<pb_tx::EventBlockTransaction> for EventBlockTransaction {
+impl TryFrom<pb::EventBlockTransaction> for EventBlockTransaction {
     type Error = anyhow::Error;
 
-    fn try_from(value: pb_tx::EventBlockTransaction) -> Result<Self, Self::Error> {
-        fn inner(value: pb_tx::EventBlockTransaction) -> anyhow::Result<EventBlockTransaction> {
+    fn try_from(value: pb::EventBlockTransaction) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventBlockTransaction) -> anyhow::Result<EventBlockTransaction> {
             Ok(EventBlockTransaction {
                 transaction_id: value
                     .transaction_id
@@ -689,11 +684,11 @@ impl TryFrom<pb_tx::EventBlockTransaction> for EventBlockTransaction {
                     .try_into()?,
             })
         }
-        inner(value).context(format!("parsing {}", pb_tx::EventBlockTransaction::NAME))
+        inner(value).context(format!("parsing {}", pb::EventBlockTransaction::NAME))
     }
 }
 
-impl From<EventBlockTransaction> for pb_tx::EventBlockTransaction {
+impl From<EventBlockTransaction> for pb::EventBlockTransaction {
     fn from(value: EventBlockTransaction) -> Self {
         Self {
             transaction_id: Some(value.transaction_id.into()),
@@ -703,5 +698,5 @@ impl From<EventBlockTransaction> for pb_tx::EventBlockTransaction {
 }
 
 impl DomainType for EventBlockTransaction {
-    type Proto = pb_tx::EventBlockTransaction;
+    type Proto = pb::EventBlockTransaction;
 }
