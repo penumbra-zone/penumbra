@@ -34,19 +34,30 @@ fi
 
 >&2 echo "Building all test targets before running smoke tests..."
 # We want a warm cache before the tests run
-cargo build --release -p pcli -p pclientd -p pd
+cargo build --release --bins
+
+smoke_test_dir="${repo_root:?}/deployments/.smoke-test-state"
+rm -rf "$smoke_test_dir"
+mkdir -p "$smoke_test_dir"
 
 # Reuse existing dev-env script
-if ! "${repo_root}/deployments/scripts/run-local-devnet.sh" \
-        --config ./deployments/compose/process-compose-metrics.yml \
-        --config ./deployments/compose/process-compose-dev-tooling.yml \
-        --config ./deployments/compose/process-compose-postgres.yml \
-        --config ./deployments/compose/process-compose-smoke-test.yml \
-        ; then
-    >&2 echo "ERROR: smoke tests failed"
-    >&2 echo "Review logs in: deployments/logs/smoke-*.log"
-    find "${repo_root}/deployments/logs/smoke-"*".log" | sort >&2
-    exit 1
-else
-    echo "SUCCESS! Smoke test complete."
-fi
+"${repo_root}/deployments/scripts/run-local-devnet.sh" \
+    --config ./deployments/compose/process-compose-metrics.yml \
+    --config ./deployments/compose/process-compose-dev-tooling.yml \
+    --config ./deployments/compose/process-compose-postgres.yml \
+    --detached
+
+# Wait a bit for network to start.
+sleep 10
+
+# Ensure that process-compose environment gets cleaned up, even if tests error.
+trap 'process-compose down --port 8888' EXIT
+
+# Run the integration tests. Using `just` targets so that the exact
+# invocations are easily reusable on the CLI in dev loops.
+just integration-pclientd
+just integration-pcli
+# The pd tests come later, as they need work to have been performed for metrics to be emitted.
+just integration-pd
+# Finally, pindexer tests, to make assertions about emitted events.
+just integration-pindexer

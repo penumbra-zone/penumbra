@@ -36,8 +36,11 @@ else
     use_tui="false"
 fi
 
+# Set unique API port for controlling running services.
+export PC_PORT_NUM="8888"
+
 # Run the core fullnode config, plus any additional params passed via `$@`.
-process-compose up --no-server \
+process-compose up \
     --ordered-shutdown \
     --tui="$use_tui" \
     --config "${repo_root}/deployments/compose/process-compose.yml" \
