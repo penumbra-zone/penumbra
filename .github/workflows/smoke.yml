@@ -39,10 +39,6 @@ jobs:
       - name: run the smoke-test suite
         run: nix develop --command just smoke
 
-      - name: Display smoke-test logs
-        if: always()
-        run: cat deployments/logs/smoke-*.log
-
   pmonitor:
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:

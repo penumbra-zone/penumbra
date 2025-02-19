@@ -23,6 +23,7 @@ use predicates::prelude::*;
 use regex::Regex;
 use serde_json::Value;
 use tempfile::{tempdir, NamedTempFile, TempDir};
+use url::Url;
 
 use penumbra_sdk_keys::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
 use penumbra_sdk_proto::core::transaction::v1::TransactionView as ProtoTransactionView;
@@ -39,9 +40,9 @@ const TIMEOUT_COMMAND_SECONDS: u64 = 20;
 // The "unbonding_delay" value is specified in blocks, and in the smoke tests,
 // block time is set to ~500ms, so we'll take the total number of blocks
 // that must elapse and sleep half that many seconds.
-static UNBONDING_DURATION: Lazy<Duration> = Lazy::new(|| {
+static UNBONDING_DELAY: Lazy<Duration> = Lazy::new(|| {
     let blocks: f64 = std::env::var("UNBONDING_DELAY")
-        .unwrap_or("100".to_string())
+        .unwrap_or("50".to_string())
         .parse()
         .unwrap();
     // 0.5 -> 0.6 for comfort, since 500ms is only an estimate.
@@ -52,12 +53,19 @@ static UNBONDING_DURATION: Lazy<Duration> = Lazy::new(|| {
 fn load_wallet_into_tmpdir() -> TempDir {
     let tmpdir = tempdir().unwrap();
 
+    let grpc_url: Url = std::env::var("PENUMBRA_NODE_PD_URL")
+        .unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned())
+        .parse()
+        .expect("failed to parse PENUMBRA_NODE_PD_URL");
+
     let mut setup_cmd = Command::cargo_bin("pcli").unwrap();
     setup_cmd
         .args([
             "--home",
             tmpdir.path().to_str().unwrap(),
             "init",
+            "--grpc-url",
+            &grpc_url.to_string(),
             "soft-kms",
             "import-phrase",
         ])
@@ -341,7 +349,7 @@ fn delegate_and_undelegate() {
     tracing::info!("undelegation succeeded, wait an epoch before claiming.");
 
     // Wait for the epoch duration.
-    thread::sleep(*UNBONDING_DURATION);
+    thread::sleep(*UNBONDING_DELAY);
     tracing::info!("epoch passed, claiming now");
     let mut undelegate_claim_cmd = Command::cargo_bin("pcli").unwrap();
     undelegate_claim_cmd
@@ -649,7 +657,7 @@ fn swap() {
     swap_cmd.assert().success();
 
     // Sleep to allow the outputs from the swap to be processed.
-    thread::sleep(*UNBONDING_DURATION);
+    thread::sleep(*UNBONDING_DELAY);
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
@@ -684,7 +692,7 @@ fn swap() {
     close_cmd.assert().success();
 
     // Wait for processing.
-    thread::sleep(*UNBONDING_DURATION);
+    thread::sleep(*UNBONDING_DELAY);
     let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
     withdraw_cmd
         .args([
@@ -699,7 +707,7 @@ fn swap() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     withdraw_cmd.assert().success();
 
-    thread::sleep(*UNBONDING_DURATION);
+    thread::sleep(*UNBONDING_DELAY);
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])

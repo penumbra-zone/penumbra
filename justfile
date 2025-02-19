@@ -65,6 +65,24 @@ integration-pmonitor:
 
 # Run smoke test suite, via process-compose config.
 smoke:
-    ./deployments/scripts/check-nix-shell
-    ./deployments/scripts/warn-about-pd-state
-    ./deployments/scripts/smoke-test.sh
+  ./deployments/scripts/check-nix-shell
+  ./deployments/scripts/warn-about-pd-state
+  ./deployments/scripts/smoke-test.sh
+
+# Run integration tests for pclientd. Assumes specific dev env is already running.
+integration-pclientd:
+  cargo test --release --features sct-divergence-check --package pclientd -- \
+    --ignored --test-threads 1 --nocapture
+
+# Run integration tests for pcli. Assumes specific dev env is already running.
+integration-pcli:
+  cargo test --release --features sct-divergence-check,download-proving-keys --package pcli -- \
+    --ignored --test-threads 1 --nocapture
+
+# Run integration tests for pindexer. Assumes specific dev env is already running.
+integration-pindexer:
+  cargo nextest run --release -p pindexer --features network-integration
+
+# Run integration tests for pd. Assumes specific dev env is already running.
+integration-pd:
+  cargo test --release --package pd -- --ignored --test-threads 1 --nocapture
