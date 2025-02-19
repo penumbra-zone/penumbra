@@ -181,6 +181,7 @@
               export LIBCLANG_PATH=${LIBCLANG_PATH}
               export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc} # Required for rust-analyzer
               export ROCKSDB_LIB_DIR=${ROCKSDB_LIB_DIR}
+              export RUST_LOG="info,network_integration=debug,pclientd=debug,pcli=info,pd=info,penumbra=info"
             '';
           };
         }
