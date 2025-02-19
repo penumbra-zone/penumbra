@@ -1,17 +1,16 @@
 use std::sync::Arc;
 
-use super::AppActionHandler;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_sdk_fee::component::FeePay as _;
-use penumbra_sdk_proto::core::transaction::v1::EventBlockTransaction;
-use penumbra_sdk_proto::StateWriteProto;
 use penumbra_sdk_sct::{component::source::SourceContext, CommitmentSource};
 use penumbra_sdk_shielded_pool::component::ClueManager;
 use penumbra_sdk_transaction::{gas::GasCost as _, Transaction};
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
+
+use super::AppActionHandler;
 
 mod stateful;
 mod stateless;
@@ -118,10 +117,6 @@ impl AppActionHandler for Transaction {
         let gas_used = self.gas_cost();
         let fee = self.transaction_body.transaction_parameters.fee;
         state.pay_fee(gas_used, fee).await?;
-        state.record_proto(EventBlockTransaction {
-            transaction_id: Some(self.id().into()),
-            transaction: Some(self.into()),
-        });
 
         for (i, action) in self.actions().enumerate() {
             let span = action.create_span(i);
