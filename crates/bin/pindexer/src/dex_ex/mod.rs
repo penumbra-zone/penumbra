@@ -4,6 +4,7 @@ use cometindex::{
     index::{BlockEvents, EventBatch},
     AppView, PgTransaction,
 };
+use hex;
 use penumbra_sdk_asset::asset;
 use penumbra_sdk_dex::{
     event::{
@@ -25,7 +26,6 @@ use penumbra_sdk_transaction::Transaction;
 use sqlx::types::BigDecimal;
 use sqlx::{prelude::Type, Row};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use hex;
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
 
