@@ -1413,7 +1413,8 @@ impl Component {
                 transaction,
                 height,
                 time
-            ) VALUES ($1, $2, $3, $4)",
+            ) VALUES ($1, $2, $3, $4)
+            ON CONFLICT (transaction_id) DO NOTHING",
         )
         .bind(transaction_id)
         .bind(transaction.encode_to_vec())
