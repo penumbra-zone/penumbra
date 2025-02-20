@@ -25,6 +25,7 @@ use penumbra_sdk_transaction::Transaction;
 use sqlx::types::BigDecimal;
 use sqlx::{prelude::Type, Row};
 use std::collections::{BTreeMap, HashMap, HashSet};
+use hex;
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
 
@@ -673,15 +674,25 @@ struct PairMetrics {
     liquidity_change: f64,
 }
 
-#[derive(Debug, Clone, Type)]
+#[derive(Debug, Clone, Type, serde::Serialize)]
 #[sqlx(type_name = "batch_swap_summary")]
 struct BatchSwapSummary {
+    #[serde(serialize_with = "serialize_bytes")]
     asset_start: Vec<u8>,
+    #[serde(serialize_with = "serialize_bytes")]
     asset_end: Vec<u8>,
     input: BigDecimal,
     output: BigDecimal,
     num_swaps: i32,
     price_float: f64,
+}
+
+// Add this helper function to serialize byte vectors as hex strings
+fn serialize_bytes<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(&hex::encode(bytes))
 }
 
 #[derive(Debug)]
@@ -1200,7 +1211,7 @@ impl Component {
         )
         .bind(height)
         .bind(time)
-        .bind(&batch_swap_summaries)
+        .bind(serde_json::to_string(&batch_swap_summaries)?)
         .bind(num_opened_lps)
         .bind(num_closed_lps)
         .bind(num_withdrawn_lps)

@@ -6097,6 +6097,7 @@ dependencies = [
  "clap",
  "cometindex",
  "ethnum",
+ "hex",
  "http 1.2.0",
  "num-bigint",
  "penumbra-sdk-app",
