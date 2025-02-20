@@ -11,6 +11,7 @@ async fn catchup(
     state: &IndexingState,
     indices: &[Arc<dyn AppView>],
     genesis: Arc<serde_json::Value>,
+    exit_on_catchup: bool,
 ) -> anyhow::Result<()> {
     if indices.len() <= 0 {
         tracing::info!(why = "no indices", "catchup completed");
@@ -21,8 +22,13 @@ async fn catchup(
     tracing::info!(?src_height, ?index_heights, "catchup status");
     let lowest_index_height = index_heights.values().copied().min().unwrap_or_default();
     if lowest_index_height >= src_height {
-        tracing::info!(why = "already caught up", "catchup completed");
-        return Ok(());
+        if exit_on_catchup {
+            tracing::info!("catchup completed, exiting as requested");
+            std::process::exit(0);
+        } else {
+            tracing::info!(why = "already caught up", "catchup completed");
+            return Ok(());
+        }
     }
 
     // Constants that influence performance.
@@ -139,6 +145,7 @@ impl Indexer {
                     chain_id: _,
                     poll_ms,
                     genesis_json,
+                    exit_on_catchup,
                 },
             indices: indexes,
         } = self;
@@ -156,7 +163,13 @@ impl Indexer {
                 .clone(),
         );
         loop {
-            catchup(&state, indexes.as_slice(), app_state.clone()).await?;
+            catchup(
+                &state,
+                indexes.as_slice(),
+                app_state.clone(),
+                exit_on_catchup,
+            )
+            .await?;
             tokio::time::sleep(poll_ms).await;
         }
     }
