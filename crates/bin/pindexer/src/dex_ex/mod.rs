@@ -677,22 +677,12 @@ struct PairMetrics {
 #[derive(Debug, Clone, Type, serde::Serialize)]
 #[sqlx(type_name = "batch_swap_summary")]
 struct BatchSwapSummary {
-    #[serde(serialize_with = "serialize_bytes")]
-    asset_start: Vec<u8>,
-    #[serde(serialize_with = "serialize_bytes")]
-    asset_end: Vec<u8>,
-    input: BigDecimal,
-    output: BigDecimal,
+    asset_start: String,
+    asset_end: String,
+    input: String,
+    output: String,
     num_swaps: i32,
     price_float: f64,
-}
-
-// Add this helper function to serialize byte vectors as hex strings
-fn serialize_bytes<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    serializer.serialize_str(&hex::encode(bytes))
 }
 
 #[derive(Debug)]
@@ -1161,10 +1151,10 @@ impl Component {
                 let num_swaps = filtered_swaps.len() as i32;
 
                 batch_swap_summaries.push(BatchSwapSummary {
-                    asset_start: asset_start.to_bytes().to_vec(),
-                    asset_end: asset_end.to_bytes().to_vec(),
-                    input: BigDecimal::from(input.value()),
-                    output: BigDecimal::from(output.value()),
+                    asset_start: hex::encode(asset_start.to_bytes()),
+                    asset_end: hex::encode(asset_end.to_bytes()),
+                    input: input.value().to_string(),
+                    output: output.value().to_string(),
                     num_swaps,
                     price_float,
                 });
@@ -1186,10 +1176,10 @@ impl Component {
                 let num_swaps = filtered_swaps.len() as i32;
 
                 batch_swap_summaries.push(BatchSwapSummary {
-                    asset_start: asset_start.to_bytes().to_vec(),
-                    asset_end: asset_end.to_bytes().to_vec(),
-                    input: BigDecimal::from(input.value()),
-                    output: BigDecimal::from(output.value()),
+                    asset_start: hex::encode(asset_start.to_bytes()),
+                    asset_end: hex::encode(asset_end.to_bytes()),
+                    input: input.value().to_string(),
+                    output: output.value().to_string(),
                     num_swaps,
                     price_float,
                 });
