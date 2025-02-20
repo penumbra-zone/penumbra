@@ -1201,7 +1201,7 @@ impl Component {
         )
         .bind(height)
         .bind(time)
-        .bind(serde_json::to_string(&batch_swap_summaries)?)
+        .bind(serde_json::to_value(&batch_swap_summaries)?)
         .bind(num_opened_lps)
         .bind(num_closed_lps)
         .bind(num_withdrawn_lps)
