@@ -1407,6 +1407,9 @@ impl Component {
         transaction_id: [u8; 32],
         transaction: Transaction,
     ) -> anyhow::Result<()> {
+        if transaction.transaction_body.actions.is_empty() {
+            return Ok(());
+        }
         sqlx::query(
             "INSERT INTO dex_ex_transactions (
                 transaction_id,
@@ -1414,7 +1417,7 @@ impl Component {
                 height,
                 time
             ) VALUES ($1, $2, $3, $4)
-            ON CONFLICT (transaction_id) DO NOTHING",
+            ",
         )
         .bind(transaction_id)
         .bind(transaction.encode_to_vec())
