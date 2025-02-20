@@ -1,0 +1,18 @@
+[package]
+name = "proto-inspect"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
+publish = false
+rust-version = "1.65"
+
+[dependencies]
+anyhow = {workspace = true}
+hex = {workspace = true}
+penumbra-sdk-proto = {workspace = true, default-features = true}
+penumbra-sdk-transaction = {workspace = true, default-features = false}
+tendermint-proto = {workspace = true}
+

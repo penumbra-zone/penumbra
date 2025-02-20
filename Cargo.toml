@@ -56,6 +56,7 @@ members = [
   "crates/wallet",
   "tools/summonerd",
   "tools/parameter-setup",
+  "tools/proto-inspect"
 ]
 
 # Config for 'cargo dist'

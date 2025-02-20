@@ -6704,6 +6704,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "proto-inspect"
+version = "2.0.0-alpha.2"
+dependencies = [
+ "anyhow",
+ "hex",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-transaction",
+ "tendermint-proto 0.40.1",
+]
+
+[[package]]
 name = "quanta"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
