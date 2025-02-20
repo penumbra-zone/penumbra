@@ -1485,15 +1485,13 @@ impl TxCmd {
 
                     let reserves = position.reserves;
                     let pair = position.phi.pair;
-                    let prev_seq = match position.state {
-                        State::Withdrawn { sequence } => sequence,
+                    let next_seq = match position.state {
+                        State::Withdrawn { sequence } => sequence + 1,
+                        State::Closed => 0,
                         _ => {
                             anyhow::bail!("position {} is not in a withdrawable state", position_id)
                         }
                     };
-
-                    let next_seq = prev_seq + 1;
-
                     planner.position_withdraw(
                         *position_id,
                         reserves.try_into()?,
