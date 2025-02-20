@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS dex_ex_block_summary (
     -- The timestamp for the block.
     time TIMESTAMPTZ NOT NULL,
     -- A list of batch swap summaries that occurred in this block.
-    batch_swaps TEXT NOT NULL,
+    batch_swaps jsonb NOT NULL,
     -- The number of opened LPs in this block.
     num_open_lps     INTEGER NOT NULL,
     -- The number of closed LPs in this block.
