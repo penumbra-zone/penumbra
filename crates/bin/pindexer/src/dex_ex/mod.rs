@@ -23,7 +23,7 @@ use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::event::EventBlockRoot;
 use penumbra_sdk_transaction::Transaction;
 use sqlx::types::BigDecimal;
-use sqlx::{prelude::Type, Row};
+use sqlx::Row;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
@@ -673,13 +673,12 @@ struct PairMetrics {
     liquidity_change: f64,
 }
 
-#[derive(Debug, Clone, Type)]
-#[sqlx(type_name = "batch_swap_summary")]
+#[derive(Debug, Clone, serde::Serialize)]
 struct BatchSwapSummary {
-    asset_start: Vec<u8>,
-    asset_end: Vec<u8>,
-    input: BigDecimal,
-    output: BigDecimal,
+    asset_start: asset::Id,
+    asset_end: asset::Id,
+    input: Amount,
+    output: Amount,
     num_swaps: i32,
     price_float: f64,
 }
@@ -1150,10 +1149,10 @@ impl Component {
                 let num_swaps = filtered_swaps.len() as i32;
 
                 batch_swap_summaries.push(BatchSwapSummary {
-                    asset_start: asset_start.to_bytes().to_vec(),
-                    asset_end: asset_end.to_bytes().to_vec(),
-                    input: BigDecimal::from(input.value()),
-                    output: BigDecimal::from(output.value()),
+                    asset_start,
+                    asset_end,
+                    input,
+                    output,
                     num_swaps,
                     price_float,
                 });
@@ -1175,10 +1174,10 @@ impl Component {
                 let num_swaps = filtered_swaps.len() as i32;
 
                 batch_swap_summaries.push(BatchSwapSummary {
-                    asset_start: asset_start.to_bytes().to_vec(),
-                    asset_end: asset_end.to_bytes().to_vec(),
-                    input: BigDecimal::from(input.value()),
-                    output: BigDecimal::from(output.value()),
+                    asset_start,
+                    asset_end,
+                    input,
+                    output,
                     num_swaps,
                     price_float,
                 });
@@ -1200,7 +1199,7 @@ impl Component {
         )
         .bind(height)
         .bind(time)
-        .bind(&batch_swap_summaries)
+        .bind(serde_json::to_value(&batch_swap_summaries)?)
         .bind(num_opened_lps)
         .bind(num_closed_lps)
         .bind(num_withdrawn_lps)

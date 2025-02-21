@@ -209,22 +209,6 @@ CREATE INDEX ON dex_ex_batch_swap_traces (time, height);
 CREATE INDEX ON dex_ex_batch_swap_traces (asset_start, asset_end);
 -- TODO(erwan): We can add a GIN index on the position id later.
 
--- A high-level view of a batch swap.
-CREATE TYPE batch_swap_summary AS (
-    -- The directed start asset of the batch swap.
-    asset_start BYTEA,
-    -- The directed end asset of the batch swap.
-    asset_end BYTEA,
-    -- The amount of asset was consumed by the batch swap.
-    input NUMERIC(39),
-    -- The amount of asset was produced by the batch swap.
-    output NUMERIC(39),
-    -- The number of swaps in the batch swap.
-    num_swaps INTEGER,
-    -- The price with `asset_end` as the quote asset.
-    price_float DOUBLE PRECISION
-);
-
 -- A summary of block data with a bias for DEX data.
 CREATE TABLE IF NOT EXISTS dex_ex_block_summary (
     -- Primary key
@@ -234,7 +218,7 @@ CREATE TABLE IF NOT EXISTS dex_ex_block_summary (
     -- The timestamp for the block.
     time TIMESTAMPTZ NOT NULL,
     -- A list of batch swap summaries that occurred in this block.
-    batch_swaps batch_swap_summary[] NOT NULL,
+    batch_swaps jsonb NOT NULL,
     -- The number of opened LPs in this block.
     num_open_lps     INTEGER NOT NULL,
     -- The number of closed LPs in this block.
