@@ -41,7 +41,7 @@ pub use is_action::IsAction;
 pub use parameters::TransactionParameters;
 pub use penumbra_sdk_txhash as txhash;
 pub use plan::{ActionPlan, TransactionPlan};
-pub use transaction::{Transaction, TransactionBody};
+pub use transaction::{Transaction, TransactionBody, TransactionSummary};
 pub use view::{ActionView, MemoPlaintextView, MemoView, TransactionPerspective, TransactionView};
 pub use witness_data::WitnessData;
 
