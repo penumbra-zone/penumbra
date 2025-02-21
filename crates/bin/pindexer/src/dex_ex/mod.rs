@@ -21,6 +21,7 @@ use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::event::EventDomainType;
 use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::event::EventBlockRoot;
+use penumbra_sdk_transaction::Transaction;
 use sqlx::types::BigDecimal;
 use sqlx::{prelude::Type, Row};
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -1397,6 +1398,51 @@ impl Component {
 
         Ok(())
     }
+
+    async fn record_transaction(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        time: DateTime,
+        height: u64,
+        transaction_id: [u8; 32],
+        transaction: Transaction,
+    ) -> anyhow::Result<()> {
+        if transaction.transaction_body.actions.is_empty() {
+            return Ok(());
+        }
+        sqlx::query(
+            "INSERT INTO dex_ex_transactions (
+                transaction_id,
+                transaction,
+                height,
+                time
+            ) VALUES ($1, $2, $3, $4)
+            ",
+        )
+        .bind(transaction_id)
+        .bind(transaction.encode_to_vec())
+        .bind(i32::try_from(height)?)
+        .bind(time)
+        .execute(dbtx.as_mut())
+        .await?;
+
+        Ok(())
+    }
+
+    async fn record_all_transactions(
+        &self,
+        dbtx: &mut PgTransaction<'_>,
+        time: DateTime,
+        block: &BlockEvents,
+    ) -> anyhow::Result<()> {
+        for (tx_id, tx_bytes) in block.transactions() {
+            let tx = Transaction::try_from(tx_bytes)?;
+            let height = block.height();
+            self.record_transaction(dbtx, time, height, tx_id, tx)
+                .await?;
+        }
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -1431,6 +1477,8 @@ impl AppView for Component {
                 .time
                 .expect(&format!("no block root event at height {}", block.height()));
             last_time = Some(time);
+
+            self.record_all_transactions(dbtx, time, block).await?;
 
             // Load any missing positions before processing events
             events.load_positions(dbtx).await?;
