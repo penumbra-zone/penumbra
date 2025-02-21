@@ -646,6 +646,8 @@ message TransactionInfo {
   core.transaction.v1.TransactionPerspective perspective = 4;
   // A precomputed transaction view of `transaction` from `perspective`, included for convenience of clients that don't have support for viewing transactions on their own.
   core.transaction.v1.TransactionView view = 5;
+  // A short view of balances leaving and entering accounts, computed from transaction actions.
+  core.transaction.v1.TransactionSummary summary = 6;
 }
 
 message TransactionInfoResponse {

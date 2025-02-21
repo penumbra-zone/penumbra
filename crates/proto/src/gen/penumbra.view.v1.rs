@@ -1478,6 +1478,11 @@ pub struct TransactionInfo {
     pub view: ::core::option::Option<
         super::super::core::transaction::v1::TransactionView,
     >,
+    /// A short view of balances leaving and entering accounts, computed from transaction actions.
+    #[prost(message, optional, tag = "6")]
+    pub summary: ::core::option::Option<
+        super::super::core::transaction::v1::TransactionSummary,
+    >,
 }
 impl ::prost::Name for TransactionInfo {
     const NAME: &'static str = "TransactionInfo";
