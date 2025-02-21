@@ -30,6 +30,12 @@ pub struct Options {
     /// A file path for the genesis file to use when initializing the indexer.
     #[clap(short, long)]
     pub genesis_json: PathBuf,
+
+    /// By default, the program will run as a daemon, continuously polling the src database
+    /// for new events. If --exit-on-catchup is set, the program will instead exit after
+    /// it has indexed all events in the src database. Useful for batch jobs.
+    #[clap(long)]
+    pub exit_on_catchup: bool,
 }
 
 /// Parses a string containing a [`Duration`], represented as a number of milliseconds.

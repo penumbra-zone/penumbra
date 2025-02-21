@@ -6,15 +6,18 @@ use indexing_state::{Height, IndexingState};
 use std::sync::Arc;
 use tokio::{sync::mpsc, task::JoinSet};
 
+/// Attempt to catch up to the latest indexed block.
+///
+/// Returns whether or not we've caught up.
 #[tracing::instrument(skip_all)]
 async fn catchup(
     state: &IndexingState,
     indices: &[Arc<dyn AppView>],
     genesis: Arc<serde_json::Value>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<bool> {
     if indices.len() <= 0 {
         tracing::info!(why = "no indices", "catchup completed");
-        return Ok(());
+        return Ok(true);
     }
 
     let (src_height, index_heights) = tokio::try_join!(state.src_height(), state.index_heights())?;
@@ -22,7 +25,7 @@ async fn catchup(
     let lowest_index_height = index_heights.values().copied().min().unwrap_or_default();
     if lowest_index_height >= src_height {
         tracing::info!(why = "already caught up", "catchup completed");
-        return Ok(());
+        return Ok(true);
     }
 
     // Constants that influence performance.
@@ -103,7 +106,7 @@ async fn catchup(
     while let Some(res) = tasks.join_next().await {
         res??;
     }
-    Ok(())
+    Ok(false)
 }
 
 pub struct Indexer {
@@ -139,6 +142,7 @@ impl Indexer {
                     chain_id: _,
                     poll_ms,
                     genesis_json,
+                    exit_on_catchup,
                 },
             indices: indexes,
         } = self;
@@ -156,7 +160,11 @@ impl Indexer {
                 .clone(),
         );
         loop {
-            catchup(&state, indexes.as_slice(), app_state.clone()).await?;
+            let caught_up = catchup(&state, indexes.as_slice(), app_state.clone()).await?;
+            if exit_on_catchup && caught_up {
+                tracing::info!("catchup completed, exiting as requested");
+                return Ok(());
+            }
             tokio::time::sleep(poll_ms).await;
         }
     }
