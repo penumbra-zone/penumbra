@@ -747,7 +747,7 @@ impl ViewService for ViewServer {
                     tonic::Status::invalid_argument(format!("Could not parse pair: {e:#}"))
                 })?;
 
-            planner.position_withdraw(position_id, reserves, trading_pair);
+            planner.position_withdraw(position_id, reserves, trading_pair, 0);
         }
 
         // Insert any ICS20 withdrawals.
