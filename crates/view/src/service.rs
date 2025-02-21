@@ -1059,6 +1059,7 @@ impl ViewService for ViewServer {
 
         // Finally, compute the full TxV from the full TxP:
         let txv = tx.view_from_perspective(&txp);
+        let summary = txv.summary();
 
         let response = pb::TransactionInfoByHashResponse {
             tx_info: Some(pb::TransactionInfo {
@@ -1067,6 +1068,7 @@ impl ViewService for ViewServer {
                 perspective: Some(txp.into()),
                 transaction: Some(tx.into()),
                 view: Some(txv.into()),
+                summary: Some(summary.into()),
             }),
         };
 
