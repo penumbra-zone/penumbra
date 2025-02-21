@@ -769,6 +769,10 @@ where
                     .view
                     .ok_or_else(|| anyhow::anyhow!("missing view"))?
                     .try_into()?,
+                summary: rsp
+                    .summary
+                    .ok_or_else(|| anyhow::anyhow!("missing summary"))?
+                    .try_into()?,
             };
 
             Ok(tx_info)
@@ -825,6 +829,10 @@ where
                         view: tx_rsp
                             .view
                             .ok_or_else(|| anyhow::anyhow!("missing view"))?
+                            .try_into()?,
+                        summary: tx_rsp
+                            .summary
+                            .ok_or_else(|| anyhow::anyhow!("missing summary"))?
                             .try_into()?,
                     };
 

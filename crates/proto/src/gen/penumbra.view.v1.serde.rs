@@ -5870,6 +5870,9 @@ impl serde::Serialize for TransactionInfo {
         if self.view.is_some() {
             len += 1;
         }
+        if self.summary.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionInfo", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
@@ -5888,6 +5891,9 @@ impl serde::Serialize for TransactionInfo {
         if let Some(v) = self.view.as_ref() {
             struct_ser.serialize_field("view", v)?;
         }
+        if let Some(v) = self.summary.as_ref() {
+            struct_ser.serialize_field("summary", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -5903,6 +5909,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfo {
             "transaction",
             "perspective",
             "view",
+            "summary",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -5912,6 +5919,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfo {
             Transaction,
             Perspective,
             View,
+            Summary,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -5939,6 +5947,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfo {
                             "transaction" => Ok(GeneratedField::Transaction),
                             "perspective" => Ok(GeneratedField::Perspective),
                             "view" => Ok(GeneratedField::View),
+                            "summary" => Ok(GeneratedField::Summary),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -5963,6 +5972,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfo {
                 let mut transaction__ = None;
                 let mut perspective__ = None;
                 let mut view__ = None;
+                let mut summary__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Height => {
@@ -5997,6 +6007,12 @@ impl<'de> serde::Deserialize<'de> for TransactionInfo {
                             }
                             view__ = map_.next_value()?;
                         }
+                        GeneratedField::Summary => {
+                            if summary__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("summary"));
+                            }
+                            summary__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -6008,6 +6024,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfo {
                     transaction: transaction__,
                     perspective: perspective__,
                     view: view__,
+                    summary: summary__,
                 })
             }
         }
