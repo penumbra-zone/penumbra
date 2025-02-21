@@ -1,5 +1,5 @@
 use penumbra_sdk_transaction::{
-    txhash::TransactionId, Transaction, TransactionPerspective, TransactionView, TransactionSummary
+    txhash::TransactionId, Transaction, TransactionPerspective, TransactionSummary, TransactionView,
 };
 
 #[derive(Debug, Clone)]
