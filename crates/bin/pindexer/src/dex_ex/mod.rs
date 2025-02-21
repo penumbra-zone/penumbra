@@ -23,7 +23,7 @@ use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::event::EventBlockRoot;
 use penumbra_sdk_transaction::Transaction;
 use sqlx::types::BigDecimal;
-use sqlx::{prelude::Type, Row};
+use sqlx::Row;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 type DateTime = sqlx::types::chrono::DateTime<sqlx::types::chrono::Utc>;
@@ -673,13 +673,12 @@ struct PairMetrics {
     liquidity_change: f64,
 }
 
-#[derive(Debug, Clone, Type, serde::Serialize)]
-#[sqlx(type_name = "batch_swap_summary")]
+#[derive(Debug, Clone, serde::Serialize)]
 struct BatchSwapSummary {
-    asset_start: [u8; 32],
-    asset_end: [u8; 32],
-    input: Vec<u8>,
-    output: Vec<u8>,
+    asset_start: asset::Id,
+    asset_end: asset::Id,
+    input: Amount,
+    output: Amount,
     num_swaps: i32,
     price_float: f64,
 }
@@ -1150,10 +1149,10 @@ impl Component {
                 let num_swaps = filtered_swaps.len() as i32;
 
                 batch_swap_summaries.push(BatchSwapSummary {
-                    asset_start: asset_start.to_bytes(),
-                    asset_end: asset_end.to_bytes(),
-                    input: input.encode_to_vec(),
-                    output: output.encode_to_vec(),
+                    asset_start,
+                    asset_end,
+                    input,
+                    output,
                     num_swaps,
                     price_float,
                 });
@@ -1175,10 +1174,10 @@ impl Component {
                 let num_swaps = filtered_swaps.len() as i32;
 
                 batch_swap_summaries.push(BatchSwapSummary {
-                    asset_start: asset_start.to_bytes(),
-                    asset_end: asset_end.to_bytes(),
-                    input: input.encode_to_vec(),
-                    output: output.encode_to_vec(),
+                    asset_start,
+                    asset_end,
+                    input,
+                    output,
                     num_swaps,
                     price_float,
                 });
