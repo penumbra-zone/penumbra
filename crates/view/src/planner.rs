@@ -199,12 +199,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         position_id: position::Id,
         reserves: Reserves,
         pair: TradingPair,
+        next_sequence: u64,
     ) -> &mut Self {
         self.action_list.push(PositionWithdrawPlan {
             reserves,
             position_id,
             pair,
-            sequence: 0,
+            sequence: next_sequence,
             rewards: Vec::new(),
         });
         self
