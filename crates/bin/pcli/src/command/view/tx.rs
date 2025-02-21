@@ -49,6 +49,7 @@ impl TxCmd {
             let tx = Transaction::decode(rsp.tx.as_slice())?;
             let txp = Default::default();
             let txv = tx.view_from_perspective(&txp);
+            let summary = txv.summary();
 
             TransactionInfo {
                 height: rsp.height,
@@ -56,6 +57,7 @@ impl TxCmd {
                 transaction: tx,
                 perspective: txp,
                 view: txv,
+                summary: summary,
             }
         };
 
