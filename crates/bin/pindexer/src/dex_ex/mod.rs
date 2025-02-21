@@ -4,7 +4,6 @@ use cometindex::{
     index::{BlockEvents, EventBatch},
     AppView, PgTransaction,
 };
-use hex;
 use penumbra_sdk_asset::asset;
 use penumbra_sdk_dex::{
     event::{
@@ -677,10 +676,10 @@ struct PairMetrics {
 #[derive(Debug, Clone, Type, serde::Serialize)]
 #[sqlx(type_name = "batch_swap_summary")]
 struct BatchSwapSummary {
-    asset_start: String,
-    asset_end: String,
-    input: String,
-    output: String,
+    asset_start: [u8; 32],
+    asset_end: [u8; 32],
+    input: Vec<u8>,
+    output: Vec<u8>,
     num_swaps: i32,
     price_float: f64,
 }
@@ -1151,10 +1150,10 @@ impl Component {
                 let num_swaps = filtered_swaps.len() as i32;
 
                 batch_swap_summaries.push(BatchSwapSummary {
-                    asset_start: hex::encode(asset_start.to_bytes()),
-                    asset_end: hex::encode(asset_end.to_bytes()),
-                    input: input.value().to_string(),
-                    output: output.value().to_string(),
+                    asset_start: asset_start.to_bytes(),
+                    asset_end: asset_end.to_bytes(),
+                    input: input.encode_to_vec(),
+                    output: output.encode_to_vec(),
                     num_swaps,
                     price_float,
                 });
@@ -1176,10 +1175,10 @@ impl Component {
                 let num_swaps = filtered_swaps.len() as i32;
 
                 batch_swap_summaries.push(BatchSwapSummary {
-                    asset_start: hex::encode(asset_start.to_bytes()),
-                    asset_end: hex::encode(asset_end.to_bytes()),
-                    input: input.value().to_string(),
-                    output: output.value().to_string(),
+                    asset_start: asset_start.to_bytes(),
+                    asset_end: asset_end.to_bytes(),
+                    input: input.encode_to_vec(),
+                    output: output.encode_to_vec(),
                     num_swaps,
                     price_float,
                 });

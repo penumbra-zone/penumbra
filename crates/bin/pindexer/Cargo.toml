@@ -45,7 +45,6 @@ tokio = {workspace = true, features = ["full"]}
 serde_json = {workspace = true}
 serde = { workspace = true, features = ["derive"] }
 sqlx = { workspace = true, features = ["chrono", "postgres"] }
-hex = "0.4"
 
 [dev-dependencies]
 url = {workspace = true}
