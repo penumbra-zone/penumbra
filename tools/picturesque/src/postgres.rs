@@ -49,31 +49,31 @@ impl Context {
         Ok(())
     }
 
-    #[tracing::instrument]
-    async fn init_postgres(&self) -> anyhow::Result<()> {
+    fn is_postgres_initialized(&self) -> bool {
         // The `initdb` process creates the file `PG_VERSION`, so we'll check for that
         // and skip rerunning the command if found.
         let pg_version = self.data_dir.clone().join("PG_VERSION");
-        if !pg_version.exists() {
-            let output = Command::new("initdb")
-                .args(["-D".as_ref(), self.data_dir.as_os_str()])
-                .output()
-                .await?;
-            //
-            if !output.status.success() {
-                tracing::error!(
-                    exit_code = output.status.code(),
-                    stdout = String::from_utf8_lossy(&output.stdout).to_string(),
-                    stderr = String::from_utf8_lossy(&output.stderr).to_string(),
-                    "initdb"
-                );
-                anyhow::bail!("failed to initialize postgres");
-            }
-        } else {
-            tracing::debug!(
-                pg_version = pg_version.to_str().unwrap(),
-                "postgres data directory already initialized"
+        pg_version.exists()
+    }
+
+    #[tracing::instrument]
+    async fn init_postgres(&self) -> anyhow::Result<()> {
+        if self.is_postgres_initialized() {
+            tracing::debug!("postgres data directory already initialized");
+            return Ok(());
+        }
+        let output = Command::new("initdb")
+            .args(["-D".as_ref(), self.data_dir.as_os_str()])
+            .output()
+            .await?;
+        if !output.status.success() {
+            tracing::error!(
+                exit_code = output.status.code(),
+                stdout = String::from_utf8_lossy(&output.stdout).to_string(),
+                stderr = String::from_utf8_lossy(&output.stderr).to_string(),
+                "initdb"
             );
+            anyhow::bail!("failed to initialize postgres");
         }
         let mut conf_file = tokio::fs::OpenOptions::new()
             .append(true)

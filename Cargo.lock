@@ -6541,7 +6541,7 @@ dependencies = [
 
 [[package]]
 name = "picturesque"
-version = "1.0.2"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "clap",
