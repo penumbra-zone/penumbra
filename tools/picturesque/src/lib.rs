@@ -7,7 +7,7 @@ use std::{
 mod cometbft;
 mod pcli;
 mod pd;
-mod postgres;
+pub mod postgres;
 
 #[derive(Clone, Debug)]
 struct Context {
