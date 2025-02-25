@@ -1,0 +1,44 @@
+name: crates.io publishing
+
+permissions:
+  contents: write
+
+on:
+  push:
+    # Run on all tag formats.
+    tags:
+      - '**[0-9]+.[0-9]+.[0-9]+*'
+  # Support ad-hoc calls, mostly for debugging.
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: buildjet-16vcpu-ubuntu-2204
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: install nix
+        uses: nixbuild/nix-quick-install-action@v28
+
+      - name: setup nix cache
+        uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          backend: buildjet
+
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+
+      # The `rust-toolchain.toml` file dictates which version of rust to setup.
+      - name: check rust version
+        run: nix develop --command rustc --version
+
+      # Publish the workspace to crates.io.
+      - name: publish crates
+        run: nix develop --command ./deployments/scripts/publish-crates
