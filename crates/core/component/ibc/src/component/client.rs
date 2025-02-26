@@ -29,6 +29,7 @@ use super::HostInterface;
 /// ClientStatus represents the current status of an IBC client.
 ///
 /// https://github.com/cosmos/ibc-go/blob/main/modules/core/exported/client.go#L30
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientStatus {
     /// Active is a status type of a client. An active client is allowed to be used.
     Active,
