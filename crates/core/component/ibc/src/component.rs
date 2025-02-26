@@ -28,6 +28,8 @@ pub use channel::StateReadExt as ChannelStateReadExt;
 pub use channel::StateWriteExt as ChannelStateWriteExt;
 pub use client::StateReadExt as ClientStateReadExt;
 pub use client::StateWriteExt as ClientStateWriteExt;
+pub use client::ConsensusStateWriteExt;
+pub use client::ClientStatus;
 pub use connection::StateReadExt as ConnectionStateReadExt;
 pub use connection::StateWriteExt as ConnectionStateWriteExt;
 pub use host_interface::HostInterface;
