@@ -214,6 +214,61 @@ impl Position {
             asset_id: self.phi.pair.asset_2(),
         }
     }
+
+    /// Compute the flows compared to a previous position
+    pub fn flows(&self, prev: &Self) -> Flows {
+        Flows::from_fee_and_reserves(self.phi.component.fee, &self.reserves, &prev.reserves)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Flows {
+    pub delta_1: Amount,
+    pub delta_2: Amount,
+    pub lambda_1: Amount,
+    pub lambda_2: Amount,
+    pub fee_1: Amount,
+    pub fee_2: Amount,
+}
+
+impl Flows {
+    pub fn from_fee_and_reserves(fee_bps: u32, current: &Reserves, prev: &Reserves) -> Self {
+        // Determine trade direction and compute deltas
+        let (delta_1, delta_2, lambda_1, lambda_2) = if current.r1 > prev.r1 {
+            // Asset 1 was input
+            let delta_1 = current.r1 - prev.r1;
+            let lambda_2 = prev.r2 - current.r2;
+            (delta_1, Amount::zero(), Amount::zero(), lambda_2)
+        } else {
+            // Asset 2 was input
+            let delta_2 = current.r2 - prev.r2;
+            let lambda_1 = prev.r1 - current.r1;
+            (Amount::zero(), delta_2, lambda_1, Amount::zero())
+        };
+        // Compute fees directly from input amounts using u128 arithmetic
+        let fee_bps = u128::from(fee_bps);
+        let fee_1 = Amount::from((delta_1.value() * fee_bps) / 10_000u128);
+        let fee_2 = Amount::from((delta_2.value() * fee_bps) / 10_000u128);
+        Self {
+            delta_1,
+            delta_2,
+            lambda_1,
+            lambda_2,
+            fee_1,
+            fee_2,
+        }
+    }
+
+    pub fn flip(&self) -> Self {
+        Self {
+            delta_1: self.delta_2,
+            delta_2: self.delta_1,
+            lambda_1: self.lambda_2,
+            lambda_2: self.lambda_1,
+            fee_1: self.fee_2,
+            fee_2: self.fee_1,
+        }
+    }
 }
 
 /// A hash of a [`Position`].

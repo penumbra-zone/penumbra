@@ -26,10 +26,10 @@ pub(crate) trait PositionVolumeTracker: StateWrite {
         }
 
         // Or if the position has existed before.
-        if prev_state.is_none() {
+        let Some(prev_state) = prev_state else {
             tracing::debug!(?position_id, "newly opened position, skipping volume index");
             return;
-        }
+        };
 
         // Short-circuit if the position is transitioning to a non-open state.
         // This might miss some volume updates, but is more conservative on state-flow.
@@ -41,24 +41,24 @@ pub(crate) trait PositionVolumeTracker: StateWrite {
             return;
         }
 
-        let trading_pair = new_state.phi.pair.clone();
+        // Get the flows with the first asset being UM, and the other asset)
+        let (flows, other_asset) = {
+            let flows = new_state.flows(&prev_state);
+            let pair = new_state.phi.pair;
+            if pair.asset_1 == *STAKING_TOKEN_ASSET_ID {
+                (flows, pair.asset_2)
+            } else {
+                (flows.flip(), pair.asset_1)
+            }
+        };
 
         // We want to track the **outflow** of staking tokens from the position.
         // This means that we track the amount of staking tokens that have left the position.
         // We do this by comparing the previous and new reserves of the staking token.
         // We **DO NOT** want to track the volume of the other asset denominated in staking tokens.
-        let prev_state = prev_state.as_ref().expect("the previous state exists");
-        let prev_balance = prev_state
-            .reserves_for(*STAKING_TOKEN_ASSET_ID)
-            .expect("the staking token is in the pair");
-
-        let new_balance = new_state
-            .reserves_for(*STAKING_TOKEN_ASSET_ID)
-            .expect("the staking token is in the pair");
-
         // We track the *outflow* of the staking token.
         // "How much inventory has left the position?"
-        let staking_token_outflow = prev_balance.saturating_sub(&new_balance);
+        let staking_token_outflow = flows.lambda_1;
 
         // We lookup the previous volume index entry.
         let old_volume = self.get_volume_for_position(position_id).await;
@@ -71,13 +71,6 @@ pub(crate) trait PositionVolumeTracker: StateWrite {
             .expect("epoch is always set")
             .index;
 
-        // Find the trading pair asset that is not the staking token.
-        let other_asset = if trading_pair.asset_1() == *STAKING_TOKEN_ASSET_ID {
-            trading_pair.asset_2()
-        } else {
-            trading_pair.asset_1()
-        };
-
         self.record_proto(
             event::EventLqtPositionVolume {
                 epoch_index,
@@ -85,6 +78,10 @@ pub(crate) trait PositionVolumeTracker: StateWrite {
                 asset_id: other_asset,
                 volume: staking_token_outflow,
                 total_volume: new_volume,
+                staking_token_in: flows.delta_1,
+                asset_in: flows.delta_2,
+                staking_fees: flows.fee_1,
+                asset_fees: flows.fee_2,
             }
             .to_proto(),
         );
