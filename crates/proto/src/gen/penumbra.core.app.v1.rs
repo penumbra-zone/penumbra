@@ -219,6 +219,21 @@ impl ::prost::Name for GenesisContent {
         ::prost::alloc::format!("penumbra.core.app.v1.{}", Self::NAME)
     }
 }
+/// An event triggering when the app parameters change.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventAppParametersChange {
+    /// The new parameters, in their entirety.
+    #[prost(message, optional, tag = "1")]
+    pub new_parameters: ::core::option::Option<AppParameters>,
+}
+impl ::prost::Name for EventAppParametersChange {
+    const NAME: &'static str = "EventAppParametersChange";
+    const PACKAGE: &'static str = "penumbra.core.app.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

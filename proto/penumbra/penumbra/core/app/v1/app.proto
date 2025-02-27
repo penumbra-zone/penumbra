@@ -103,3 +103,9 @@ message GenesisContent {
   // Auction component genesis state.
   core.component.auction.v1.GenesisContent auction_content = 12;
 }
+
+// An event triggering when the app parameters change.
+message EventAppParametersChange {
+  // The new parameters, in their entirety.
+  AppParameters new_parameters = 1;
+}
