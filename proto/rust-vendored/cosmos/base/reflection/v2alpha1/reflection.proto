@@ -17,7 +17,7 @@ message AppDescriptor {
   CodecDescriptor codec = 3;
   // configuration provides metadata information regarding the sdk.Config type
   ConfigurationDescriptor configuration = 4;
-  // query_services provides metadata information regarding the available queryable endpoints
+  // query_services provides metadata information regarding the available queriable endpoints
   QueryServicesDescriptor query_services = 5;
   // tx provides metadata information regarding how to send transactions to the given application
   TxDescriptor tx = 6;
