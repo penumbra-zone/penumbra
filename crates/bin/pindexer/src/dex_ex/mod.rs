@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use clap::Result;
 use cometindex::{
     async_trait,
     index::{BlockEvents, EventBatch},
@@ -10,7 +11,7 @@ use penumbra_sdk_dex::{
         EventBatchSwap, EventCandlestickData, EventPositionClose, EventPositionExecution,
         EventPositionOpen, EventPositionWithdraw, EventQueuePositionClose,
     },
-    lp::Reserves,
+    lp::{position::Flows, Reserves},
     DirectedTradingPair, SwapExecution, TradingPair,
 };
 use penumbra_sdk_dex::{
@@ -1250,24 +1251,15 @@ impl Component {
         let position = positions
             .get(&event.position_id)
             .expect("position must exist for execution");
-
-        // Determine trade direction and compute deltas
-        let (delta_1, delta_2, lambda_1, lambda_2) = if event.reserves_1 > event.prev_reserves_1 {
-            // Asset 1 was input
-            let delta_1 = event.reserves_1 - event.prev_reserves_1;
-            let lambda_2 = event.prev_reserves_2 - event.reserves_2;
-            (delta_1, Amount::zero(), Amount::zero(), lambda_2)
-        } else {
-            // Asset 2 was input
-            let delta_2 = event.reserves_2 - event.prev_reserves_2;
-            let lambda_1 = event.prev_reserves_1 - event.reserves_1;
-            (Amount::zero(), delta_2, lambda_1, Amount::zero())
+        let current = Reserves {
+            r1: event.reserves_1,
+            r2: event.reserves_2,
         };
-
-        // Compute fees directly from input amounts using u128 arithmetic
-        let fee_bps = position.phi.component.fee as u128;
-        let fee_1 = (delta_1.value() * fee_bps) / 10_000u128;
-        let fee_2 = (delta_2.value() * fee_bps) / 10_000u128;
+        let prev = Reserves {
+            r1: event.prev_reserves_1,
+            r2: event.prev_reserves_2,
+        };
+        let flows = Flows::from_fee_and_reserves(position.phi.component.fee, &current, &prev);
 
         // First insert the reserves and get the rowid
         let reserves_rowid = sqlx::query_scalar::<_, i32>(
@@ -1308,12 +1300,12 @@ impl Component {
         .bind(height)
         .bind(time)
         .bind(reserves_rowid)
-        .bind(BigDecimal::from(delta_1.value()))
-        .bind(BigDecimal::from(delta_2.value()))
-        .bind(BigDecimal::from(lambda_1.value()))
-        .bind(BigDecimal::from(lambda_2.value()))
-        .bind(BigDecimal::from(fee_1))
-        .bind(BigDecimal::from(fee_2))
+        .bind(BigDecimal::from(flows.delta_1.value()))
+        .bind(BigDecimal::from(flows.delta_2.value()))
+        .bind(BigDecimal::from(flows.lambda_1.value()))
+        .bind(BigDecimal::from(flows.lambda_2.value()))
+        .bind(BigDecimal::from(flows.fee_1.value()))
+        .bind(BigDecimal::from(flows.fee_2.value()))
         .bind(event.context.start.to_bytes())
         .bind(event.context.end.to_bytes())
         .execute(dbtx.as_mut())
