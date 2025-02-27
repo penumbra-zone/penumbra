@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context};
-use penumbra_proto::{penumbra::core::app::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::app::v1 as pb, DomainType};
 use prost::Name as _;
 
 use crate::params::AppParameters;
