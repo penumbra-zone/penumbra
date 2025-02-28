@@ -6119,6 +6119,7 @@ dependencies = [
  "penumbra-sdk-asset",
  "penumbra-sdk-auction",
  "penumbra-sdk-dex",
+ "penumbra-sdk-distributions",
  "penumbra-sdk-fee",
  "penumbra-sdk-funding",
  "penumbra-sdk-governance",

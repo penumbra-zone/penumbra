@@ -646,6 +646,14 @@ message EventLqtPositionVolume {
   num.v1.Amount volume_amount = 4;
   // The total volume for the pair thus far.
   num.v1.Amount total_volume = 5;
+  // The amount of staking token flowing in (possibly 0).
+  num.v1.Amount staking_token_in = 6;
+  // The amount of the other asset flowing in (possibly 0).
+  num.v1.Amount asset_in = 7;
+  // The amount of fees we've just received in the staking token.
+  num.v1.Amount staking_fees = 8;
+  // The amount of fees we've just received in the particular asset.
+  num.v1.Amount asset_fees = 9;
 }
 
 message EventSwapClaim {
