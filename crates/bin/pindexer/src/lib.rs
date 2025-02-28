@@ -7,6 +7,7 @@ pub mod block;
 pub mod dex_ex;
 pub mod ibc;
 pub mod insights;
+pub mod lqt;
 mod parsing;
 pub mod stake;
 pub mod supply;
