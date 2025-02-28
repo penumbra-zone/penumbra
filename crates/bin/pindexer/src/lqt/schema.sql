@@ -63,6 +63,7 @@ WITH vote_summary AS (
     FROM lqt._available_rewards
     JOIN lqt._delegator_rewards USING (epoch)
     JOIN lqt._lp_rewards USING (epoch)
+    GROUP BY epoch
 ), rewards1 AS (
     SELECT
         epoch,
@@ -138,7 +139,8 @@ WITH delegator_streaks AS (
             WHEN max_epoch < (SELECT MAX(epoch) FROM lqt._finished_epochs) THEN 0
             WHEN gap_end - gap_start > 1 THEN max_epoch - gap_end + 1
             ELSE max_epoch - (SELECT MIN(epoch) FROM lqt._finished_epochs) + 1
-        AS streak
+        END AS streak
+        FROM gaps
 ), stage0 AS (
     SELECT
         address,
