@@ -253,4 +253,10 @@ url                              = { version = "2.2" }
 getrandom                        = { version = "0.2", default-features = false }
 
 [patch.crates-io]
+# This is current main as of Feb 28, 2025, which already contains tonic v0.13.0 and thus
+# does not work as a patch for tonic v0.12.3 (the version of this workspace toml).
+# tonic = { git = "https://github.com/hyperium/tonic", rev = "fc940ce158513d5d989772c571a34ee5f6f43292" }
+# 
+# This is the version that has bumped tower to 0.5 without also bumping tonic.
+tonic = { git = "https://github.com/hyperium/tonic", rev = "58345a6bf29b4c17eccc949dd6d7640928dff0cc" }
 tower-actor = { git = "https://github.com/penumbra-zone/tower-actor", rev = "refs/pull/5/head" }

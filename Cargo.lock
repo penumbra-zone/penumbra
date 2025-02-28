@@ -3591,7 +3591,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e310b3a6b5907f99202fcdb4960ff45b93735d7c7d96b760fcff8db2dc0e103d"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -8758,8 +8758,7 @@ dependencies = [
 [[package]]
 name = "tonic"
 version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "877c5b330756d856ffcc4553ab34a5684481ade925ecc54bcd1bf02b1d0d4d52"
+source = "git+https://github.com/hyperium/tonic?rev=58345a6bf29b4c17eccc949dd6d7640928dff0cc#58345a6bf29b4c17eccc949dd6d7640928dff0cc"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -8781,7 +8780,7 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.26.1",
  "tokio-stream",
- "tower 0.4.13",
+ "tower 0.5.2",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -8829,13 +8828,8 @@ checksum = "b8fa9be0de6cf49e536ce1851f987bd21a43b771b09473c3549a6c853db37c1c"
 dependencies = [
  "futures-core",
  "futures-util",
- "indexmap 1.9.3",
  "pin-project",
  "pin-project-lite",
- "rand",
- "slab",
- "tokio",
- "tokio-util",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -8883,7 +8877,7 @@ dependencies = [
 [[package]]
 name = "tower-actor"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/tower-actor?rev=refs/pull/5/head#727b4e6dbea08b7d58348e444f3b48b7ba22110e"
+source = "git+https://github.com/penumbra-zone/tower-actor?rev=refs/pull/5/head#de6f99614969d25858643e342ec7bf059728a208"
 dependencies = [
  "futures",
  "pin-project",
