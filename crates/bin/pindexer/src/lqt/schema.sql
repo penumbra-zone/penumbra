@@ -58,11 +58,11 @@ WITH vote_summary AS (
     SELECT
         epoch,
         SUM(lqt._available_rewards.amount) AS epoch_rewards,
-        SUM(lqt._delegator_rewards.amount) AS delegator_rewards,
-        SUM(lqt._lp_rewards.amount) AS lp_rewards
+        SUM(COALESCE(lqt._delegator_rewards.amount, 0)) AS delegator_rewards,
+        SUM(COALESCE(lqt._lp_rewards.amount, 0)) AS lp_rewards
     FROM lqt._available_rewards
-    JOIN lqt._delegator_rewards USING (epoch)
-    JOIN lqt._lp_rewards USING (epoch)
+    LEFT JOIN lqt._delegator_rewards USING (epoch)
+    LEFT JOIN lqt._lp_rewards USING (epoch)
     GROUP BY epoch
 ), rewards1 AS (
     SELECT
@@ -75,19 +75,19 @@ WITH vote_summary AS (
 )
 SELECT
     epoch,
-    total_voting_power,
+    COALESCE(total_voting_power, 0) AS total_voting_power,
     delegator_rewards,
     lp_rewards,
     total_rewards,
     available_rewards,
     delegator_share * available_rewards AS available_delegator_rewards,
     (1 - delegator_share) * available_rewards AS available_lp_rewards
-FROM vote_summary
-JOIN rewards1 USING (epoch)
+FROM rewards1
+LEFT JOIN vote_summary USING (epoch)
 CROSS JOIN LATERAL (
     SELECT delegator_share
     FROM lqt._params
-    WHERE lqt._params.epoch <= vote_summary.epoch
+    WHERE lqt._params.epoch <= rewards1.epoch
     ORDER BY lqt._params.epoch DESC
     LIMIT 1
 ) params;
