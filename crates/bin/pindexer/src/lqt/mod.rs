@@ -74,7 +74,7 @@ mod _available_rewards {
     use super::*;
 
     /// Add some amount to the available rewards for an epoch.
-    pub async fn add_to_epoch(
+    pub async fn set_for_epoch(
         dbtx: &mut PgTransaction<'_>,
         epoch: u64,
         amount: Amount,
@@ -85,7 +85,7 @@ mod _available_rewards {
             VALUES ($1, $2)
             ON CONFLICT (epoch)
             DO UPDATE SET
-                amount = lqt._available_rewards.amount + EXCLUDED.amount
+                amount = EXCLUDED.amount
         ",
         )
         .bind(i64::try_from(epoch)?)
@@ -257,7 +257,7 @@ impl Lqt {
         } else if let Ok(e) = EventEpochRoot::try_from_event(&event.event) {
             _finished_epochs::declare_finished(dbtx, e.index).await?;
         } else if let Ok(e) = EventLqtPoolSizeIncrease::try_from_event(&event.event) {
-            _available_rewards::add_to_epoch(dbtx, e.epoch_index, e.increase).await?;
+            _available_rewards::set_for_epoch(dbtx, e.epoch_index, e.new_total).await?;
         }
         Ok(())
     }
