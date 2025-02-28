@@ -63,15 +63,46 @@ impl DomainType for EventBlockRoot {
     type Proto = pb::EventBlockRoot;
 }
 
-pub fn epoch_root(index: u64, root: epoch::Root, timestamp: i64) -> pb::EventEpochRoot {
-    pb::EventEpochRoot {
-        index,
-        root: Some(root.into()),
-        timestamp: Some(Timestamp {
-            seconds: timestamp,
-            nanos: 0,
-        }),
+#[derive(Debug, Clone)]
+pub struct EventEpochRoot {
+    pub index: u64,
+    pub root: epoch::Root,
+    pub timestamp_seconds: i64,
+}
+
+impl From<EventEpochRoot> for pb::EventEpochRoot {
+    fn from(value: EventEpochRoot) -> Self {
+        pb::EventEpochRoot {
+            index: value.index,
+            root: Some(value.root.into()),
+            timestamp: Some(Timestamp {
+                seconds: value.timestamp_seconds,
+                nanos: 0,
+            }),
+        }
     }
+}
+
+impl TryFrom<pb::EventEpochRoot> for EventEpochRoot {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventEpochRoot) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventEpochRoot) -> anyhow::Result<EventEpochRoot> {
+            Ok(EventEpochRoot {
+                index: value.index,
+                root: value.root.ok_or(anyhow!("missing `root`"))?.try_into()?,
+                timestamp_seconds: value
+                    .timestamp
+                    .ok_or(anyhow!("missing `timestamp`"))?
+                    .seconds,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventEpochRoot::NAME))
+    }
+}
+
+impl DomainType for EventEpochRoot {
+    type Proto = pb::EventEpochRoot;
 }
 
 pub fn commitment(
