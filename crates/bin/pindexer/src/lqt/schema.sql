@@ -159,6 +159,11 @@ WITH delegator_streaks AS (
 FROM stage0
 JOIN delegator_streaks USING (address);
 
+CREATE VIEW lqt.delegator_history AS
+SELECT address, epoch, power, asset_id, COALESCE(amount, 0) AS reward
+FROM lqt._votes
+LEFT JOIN lqt._delegator_rewards USING (address, epoch);
+
 CREATE VIEW lqt.lps AS
 SELECT
     epoch,
