@@ -22,6 +22,7 @@ cargo +nightly doc --no-deps \
   -p ark-serialize \
   -p cnidarium \
   -p cnidarium-component \
+  -p cometindex \
   -p decaf377-fmd \
   -p decaf377-ka \
   -p decaf377-rdsa \
@@ -58,6 +59,7 @@ cargo +nightly doc --no-deps \
   -p penumbra-sdk-txhash \
   -p penumbra-sdk-view \
   -p penumbra-sdk-wallet \
+  -p pindexer \
   -p poseidon-permutation \
   -p poseidon377 \
   -p tendermint \
