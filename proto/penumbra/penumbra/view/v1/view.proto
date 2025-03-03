@@ -195,7 +195,7 @@ message AuctionsResponse {
   // service_. Note that the local view service may lag behind the fullnode. For
   // example, if the chain hits an auction's `end_height`, but the user hasn't
   // yet exchanged their sequence-0 (opened) auction NFT for a sequence-1
-  // (closed) auction NFT, the local view service will have a sequnce number of
+  // (closed) auction NFT, the local view service will have a sequence number of
   // 0.
   //
   // Dutch auctions move from:
@@ -802,7 +802,7 @@ message LatestSwapsRequest {
   core.keys.v1.AddressIndex account_filter = 1;
   // If present, filter balances to only include trading activity on the specified pair.
   core.component.dex.v1.DirectedTradingPair pair = 2;
-  // If present, limit the responses to activity that occured after this block height.
+  // If present, limit the responses to activity that occurred after this block height.
   uint64 after_height = 3;
   // Limit the response to the last entries within `response_limit`.
   uint64 response_limit = 4;
