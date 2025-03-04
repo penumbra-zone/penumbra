@@ -1,5 +1,9 @@
 use anyhow::{anyhow, Result};
-use cometindex::{async_trait, index::EventBatch, sqlx, AppView, PgTransaction};
+use cometindex::{
+    async_trait,
+    index::{EventBatch, EventBatchContext},
+    sqlx, AppView, PgTransaction,
+};
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
 use penumbra_sdk_stake::IdentityKey;
@@ -51,7 +55,12 @@ impl AppView for UndelegationTxs {
         "stake/undelegation_txs".to_string()
     }
 
-    async fn index_batch(&self, dbtx: &mut PgTransaction, batch: EventBatch) -> Result<()> {
+    async fn index_batch(
+        &self,
+        dbtx: &mut PgTransaction,
+        batch: EventBatch,
+        _ctx: EventBatchContext,
+    ) -> Result<()> {
         for event in batch.events() {
             let pe = match pb::EventUndelegate::from_event(event.as_ref()) {
                 Ok(pe) => pe,

@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use cometindex::{
     async_trait,
-    index::{BlockEvents, EventBatch},
+    index::{BlockEvents, EventBatch, EventBatchContext},
     AppView, PgTransaction,
 };
 use penumbra_sdk_asset::asset;
@@ -1465,6 +1465,7 @@ impl AppView for Component {
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
+        _ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
         metadata::set(dbtx, self.denom).await?;
         let mut charts = HashMap::new();
