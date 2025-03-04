@@ -5,7 +5,7 @@ use futures::{Stream, TryStreamExt};
 use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_community_pool::component::StateWriteExt as _;
 use penumbra_sdk_dex::{component::LqtRead as _, lp::position};
-use penumbra_sdk_distributions::component::StateReadExt as _;
+use penumbra_sdk_distributions::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::fixpoint::U128x128;
 use penumbra_sdk_num::Amount;
@@ -222,6 +222,8 @@ pub async fn distribute_rewards(mut state: impl StateWrite) -> anyhow::Result<()
             amount: current_budget,
         })
         .await;
+    // Set up the next epoch to have whatever rewards are left.
+    state.set_lqt_reward_issuance_for_epoch(current_epoch + 1, current_budget);
 
     Ok(())
 }
