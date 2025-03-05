@@ -452,87 +452,92 @@ mod summary {
         }
     }
 
-    pub async fn update_summary(
+    pub async fn update_summaries(
         dbtx: &mut PgTransaction<'_>,
         now: DateTime,
-        start: asset::Id,
-        end: asset::Id,
         window: Window,
     ) -> anyhow::Result<()> {
         let then = window.subtract_from(now);
-        sqlx::query(
-            "
-        WITH
-        snapshots AS (
-            SELECT *
-            FROM dex_ex_pairs_block_snapshot
-            WHERE asset_start = $1
-            AND asset_end = $2
-        ),
-        previous AS (
-            SELECT price AS price_then, liquidity AS liquidity_then
-            FROM snapshots
-            WHERE time <= $4
-            ORDER BY time DESC
-            LIMIT 1
-        ),
-        previous_or_default AS (
-            SELECT
-                COALESCE((SELECT price_then FROM previous), 0.0) AS price_then,
-                COALESCE((SELECT liquidity_then FROM previous), 0.0) AS liquidity_then
-        ),
-        now AS (
-            SELECT price, liquidity            
-            FROM snapshots
-            WHERE time <= $3
-            ORDER BY time DESC
-            LIMIT 1
-        ),
-        sums AS (
-            SELECT
-                COALESCE(SUM(direct_volume), 0.0) AS direct_volume_over_window,
-                COALESCE(SUM(swap_volume), 0.0) AS swap_volume_over_window,
-                COALESCE(SUM(COALESCE(start_price_indexing_denom, 0.0) * direct_volume), 0.0) as direct_volume_indexing_denom_over_window,
-                COALESCE(SUM(COALESCE(start_price_indexing_denom, 0.0) * swap_volume), 0.0) as swap_volume_indexing_denom_over_window,
-                COALESCE(SUM(trades), 0.0) AS trades_over_window,
-                COALESCE(MIN(price), 0.0) AS low,
-                COALESCE(MAX(price), 0.0) AS high
-            FROM snapshots
-            WHERE time <= $3
-            AND time >= $4
+        let pairs = sqlx::query_as::<_, (Vec<u8>, Vec<u8>)>(
+            "SELECT asset_start, asset_end FROM dex_ex_pairs_block_snapshot GROUP BY asset_start, asset_end",
         )
-        INSERT INTO dex_ex_pairs_summary
-        SELECT 
-            $1, $2, $5,
-            price, price_then,
-            low, high,
-            liquidity, liquidity_then,
-            direct_volume_over_window,
-            swap_volume_over_window,
-            direct_volume_indexing_denom_over_window,
-            swap_volume_indexing_denom_over_window,
-            trades_over_window
-        FROM previous_or_default JOIN now ON TRUE JOIN sums ON TRUE
-        ON CONFLICT (asset_start, asset_end, the_window)
-        DO UPDATE SET
-            price = EXCLUDED.price,
-            price_then = EXCLUDED.price_then,
-            liquidity = EXCLUDED.liquidity,
-            liquidity_then = EXCLUDED.liquidity_then,
-            direct_volume_over_window = EXCLUDED.direct_volume_over_window,
-            swap_volume_over_window = EXCLUDED.swap_volume_over_window,
-            direct_volume_indexing_denom_over_window = EXCLUDED.direct_volume_indexing_denom_over_window,
-            swap_volume_indexing_denom_over_window = EXCLUDED.swap_volume_indexing_denom_over_window,
-            trades_over_window = EXCLUDED.trades_over_window
-        ",
-        )
-        .bind(start.to_bytes())
-        .bind(end.to_bytes())
-        .bind(now)
-        .bind(then)
-        .bind(window.to_string())
-        .execute(dbtx.as_mut())
+        .fetch_all(dbtx.as_mut())
         .await?;
+        for (start, end) in pairs {
+            sqlx::query(
+                "
+            WITH
+            snapshots AS (
+                SELECT *
+                FROM dex_ex_pairs_block_snapshot
+                WHERE asset_start = $1
+                AND asset_end = $2
+            ),
+            previous AS (
+                SELECT price AS price_then, liquidity AS liquidity_then
+                FROM snapshots
+                WHERE time <= $4
+                ORDER BY time DESC
+                LIMIT 1
+            ),
+            previous_or_default AS (
+                SELECT
+                    COALESCE((SELECT price_then FROM previous), 0.0) AS price_then,
+                    COALESCE((SELECT liquidity_then FROM previous), 0.0) AS liquidity_then
+            ),
+            now AS (
+                SELECT price, liquidity            
+                FROM snapshots
+                WHERE time <= $3
+                ORDER BY time DESC
+                LIMIT 1
+            ),
+            sums AS (
+                SELECT
+                    COALESCE(SUM(direct_volume), 0.0) AS direct_volume_over_window,
+                    COALESCE(SUM(swap_volume), 0.0) AS swap_volume_over_window,
+                    COALESCE(SUM(COALESCE(start_price_indexing_denom, 0.0) * direct_volume), 0.0) as direct_volume_indexing_denom_over_window,
+                    COALESCE(SUM(COALESCE(start_price_indexing_denom, 0.0) * swap_volume), 0.0) as swap_volume_indexing_denom_over_window,
+                    COALESCE(SUM(trades), 0.0) AS trades_over_window,
+                    COALESCE(MIN(price), 0.0) AS low,
+                    COALESCE(MAX(price), 0.0) AS high
+                FROM snapshots
+                WHERE time <= $3
+                AND time >= $4
+            )
+            INSERT INTO dex_ex_pairs_summary
+            SELECT 
+                $1, $2, $5,
+                price, price_then,
+                low, high,
+                liquidity, liquidity_then,
+                direct_volume_over_window,
+                swap_volume_over_window,
+                direct_volume_indexing_denom_over_window,
+                swap_volume_indexing_denom_over_window,
+                trades_over_window
+            FROM previous_or_default JOIN now ON TRUE JOIN sums ON TRUE
+            ON CONFLICT (asset_start, asset_end, the_window)
+            DO UPDATE SET
+                price = EXCLUDED.price,
+                price_then = EXCLUDED.price_then,
+                liquidity = EXCLUDED.liquidity,
+                liquidity_then = EXCLUDED.liquidity_then,
+                direct_volume_over_window = EXCLUDED.direct_volume_over_window,
+                swap_volume_over_window = EXCLUDED.swap_volume_over_window,
+                direct_volume_indexing_denom_over_window = EXCLUDED.direct_volume_indexing_denom_over_window,
+                swap_volume_indexing_denom_over_window = EXCLUDED.swap_volume_indexing_denom_over_window,
+                trades_over_window = EXCLUDED.trades_over_window
+            ",
+            )
+            .bind(start)
+            .bind(end)
+            .bind(now)
+            .bind(then)
+            .bind(window.to_string())
+            .execute(dbtx.as_mut())
+            .await?;
+        }
         Ok(())
     }
 
@@ -1465,7 +1470,7 @@ impl AppView for Component {
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
-        _ctx: EventBatchContext,
+        ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
         metadata::set(dbtx, self.denom).await?;
         let mut charts = HashMap::new();
@@ -1564,13 +1569,13 @@ impl AppView for Component {
             }
         }
 
-        if let Some(now) = last_time {
-            for window in Window::all() {
-                for pair in snapshots.keys() {
-                    summary::update_summary(dbtx, now, pair.start, pair.end, window).await?;
+        if ctx.is_last() {
+            if let Some(now) = last_time {
+                for window in Window::all() {
+                    summary::update_summaries(dbtx, now, window).await?;
+                    summary::update_aggregate_summary(dbtx, window, self.denom, self.min_liquidity)
+                        .await?;
                 }
-                summary::update_aggregate_summary(dbtx, window, self.denom, self.min_liquidity)
-                    .await?;
             }
         }
         for chart in charts.into_values() {
