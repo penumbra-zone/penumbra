@@ -23,7 +23,7 @@ COPY assets ./assets
 # Copy in summonerd contribution orchestrator.
 COPY tools ./tools
 # Download all workspace dependencies specified in Cargo.toml
-RUN cargo fetch
+RUN rustup install && cargo fetch
 # Build Penumbra binaries
 COPY . .
 RUN cargo build --release
