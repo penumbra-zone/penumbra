@@ -86,3 +86,7 @@ integration-pindexer:
 # Run integration tests for pd. Assumes specific dev env is already running.
 integration-pd:
   cargo test --release --package pd -- --ignored --test-threads 1 --nocapture
+
+# Build the container image locally
+container:
+  podman build -t ghcr.io/penumbra-zone/penumbra -f ./deployments/containerfiles/Dockerfile .
