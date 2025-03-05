@@ -106,6 +106,8 @@ push = false
 dependent-version = "upgrade"
 # Increase default ratelimit on publishing packages
 rate-limit = { existing-packages = 50 }
+# Permit publishing from any branch, because in GHA CI context, HEAD is checked out.
+allow-branch = ["*"]
 
 [workspace.package]
 authors    = ["Penumbra Labs <team@penumbralabs.xyz"]
