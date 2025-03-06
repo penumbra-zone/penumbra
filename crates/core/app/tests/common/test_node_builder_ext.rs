@@ -21,6 +21,7 @@ pub trait BuilderExt: Sized {
     /// Add the provided Penumbra [`AppState`] to the builder.
     ///
     /// This will inject any configured validators into the state before serializing it into bytes.
+    #[allow(dead_code)]
     fn with_penumbra_auto_app_state(self, app_state: AppState) -> Result<Self, Self::Error>;
 }
 
