@@ -219,7 +219,7 @@ impl TransactionView {
                     }
                     SwapClaimView::Opaque { swap_claim: _ } => continue,
                 },
-                _ => {} // Fill in other action views as neccessary
+                _ => {} // Fill in other action views as necessary
             }
         }
 

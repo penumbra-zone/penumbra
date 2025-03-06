@@ -75,7 +75,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         self.auction_vcb_credit(dutch_auction.description.input)
             .await
             .context("failed to schedule auction")?;
-        // Set the triggger
+        // Set the trigger
         self.set_trigger_for_dutch_id(auction_id, next_trigger);
         // Write position to state
         self.write_dutch_auction_state(dutch_auction);
