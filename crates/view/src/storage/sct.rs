@@ -17,12 +17,13 @@ pub struct TreeStore<'a, 'c: 'a>(pub &'a mut Transaction<'c>);
 impl Read for TreeStore<'_, '_> {
     type Error = anyhow::Error;
 
-    type HashesIter<'a> = Box<dyn Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + 'a>
+    type HashesIter<'a>
+        = Box<dyn Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + 'a>
     where
         Self: 'a;
 
-    type CommitmentsIter<'a> = Box<dyn Iterator<Item = Result<(Position, StateCommitment), Self::Error>>
-        + 'a>
+    type CommitmentsIter<'a>
+        = Box<dyn Iterator<Item = Result<(Position, StateCommitment), Self::Error>> + 'a>
     where
         Self: 'a;
 
