@@ -1,4 +1,8 @@
-use cometindex::{async_trait, index::EventBatch, sqlx, AppView, PgTransaction};
+use cometindex::{
+    async_trait,
+    index::{EventBatch, EventBatchContext},
+    sqlx, AppView, PgTransaction,
+};
 use penumbra_sdk_proto::{core::component::sct::v1 as pb, event::ProtoEvent};
 use sqlx::types::chrono::DateTime;
 
@@ -35,6 +39,7 @@ CREATE TABLE IF NOT EXISTS block_details (
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
+        _ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
         for event in batch.events() {
             let pe = match pb::EventBlockRoot::from_event(event.as_ref()) {

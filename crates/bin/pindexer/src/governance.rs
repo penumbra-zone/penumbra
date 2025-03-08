@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use cometindex::{
-    async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
+    async_trait,
+    index::{EventBatch, EventBatchContext},
+    sqlx, AppView, ContextualizedEvent, PgTransaction,
 };
 use penumbra_sdk_governance::{
     proposal::ProposalPayloadToml, proposal_state, DelegatorVote, Proposal, ProposalDepositClaim,
@@ -325,6 +327,7 @@ impl AppView for GovernanceProposals {
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
+        _ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
         for event in batch.events() {
             self.index_event(dbtx, event).await?;

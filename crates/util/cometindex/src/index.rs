@@ -144,6 +144,19 @@ impl EventBatch {
     }
 }
 
+/// Provides more information about the context a batch of event comes from.
+#[derive(Debug, Clone)]
+pub struct EventBatchContext {
+    pub(crate) is_last: bool,
+}
+
+impl EventBatchContext {
+    /// If true, then no further event batches will be sent before new blocks arrive.
+    pub fn is_last(&self) -> bool {
+        self.is_last
+    }
+}
+
 /// Represents a specific index of raw event data.
 #[async_trait]
 pub trait AppView: Send + Sync {
@@ -160,11 +173,10 @@ pub trait AppView: Send + Sync {
     ) -> Result<(), anyhow::Error>;
 
     /// This allows processing a batch of events, over many blocks.
-    ///
-    /// By using a batch, we can potentially avoid a costly
     async fn index_batch(
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
+        context: EventBatchContext,
     ) -> Result<(), anyhow::Error>;
 }

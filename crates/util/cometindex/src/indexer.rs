@@ -1,6 +1,10 @@
 mod indexing_state;
 
-use crate::{index::EventBatch, opt::Options, AppView};
+use crate::{
+    index::{EventBatch, EventBatchContext},
+    opt::Options,
+    AppView,
+};
 use anyhow::{Context as _, Result};
 use indexing_state::{Height, IndexingState};
 use std::sync::Arc;
@@ -75,7 +79,10 @@ async fn catchup(
                 );
                 let last_height = events.last_height();
                 let mut dbtx = state_cp.begin_transaction().await?;
-                index.index_batch(&mut dbtx, events).await?;
+                let context = EventBatchContext {
+                    is_last: last_height >= u64::from(src_height),
+                };
+                index.index_batch(&mut dbtx, events, context).await?;
                 tracing::debug!(index_name = &name, "committing batch");
                 IndexingState::update_index_height(&mut dbtx, &name, Height::from(last_height))
                     .await?;

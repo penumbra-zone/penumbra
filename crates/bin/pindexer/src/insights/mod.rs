@@ -1,7 +1,11 @@
 use ethnum::I256;
 use std::{collections::BTreeMap, iter};
 
-use cometindex::{async_trait, index::EventBatch, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{
+    async_trait,
+    index::{EventBatch, EventBatchContext},
+    AppView, ContextualizedEvent, PgTransaction,
+};
 use penumbra_sdk_app::genesis::Content;
 use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_dex::{
@@ -518,6 +522,7 @@ impl AppView for Component {
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
+        _ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
         for event in batch.events() {
             self.index_event(dbtx, event).await?;

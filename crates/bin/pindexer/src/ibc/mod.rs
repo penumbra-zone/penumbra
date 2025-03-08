@@ -1,5 +1,9 @@
 use anyhow::anyhow;
-use cometindex::{async_trait, index::EventBatch, AppView, ContextualizedEvent, PgTransaction};
+use cometindex::{
+    async_trait,
+    index::{EventBatch, EventBatchContext},
+    AppView, ContextualizedEvent, PgTransaction,
+};
 use penumbra_sdk_asset::Value;
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_proto::{
@@ -213,6 +217,7 @@ impl AppView for Component {
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
+        _ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
         for event in batch.events() {
             let parsed = match Event::try_from(event) {

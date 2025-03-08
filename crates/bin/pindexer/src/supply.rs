@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 
 use anyhow::{anyhow, Result};
 use cometindex::{
-    async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
+    async_trait,
+    index::{EventBatch, EventBatchContext},
+    sqlx, AppView, ContextualizedEvent, PgTransaction,
 };
 use penumbra_sdk_app::genesis::Content;
 use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
@@ -937,6 +939,7 @@ impl AppView for Component {
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
+        _ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
         for event in batch.events() {
             let e = match Event::try_from(event) {
