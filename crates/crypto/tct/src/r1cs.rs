@@ -3,7 +3,7 @@ use ark_ff::ToConstraintField;
 use ark_r1cs_std::{prelude::*, uint64::UInt64};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
-use decaf377::{r1cs::FqVar, Fq};
+use decaf377::{r1cs::FqVar, FieldExt, Fq};
 
 use crate::{internal::hash::DOMAIN_SEPARATOR, Position, Proof, StateCommitment};
 

@@ -106,6 +106,8 @@ mod tests {
     use proptest::prelude::*;
     use rand_core::OsRng;
     use rdsa::VerificationKey;
+    use ark_ff::PrimeField;
+    use ark_ff::UniformRand;
 
     use crate::{IdentityKey, Penalty, UnbondingToken};
     use penumbra_sdk_shielded_pool::ConvertCircuit;

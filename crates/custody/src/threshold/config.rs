@@ -7,6 +7,7 @@ use rand_core::CryptoRngCore;
 use serde::{Deserialize, Serialize};
 use serde_with::{formats::Uppercase, hex::Hex, DisplayFromStr, TryFromInto};
 use std::collections::{HashMap, HashSet};
+use ark_ff::UniformRand;
 
 /// A shim to serialize frost::keys::SigningShare
 #[serde_as]

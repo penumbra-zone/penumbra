@@ -1,9 +1,10 @@
 use crate::{hash, hkd, Clue, ClueKey, Error, MAX_PRECISION};
 use bitvec::{order, slice::BitSlice};
-use decaf377::Fr;
+use decaf377::{FieldExt, Fr};
 use rand_core::{CryptoRng, RngCore};
 use std::convert::{TryFrom, TryInto};
-
+use ark_ff::{UniformRand, Zero};
+use ark_serialize::CanonicalDeserialize;
 /// Used to examine [`Clue`]s and determine whether they were possibly sent to
 /// the detection key's [`ClueKey`].
 pub struct DetectionKey {
@@ -27,7 +28,7 @@ impl DetectionKey {
     /// the caller's responsibility to construct the detection key `dtk`
     /// correctly.
     pub fn from_field(dtk: Fr) -> Self {
-        let root_pub = dtk * decaf377::Element::GENERATOR;
+        let root_pub = dtk * decaf377::basepoint();
         let root_pub_enc = root_pub.vartime_compress();
 
         let xs: [_; MAX_PRECISION as usize] = (0..MAX_PRECISION as usize)
@@ -54,17 +55,13 @@ impl DetectionKey {
 
     /// Deserialize a detection key from bytes.
     pub fn from_bytes(bytes: [u8; 32]) -> Result<Self, Error> {
-        let dtk = Fr::from_bytes_checked(&bytes).map_err(|_| Error::InvalidDetectionKey)?;
+        let dtk = Fr::from_bytes(bytes).map_err(|_| Error::InvalidDetectionKey)?;
         Ok(Self::from_field(dtk))
     }
 
     /// Obtain the clue key corresponding to this detection key.
     pub fn clue_key(&self) -> ClueKey {
-        ClueKey(
-            (self.dtk * decaf377::Element::GENERATOR)
-                .vartime_compress()
-                .0,
-        )
+        ClueKey((self.dtk * decaf377::basepoint()).vartime_compress().0)
     }
 
     /// Use this detection key to examine the given `clue`, returning `true` if the
@@ -85,9 +82,7 @@ impl DetectionKey {
             return false;
         };
 
-        let y = if let Ok(y) =
-            Fr::from_bytes_checked(&clue.0[32..64].try_into().expect("expected 32 bytes"))
-        {
+        let y = if let Ok(y) = Fr::deserialize_compressed(&clue.0[32..64]) {
             y
         } else {
             // Invalid y encoding => not a match
@@ -98,7 +93,7 @@ impl DetectionKey {
         // noted in the OpenPrivacy implementation, these could allow clues to
         // match any detection key.
         // https://docs.rs/fuzzytags/0.6.0/src/fuzzytags/lib.rs.html#348-351
-        if P.is_identity() || y == Fr::ZERO {
+        if P.is_identity() || y.is_zero() {
             return false;
         }
 
@@ -109,7 +104,7 @@ impl DetectionKey {
         let ciphertexts = BitSlice::<u8, order::Lsb0>::from_slice(&clue.0[65..68]);
 
         let m = hash::to_scalar(&P_encoding.0, precision_bits, &clue.0[65..68]);
-        let Q_bytes = ((y * P) + (m * decaf377::Element::GENERATOR)).vartime_compress();
+        let Q_bytes = ((y * P) + (m * decaf377::basepoint())).vartime_compress();
 
         for i in 0..(precision_bits as usize) {
             let Px_i = (P * self.xs[i]).vartime_compress();

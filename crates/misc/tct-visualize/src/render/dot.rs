@@ -1,4 +1,5 @@
 use super::*;
+use decaf377::FieldExt;
 
 const FONT_SIZE: usize = 70;
 const BLOCK_FONT_SIZE: usize = 110;

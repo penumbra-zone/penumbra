@@ -796,6 +796,7 @@ mod test {
     /// with different asset IDs.
     #[test]
     fn try_from_fallible_conversion_different_asset_id() {
+        use ark_ff::UniformRand;
         let rand_asset_id = Id(Fq::rand(&mut OsRng));
 
         let proto_balance = pb::Balance {
@@ -846,6 +847,7 @@ mod test {
     /// Implement infallible conversion (domain type to protobuf).
     #[test]
     fn from_infallible_conversion() {
+        use ark_ff::UniformRand;
         let rand_asset_id = Id(Fq::rand(&mut OsRng));
 
         let balance = Balance {

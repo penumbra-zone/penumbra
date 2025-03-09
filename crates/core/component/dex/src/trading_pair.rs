@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::{AllocVar, EqGadget};
 use ark_relations::r1cs::SynthesisError;
-use decaf377::Fq;
+use decaf377::{Fq, FieldExt};
 use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use std::{

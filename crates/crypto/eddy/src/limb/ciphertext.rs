@@ -2,21 +2,13 @@ use std::ops::{Add, AddAssign};
 
 use crate::decryption_share::Verified;
 use crate::limb::DecryptionShare;
+use ark_ff::One;
 
 /// an Elgamal ciphertext (c1, c2).
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Ciphertext {
     pub(crate) c1: decaf377::Element,
     pub(crate) c2: decaf377::Element,
-}
-
-impl Default for Ciphertext {
-    fn default() -> Self {
-        Ciphertext {
-            c1: decaf377::Element::GENERATOR,
-            c2: decaf377::Element::GENERATOR,
-        }
-    }
 }
 
 // compute the lagrange coefficient for the participant given by `participant_index` in the set of
@@ -25,7 +17,7 @@ fn lagrange_coefficient(participant_index: u32, participant_indices: &[u32]) -> 
     participant_indices
         .iter()
         .filter(|x| **x != participant_index)
-        .fold(decaf377::Fr::ONE, |acc, x| {
+        .fold(decaf377::Fr::one(), |acc, x| {
             let n = decaf377::Fr::from(*x);
             let i = decaf377::Fr::from(participant_index);
 
@@ -40,7 +32,7 @@ impl Ciphertext {
             .map(|s| s.participant_index)
             .collect::<Vec<_>>();
 
-        let mut d = decaf377::Element::GENERATOR;
+        let mut d = decaf377::Element::default();
         for share in shares {
             d += share.decryption_share * lagrange_coefficient(share.participant_index, &indices);
         }

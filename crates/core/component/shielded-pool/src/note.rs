@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 
 use crate::genesis::Allocation;
 use blake2b_simd;
-use decaf377::Fq;
+use decaf377::{FieldExt, Fq};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 use once_cell::sync::Lazy;
@@ -15,6 +15,7 @@ use penumbra_sdk_proto::penumbra::core::component::shielded_pool::v1 as pb;
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 use thiserror;
+use ark_ff::PrimeField;
 
 mod r1cs;
 pub use r1cs::NoteVar;
@@ -158,7 +159,7 @@ impl Note {
             value,
             rseed,
             address: address.clone(),
-            transmission_key_s: Fq::from_bytes_checked(&address.transmission_key().0)
+            transmission_key_s: Fq::from_bytes(address.transmission_key().0)
                 .map_err(|_| Error::InvalidTransmissionKey)?,
         })
     }
@@ -393,7 +394,7 @@ pub fn commitment_from_address(
     value: Value,
     note_blinding: Fq,
 ) -> Result<StateCommitment, Error> {
-    let transmission_key_s = Fq::from_bytes_checked(&address.transmission_key().0)
+    let transmission_key_s = Fq::from_bytes(address.transmission_key().0)
         .map_err(|_| Error::InvalidTransmissionKey)?;
     let commit = poseidon377::hash_6(
         &NOTECOMMIT_DOMAIN_SEP,
@@ -531,7 +532,7 @@ impl TryFrom<&[u8]> for Note {
             Value {
                 amount: Amount::from_le_bytes(amount_bytes),
                 asset_id: asset::Id(
-                    Fq::from_bytes_checked(&asset_id_bytes)
+                    Fq::from_bytes(asset_id_bytes)
                         .map_err(|_| Error::NoteDeserializationError)?,
                 ),
             },
@@ -618,6 +619,8 @@ mod tests {
 
     #[test]
     fn note_encryption_and_sender_decryption() {
+        use ark_ff::UniformRand;
+
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::generate(rng);

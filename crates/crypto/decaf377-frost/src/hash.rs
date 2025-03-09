@@ -1,5 +1,6 @@
 use blake2b_simd::{Params, State};
 use decaf377::Fr;
+use ark_ff::PrimeField;
 
 pub struct Hasher {
     state: State,

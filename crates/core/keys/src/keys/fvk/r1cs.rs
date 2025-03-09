@@ -1,17 +1,12 @@
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
-    r1cs::{ElementVar, FqVar},
-    Element, Fq, Fr,
+    r1cs::{ElementVar, FqVar}, Element, FieldExt, Fq, Fr
 };
 use decaf377_rdsa::{SpendAuth, VerificationKey, VerificationKeyBytes};
 use once_cell::sync::Lazy;
 
-fn generator() -> Element {
-    Element::GENERATOR
-}
-
-pub(crate) static SPENDAUTH_BASEPOINT: Lazy<Element> = Lazy::new(generator);
+pub(crate) static SPENDAUTH_BASEPOINT: Lazy<Element> = Lazy::new(decaf377::basepoint);
 
 pub struct RandomizedVerificationKey {
     pub inner: ElementVar,
@@ -176,6 +171,6 @@ impl R1CSVar<Fq> for SpendAuthRandomizerVar {
         for (i, byte) in self.inner.iter().enumerate() {
             bytes[i] = byte.value()?;
         }
-        Ok(Fr::from_bytes_checked(&bytes).expect("can convert bytes to Fr"))
+        Ok(Fr::from_bytes(bytes).expect("can convert bytes to Fr"))
     }
 }

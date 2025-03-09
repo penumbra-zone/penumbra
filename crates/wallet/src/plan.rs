@@ -11,6 +11,7 @@ use penumbra_sdk_proto::view::v1::NotesRequest;
 use penumbra_sdk_transaction::{TransactionParameters, TransactionPlan};
 pub use penumbra_sdk_view::Planner;
 use penumbra_sdk_view::{SpendableNoteRecord, ViewClient};
+use ark_std::UniformRand;
 
 pub const SWEEP_COUNT: usize = 8;
 

@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
 use std::str::FromStr;
-
+use ark_ff::PrimeField;
 use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::Aes128;
 

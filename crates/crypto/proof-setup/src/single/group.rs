@@ -7,6 +7,7 @@ use ark_ec::scalar_mul::{variable_base::VariableBaseMSM, ScalarMul};
 use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
 use rand_core::CryptoRngCore;
+use ark_ff::fields::PrimeField;
 
 /// The group used for the left side of pairings.
 pub type G1 = <Bls12_377 as Pairing>::G1;

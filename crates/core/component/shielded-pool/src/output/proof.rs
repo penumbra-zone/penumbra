@@ -5,7 +5,7 @@ use anyhow::Result;
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::uint8::UInt8;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use decaf377::{Bls12_377, Fq, Fr};
+use decaf377::{Bls12_377, Fq, Fr, FieldExt};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 
@@ -138,7 +138,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
 impl DummyWitness for OutputCircuit {
     fn with_dummy_witness() -> Self {
         let diversifier_bytes = [1u8; 16];
-        let pk_d_bytes = decaf377::Element::GENERATOR.vartime_compress().0;
+        let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
         let clue_key_bytes = [1; 32];
         let diversifier = Diversifier(diversifier_bytes);
         let address = Address::from_components(
@@ -157,7 +157,7 @@ impl DummyWitness for OutputCircuit {
 
         let public = OutputProofPublic {
             note_commitment: note.commit(),
-            balance_commitment: balance::Commitment(decaf377::Element::GENERATOR),
+            balance_commitment: balance::Commitment(decaf377::basepoint()),
         };
         let private = OutputProofPrivate {
             note,
@@ -268,6 +268,7 @@ mod tests {
     use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
     use penumbra_sdk_num::Amount;
     use proptest::prelude::*;
+    use ark_ff::PrimeField;
 
     use crate::{note, Note};
 

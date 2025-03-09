@@ -8,7 +8,7 @@ use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use base64::{engine::general_purpose, Engine as _};
-use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
+use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr, FieldExt};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_sdk_asset::{
     balance::{self, commitment::BalanceCommitmentVar, Commitment},
@@ -274,7 +274,7 @@ impl DummyWitness for DelegatorVoteCircuit {
 
         let public = DelegatorVoteProofPublic {
             anchor,
-            balance_commitment: balance::Commitment(decaf377::Element::GENERATOR),
+            balance_commitment: balance::Commitment(decaf377::basepoint()),
             nullifier,
             rk,
             start_position,
@@ -426,6 +426,7 @@ mod tests {
     use penumbra_sdk_num::Amount;
     use penumbra_sdk_sct::Nullifier;
     use proptest::prelude::*;
+    use ark_ff::PrimeField;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()

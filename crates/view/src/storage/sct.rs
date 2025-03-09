@@ -69,13 +69,7 @@ impl Read for TreeStore<'_, '_> {
             .map(|bytes| {
                 <[u8; 32]>::try_from(bytes)
                     .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
-                    .and_then(|array| {
-                        if let Ok(hash) = Hash::from_bytes(array) {
-                            Ok(hash)
-                        } else {
-                            Err(anyhow::anyhow!("Failed to create Hash from bytes"))
-                        }
-                    })
+                    .and_then(|array| Hash::from_bytes(array).map_err(Into::into))
             })
             .transpose()
     }
@@ -107,12 +101,7 @@ impl Read for TreeStore<'_, '_> {
                         let hash: Vec<u8> = row.get("hash")?;
                         let hash = <[u8; 32]>::try_from(hash)
                             .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
-                            .and_then(|array| {
-                                Hash::from_bytes(array).map_err(|e| {
-                                    // Explicitly convert any error to anyhow::Error
-                                    anyhow::Error::msg(format!("Error converting hash: {}", e))
-                                })
-                            })?;
+                            .and_then(move |array| Hash::from_bytes(array).map_err(Into::into))?;
                         anyhow::Ok((Position::from(position as u64), height, hash))
                     })
                     .context("couldn't query database")

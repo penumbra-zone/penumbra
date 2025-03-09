@@ -24,6 +24,7 @@ use penumbra_sdk_sct::component::clock::EpochRead;
 use penumbra_sdk_sct::component::tree::SctRead;
 use penumbra_sdk_shielded_pool::component::AssetRegistry;
 use penumbra_sdk_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
+use ark_ff::PrimeField;
 
 use crate::app::StateReadExt;
 use crate::community_pool_ext::CommunityPoolStateWriteExt;

@@ -5,7 +5,7 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    Fq, Fr,
+    Fq, Fr, FieldExt
 };
 
 use super::{AddressIndex, Diversifier, DiversifierKey};
@@ -148,7 +148,7 @@ impl IncomingViewingKeyVar {
         //
         // Constrain: ivk_mod_q = mod_r * a + ivk_mod_r
         let mod_r_var = FqVar::new_constant(cs.clone(), r_modulus)?;
-        let a_var = FqVar::new_witness(cs.clone(), || Ok(Fq::from(a as u64)))?;
+        let a_var = FqVar::new_witness(cs.clone(), || Ok(Fq::from(a)))?;
         let rhs = &mod_r_var * &a_var + &ivk_mod_r;
         ivk_mod_q.enforce_equal(&rhs)?;
 

@@ -85,6 +85,7 @@ use url::Url;
 use crate::command::tx::auction::AuctionCmd;
 use crate::App;
 use clap::Parser;
+use ark_ff::UniformRand;
 
 mod auction;
 mod liquidity_position;

@@ -1,4 +1,5 @@
 use decaf377::Fr;
+use ark_ff::PrimeField;
 
 pub fn to_bit(a: &[u8; 32], b: &[u8; 32], c: &[u8; 32]) -> u8 {
     blake2b_simd::Params::default()

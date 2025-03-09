@@ -1,5 +1,5 @@
 use ark_ff::Zero;
-use decaf377::{Fq, Fr};
+use decaf377::{FieldExt, Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_sdk_asset::{Balance, Value};
 use penumbra_sdk_keys::FullViewingKey;
@@ -17,6 +17,7 @@ use crate::delegator_vote::proof::DelegatorVoteProof;
 use crate::DelegatorVoteProofPrivate;
 use crate::DelegatorVoteProofPublic;
 use crate::{vote::Vote, VotingReceiptToken};
+use ark_ff::UniformRand;
 
 /// A plan to vote as a delegator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -197,7 +198,7 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
                 .ok_or_else(|| anyhow::anyhow!("missing unbonded amount in `DelegatorVotePlan`"))?
                 .try_into()?,
             position: value.staked_note_position.into(),
-            randomizer: Fr::from_bytes_checked(
+            randomizer: Fr::from_bytes(
                 value
                     .randomizer
                     .as_slice()
@@ -205,9 +206,9 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
                     .map_err(|_| anyhow::anyhow!("invalid randomizer"))?,
             )
             .expect("randomizer malformed"),
-            proof_blinding_r: Fq::from_bytes_checked(&proof_blinding_r_bytes)
+            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)
                 .expect("proof_blinding_r malformed"),
-            proof_blinding_s: Fq::from_bytes_checked(&proof_blinding_s_bytes)
+            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)
                 .expect("proof_blinding_s malformed"),
         })
     }

@@ -1,0 +1,9 @@
+id = 12
+title = "Fund Liquidity Tournament"
+description = "Funding params for liquidity tournament"
+kind = "parameter_change"
+
+[[changes]]
+component = "fundingParams"
+key = "liquidityTournament"
+value = "{\"gaugeThresholdPercent\":\"10\",\"maxPositions\":\"10\",\"maxDelegators\":\"10\",\"delegatorSharePercent\":\"50\"}"

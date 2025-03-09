@@ -1,5 +1,4 @@
-use ark_ff::{BigInt, PrimeField};
-use decaf377::Fq;
+use ark_ff::{BigInteger256, Fp256};
 use std::fmt::Debug;
 
 use crate::prelude::*;
@@ -34,7 +33,7 @@ impl From<Option<Hash>> for OptionHash {
     fn from(hash: Option<Hash>) -> Self {
         match hash {
             Some(hash) => Self {
-                inner: Fq::into_bigint(hash.0).0,
+                inner: hash.0 .0 .0,
             },
             None => Self {
                 // This sentinel value is not a valid `Fq` because it's bigger than the modulus,
@@ -53,10 +52,9 @@ impl From<OptionHash> for Option<Hash> {
             // We're directly constructing the hash here by coercing the bytes into the right type,
             // but this is safe because we know that the bytes are a real `Fq` and not the sentinel
             // value we just checked for
-            Some(Hash::new(
-                Fq::from_bigint(BigInt::new(hash.inner))
-                    .expect("convert bytes to a valid Fq element"),
-            ))
+            Some(Hash::new(Fp256::new_unchecked(BigInteger256::new(
+                hash.inner,
+            ))))
         }
     }
 }

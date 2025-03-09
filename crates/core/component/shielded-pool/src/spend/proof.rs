@@ -9,7 +9,7 @@ use ark_r1cs_std::{
     ToBitsGadget,
 };
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
+use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr, FieldExt};
 
 use ark_ff::ToConstraintField;
 use ark_groth16::{
@@ -248,7 +248,7 @@ impl DummyWitness for SpendCircuit {
 
         let public = SpendProofPublic {
             anchor,
-            balance_commitment: balance::Commitment(decaf377::Element::GENERATOR),
+            balance_commitment: balance::Commitment(decaf377::basepoint()),
             nullifier,
             rk,
         };
@@ -402,6 +402,8 @@ mod tests {
     use decaf377_rdsa::{SpendAuth, VerificationKey};
     use penumbra_sdk_tct as tct;
     use rand_core::OsRng;
+    use ark_ff::PrimeField;
+
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()

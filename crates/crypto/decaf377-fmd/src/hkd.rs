@@ -1,4 +1,5 @@
 use decaf377::Fr;
+use ark_ff::PrimeField;
 
 #[allow(non_snake_case)]
 pub fn derive_public(
@@ -13,7 +14,7 @@ pub fn derive_public(
         .update(&[index])
         .finalize();
     let x = Fr::from_le_bytes_mod_order(hash.as_bytes());
-    let X = x * decaf377::Element::GENERATOR;
+    let X = x * decaf377::basepoint();
 
     root_pub + X
 }
@@ -45,12 +46,12 @@ mod tests {
     proptest! {
         #[test]
         fn public_private_derivation_match(root_priv in fr_strategy()) {
-            let root_pub = root_priv * decaf377::Element::GENERATOR;
+            let root_pub = root_priv * decaf377::basepoint();
             let root_pub_enc = root_pub.vartime_compress();
             for i in 0..16u8 {
                 let child_pub = derive_public(&root_pub, &root_pub_enc, i);
                 let child_priv = derive_private(&root_priv, &root_pub_enc, i);
-                let child_pub_from_priv = child_priv * decaf377::Element::GENERATOR;
+                let child_pub_from_priv = child_priv * decaf377::basepoint();
                 assert_eq!(child_pub, child_pub_from_priv);
             }
         }

@@ -1,3 +1,5 @@
+use decaf377::FieldExt;
+
 use super::*;
 
 pub fn serialize<S>(fq: &Fq, serializer: S) -> Result<S::Ok, S::Error>
@@ -30,7 +32,7 @@ impl<'de> Visitor<'de> for FqVisitor {
         let bytes: [u8; 32] = bytes
             .try_into()
             .map_err(|_| serde::de::Error::invalid_length(bytes.len(), &"exactly 32 bytes"))?;
-        let fq = Fq::from_bytes_checked(&bytes).map_err(|e| serde::de::Error::custom(e))?;
+        let fq = Fq::from_bytes(bytes).map_err(|e| serde::de::Error::custom(e))?;
         Ok(fq)
     }
 }

@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc, time:
 
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
-use decaf377::Fq;
+use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_sdk_auction::auction::AuctionId;
@@ -1321,7 +1321,7 @@ impl Storage {
                     let address = Address::try_from(row.get::<_, Vec<u8>>("address")?)?;
                     let amount = row.get::<_, [u8; 16]>("amount")?;
                     let amount_u128: u128 = u128::from_be_bytes(amount);
-                    let asset_id = asset::Id(Fq::from_bytes_checked(&row.get::<_, [u8; 32]>("asset_id")?).expect("asset id malformed"));
+                    let asset_id = asset::Id(Fq::from_bytes(row.get::<_, [u8; 32]>("asset_id")?)?);
                     let rseed = Rseed(row.get::<_, [u8; 32]>("rseed")?);
                     let note = Note::from_parts(
                         address,

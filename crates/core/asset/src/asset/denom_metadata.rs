@@ -4,7 +4,7 @@ use std::{
     hash::{self, Hash},
     sync::Arc,
 };
-
+use ark_ff::fields::PrimeField;
 use anyhow::{ensure, Context};
 use decaf377::Fq;
 use penumbra_sdk_num::Amount;

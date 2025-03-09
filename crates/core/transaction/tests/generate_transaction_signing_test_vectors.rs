@@ -56,6 +56,7 @@ use std::io::Write;
 use std::str::FromStr;
 use std::{fs::File, io::Read};
 use tendermint;
+use ark_ff::UniformRand;
 
 fn amount_strategy() -> impl Strategy<Value = Amount> {
     let inner_uint_range = 0u128..1_000_000_000_000_000_000u128;

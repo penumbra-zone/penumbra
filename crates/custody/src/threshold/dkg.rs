@@ -9,6 +9,7 @@ use ed25519_consensus::{Signature, SigningKey, VerificationKey};
 use encryption::EncryptionKey;
 use penumbra_sdk_proto::{custody::threshold::v1 as pb, DomainType, Message};
 use rand_core::CryptoRngCore;
+use ark_ff::UniformRand;
 
 use self::encryption::DecryptionKey;
 

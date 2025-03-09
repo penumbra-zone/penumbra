@@ -237,6 +237,7 @@ mod tests {
     use penumbra_sdk_num::Amount;
     use penumbra_sdk_sct::Nullifier;
     use proptest::prelude::*;
+    use ark_ff::PrimeField;
 
     use crate::Note;
 

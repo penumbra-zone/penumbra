@@ -1,5 +1,6 @@
 use decaf377::Fq;
 use once_cell::sync::Lazy;
+use ark_ff::PrimeField;
 
 mod action;
 mod ciphertext;

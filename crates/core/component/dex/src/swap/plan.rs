@@ -1,12 +1,13 @@
 use anyhow::{anyhow, Context, Result};
 use ark_ff::Zero;
 
-use decaf377::{Fq, Fr};
+use decaf377::{FieldExt, Fq, Fr};
 use penumbra_sdk_asset::{balance, Balance, Value};
 use penumbra_sdk_keys::FullViewingKey;
 use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
+use ark_ff::UniformRand;
 
 use crate::swap::proof::{SwapProofPrivate, SwapProofPublic};
 
@@ -145,16 +146,16 @@ impl TryFrom<pb::SwapPlan> for SwapPlan {
             .try_into()
             .map_err(|_| anyhow!("expected 32 byte fee blinding"))?;
         Ok(Self {
-            fee_blinding: Fr::from_bytes_checked(&fee_blinding_bytes)
+            fee_blinding: Fr::from_bytes(fee_blinding_bytes)
                 .expect("fee blinding malformed"),
             swap_plaintext: msg
                 .swap_plaintext
                 .ok_or_else(|| anyhow!("missing swap_plaintext"))?
                 .try_into()
                 .context("swap plaintext malformed")?,
-            proof_blinding_r: Fq::from_bytes_checked(&proof_blinding_r_bytes)
+            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)
                 .expect("proof_blinding_r malformed"),
-            proof_blinding_s: Fq::from_bytes_checked(&proof_blinding_s_bytes)
+            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)
                 .expect("proof_blinding_r malformed"),
         })
     }

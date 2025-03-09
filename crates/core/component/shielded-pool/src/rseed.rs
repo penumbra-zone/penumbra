@@ -2,6 +2,7 @@ use decaf377::{Fq, Fr};
 use decaf377_ka as ka;
 use penumbra_sdk_keys::prf;
 use rand::{CryptoRng, RngCore};
+use ark_ff::PrimeField;
 
 /// The rseed is a uniformly random 32-byte sequence included in the note plaintext.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -1,4 +1,5 @@
-use decaf377::Fr;
+use ark_std::UniformRand;
+use decaf377::{FieldExt, Fr};
 use rand_core::{CryptoRng, RngCore};
 
 use super::Ciphertext;
@@ -60,7 +61,7 @@ impl PrivateKeyShare {
         );
 
         // We need one commitment for each LHS of the proof statement.
-        let kB = k * decaf377::Element::GENERATOR;
+        let kB = k * decaf377::basepoint();
         let kC_1 = k * ciphertext.c1;
 
         // Now append the commitments to the transcript...
@@ -91,8 +92,7 @@ impl DecryptionShare<Unverified> {
         pub_key_share: &PublicKeyShare,
         transcript: &mut merlin::Transcript,
     ) -> anyhow::Result<DecryptionShare<Verified>> {
-        let kB = decaf377::Element::GENERATOR * self.proof.r
-            + pub_key_share.pub_key_share * self.proof.c;
+        let kB = decaf377::basepoint() * self.proof.r + pub_key_share.pub_key_share * self.proof.c;
         let kC_1 = ciphertext.c1 * self.proof.r + self.decryption_share * self.proof.c;
 
         transcript.begin_limb_decryption();

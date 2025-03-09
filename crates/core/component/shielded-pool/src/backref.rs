@@ -7,6 +7,7 @@ use chacha20poly1305::{
 use penumbra_sdk_keys::BackreferenceKey;
 use penumbra_sdk_sct::Nullifier;
 use penumbra_sdk_tct as tct;
+use decaf377::FieldExt;
 
 pub const ENCRYPTED_BACKREF_LEN: usize = 48;
 

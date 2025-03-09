@@ -61,7 +61,7 @@ use penumbra_sdk_tct::{Proof, StateCommitment};
 use penumbra_sdk_transaction::{
     AuthorizationData, Transaction, TransactionPerspective, TransactionPlan, WitnessData,
 };
-
+use ark_std::UniformRand;
 use crate::{worker::Worker, Planner, Storage};
 
 /// A [`futures::Stream`] of broadcast transaction responses.

@@ -1,5 +1,6 @@
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand_core::CryptoRngCore;
+use ark_ff::UniformRand;
 
 use crate::single::group::{GroupHasher, Hash, F, G1};
 
