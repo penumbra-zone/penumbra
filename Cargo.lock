@@ -1756,7 +1756,7 @@ checksum = "f400d0750c0c069e8493f2256cb4da6f604b6d2eeb69a0ca8863acde352f8400"
 [[package]]
 name = "decaf377"
 version = "0.10.1"
-source = "git+https://github.com/penumbra-zone/decaf377.git?branch=remove-32-backend#22c4054ab2766630a57270332f0c86e99d3c9647"
+source = "git+https://github.com/penumbra-zone/decaf377.git?branch=remove-32-backend#b94ac04055ce8e98969dea47df536607bbf6e594"
 dependencies = [
  "ark-bls12-377",
  "ark-ec",
