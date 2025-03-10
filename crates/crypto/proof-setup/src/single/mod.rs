@@ -68,7 +68,7 @@ pub fn transition(
     // To understand this function, it can be good to recap the relationship between
     // R1CS constraints and QAP constraints.
     //
-    // While we call the constaints a "circuit", they're really an R1CS system.
+    // While we call the constraints a "circuit", they're really an R1CS system.
     // The circuit contains matrices A, B, C. Each of these matrices has the same size.
     // The number of columns is the number of variables in our circuit,
     // along with an additional column for each constraint, representing an
@@ -77,7 +77,7 @@ pub fn transition(
     //
     // To transform the circuit into a QAP, each column of a matrix becomes a polynomial.
     // For the matrix A, we have uᵢ(X), for B, vᵢ(X), and C, wᵢ(X).
-    // We also have a domain, a list of field elements, such that evaluting each polynomial
+    // We also have a domain, a list of field elements, such that evaluating each polynomial
     // on the domain produces the entries of the corresponding matrix column.
     //
     // Furthermore, we also pad the matrices before this transformation.
