@@ -157,6 +157,31 @@ impl EventBatchContext {
     }
 }
 
+/// Represents the version of an indexing view.
+///
+/// This allows tracking breaking change at the level of each individual view,
+/// rather than on the level of the database as a whole.
+///
+/// Versions can be compared to assess breaking changes:
+/// ```
+/// assert!(Version::with_major(3) > Version::with_major(2));
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, sqlx::Type)]
+#[sqlx(transparent)]
+pub struct Version(Option<i64>);
+
+impl Version {
+    /// Construct a new version by specifying a "major" / "breaking" number.
+    pub fn with_major(v: u64) -> Self {
+        Self(Some(v.try_into().expect("version must fit into an i64")))
+    }
+
+    /// Get the major version, which controls breakage.
+    pub fn major(self) -> u64 {
+        u64::try_from(self.0.unwrap_or_default()).expect("major version cannot be negative")
+    }
+}
+
 /// Represents a specific index of raw event data.
 #[async_trait]
 pub trait AppView: Send + Sync {
@@ -164,6 +189,15 @@ pub trait AppView: Send + Sync {
     ///
     /// This should be unique across all of the indices.
     fn name(&self) -> String;
+
+    /// Return the version of this index.
+    ///
+    /// As code evolves, versions should increase, only.
+    /// If one version is greater than another, that indicates that the view
+    /// needs to be reindexed.
+    fn version(&self) -> Version {
+        Version::default()
+    }
 
     /// This will be called once when processing the genesis before the first block.
     async fn init_chain(
