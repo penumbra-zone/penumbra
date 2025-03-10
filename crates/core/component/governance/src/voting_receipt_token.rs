@@ -4,11 +4,9 @@ use regex::Regex;
 
 use penumbra_sdk_asset::asset;
 
-/// Unbonding tokens represent staking tokens that are currently unbonding and
-/// subject to slashing.
+/// Voting receipt tokens represent proof of participation in a governance vote.
 ///
-/// Unbonding tokens are parameterized by the validator identity, the epoch at
-/// which unbonding began, and the epoch at which unbonding ends.
+/// Voting receipt tokens are parameterized by the proposal ID they are associated with.
 pub struct VotingReceiptToken {
     proposal_id: u64,
     base_denom: asset::Metadata,
@@ -26,22 +24,22 @@ impl VotingReceiptToken {
         }
     }
 
-    /// Get the base denomination for this delegation token.
+    /// Get the base denomination for this voting receipt token.
     pub fn denom(&self) -> asset::Metadata {
         self.base_denom.clone()
     }
 
-    /// Get the default display denomination for this delegation token.
+    /// Get the default display denomination for this voting receipt token.
     pub fn default_unit(&self) -> asset::Unit {
         self.base_denom.default_unit()
     }
 
-    /// Get the asset ID for this delegation token.
+    /// Get the asset ID for this voting receipt token.
     pub fn id(&self) -> asset::Id {
         self.base_denom.id()
     }
 
-    /// Get the proposal ID this delegation token is associated with.
+    /// Get the proposal ID this voting receipt token is associated with.
     pub fn proposal_id(&self) -> u64 {
         self.proposal_id
     }
