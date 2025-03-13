@@ -1,5 +1,9 @@
 use anyhow::Result;
-use cometindex::{async_trait, index::EventBatch, sqlx, AppView, PgTransaction};
+use cometindex::{
+    async_trait,
+    index::{EventBatch, EventBatchContext},
+    sqlx, AppView, PgTransaction,
+};
 
 use penumbra_sdk_proto::{core::component::stake::v1 as pb, event::ProtoEvent};
 use penumbra_sdk_stake::IdentityKey;
@@ -53,6 +57,7 @@ impl AppView for MissedBlocks {
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
+        _ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
         for event in batch.events() {
             let pe = match pb::EventValidatorMissedBlock::from_event(event.as_ref()) {

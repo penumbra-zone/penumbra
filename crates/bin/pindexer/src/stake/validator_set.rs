@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 
 use anyhow::{anyhow, Result};
 use cometindex::{
-    async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
+    async_trait,
+    index::{EventBatch, EventBatchContext},
+    sqlx, AppView, ContextualizedEvent, PgTransaction,
 };
 
 use penumbra_sdk_app::genesis::Content;
@@ -144,6 +146,7 @@ impl AppView for ValidatorSet {
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
+        _ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
         for event in batch.events() {
             self.index_event(dbtx, event).await?;
