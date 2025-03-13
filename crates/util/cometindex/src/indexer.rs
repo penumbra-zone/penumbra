@@ -201,7 +201,6 @@ impl Indexer {
             indices,
         } = self;
 
-        let state = IndexingManager::init(&src_database_url, &dst_database_url).await?;
         let genesis: serde_json::Value = serde_json::from_str(
             &std::fs::read_to_string(genesis_json)
                 .context("error reading provided genesis.json file")?,
@@ -213,16 +212,19 @@ impl Indexer {
                 .ok_or_else(|| anyhow::anyhow!("genesis missing app_state"))?
                 .clone(),
         );
+
         let manager = IndexingManager::init(&src_database_url, &dst_database_url).await?;
         {
             let mut dbtx = manager.begin_transaction().await?;
             for index in &indices {
                 reset_index_if_necessary(index.as_ref(), &manager, &mut dbtx).await?;
+                index.on_startup(&mut dbtx).await?;
             }
             dbtx.commit().await?;
         }
+
         loop {
-            let caught_up = catchup(&state, indices.as_slice(), app_state.clone()).await?;
+            let caught_up = catchup(&manager, indices.as_slice(), app_state.clone()).await?;
             if exit_on_catchup && caught_up {
                 tracing::info!("catchup completed, exiting as requested");
                 return Ok(());

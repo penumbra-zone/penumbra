@@ -221,6 +221,10 @@ how to delete previous versions of the schema.
         )
     }
 
+    async fn on_startup(&self, _dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
+
     /// This will be called once when processing the genesis before the first block.
     async fn init_chain(
         &self,
