@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, fmt::Display, sync::Arc};
 
 use async_trait::async_trait;
 pub use sqlx::PgPool;
@@ -182,6 +182,12 @@ impl Version {
     }
 }
 
+impl Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "v{}", self.0.unwrap_or_default())
+    }
+}
+
 /// Represents a specific index of raw event data.
 #[async_trait]
 pub trait AppView: Send + Sync {
@@ -197,6 +203,22 @@ pub trait AppView: Send + Sync {
     /// needs to be reindexed.
     fn version(&self) -> Version {
         Version::default()
+    }
+
+    /// Reset this app view to an empty state.
+    ///
+    /// This should delete all tables, across all versions, resetting the
+    /// app view to a blank state.
+    async fn reset(&self, _dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        unimplemented!(
+            r#"
+Index {} has not implemented `reset` despite being on version {}.
+For versions > v0, this method needs to be implemented, so that we know
+how to delete previous versions of the schema.
+"#,
+            self.name(),
+            self.version()
+        )
     }
 
     /// This will be called once when processing the genesis before the first block.
