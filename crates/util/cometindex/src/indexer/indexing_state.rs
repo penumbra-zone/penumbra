@@ -5,7 +5,7 @@ use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, Transaction};
 use std::collections::HashMap;
 use tendermint::abci::{self, Event};
 
-use crate::index::{BlockEvents, EventBatch};
+use crate::index::{BlockEvents, EventBatch, Version};
 
 /// Create a Database, with, for sanity, some read only settings.
 ///
@@ -31,86 +31,62 @@ async fn read_write_db(url: &str) -> anyhow::Result<PgPool> {
     PgPoolOptions::new().connect(url).await.map_err(Into::into)
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Height(u64);
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, sqlx::Type)]
+#[sqlx(transparent)]
+pub struct Height(i64);
 
 impl Height {
     pub fn post_genesis() -> Self {
-        Height(1)
+        Self(1)
     }
+
     /// Return the last height in the batch, and then the first height in the next batch.
-    pub fn advance(self, batch_size: u64, max_height: Height) -> (Height, Height) {
-        let last = Height::from(self.0 + batch_size - 1).min(max_height);
-        let next_first = Height::from(last.0 + 1);
+    pub fn advance(self, batch_size: u64, max_height: Self) -> (Self, Self) {
+        let last = Self::from(self.0 as u64 + batch_size - 1).min(max_height);
+        let next_first = Self(last.0 + 1);
         (last, next_first)
     }
 
-    pub fn next(self) -> Height {
+    pub fn next(self) -> Self {
         Self(self.0 + 1)
     }
 }
 
 impl From<u64> for Height {
     fn from(value: u64) -> Self {
-        Self(value)
+        Self(value.try_into().unwrap_or(i64::MAX))
     }
 }
 
 impl From<Height> for u64 {
     fn from(value: Height) -> Self {
-        value.0
+        value.0.try_into().unwrap_or_default()
     }
 }
 
-impl TryFrom<i64> for Height {
-    type Error = anyhow::Error;
-
-    fn try_from(value: i64) -> Result<Self, Self::Error> {
-        Ok(Self(u64::try_from(value)?))
-    }
-}
-
-impl<'r> sqlx::Decode<'r, Postgres> for Height {
-    fn decode(
-        value: <Postgres as sqlx::Database>::ValueRef<'r>,
-    ) -> Result<Self, sqlx::error::BoxDynError> {
-        Ok(Height::try_from(
-            <i64 as sqlx::Decode<'r, Postgres>>::decode(value)?,
-        )?)
-    }
-}
-
-impl sqlx::Type<Postgres> for Height {
-    fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <i64 as sqlx::Type<Postgres>>::type_info()
-    }
-}
-
-impl<'q> sqlx::Encode<'q, Postgres> for Height {
-    fn encode_by_ref(
-        &self,
-        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'q>,
-    ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
-        <i64 as sqlx::Encode<'q, Postgres>>::encode(
-            i64::try_from(self.0).expect("height should never exceed i64::MAX"),
-            buf,
-        )
-    }
+/// The state of a particular index.
+#[derive(Default, Debug, Clone, Copy)]
+pub struct IndexState {
+    /// What version this particular index has been using.
+    pub version: Version,
+    /// What height this particular index has reached.
+    pub height: Height,
 }
 
 #[derive(Debug, Clone)]
-pub struct IndexingState {
+pub struct IndexingManager {
     src: PgPool,
     dst: PgPool,
 }
 
-impl IndexingState {
+impl IndexingManager {
     async fn create_watermark_table(&self) -> anyhow::Result<()> {
         sqlx::query(
             "
         CREATE TABLE IF NOT EXISTS index_watermarks (
             index_name TEXT PRIMARY KEY,
-            height BIGINT NOT NULL
+            height BIGINT NOT NULL,
+            version BIGINT
         )
         ",
         )
@@ -128,29 +104,46 @@ impl IndexingState {
         Ok(res.unwrap_or_default())
     }
 
-    pub async fn index_heights(&self) -> anyhow::Result<HashMap<String, Height>> {
-        let rows: Vec<(String, Height)> =
-            sqlx::query_as("SELECT index_name, height FROM index_watermarks")
-                .fetch_all(&self.dst)
+    pub async fn index_state(&self, name: &str) -> anyhow::Result<IndexState> {
+        let row: Option<(Height, Version)> =
+            sqlx::query_as("SELECT height, version FROM index_watermarks WHERE index_name = $1")
+                .bind(name)
+                .fetch_optional(&self.dst)
                 .await?;
-        Ok(rows.into_iter().collect())
+        Ok(row
+            .map(|(height, version)| IndexState { height, version })
+            .unwrap_or_default())
     }
 
-    pub async fn update_index_height(
+    pub async fn index_states(&self) -> anyhow::Result<HashMap<String, IndexState>> {
+        let rows: Vec<(String, Height, Version)> =
+            sqlx::query_as("SELECT index_name, height, version FROM index_watermarks")
+                .fetch_all(&self.dst)
+                .await?;
+        Ok(rows
+            .into_iter()
+            .map(|(name, height, version)| (name, IndexState { height, version }))
+            .collect())
+    }
+
+    pub async fn update_index_state(
         dbtx: &mut sqlx::Transaction<'_, Postgres>,
         name: &str,
-        height: Height,
+        new_state: IndexState,
     ) -> anyhow::Result<()> {
         sqlx::query(
             "
         INSERT INTO index_watermarks 
-        VALUES ($1, $2) 
+        VALUES ($1, $2, $3) 
         ON CONFLICT (index_name) 
-        DO UPDATE SET height = excluded.height
+        DO UPDATE SET
+            height = excluded.height,
+            version = excluded.version
         ",
         )
         .bind(name)
-        .bind(height)
+        .bind(new_state.height)
+        .bind(new_state.version)
         .execute(dbtx.as_mut())
         .await?;
         Ok(())
@@ -169,7 +162,7 @@ impl IndexingState {
                 .map_err(|_| anyhow!("expected 32 byte hash"))?;
             let tx_result = tendermint_proto::v0_37::abci::TxResult::decode(row.2.as_slice())?;
             let transaction = tx_result.tx.to_vec();
-            let height = Height::try_from(row.0)?;
+            let height = Height(row.0);
             Ok((height, tx_hash, transaction))
         }
 
@@ -198,7 +191,7 @@ AND
         first: Height,
         last: Height,
     ) -> impl Stream<Item = anyhow::Result<(Height, Event, Option<[u8; 32]>, i64)>> + '_ {
-        sqlx::query_as::<_, (i64, String, i64, Option<String>, serde_json::Value)>(
+        sqlx::query_as::<_, (i64, String, Height, Option<String>, serde_json::Value)>(
             // This query does some shenanigans to ensure good performance.
             // The main trick is that we know that each event has 1 block and <= 1 transaction associated
             // with it, so we can "encourage" (force) Postgres to avoid doing a hash join and
@@ -252,7 +245,7 @@ ORDER BY
         .bind(last)
         .fetch(&self.src)
         .map_ok(|(local_rowid, type_str, height, tx_hash, attrs)| {
-            tracing::debug!(?local_rowid, type_str, height, ?tx_hash);
+            tracing::debug!(?local_rowid, type_str, ?height, ?tx_hash);
             let tx_hash: Option<[u8; 32]> = tx_hash.map(|s| {
                 hex::decode(s)
                     .expect("invalid tx_hash")
@@ -276,14 +269,13 @@ ORDER BY
                     .map(Into::into)
                     .collect(),
             };
-            let height = Height::try_from(height).expect("failed to decode height");
             (height, event, tx_hash, local_rowid)
         })
         .map_err(|e| anyhow::Error::from(e).context("error reading from database"))
     }
 
     pub async fn event_batch(&self, first: Height, last: Height) -> anyhow::Result<EventBatch> {
-        let mut out = (first.0..=last.0)
+        let mut out = (u64::from(first)..=u64::from(last))
             .map(|height| BlockEvents::new(height))
             .collect::<Vec<_>>();
         let mut tx_stream = self.transactions_between(first, last).boxed();
