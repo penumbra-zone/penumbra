@@ -1,6 +1,8 @@
 use anyhow::anyhow;
 use cometindex::{
-    async_trait, index::EventBatch, sqlx, AppView, ContextualizedEvent, PgTransaction,
+    async_trait,
+    index::{EventBatch, EventBatchContext},
+    sqlx, AppView, ContextualizedEvent, PgTransaction,
 };
 use penumbra_sdk_funding::event::{EventLqtDelegatorReward, EventLqtPositionReward, EventLqtVote};
 use penumbra_sdk_proto::event::EventDomainType;
@@ -66,6 +68,7 @@ impl AppView for Lqt {
         &self,
         dbtx: &mut PgTransaction,
         batch: EventBatch,
+        _ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
         for event in batch.events() {
             self.index_event(dbtx, event).await?;
