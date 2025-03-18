@@ -91,6 +91,35 @@ CROSS JOIN LATERAL (
     ORDER BY lqt._params.epoch DESC
     LIMIT 1
 ) params;
+COMMENT ON VIEW lqt.summary IS
+$$For each epoch / round, this contains a summary of the tournament results.
+
+This will be updated continuously, with the values for the current
+epoch / round changing until the round is over.
+$$;
+COMMENT ON COLUMN lqt.summary.epoch IS
+$$The epoch / round of the tournament.$$;
+COMMENT ON COLUMN lqt.summary.total_voting_power IS
+$$The total amount of voting power used in this round.
+
+Assets get selected for rewards based on their share of this power.
+
+Delegators get rewarded using (among other factors) their share of this power.$$;
+COMMENT ON COLUMN lqt.summary.delegator_rewards IS
+$$The rewards *issued* to delegators so far.$$;
+COMMENT ON COLUMN lqt.summary.lp_rewards IS
+$$The rewards *issued* to Liquidity Positions so far.$$;
+COMMENT ON COLUMN lqt.summary.total_rewards IS
+$$The rewards *issued* to either delegators or LPs.$$;
+COMMENT ON COLUMN lqt.summary.available_rewards IS
+$$If the round were to end now, how many rewards could be issued?
+
+For an ongoing round, we expect this to increase slowly over the round.$$;
+COMMENT ON COLUMN lqt.summary.available_delegator_rewards IS
+$$How many of the available rewards could go to delegators.$$;
+COMMENT ON COLUMN lqt.summary.available_lp_rewards IS
+$$How many of the available rewards could go to LPs.$$;
+
 
 CREATE VIEW lqt.gauge AS
 WITH tallies AS (
@@ -115,6 +144,23 @@ CROSS JOIN LATERAL (
     ORDER BY lqt._params.epoch DESC
     LIMIT 1
 ) params;
+COMMENT ON VIEW lqt.gauge IS
+$$For each epoch, contains information about the current tally for each asset.$$;
+COMMENT ON COLUMN lqt.gauge.votes IS
+$$The voting power cast for this asset, in this round.$$;
+COMMENT ON COLUMN lqt.gauge.portion IS
+$$The fraction of voting power cast for this asset, in this round.$$;
+COMMENT ON COLUMN lqt.gauge.missing_votes IS
+$$The voting power needed to reach the reward threshold.
+
+If this value is negative, then this asset has sufficient votes
+to receive rewards (which go to LPs providing liquidity on the asset,
+to the extent they successfully do so,
+and delegators having voted for it).
+
+If this value is positive, then it's the amount of votes it lacks
+in order to reach the threshold.
+$$;
 
 CREATE VIEW lqt.delegator_summary AS
 WITH delegator_streaks AS (
@@ -158,11 +204,37 @@ WITH delegator_streaks AS (
     streak
 FROM stage0
 JOIN delegator_streaks USING (address);
+COMMENT ON VIEW lqt.delegator_summary IS
+$$A summary of a delegator's rewards across all epochs.$$;
+COMMENT ON COLUMN lqt.delegator_summary.address IS
+$$The reported address of this delegator.
+
+We can only track delegators by the address they report. It is
+possible for a delegator to vote using different addresses in
+an unlinkable way, if they so choose. There is no way for the
+public to distinguish this case from multiple delegators.$$;
+COMMENT ON COLUMN lqt.delegator_summary.epochs_voted_in IS
+$$The number of rounds this delegator has voted in.$$;
+COMMENT ON COLUMN lqt.delegator_summary.total_rewards IS
+$$The total rewards this delegator has receieved.$$;
+COMMENT ON COLUMN lqt.delegator_summary.total_voting_power IS
+$$The total amount of voting power this delegator has exercised.$$;
+COMMENT ON COLUMN lqt.delegator_summary.streak IS
+$$The number of consecutive rounds voted in, starting from the last finished round.
+
+This does not consider the current round if it has not yet ended.
+
+If the delegator has not voted in the last finished round,
+this will be 0.
+$$;
 
 CREATE VIEW lqt.delegator_history AS
 SELECT address, epoch, power, asset_id, COALESCE(amount, 0) AS reward
 FROM lqt._votes
 LEFT JOIN lqt._delegator_rewards USING (address, epoch);
+COMMENT ON VIEW lqt.delegator_history IS
+$$Contains voting and reward history for a given delegator$$;
+
 
 CREATE VIEW lqt.lps AS
 SELECT
@@ -177,3 +249,14 @@ SELECT
     points,
     points / SUM(points) OVER (PARTITION BY epoch) AS point_share
 FROM lqt._lp_rewards;
+COMMENT ON VIEW lqt.lps IS
+$$A view of each relevant LP, organized by epoch, and asset.
+
+We have metrics about the execution of the asset.
+
+The most important such metric is "points", which govern
+how many rewards the LP will receive, if that asset is selected
+by the tournament.
+$$;
+COMMENT ON COLUMN lqt.lps.point_share IS
+$$The percentage of points received in this epoch.$$;
