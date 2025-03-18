@@ -1,6 +1,6 @@
 use cometindex::{
     async_trait,
-    index::{EventBatch, EventBatchContext},
+    index::{EventBatch, EventBatchContext, Version},
     sqlx, AppView, ContextualizedEvent, PgTransaction,
 };
 use penumbra_sdk_asset::asset;
@@ -281,6 +281,17 @@ impl AppView for Lqt {
 
     fn name(&self) -> String {
         "lqt".to_string()
+    }
+
+    fn version(&self) -> Version {
+        Version::with_major(1)
+    }
+
+    async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        for statement in include_str!("reset.sql").split(";") {
+            sqlx::query(statement).execute(dbtx.as_mut()).await?;
+        }
+        Ok(())
     }
 
     async fn index_batch(
