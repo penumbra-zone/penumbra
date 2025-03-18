@@ -214,6 +214,114 @@ impl Position {
             asset_id: self.phi.pair.asset_2(),
         }
     }
+
+    /// Compute the flows compared to a previous position.
+    ///
+    /// This takes in the desired first asset for the flows.
+    ///
+    /// This will fail, returning None, if this desired first asset doesn't match
+    /// the position, or if the previous position's pair doesn't match either.
+    pub fn flows(&self, prev: &Self) -> Flows {
+        Flows::from_phi_and_reserves(&self.phi, &self.reserves, &prev.reserves)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Flows {
+    pair: DirectedTradingPair,
+    delta_1: Amount,
+    delta_2: Amount,
+    lambda_1: Amount,
+    lambda_2: Amount,
+    fee_1: Amount,
+    fee_2: Amount,
+}
+
+impl Flows {
+    pub fn pair(&self) -> DirectedTradingPair {
+        self.pair
+    }
+
+    pub fn delta_1(&self) -> Amount {
+        self.delta_1
+    }
+
+    pub fn delta_2(&self) -> Amount {
+        self.delta_2
+    }
+
+    pub fn lambda_1(&self) -> Amount {
+        self.lambda_1
+    }
+
+    pub fn lambda_2(&self) -> Amount {
+        self.lambda_2
+    }
+
+    pub fn fee_1(&self) -> Amount {
+        self.fee_1
+    }
+
+    pub fn fee_2(&self) -> Amount {
+        self.fee_2
+    }
+
+    pub fn from_phi_and_reserves(
+        phi: &TradingFunction,
+        current: &Reserves,
+        prev: &Reserves,
+    ) -> Self {
+        // Determine trade direction and compute deltas
+        let (delta_1, delta_2, lambda_1, lambda_2) = if current.r1 > prev.r1 {
+            // Asset 1 was input
+            let delta_1 = current.r1 - prev.r1;
+            let lambda_2 = prev.r2 - current.r2;
+            (delta_1, Amount::zero(), Amount::zero(), lambda_2)
+        } else {
+            // Asset 2 was input
+            let delta_2 = current.r2 - prev.r2;
+            let lambda_1 = prev.r1 - current.r1;
+            (Amount::zero(), delta_2, lambda_1, Amount::zero())
+        };
+        // Compute fees directly from input amounts using u128 arithmetic
+        let fee_bps = u128::from(phi.component.fee);
+        let fee_1 = Amount::from((delta_1.value() * fee_bps) / 10_000u128);
+        let fee_2 = Amount::from((delta_2.value() * fee_bps) / 10_000u128);
+        Self {
+            pair: DirectedTradingPair {
+                start: phi.pair.asset_1,
+                end: phi.pair.asset_2,
+            },
+            delta_1,
+            delta_2,
+            lambda_1,
+            lambda_2,
+            fee_1,
+            fee_2,
+        }
+    }
+
+    /// Try to reorient these flows around a new trading pair.
+    ///
+    /// This will fail if the assets in the pair don't match these flows.
+    pub fn redirect(self, pair: DirectedTradingPair) -> Option<Self> {
+        if self.pair == pair {
+            return Some(self);
+        }
+        let flip = pair.flip();
+        if self.pair == flip {
+            return Some(Self {
+                pair: flip,
+                delta_1: self.delta_2,
+                delta_2: self.delta_1,
+                lambda_1: self.lambda_2,
+                lambda_2: self.lambda_1,
+                fee_1: self.fee_2,
+                fee_2: self.fee_1,
+            });
+        }
+        None
+    }
 }
 
 /// A hash of a [`Position`].
