@@ -197,7 +197,7 @@ pub mod participate_response {
             "/penumbra.tools.summoning.v1.ParticipateResponse.ContributeNow".into()
         }
     }
-    /// Sent to the participant to confim their contribution was accepted.
+    /// Sent to the participant to confirm their contribution was accepted.
     #[derive(Clone, Copy, PartialEq, ::prost::Message)]
     pub struct Confirm {
         #[prost(uint64, tag = "1")]
