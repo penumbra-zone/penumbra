@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, fmt::Display, sync::Arc};
 
 use async_trait::async_trait;
 pub use sqlx::PgPool;
@@ -157,6 +157,37 @@ impl EventBatchContext {
     }
 }
 
+/// Represents the version of an indexing view.
+///
+/// This allows tracking breaking change at the level of each individual view,
+/// rather than on the level of the database as a whole.
+///
+/// Versions can be compared to assess breaking changes:
+/// ```
+/// assert!(Version::with_major(3) > Version::with_major(2));
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, sqlx::Type)]
+#[sqlx(transparent)]
+pub struct Version(Option<i64>);
+
+impl Version {
+    /// Construct a new version by specifying a "major" / "breaking" number.
+    pub fn with_major(v: u64) -> Self {
+        Self(Some(v.try_into().expect("version must fit into an i64")))
+    }
+
+    /// Get the major version, which controls breakage.
+    pub fn major(self) -> u64 {
+        u64::try_from(self.0.unwrap_or_default()).expect("major version cannot be negative")
+    }
+}
+
+impl Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "v{}", self.0.unwrap_or_default())
+    }
+}
+
 /// Represents a specific index of raw event data.
 #[async_trait]
 pub trait AppView: Send + Sync {
@@ -164,6 +195,35 @@ pub trait AppView: Send + Sync {
     ///
     /// This should be unique across all of the indices.
     fn name(&self) -> String;
+
+    /// Return the version of this index.
+    ///
+    /// As code evolves, versions should increase, only.
+    /// If one version is greater than another, that indicates that the view
+    /// needs to be reindexed.
+    fn version(&self) -> Version {
+        Version::default()
+    }
+
+    /// Reset this app view to an empty state.
+    ///
+    /// This should delete all tables, across all versions, resetting the
+    /// app view to a blank state.
+    async fn reset(&self, _dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        unimplemented!(
+            r#"
+Index {} has not implemented `reset` despite being on version {}.
+For versions > v0, this method needs to be implemented, so that we know
+how to delete previous versions of the schema.
+"#,
+            self.name(),
+            self.version()
+        )
+    }
+
+    async fn on_startup(&self, _dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
 
     /// This will be called once when processing the genesis before the first block.
     async fn init_chain(

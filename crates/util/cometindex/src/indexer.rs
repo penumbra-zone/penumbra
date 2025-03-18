@@ -6,16 +6,52 @@ use crate::{
     AppView,
 };
 use anyhow::{Context as _, Result};
-use indexing_state::{Height, IndexingState};
+use indexing_state::{Height, IndexState, IndexingManager};
 use std::sync::Arc;
 use tokio::{sync::mpsc, task::JoinSet};
+
+async fn reset_index_if_necessary(
+    index: &dyn AppView,
+    manager: &IndexingManager,
+    dbtx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> anyhow::Result<()> {
+    let name = index.name();
+    let state = manager.index_state(&name).await?;
+    let version = index.version();
+    if version < state.version {
+        // My thinking is that the only reason this can happen is that:
+        // a) Someone accidentally decreased the version in their AppView.
+        // b) For some reason, we're running the wrong version of the consuming pindexer against a DB.
+        anyhow::bail!(
+            r#"
+Current version for index {name} {version:?} is lower than that recorded in the state: {0:?}.
+Are you running the right version of the code?
+If so, maybe there's a bug in this particular index.
+        "#,
+            state.version
+        );
+    } else if version > state.version {
+        tracing::info!(?name, old_version = ?state.version, new_version = ?version, "resetting index");
+        index.reset(dbtx).await?;
+        IndexingManager::update_index_state(
+            dbtx,
+            &name,
+            IndexState {
+                height: Height::default(),
+                version,
+            },
+        )
+        .await?;
+    }
+    Ok(())
+}
 
 /// Attempt to catch up to the latest indexed block.
 ///
 /// Returns whether or not we've caught up.
 #[tracing::instrument(skip_all)]
 async fn catchup(
-    state: &IndexingState,
+    manager: &IndexingManager,
     indices: &[Arc<dyn AppView>],
     genesis: Arc<serde_json::Value>,
 ) -> anyhow::Result<bool> {
@@ -24,9 +60,14 @@ async fn catchup(
         return Ok(true);
     }
 
-    let (src_height, index_heights) = tokio::try_join!(state.src_height(), state.index_heights())?;
-    tracing::info!(?src_height, ?index_heights, "catchup status");
-    let lowest_index_height = index_heights.values().copied().min().unwrap_or_default();
+    let (src_height, index_states) =
+        tokio::try_join!(manager.src_height(), manager.index_states())?;
+    tracing::info!(?src_height, ?index_states, "catchup status");
+    let lowest_index_height = index_states
+        .values()
+        .map(|x| x.height)
+        .min()
+        .unwrap_or_default();
     if lowest_index_height >= src_height {
         tracing::info!(why = "already caught up", "catchup completed");
         return Ok(true);
@@ -43,17 +84,20 @@ async fn catchup(
         let (tx, mut rx) = mpsc::channel::<EventBatch>(BATCH_LOOKAHEAD);
         txs.push(tx);
         let name = index.name();
-        let index_height = index_heights.get(&name).copied().unwrap_or_default();
-        let state_cp = state.clone();
+        let index_state = index_states.get(&name).copied().unwrap_or_default();
+        let manager_cp = manager.clone();
         let genesis_cp = genesis.clone();
         tasks.spawn(async move {
-            if index_height == Height::default() {
+            if index_state.height == Height::default() {
                 tracing::info!(?name, "initializing index");
-                let mut dbtx = state_cp.begin_transaction().await?;
+                let mut dbtx = manager_cp.begin_transaction().await?;
                 index.init_chain(&mut dbtx, &genesis_cp).await?;
                 tracing::info!(?name, "finished initialization");
-                IndexingState::update_index_height(&mut dbtx, &name, Height::post_genesis())
-                    .await?;
+                let new_state = IndexState {
+                    version: index_state.version,
+                    height: Height::default(),
+                };
+                IndexingManager::update_index_state(&mut dbtx, &name, new_state).await?;
                 dbtx.commit().await?;
             } else {
                 tracing::info!(?name, "already initialized");
@@ -61,7 +105,7 @@ async fn catchup(
             while let Some(mut events) = rx.recv().await {
                 // We only ever want to index events past our current height.
                 // We might receive a batch with more events because other indices are behind us.
-                events.start_later(index_height.next().into());
+                events.start_later(index_state.height.next().into());
                 if events.empty() {
                     tracing::info!(
                         first = events.first_height(),
@@ -78,14 +122,17 @@ async fn catchup(
                     "indexing batch"
                 );
                 let last_height = events.last_height();
-                let mut dbtx = state_cp.begin_transaction().await?;
+                let mut dbtx = manager_cp.begin_transaction().await?;
                 let context = EventBatchContext {
                     is_last: last_height >= u64::from(src_height),
                 };
                 index.index_batch(&mut dbtx, events, context).await?;
                 tracing::debug!(index_name = &name, "committing batch");
-                IndexingState::update_index_height(&mut dbtx, &name, Height::from(last_height))
-                    .await?;
+                let new_state = IndexState {
+                    version: index.version(),
+                    height: Height::from(last_height),
+                };
+                IndexingManager::update_index_state(&mut dbtx, &name, new_state).await?;
 
                 dbtx.commit().await?;
             }
@@ -93,7 +140,7 @@ async fn catchup(
         });
     }
 
-    let state_cp = state.clone();
+    let manager_cp = manager.clone();
     tasks.spawn(async move {
         let mut height = lowest_index_height.next();
         while height <= src_height {
@@ -101,7 +148,7 @@ async fn catchup(
             let (last, next_height) = first.advance(DEFAULT_BATCH_SIZE, src_height);
             height = next_height;
             tracing::debug!(?first, ?last, "fetching batch");
-            let events = state_cp.event_batch(first, last).await?;
+            let events = manager_cp.event_batch(first, last).await?;
             tracing::info!(?first, ?last, "sending batch");
             for tx in &txs {
                 tx.send(events.clone()).await?;
@@ -151,10 +198,9 @@ impl Indexer {
                     genesis_json,
                     exit_on_catchup,
                 },
-            indices: indexes,
+            indices,
         } = self;
 
-        let state = IndexingState::init(&src_database_url, &dst_database_url).await?;
         let genesis: serde_json::Value = serde_json::from_str(
             &std::fs::read_to_string(genesis_json)
                 .context("error reading provided genesis.json file")?,
@@ -166,8 +212,19 @@ impl Indexer {
                 .ok_or_else(|| anyhow::anyhow!("genesis missing app_state"))?
                 .clone(),
         );
+
+        let manager = IndexingManager::init(&src_database_url, &dst_database_url).await?;
+        {
+            let mut dbtx = manager.begin_transaction().await?;
+            for index in &indices {
+                reset_index_if_necessary(index.as_ref(), &manager, &mut dbtx).await?;
+                index.on_startup(&mut dbtx).await?;
+            }
+            dbtx.commit().await?;
+        }
+
         loop {
-            let caught_up = catchup(&state, indexes.as_slice(), app_state.clone()).await?;
+            let caught_up = catchup(&manager, indices.as_slice(), app_state.clone()).await?;
             if exit_on_catchup && caught_up {
                 tracing::info!("catchup completed, exiting as requested");
                 return Ok(());
