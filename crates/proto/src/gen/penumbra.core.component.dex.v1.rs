@@ -1455,6 +1455,18 @@ pub struct EventLqtPositionVolume {
     /// The total volume for the pair thus far.
     #[prost(message, optional, tag = "5")]
     pub total_volume: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The amount of staking token flowing in (possibly 0).
+    #[prost(message, optional, tag = "6")]
+    pub staking_token_in: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The amount of the other asset flowing in (possibly 0).
+    #[prost(message, optional, tag = "7")]
+    pub asset_in: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The amount of fees we've just received in the staking token.
+    #[prost(message, optional, tag = "8")]
+    pub staking_fees: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The amount of fees we've just received in the particular asset.
+    #[prost(message, optional, tag = "9")]
+    pub asset_fees: ::core::option::Option<super::super::super::num::v1::Amount>,
 }
 impl ::prost::Name for EventLqtPositionVolume {
     const NAME: &'static str = "EventLqtPositionVolume";
