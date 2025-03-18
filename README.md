@@ -37,7 +37,7 @@ For a high-level view of current work-in-progress and future items, check out ou
 [pcli]: https://guide.penumbra.zone/main/pcli.html
 [pd]: https://guide.penumbra.zone/main/pd.html
 [mdBook]: https://github.com/rust-lang/mdBook
-[rustdoc]: https://rustdoc.penumbra.zone
+[rustdoc]: https://rustdoc.penumbra.zone/main/index.html
 [protobuf]: https://buf.build/penumbra-zone/penumbra
 [tm-install]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/install.md#from-source
 
