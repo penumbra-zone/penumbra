@@ -2373,6 +2373,18 @@ impl serde::Serialize for EventLqtPositionVolume {
         if self.total_volume.is_some() {
             len += 1;
         }
+        if self.staking_token_in.is_some() {
+            len += 1;
+        }
+        if self.asset_in.is_some() {
+            len += 1;
+        }
+        if self.staking_fees.is_some() {
+            len += 1;
+        }
+        if self.asset_fees.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventLqtPositionVolume", len)?;
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
@@ -2390,6 +2402,18 @@ impl serde::Serialize for EventLqtPositionVolume {
         }
         if let Some(v) = self.total_volume.as_ref() {
             struct_ser.serialize_field("totalVolume", v)?;
+        }
+        if let Some(v) = self.staking_token_in.as_ref() {
+            struct_ser.serialize_field("stakingTokenIn", v)?;
+        }
+        if let Some(v) = self.asset_in.as_ref() {
+            struct_ser.serialize_field("assetIn", v)?;
+        }
+        if let Some(v) = self.staking_fees.as_ref() {
+            struct_ser.serialize_field("stakingFees", v)?;
+        }
+        if let Some(v) = self.asset_fees.as_ref() {
+            struct_ser.serialize_field("assetFees", v)?;
         }
         struct_ser.end()
     }
@@ -2411,6 +2435,14 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
             "volumeAmount",
             "total_volume",
             "totalVolume",
+            "staking_token_in",
+            "stakingTokenIn",
+            "asset_in",
+            "assetIn",
+            "staking_fees",
+            "stakingFees",
+            "asset_fees",
+            "assetFees",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2420,6 +2452,10 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
             PositionId,
             VolumeAmount,
             TotalVolume,
+            StakingTokenIn,
+            AssetIn,
+            StakingFees,
+            AssetFees,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2447,6 +2483,10 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
                             "positionId" | "position_id" => Ok(GeneratedField::PositionId),
                             "volumeAmount" | "volume_amount" => Ok(GeneratedField::VolumeAmount),
                             "totalVolume" | "total_volume" => Ok(GeneratedField::TotalVolume),
+                            "stakingTokenIn" | "staking_token_in" => Ok(GeneratedField::StakingTokenIn),
+                            "assetIn" | "asset_in" => Ok(GeneratedField::AssetIn),
+                            "stakingFees" | "staking_fees" => Ok(GeneratedField::StakingFees),
+                            "assetFees" | "asset_fees" => Ok(GeneratedField::AssetFees),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2471,6 +2511,10 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
                 let mut position_id__ = None;
                 let mut volume_amount__ = None;
                 let mut total_volume__ = None;
+                let mut staking_token_in__ = None;
+                let mut asset_in__ = None;
+                let mut staking_fees__ = None;
+                let mut asset_fees__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::EpochIndex => {
@@ -2505,6 +2549,30 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
                             }
                             total_volume__ = map_.next_value()?;
                         }
+                        GeneratedField::StakingTokenIn => {
+                            if staking_token_in__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stakingTokenIn"));
+                            }
+                            staking_token_in__ = map_.next_value()?;
+                        }
+                        GeneratedField::AssetIn => {
+                            if asset_in__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetIn"));
+                            }
+                            asset_in__ = map_.next_value()?;
+                        }
+                        GeneratedField::StakingFees => {
+                            if staking_fees__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stakingFees"));
+                            }
+                            staking_fees__ = map_.next_value()?;
+                        }
+                        GeneratedField::AssetFees => {
+                            if asset_fees__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetFees"));
+                            }
+                            asset_fees__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -2516,6 +2584,10 @@ impl<'de> serde::Deserialize<'de> for EventLqtPositionVolume {
                     position_id: position_id__,
                     volume_amount: volume_amount__,
                     total_volume: total_volume__,
+                    staking_token_in: staking_token_in__,
+                    asset_in: asset_in__,
+                    staking_fees: staking_fees__,
+                    asset_fees: asset_fees__,
                 })
             }
         }

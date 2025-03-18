@@ -100,7 +100,14 @@ pub trait SctManager: StateWrite {
                 .await
                 .expect("epoch must be set")
                 .index;
-            self.record_proto(event::epoch_root(index, epoch_root, block_timestamp));
+            self.record_proto(
+                event::EventEpochRoot {
+                    index,
+                    root: epoch_root,
+                    timestamp_seconds: block_timestamp,
+                }
+                .to_proto(),
+            );
         }
 
         self.write_sct_cache(sct);

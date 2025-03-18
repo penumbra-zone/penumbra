@@ -669,6 +669,10 @@ pub struct EventLqtPositionVolume {
     pub position_id: position::Id,
     pub volume: Amount,
     pub total_volume: Amount,
+    pub staking_token_in: Amount,
+    pub asset_in: Amount,
+    pub staking_fees: Amount,
+    pub asset_fees: Amount,
 }
 
 impl From<EventLqtPositionVolume> for pb::EventLqtPositionVolume {
@@ -679,6 +683,10 @@ impl From<EventLqtPositionVolume> for pb::EventLqtPositionVolume {
             position_id: Some(value.position_id.into()),
             volume_amount: Some(value.volume.into()),
             total_volume: Some(value.total_volume.into()),
+            staking_token_in: Some(value.staking_token_in.into()),
+            asset_in: Some(value.asset_in.into()),
+            staking_fees: Some(value.staking_fees.into()),
+            asset_fees: Some(value.asset_fees.into()),
         }
     }
 }
@@ -704,6 +712,22 @@ impl TryFrom<pb::EventLqtPositionVolume> for EventLqtPositionVolume {
             total_volume: value
                 .total_volume
                 .ok_or(anyhow!("missing `total_volume`"))?
+                .try_into()?,
+            staking_token_in: value
+                .staking_token_in
+                .ok_or(anyhow!("mising `staking_token_in`"))?
+                .try_into()?,
+            asset_in: value
+                .asset_in
+                .ok_or(anyhow!("mising `asset_in`"))?
+                .try_into()?,
+            staking_fees: value
+                .staking_fees
+                .ok_or(anyhow!("mising `staking_fees`"))?
+                .try_into()?,
+            asset_fees: value
+                .asset_fees
+                .ok_or(anyhow!("mising `asset_fees`"))?
                 .try_into()?,
         })
     }
