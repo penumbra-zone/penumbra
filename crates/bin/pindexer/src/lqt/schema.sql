@@ -1,30 +1,30 @@
-CREATE SCHEMA lqt;
+CREATE SCHEMA IF NOT EXISTS lqt;
 
-CREATE TABLE lqt._params (
+CREATE TABLE IF NOT EXISTS lqt._params (
   epoch INTEGER PRIMARY KEY,  
   delegator_share NUMERIC(3, 2) NOT NULL,
   gauge_threshold NUMERIC(3, 2) NOT NULL
 );
 
-CREATE TABLE lqt._finished_epochs (
+CREATE TABLE IF NOT EXISTS lqt._finished_epochs (
     epoch INTEGER PRIMARY KEY
 );
 
-CREATE TABLE lqt._available_rewards (
+CREATE TABLE IF NOT EXISTS lqt._available_rewards (
   epoch INTEGER PRIMARY KEY,  
   amount NUMERIC NOT NULL
 );
 
-CREATE TABLE lqt._delegator_rewards (
+CREATE TABLE IF NOT EXISTS lqt._delegator_rewards (
     epoch INTEGER NOT NULL,
     address BYTEA NOT NULL,
     amount NUMERIC NOT NULL,
     PRIMARY KEY (epoch, address)
 );
 
-CREATE INDEX ON lqt._delegator_rewards (address);
+CREATE INDEX IF NOT EXISTS idx_lqt_delegator_rewards_address ON lqt._delegator_rewards (address);
 
-CREATE TABLE lqt._lp_rewards (
+CREATE TABLE IF NOT EXISTS lqt._lp_rewards (
     epoch INTEGER NOT NULL,
     position_id BYTEA NOT NULL,
     asset_id BYTEA NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE lqt._lp_rewards (
     PRIMARY KEY (epoch, position_id)
 );
 
-CREATE INDEX ON lqt._lp_rewards (asset_id);
+CREATE INDEX IF NOT EXISTS idx_lqt_lp_rewards_asset_id ON lqt._lp_rewards (asset_id);
 
 CREATE TABLE IF NOT EXISTS lqt._votes (
     id SERIAL PRIMARY KEY,
@@ -48,9 +48,10 @@ CREATE TABLE IF NOT EXISTS lqt._votes (
     address BYTEA NOT NULL
 );
 
-CREATE INDEX ON lqt._votes (epoch);
-CREATE INDEX ON lqt._votes (address);
+CREATE INDEX IF NOT EXISTS idx_lqt_votes_epoch ON lqt._votes (epoch);
+CREATE INDEX IF NOT EXISTS idx_lqt_votes_address ON lqt._votes (address);
 
+DROP VIEW IF EXISTS lqt.summary;
 CREATE VIEW lqt.summary AS
 WITH vote_summary AS (
     SELECT epoch, SUM(power) AS total_voting_power FROM lqt._votes GROUP BY epoch
@@ -120,7 +121,7 @@ $$How many of the available rewards could go to delegators.$$;
 COMMENT ON COLUMN lqt.summary.available_lp_rewards IS
 $$How many of the available rewards could go to LPs.$$;
 
-
+DROP VIEW IF EXISTS lqt.gauge;
 CREATE VIEW lqt.gauge AS
 WITH tallies AS (
     SELECT epoch, asset_id, SUM(power) AS tally
@@ -165,6 +166,8 @@ If this value is positive, then it's the amount of votes it lacks
 in order to reach the threshold.
 $$;
 
+
+DROP VIEW IF EXISTS lqt.delegator_summary;
 CREATE VIEW lqt.delegator_summary AS
 WITH delegator_streaks AS (
     WITH epochs AS (
@@ -231,6 +234,7 @@ If the delegator has not voted in the last finished round,
 this will be 0.
 $$;
 
+DROP VIEW IF EXISTS lqt.delegator_history;
 CREATE VIEW lqt.delegator_history AS
 SELECT address, epoch, power, asset_id, COALESCE(amount, 0) AS reward
 FROM lqt._votes
@@ -239,6 +243,7 @@ COMMENT ON VIEW lqt.delegator_history IS
 $$Contains voting and reward history for a given delegator$$;
 
 
+DROP VIEW IF EXISTS lqt.lps;
 CREATE VIEW lqt.lps AS
 SELECT
     epoch,

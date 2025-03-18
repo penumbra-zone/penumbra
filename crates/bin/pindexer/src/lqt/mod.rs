@@ -270,9 +270,6 @@ impl AppView for Lqt {
         dbtx: &mut PgTransaction,
         app_state: &serde_json::Value,
     ) -> Result<(), anyhow::Error> {
-        for statement in include_str!("schema.sql").split(";") {
-            sqlx::query(statement).execute(dbtx.as_mut()).await?;
-        }
         let content = parse_content(app_state.clone())?;
         let params = content.funding_content.funding_params.liquidity_tournament;
         _params::set_initial(dbtx, params).await?;
@@ -289,6 +286,13 @@ impl AppView for Lqt {
 
     async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
         for statement in include_str!("reset.sql").split(";") {
+            sqlx::query(statement).execute(dbtx.as_mut()).await?;
+        }
+        Ok(())
+    }
+
+    async fn on_startup(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        for statement in include_str!("schema.sql").split(";") {
             sqlx::query(statement).execute(dbtx.as_mut()).await?;
         }
         Ok(())
