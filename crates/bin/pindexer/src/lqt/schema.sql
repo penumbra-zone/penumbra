@@ -134,7 +134,10 @@ SELECT
   asset_id,
   tally AS votes,
   tally / total_tally AS portion,
-  gauge_threshold * total_tally - tally AS missing_votes
+  -- t + d >= (T + d) * p
+  -- (1 - p) d >= p T - t
+  -- d >= (p T - t) / (1 - p)
+  CEIL((gauge_threshold * total_tally - tally) / (1 - gauge_threshold))::BIGINT AS missing_votes
 FROM tallies
 JOIN total USING (epoch)
 CROSS JOIN LATERAL (
