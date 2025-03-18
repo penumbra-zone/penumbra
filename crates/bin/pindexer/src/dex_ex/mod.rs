@@ -1259,7 +1259,7 @@ impl Component {
             r1: event.prev_reserves_1,
             r2: event.prev_reserves_2,
         };
-        let flows = Flows::from_fee_and_reserves(position.phi.component.fee, &current, &prev);
+        let flows = Flows::from_phi_and_reserves(&position.phi, &current, &prev);
 
         // First insert the reserves and get the rowid
         let reserves_rowid = sqlx::query_scalar::<_, i32>(
@@ -1300,12 +1300,12 @@ impl Component {
         .bind(height)
         .bind(time)
         .bind(reserves_rowid)
-        .bind(BigDecimal::from(flows.delta_1.value()))
-        .bind(BigDecimal::from(flows.delta_2.value()))
-        .bind(BigDecimal::from(flows.lambda_1.value()))
-        .bind(BigDecimal::from(flows.lambda_2.value()))
-        .bind(BigDecimal::from(flows.fee_1.value()))
-        .bind(BigDecimal::from(flows.fee_2.value()))
+        .bind(BigDecimal::from(flows.delta_1().value()))
+        .bind(BigDecimal::from(flows.delta_2().value()))
+        .bind(BigDecimal::from(flows.lambda_1().value()))
+        .bind(BigDecimal::from(flows.lambda_2().value()))
+        .bind(BigDecimal::from(flows.fee_1().value()))
+        .bind(BigDecimal::from(flows.fee_2().value()))
         .bind(event.context.start.to_bytes())
         .bind(event.context.end.to_bytes())
         .execute(dbtx.as_mut())

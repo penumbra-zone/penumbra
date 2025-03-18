@@ -5,9 +5,9 @@ use penumbra_sdk_proto::StateWriteProto;
 use tracing::instrument;
 
 use crate::component::lqt::LqtRead;
-use crate::event;
 use crate::lp::position::{self, Position};
 use crate::state_key::lqt;
+use crate::{event, DirectedTradingPair};
 use async_trait::async_trait;
 use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::component::clock::EpochRead;
@@ -41,24 +41,27 @@ pub(crate) trait PositionVolumeTracker: StateWrite {
             return;
         }
 
-        // Get the flows with the first asset being UM, and the other asset)
-        let (flows, other_asset) = {
-            let flows = new_state.flows(&prev_state);
-            let pair = new_state.phi.pair;
-            if pair.asset_1 == *STAKING_TOKEN_ASSET_ID {
-                (flows, pair.asset_2)
-            } else {
-                (flows.flip(), pair.asset_1)
-            }
+        let pair = new_state.phi.pair;
+        let other_asset = if pair.asset_1 != *STAKING_TOKEN_ASSET_ID {
+            pair.asset_1
+        } else {
+            pair.asset_2
         };
-
+        // Get the flows with the first asset being UM, and the other asset
+        let flows = new_state
+            .flows(&prev_state)
+            .redirect(DirectedTradingPair {
+                start: *STAKING_TOKEN_ASSET_ID,
+                end: other_asset,
+            })
+            .expect("the staking token is in the pair");
         // We want to track the **outflow** of staking tokens from the position.
         // This means that we track the amount of staking tokens that have left the position.
         // We do this by comparing the previous and new reserves of the staking token.
         // We **DO NOT** want to track the volume of the other asset denominated in staking tokens.
         // We track the *outflow* of the staking token.
         // "How much inventory has left the position?"
-        let staking_token_outflow = flows.lambda_1;
+        let staking_token_outflow = flows.lambda_1();
 
         // We lookup the previous volume index entry.
         let old_volume = self.get_volume_for_position(position_id).await;
@@ -78,10 +81,10 @@ pub(crate) trait PositionVolumeTracker: StateWrite {
                 asset_id: other_asset,
                 volume: staking_token_outflow,
                 total_volume: new_volume,
-                staking_token_in: flows.delta_1,
-                asset_in: flows.delta_2,
-                staking_fees: flows.fee_1,
-                asset_fees: flows.fee_2,
+                staking_token_in: flows.delta_1(),
+                asset_in: flows.delta_2(),
+                staking_fees: flows.fee_1(),
+                asset_fees: flows.fee_2(),
             }
             .to_proto(),
         );
