@@ -2,7 +2,7 @@
 set -e
 
 # List of packages to check
-PACKAGES=("pcli" "pindexer")
+PACKAGES=("pcli" "pindexer" "pclientd")
 
 # Function to check for rocksdb dependency
 check_rocksdb() {
