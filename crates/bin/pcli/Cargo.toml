@@ -40,7 +40,6 @@ bincode = {workspace = true}
 blake2b_simd = {workspace = true}
 bytes = {workspace = true}
 camino = {workspace = true}
-cnidarium = {workspace = true, features = ["rpc"] }
 clap = {workspace = true, features = ["derive", "env"]}
 colored = "2.1.0"
 colored_json = "4.1"
@@ -81,7 +80,7 @@ penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
 penumbra-sdk-stake = {workspace = true, default-features = false}
 penumbra-sdk-tct = {workspace = true, default-features = true}
 penumbra-sdk-transaction = {workspace = true, default-features = true}
-penumbra-sdk-view = {workspace = true}
+penumbra-sdk-view = {workspace = true, default-features = false}
 penumbra-sdk-wallet = {workspace = true}
 pin-project = {workspace = true}
 rand = {workspace = true}
