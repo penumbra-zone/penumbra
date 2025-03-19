@@ -2,10 +2,6 @@
 # CI script to check build dependencies, and ensure that `rocksdb` is not required,
 # typically via the cnidarium dep. Only `pd` should depend on rocksdb.
 set -eou pipefail
-
-# List of packages to check
-PACKAGES=("pcli" "pindexer" "pclientd")
-
 # Function to check for rocksdb dependency
 check_rocksdb() {
   local package=$1
@@ -19,6 +15,17 @@ check_rocksdb() {
     return 0
   fi
 }
+
+# Function to display all binaries built by this workspace,
+# excluding pd and other bins known to require rocksdb.
+function get_workspace_bins() {
+ cargo metadata --format-version 1 | jq -r '.packages[] | select(.manifest_path | startswith("'$(pwd)'")) | . as $pkg | .targets[] | select(.kind[] | contains("bin")) | "\($pkg.name)"' \
+   | grep -vP '^(pd|summonerd|penumbra-sdk-parameter-setup)$'
+}
+
+# List of packages to check
+declare -a PACKAGES
+readarray -t PACKAGES < <(get_workspace_bins)
 
 # Main execution
 echo "Checking packages for rocksdb dependencies"
