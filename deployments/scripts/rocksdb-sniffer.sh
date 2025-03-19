@@ -1,5 +1,7 @@
 #!/bin/bash
-set -e
+# CI script to check build dependencies, and ensure that `rocksdb` is not required,
+# typically via the cnidarium dep. Only `pd` should depend on rocksdb.
+set -eou pipefail
 
 # List of packages to check
 PACKAGES=("pcli" "pindexer" "pclientd")
@@ -9,7 +11,7 @@ check_rocksdb() {
   local package=$1
   echo -n "$package: "
   
-  if cargo tree -p $package | grep -q "rocksdb"; then
+  if cargo tree -p "$package" | grep -q "rocksdb"; then
     echo "ERROR"
     return 1
   else
@@ -19,6 +21,7 @@ check_rocksdb() {
 }
 
 # Main execution
+echo "Checking packages for rocksdb dependencies"
 ERRORS=()
 for package in "${PACKAGES[@]}"; do
   if ! check_rocksdb "$package"; then
@@ -26,11 +29,10 @@ for package in "${PACKAGES[@]}"; do
   fi
 done
 
-echo "Checking packages for rocksdb dependencies"
 if [ ${#ERRORS[@]} -gt 0 ]; then
   echo "Found ${#ERRORS[@]} package(s) with rocksdb dependency:"
   for package in "${ERRORS[@]}"; do
-    echo $package
+    echo "$package"
   done
   exit 1
 else
