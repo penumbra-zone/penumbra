@@ -65,6 +65,7 @@ integration-pmonitor:
 
 # Run smoke test suite, via process-compose config.
 smoke:
+  ./deployments/scripts/rocksdb-sniffer.sh
   ./deployments/scripts/check-nix-shell
   ./deployments/scripts/warn-about-pd-state
   ./deployments/scripts/smoke-test.sh
