@@ -2,10 +2,10 @@ mod indexing_state;
 
 use crate::{
     index::{EventBatch, EventBatchContext},
-    opt::IndexOptions,
+    opt::Options,
     AppView,
 };
-use anyhow::{Context as _, Result};
+use anyhow::{Context, Result};
 use indexing_state::{Height, IndexState, IndexingManager};
 use std::sync::Arc;
 use tokio::{sync::mpsc, task::JoinSet};
@@ -164,16 +164,14 @@ async fn catchup(
 }
 
 pub struct Indexer {
-    opts: IndexOptions,
-    src_database_url: String,
+    opts: Options,
     indices: Vec<Arc<dyn AppView>>,
 }
 
 impl Indexer {
-    pub fn new(src_database_url: String, opts: IndexOptions) -> Self {
+    pub fn new(opts: Options) -> Self {
         Self {
             opts,
-            src_database_url,
             indices: Vec::new(),
         }
     }
@@ -191,17 +189,24 @@ impl Indexer {
     pub async fn run(self) -> Result<(), anyhow::Error> {
         tracing::info!(?self.opts);
         let Self {
-            src_database_url,
             opts:
-                IndexOptions {
+                Options {
+                    src_database_url,
                     dst_database_url,
                     chain_id: _,
                     poll_ms,
                     genesis_json,
                     exit_on_catchup,
+                    integrity_checks_only,
                 },
             indices,
         } = self;
+        crate::integrity::integrity_check(&src_database_url)
+            .await
+            .context("while running integrity checks")?;
+        if integrity_checks_only {
+            return Ok(());
+        }
 
         let genesis: serde_json::Value = serde_json::from_str(
             &std::fs::read_to_string(genesis_json)

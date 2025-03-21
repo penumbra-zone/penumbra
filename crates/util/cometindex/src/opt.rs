@@ -1,7 +1,7 @@
 use std::{path::PathBuf, time::Duration};
 
 use anyhow::{Error, Result};
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
 /// This struct represents the command-line options
 #[derive(Clone, Debug, Parser)]
@@ -15,23 +15,6 @@ pub struct Options {
     #[clap(short, long)]
     pub src_database_url: String,
 
-    #[clap(subcommand)]
-    pub command: Command,
-}
-
-#[derive(Clone, Debug, Subcommand)]
-pub enum Command {
-    /// Default indexing command
-    #[clap(name = "index")]
-    Index(IndexOptions),
-
-    /// Checks the integrity of the indexed data
-    #[clap(name = "integrity-check")]
-    IntegrityCheck,
-}
-
-#[derive(Clone, Debug, Parser)]
-pub struct IndexOptions {
     /// PostgreSQL database connection string for the destination database with compiled data
     #[clap(short, long)]
     pub dst_database_url: String,
@@ -53,6 +36,10 @@ pub struct IndexOptions {
     /// it has indexed all events in the src database. Useful for batch jobs.
     #[clap(long)]
     pub exit_on_catchup: bool,
+
+    /// If set, don't index, running only integrity checks against the database.
+    #[clap(long)]
+    pub integrity_checks_only: bool,
 }
 
 /// Parses a string containing a [`Duration`], represented as a number of milliseconds.
