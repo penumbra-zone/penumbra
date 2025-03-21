@@ -2,7 +2,7 @@ mod indexing_state;
 
 use crate::{
     index::{EventBatch, EventBatchContext},
-    opt::Options,
+    opt::IndexOptions,
     AppView,
 };
 use anyhow::{Context as _, Result};
@@ -164,14 +164,16 @@ async fn catchup(
 }
 
 pub struct Indexer {
-    opts: Options,
+    opts: IndexOptions,
+    src_database_url: String,
     indices: Vec<Arc<dyn AppView>>,
 }
 
 impl Indexer {
-    pub fn new(opts: Options) -> Self {
+    pub fn new(src_database_url: String, opts: IndexOptions) -> Self {
         Self {
             opts,
+            src_database_url,
             indices: Vec::new(),
         }
     }
@@ -189,9 +191,9 @@ impl Indexer {
     pub async fn run(self) -> Result<(), anyhow::Error> {
         tracing::info!(?self.opts);
         let Self {
+            src_database_url,
             opts:
-                Options {
-                    src_database_url,
+                IndexOptions {
                     dst_database_url,
                     chain_id: _,
                     poll_ms,
