@@ -1,7 +1,7 @@
 use std::{path::PathBuf, time::Duration};
 
 use anyhow::{Error, Result};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
 /// This struct represents the command-line options
 #[derive(Clone, Debug, Parser)]
@@ -15,6 +15,23 @@ pub struct Options {
     #[clap(short, long)]
     pub src_database_url: String,
 
+    #[clap(subcommand)]
+    pub command: Command,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum Command {
+    /// Default indexing command
+    #[clap(name = "index")]
+    Index(IndexOptions),
+
+    /// Checks the integrity of the indexed data
+    #[clap(name = "integrity-check")]
+    IntegrityCheck,
+}
+
+#[derive(Clone, Debug, Parser)]
+pub struct IndexOptions {
     /// PostgreSQL database connection string for the destination database with compiled data
     #[clap(short, long)]
     pub dst_database_url: String,

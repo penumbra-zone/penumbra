@@ -1,35 +1,12 @@
 use anyhow::anyhow;
 use futures::{Stream, StreamExt, TryStreamExt};
 use prost::Message as _;
-use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, Transaction};
+use sqlx::{PgPool, Postgres, Transaction};
 use std::collections::HashMap;
 use tendermint::abci::{self, Event};
 
+use crate::database::{read_only_db, read_write_db};
 use crate::index::{BlockEvents, EventBatch, Version};
-
-/// Create a Database, with, for sanity, some read only settings.
-///
-/// These will be overrideable by a consumer who knows what they're doing,
-/// but prevents basic mistakes.
-/// c.f. https://github.com/launchbadge/sqlx/issues/481#issuecomment-727011811
-async fn read_only_db(url: &str) -> anyhow::Result<PgPool> {
-    PgPoolOptions::new()
-        .after_connect(|conn, _| {
-            Box::pin(async move {
-                sqlx::query("SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY;")
-                    .execute(conn)
-                    .await?;
-                Ok(())
-            })
-        })
-        .connect(url)
-        .await
-        .map_err(Into::into)
-}
-
-async fn read_write_db(url: &str) -> anyhow::Result<PgPool> {
-    PgPoolOptions::new().connect(url).await.map_err(Into::into)
-}
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, sqlx::Type)]
 #[sqlx(transparent)]

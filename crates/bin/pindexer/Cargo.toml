@@ -41,6 +41,7 @@ penumbra-sdk-sct = {workspace = true, default-features = false}
 penumbra-sdk-transaction = {workspace = true, default-features = false}
 prost = {workspace = true}
 tracing = {workspace = true}
+tracing-subscriber = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 serde_json = {workspace = true}
 serde = { workspace = true, features = ["derive"] }
