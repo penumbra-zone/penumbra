@@ -14,7 +14,9 @@ async fn main() -> Result<()> {
                 .run()
                 .await?;
         }
-        cometindex::opt::Command::IntegrityCheck => todo!(),
+        cometindex::opt::Command::IntegrityCheck => {
+            cometindex::integrity_check(&cometindex_opts.src_database_url).await?
+        }
     }
 
     Ok(())
