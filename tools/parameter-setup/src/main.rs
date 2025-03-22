@@ -2,7 +2,7 @@
 use std::{
     env, fs,
     io::{BufWriter, Result},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use ark_groth16::{ProvingKey, VerifyingKey};
