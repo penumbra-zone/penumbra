@@ -1,8 +1,8 @@
 #![deny(clippy::unwrap_used)]
-use std::path::PathBuf;
 use std::{
     env, fs,
     io::{BufWriter, Result},
+    path::{Path, PathBuf},
 };
 
 use ark_groth16::{ProvingKey, VerifyingKey};
@@ -106,7 +106,7 @@ fn main() -> Result<()> {
 }
 
 fn write_params(
-    target_dir: &PathBuf,
+    target_dir: &Path,
     name: &str,
     pk: &ProvingKey<Bls12_377>,
     vk: &VerifyingKey<Bls12_377>,
