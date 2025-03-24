@@ -5092,6 +5092,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-sdk-custody-ledger-usb"
+version = "2.0.0-alpha.4"
+dependencies = [
+ "anyhow",
+ "penumbra-sdk-custody",
+ "tracing",
+]
+
+[[package]]
 name = "penumbra-sdk-dex"
 version = "1.3.1"
 dependencies = [
