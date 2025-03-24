@@ -1,0 +1,15 @@
+[package]
+name = "penumbra-sdk-custody-ledger-usb"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Ledger USB custody for Penumbra"
+version = {workspace = true}
+license = {workspace = true}
+edition = {workspace = true}
+
+[dependencies]
+anyhow = {workspace = true}
+penumbra-sdk-custody = {workspace = true}
+tracing = {workspace = true}
+
+[dev-dependencies]
