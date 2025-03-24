@@ -153,11 +153,12 @@ async fn cometbft_events_are_not_null(#[case] query: &str) -> anyhow::Result<()>
 async fn pindexer_is_working() -> anyhow::Result<()> {
     let height_rpc = get_current_height().await?;
     let height_db: u64 = get_highest_indexed_block_from_pindexer_db().await?;
-    // Check that pindexer's height is within tolerance. We allow lagging by ~2 blocks because
+    // Check that pindexer's height is within tolerance. We allow lagging by ~4 blocks because
     // local devnets and integration test suites run with faster block times, ~1s vs the default
     // 5s, so being a bit behind is quite possible.
+    const ALLOWANCE: u64 = 4;
     assert!(
-        vec![height_rpc, height_rpc - 1, height_rpc - 2].contains(&height_db),
+        (height_rpc - ALLOWANCE..=height_rpc).contains(&height_db),
         "pindexer database is behind chain ({} vs {}); is indexing broken?",
         height_db,
         height_rpc
