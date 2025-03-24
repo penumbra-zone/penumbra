@@ -40,6 +40,7 @@ members = [
   "crates/crypto/proof-setup",
   "crates/crypto/tct",
   "crates/custody",
+  "crates/custody-ledger-usb",
   "crates/misc/measure",
   "crates/misc/tct-visualize",
   "crates/proto",
@@ -155,10 +156,11 @@ pbjson                           = { version = "0.7.0" }
 pbjson-types                     = { version = "0.7.0" }
 penumbra-sdk-app                     = { default-features = false, version = "1.4.0", path = "crates/core/app" }
 penumbra-sdk-asset                   = { default-features = false, version = "1.4.0", path = "crates/core/asset" }
+penumbra-sdk-auction                 = { default-features = false, version = "1.4.0", path = "crates/core/component/auction" }
 penumbra-sdk-community-pool          = { default-features = false, version = "1.4.0", path = "crates/core/component/community-pool" }
 penumbra-sdk-compact-block           = { default-features = false, version = "1.4.0", path = "crates/core/component/compact-block" }
 penumbra-sdk-custody                 = { version = "1.4.0", path = "crates/custody" }
-penumbra-sdk-auction                 = { default-features = false, version = "1.4.0", path = "crates/core/component/auction" }
+penumbra-sdk-custody-ledger-usb      = { version = "1.4.0", path = "crates/custody-ledger-usb" }
 penumbra-sdk-dex                     = { default-features = false, version = "1.4.0", path = "crates/core/component/dex" }
 penumbra-sdk-distributions           = { default-features = false, version = "1.4.0", path = "crates/core/component/distributions" }
 penumbra-sdk-fee                     = { default-features = false, version = "1.4.0", path = "crates/core/component/fee" }

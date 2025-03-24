@@ -47,6 +47,7 @@ cargo $nightly_opt doc --no-deps \
   -p penumbra-sdk-asset \
   -p penumbra-sdk-community-pool \
   -p penumbra-sdk-custody \
+  -p penumbra-sdk-custody-ledger-usb \
   -p penumbra-sdk-dex \
   -p penumbra-sdk-distributions \
   -p penumbra-sdk-fee \
