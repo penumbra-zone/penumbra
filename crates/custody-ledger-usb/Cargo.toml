@@ -10,6 +10,8 @@ edition = {workspace = true}
 [dependencies]
 anyhow = {workspace = true}
 penumbra-sdk-custody = {workspace = true}
+penumbra-sdk-keys = {workspace = true}
+penumbra-sdk-proto = {workspace = true}
+tonic = {workspace = true}
 tracing = {workspace = true}
-
-[dev-dependencies]
+serde = {workspace = true}
