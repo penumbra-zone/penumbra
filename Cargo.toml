@@ -170,6 +170,7 @@ im                               = { version = "^15.1.0" }
 indicatif                        = { version = "0.16" }
 jmt                              = { version = "0.11", features = ["migration"] }
 ledger-lib = { git = "https://github.com/ledger-community/rust-ledger", rev = "510bb3ca30639af4bdb12a918b6bbbdb75fa5f52" }
+ledger-proto = { git = "https://github.com/ledger-community/rust-ledger", rev = "510bb3ca30639af4bdb12a918b6bbbdb75fa5f52" }
 metrics                          = { version = "0.24.1" }
 metrics-exporter-prometheus      = { version = "0.16", features = ["http-listener"] }
 metrics-tracing-context          = { version = "0.17.0" }
