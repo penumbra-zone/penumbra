@@ -1,9 +1,189 @@
-use ledger_lib::{Filters, LedgerProvider, Transport};
+use std::time::Duration;
 
-pub async fn main() -> anyhow::Result<()> {
-    let mut provider = LedgerProvider::init().await;
-    let devices = provider.list(Filters::Any).await?;
-    dbg!(&devices);
-    println!("main");
+use anyhow::anyhow;
+use ledger_lib::{
+    info::AppInfo, Device as _, Exchange, Filters, LedgerHandle, LedgerProvider, Transport as _,
+    DEFAULT_TIMEOUT,
+};
+use ledger_proto::ApduHeader;
+use penumbra_sdk_keys::FullViewingKey;
+
+fn is_penumbra_app(info: &AppInfo) -> anyhow::Result<()> {
+    if info.name != "Penumbra" {
+        anyhow::bail!("unknown app: {}", &info.name);
+    }
     Ok(())
+}
+
+fn check_error_code(code: u16) -> anyhow::Result<()> {
+    // https://github.com/Zondax/ledger-js/blob/58248aa02ebfe65f5e0e853f3dca66f60c95eacf/src/consts.ts.
+    match code {
+        0x9000 => Ok(()),
+        0x0001 => Err(anyhow!("U2F: Unknown")),
+        0x0002 => Err(anyhow!("U2F: Bad request")),
+        0x0003 => Err(anyhow!("U2F: Configuration unsupported")),
+        0x0004 => Err(anyhow!("U2F: Device Ineligible")),
+        0x0005 => Err(anyhow!("U2F: Timeout")),
+        0x000E => Err(anyhow!("Timeout")),
+        0x5102 => Err(anyhow!("Not Enough Space")),
+        0x5501 => Err(anyhow!("User Refused on Device")),
+        0x5515 => Err(anyhow!("Device Locked")),
+        0x6300 => Err(anyhow!("GP Authentication Failed")),
+        0x63C0 => Err(anyhow!("PIN Remaining Attempts")),
+        0x6400 => Err(anyhow!("Execution Error")),
+        0x6611 => Err(anyhow!("Device Not Onboarded (Secondary)")),
+        0x662E => Err(anyhow!("Custom Image Empty")),
+        0x662F => Err(anyhow!("Custom Image Bootloader Error")),
+        0x6700 => Err(anyhow!("Wrong Length")),
+        0x6800 => Err(anyhow!("Missing Critical Parameter")),
+        0x6802 => Err(anyhow!("Error deriving keys")),
+        0x6981 => Err(anyhow!("Command Incompatible with File Structure")),
+        0x6982 => Err(anyhow!("Empty Buffer")),
+        0x6983 => Err(anyhow!("Output buffer too small")),
+        0x6984 => Err(anyhow!("Data is invalid")),
+        0x6985 => Err(anyhow!("Conditions of Use Not Satisfied")),
+        0x6986 => Err(anyhow!("Transaction rejected")),
+        0x6A80 => Err(anyhow!("Bad key handle")),
+        0x6A84 => Err(anyhow!("Not Enough Memory Space")),
+        0x6A88 => Err(anyhow!("Referenced Data Not Found")),
+        0x6A89 => Err(anyhow!("File Already Exists")),
+        0x6B00 => Err(anyhow!("Invalid P1/P2")),
+        0x6D00 => Err(anyhow!("Instruction not supported")),
+        0x6D02 => Err(anyhow!("Unknown APDU")),
+        0x6D07 => Err(anyhow!("Device Not Onboarded")),
+        0x6E00 => Err(anyhow!("CLA Not Supported")),
+        0x6E01 => Err(anyhow!("App does not seem to be open")),
+        0x6F00 => Err(anyhow!("Unknown error")),
+        0x6F01 => Err(anyhow!("Sign/verify error")),
+        0x6F42 => Err(anyhow!("Licensing Error")),
+        0x6FAA => Err(anyhow!("Device Halted")),
+        0x9001 => Err(anyhow!("Device is busy")),
+        0x9240 => Err(anyhow!("Memory Problem")),
+        0x9400 => Err(anyhow!("No EF Selected")),
+        0x9402 => Err(anyhow!("Invalid Offset")),
+        0x9404 => Err(anyhow!("File Not Found")),
+        0x9408 => Err(anyhow!("Inconsistent File")),
+        0x9484 => Err(anyhow!("Algorithm Not Supported")),
+        0x9485 => Err(anyhow!("Invalid KCV")),
+        0x9802 => Err(anyhow!("Code Not Initialized")),
+        0x9804 => Err(anyhow!("Access Condition Not Fulfilled")),
+        0x9808 => Err(anyhow!("Contradiction with Secret Code Status")),
+        0x9810 => Err(anyhow!("Contradiction Invalidation")),
+        0x9840 => Err(anyhow!("Code Blocked")),
+        0x9850 => Err(anyhow!("Maximum Value Reached")),
+        _ => Err(anyhow!("Unknown transport error")),
+    }
+}
+
+/// All responses in this particular app follow a common decoding scheme.
+///
+/// This wraps this scheme, providing a nicer interface, returning `anyhow::Result`,
+/// instead of using the somewhat limited [`ledger_proto::ApduError`] type.
+struct GenericResponse {
+    data: Vec<u8>,
+}
+
+impl GenericResponse {
+    fn payload(&self) -> anyhow::Result<&'_ [u8]> {
+        // c.f. https://github.com/Zondax/ledger-js/blob/58248aa02ebfe65f5e0e853f3dca66f60c95eacf/src/common.ts#L41.
+        if self.data.len() < 2 {
+            anyhow::bail!("insufficient payload length");
+        }
+        let payload_end = self.data.len() - 2;
+        let code = u16::from_be_bytes(
+            self.data[payload_end..]
+                .try_into()
+                .expect("slice should have length 2"),
+        );
+        // #golang
+        if let Err(e) = check_error_code(code) {
+            // When an error happens, the rest of the payload is an additional message.
+            // This should be ASCII (and thus UTF-8), but we can just ignore
+            // bad characters, using [`String::from_utf8_lossy`];
+            return Err(e.context(String::from_utf8_lossy(&self.data[..payload_end]).to_string()));
+        }
+        Ok(&self.data[..payload_end])
+    }
+}
+
+struct Device {
+    handle: LedgerHandle,
+    buf: [u8; 256],
+}
+
+impl Device {
+    async fn connect_to_first() -> anyhow::Result<Self> {
+        let mut provider = LedgerProvider::init().await;
+        let device_list = provider.list(Filters::Any).await?;
+
+        // NOTE: Should we do more than just pick the first device?
+        let Some(device_info) = device_list.into_iter().next() else {
+            anyhow::bail!("No ledger devices found.");
+        };
+
+        tracing::debug!(?device_info, "found ledger device");
+
+        let mut handle = provider.connect(device_info).await?;
+
+        let info = handle.app_info(DEFAULT_TIMEOUT).await?;
+        is_penumbra_app(&info)?;
+
+        tracing::debug!(?info, "connected to ledger device");
+
+        Ok(Self {
+            handle,
+            buf: [0u8; 256],
+        })
+    }
+
+    async fn request(
+        &mut self,
+        header: ApduHeader,
+        data: &[u8],
+    ) -> anyhow::Result<GenericResponse> {
+        let req_len = 5 + data.len();
+        // For a better error message.
+        assert!(req_len <= self.buf.len(), "request payload too large");
+        self.buf[0] = header.cla;
+        self.buf[1] = header.ins;
+        self.buf[2] = header.p1;
+        self.buf[3] = header.p2;
+        self.buf[4] = data.len().try_into().expect("data length should be < 256");
+        self.buf[5..req_len].copy_from_slice(data);
+
+        let out = self
+            .handle
+            .exchange(&self.buf[..req_len], Duration::MAX)
+            .await?;
+        Ok(GenericResponse { data: out })
+    }
+
+    async fn get_fvk(&mut self) -> anyhow::Result<FullViewingKey> {
+        // https://github.com/Zondax/ledger-penumbra/blob/9f57b82ad3b843bc18e22ba841f971659bcd0fe8/docs/APDUSPEC.md#ins_get_fvk
+        let header = ApduHeader {
+            cla: 0x80,
+            ins: 0x03,
+            p1: 0,
+            p2: 0,
+        };
+        let mut req = Vec::with_capacity(3 * 4 + 16);
+        req.extend_from_slice(&u32::to_le_bytes(0x8000_002C));
+        // :)
+        req.extend_from_slice(&u32::to_le_bytes(0x8000_1984));
+        req.extend_from_slice(&u32::to_le_bytes(0x8000_0000));
+        // The request requires an address index which doesn't actually influence the result.
+        req.extend_from_slice(&[0u8; 16]);
+        tracing::debug!("sending FVK request");
+        let rsp = self.request(header, &req).await?;
+        let fvk = FullViewingKey::try_from(rsp.payload()?)?;
+        Ok(fvk)
+    }
+}
+
+#[tracing::instrument]
+pub async fn main() -> anyhow::Result<()> {
+    let mut device = Device::connect_to_first().await?;
+    let fvk = device.get_fvk().await?;
+    println!("{}", fvk);
+    todo!();
 }
