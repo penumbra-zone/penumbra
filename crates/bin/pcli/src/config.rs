@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
+use penumbra_sdk_custody_ledger_usb::Config as LedgerConfig;
 use penumbra_sdk_stake::GovernanceKey;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -73,6 +74,8 @@ pub enum CustodyConfig {
     Threshold(ThresholdConfig),
     /// An encrypted custody service.
     Encrypted(EncryptedConfig),
+    /// A custody service using an external ledger device.
+    Ledger(LedgerConfig),
 }
 
 /// The governance custody backend to use.
