@@ -56,6 +56,7 @@ members = [
   "crates/wallet",
   "tools/summonerd",
   "tools/parameter-setup",
+  "tools/picturesque",
 ]
 
 # Config for 'cargo dist'
@@ -182,6 +183,7 @@ penumbra-sdk-asset                   = { default-features = false, version = "2.
 penumbra-sdk-community-pool          = { default-features = false, version = "2.0.0-alpha.5", path = "crates/core/component/community-pool" }
 penumbra-sdk-compact-block           = { default-features = false, version = "2.0.0-alpha.5", path = "crates/core/component/compact-block" }
 penumbra-sdk-custody                 = { version = "2.0.0-alpha.5", path = "crates/custody" }
+penumbra-sdk-custody-ledger-usb      = { version = "2.0.0-alpha.5", path = "crates/custody-ledger-usb" }
 penumbra-sdk-auction                 = { default-features = false, version = "2.0.0-alpha.5", path = "crates/core/component/auction" }
 penumbra-sdk-dex                     = { default-features = false, version = "2.0.0-alpha.5", path = "crates/core/component/dex" }
 penumbra-sdk-distributions           = { default-features = false, version = "2.0.0-alpha.5", path = "crates/core/component/distributions" }

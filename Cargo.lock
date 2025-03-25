@@ -5092,6 +5092,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-sdk-custody-ledger-usb"
+version = "2.0.0-alpha.5"
+dependencies = [
+ "anyhow",
+ "penumbra-sdk-custody",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-proto",
+ "serde",
+ "tonic",
+ "tracing",
+]
+ 
+[[package]]
 name = "penumbra-sdk-dex"
 version = "2.0.0-alpha.5"
 dependencies = [
@@ -6069,6 +6082,19 @@ checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
  "fixedbitset",
  "indexmap 2.7.1",
+]
+
+[[package]]
+name = "picturesque"
+version = "2.0.0-alpha.5"
+dependencies = [
+ "anyhow",
+ "clap",
+ "penumbra-sdk-keys",
+ "tokio",
+ "toml 0.7.8",
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
