@@ -4414,6 +4414,7 @@ dependencies = [
  "penumbra-sdk-community-pool",
  "penumbra-sdk-compact-block",
  "penumbra-sdk-custody",
+ "penumbra-sdk-custody-ledger-usb",
  "penumbra-sdk-dex",
  "penumbra-sdk-fee",
  "penumbra-sdk-governance",
@@ -5097,6 +5098,10 @@ version = "1.4.0"
 dependencies = [
  "anyhow",
  "penumbra-sdk-custody",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-proto",
+ "serde",
+ "tonic",
  "tracing",
 ]
 
