@@ -1,6 +1,10 @@
 //! Ledger USB custody for Penumbra.
 //!
 //! This crate implements Penumbra custody support for Ledger hardware wallets via USB.
+
+/// Abstraction layer over the ledger libraries for device interaction.
+mod device;
+
 use penumbra_sdk_keys::FullViewingKey;
 use penumbra_sdk_proto::custody::v1::{self as pb, AuthorizeResponse};
 use serde::{Deserialize, Serialize};
@@ -22,6 +26,7 @@ pub struct Config {}
 impl Config {
     /// Initialize custody with a device.
     pub async fn initialize(_opts: InitOptions) -> anyhow::Result<Self> {
+        device::main().await?;
         todo!()
     }
 }
