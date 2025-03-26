@@ -171,7 +171,7 @@ impl Device {
         self.buf[2] = header.p1;
         self.buf[3] = header.p2;
         // For empty data, we don't write the length at all.
-        if data.len() > 0 {
+        if !data.is_empty() {
             self.buf[4] = data.len().try_into().expect("data length should be < 256");
             self.buf[5..req_len].copy_from_slice(data);
         }
@@ -256,8 +256,10 @@ impl Device {
         if response_data.len() != 64 + 2 + 2 {
             anyhow::bail!("unexpected signing response");
         }
-        let mut auth_data = AuthorizationData::default();
-        auth_data.effect_hash = Some(EffectHash(response_data[..64].try_into()?));
+        let mut auth_data = AuthorizationData {
+            effect_hash: Some(EffectHash(response_data[..64].try_into()?)),
+            ..Default::default()
+        };
         let spend_auth_count: u8 =
             u16::from_le_bytes(response_data[64..66].try_into()?).try_into()?;
         let delegator_auth_count: u8 =
