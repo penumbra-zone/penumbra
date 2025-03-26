@@ -17,13 +17,8 @@ use tokio::sync::{Mutex, MutexGuard};
 use tonic::{async_trait, Request, Response, Status};
 
 /// Options needed to create a new config for custodying with a ledger device.
+#[derive(Default)]
 pub struct InitOptions {}
-
-impl InitOptions {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
 
 /// Contains configuration for custody with a ledger device.
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
