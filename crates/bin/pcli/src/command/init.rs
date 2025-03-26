@@ -399,7 +399,7 @@ impl InitCmd {
                 anyhow::bail!("re-encrypt requires existing config to exist",);
             }
             (InitType::SpendKey, InitSubCmd::Ledger, false) => {
-                let config = ledger::Config::initialize(ledger::InitOptions::new()).await?;
+                let config = ledger::Config::initialize(ledger::InitOptions::default()).await?;
                 let service = ledger::Service::new(config.clone());
                 let fvk = service.impl_export_full_viewing_key().await?;
                 (fvk, CustodyConfig::Ledger(config))
