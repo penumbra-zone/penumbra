@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
+#[cfg(feature = "ledger")]
 use penumbra_sdk_custody_ledger_usb::Config as LedgerConfig;
 use penumbra_sdk_stake::GovernanceKey;
 use serde::{Deserialize, Serialize};
@@ -75,6 +76,7 @@ pub enum CustodyConfig {
     /// An encrypted custody service.
     Encrypted(EncryptedConfig),
     /// A custody service using an external ledger device.
+    #[cfg(feature = "ledger")]
     Ledger(LedgerConfig),
 }
 
