@@ -8,8 +8,10 @@ mod device;
 use std::{ops::DerefMut, sync::Arc};
 
 use device::Device;
+use penumbra_sdk_custody::AuthorizeRequest;
 use penumbra_sdk_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_sdk_proto::custody::v1::{self as pb, AuthorizeResponse};
+use penumbra_sdk_transaction::{AuthorizationData, TransactionPlan};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, MutexGuard};
 use tonic::{async_trait, Request, Response, Status};
@@ -75,15 +77,34 @@ impl Service {
     pub async fn impl_confirm_address(&self, index: AddressIndex) -> anyhow::Result<Address> {
         self.acquire_device().await?.confirm_addr(index).await
     }
+
+    /// A convenience method for authorizing a transaction
+    pub async fn impl_authorize(&self, plan: TransactionPlan) -> anyhow::Result<AuthorizationData> {
+        self.acquire_device().await?.authorize(plan).await
+    }
 }
 
 #[async_trait]
 impl pb::custody_service_server::CustodyService for Service {
     async fn authorize(
         &self,
-        _request: Request<pb::AuthorizeRequest>,
+        request: Request<pb::AuthorizeRequest>,
     ) -> Result<Response<AuthorizeResponse>, Status> {
-        todo!()
+        let request: AuthorizeRequest = request
+            .into_inner()
+            .try_into()
+            .map_err(|e: anyhow::Error| Status::invalid_argument(e.to_string()))?;
+
+        let authorization_data = self
+            .impl_authorize(request.plan)
+            .await
+            .map_err(|e| Status::unauthenticated(format!("{e:#}")))?;
+
+        let authorization_response = AuthorizeResponse {
+            data: Some(authorization_data.into()),
+        };
+
+        Ok(Response::new(authorization_response))
     }
 
     async fn authorize_validator_definition(
