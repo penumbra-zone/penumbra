@@ -117,13 +117,13 @@ impl GenericResponse {
     }
 }
 
-struct Device {
+pub struct Device {
     handle: LedgerHandle,
     buf: [u8; 256],
 }
 
 impl Device {
-    async fn connect_to_first() -> anyhow::Result<Self> {
+    pub async fn connect_to_first() -> anyhow::Result<Self> {
         let mut provider = LedgerProvider::init().await;
         let device_list = provider.list(Filters::Any).await?;
 
@@ -169,7 +169,7 @@ impl Device {
         Ok(GenericResponse { data: out })
     }
 
-    async fn get_fvk(&mut self) -> anyhow::Result<FullViewingKey> {
+    pub async fn get_fvk(&mut self) -> anyhow::Result<FullViewingKey> {
         // https://github.com/Zondax/ledger-penumbra/blob/9f57b82ad3b843bc18e22ba841f971659bcd0fe8/docs/APDUSPEC.md#ins_get_fvk
         let header = ApduHeader {
             cla: 0x80,
@@ -190,7 +190,7 @@ impl Device {
         Ok(fvk)
     }
 
-    async fn confirm_addr(&mut self, index: AddressIndex) -> anyhow::Result<Address> {
+    pub async fn confirm_addr(&mut self, index: AddressIndex) -> anyhow::Result<Address> {
         // https://github.com/Zondax/ledger-penumbra/blob/9f57b82ad3b843bc18e22ba841f971659bcd0fe8/docs/APDUSPEC.md#ins_get_addr        todo!()
         let header = ApduHeader {
             cla: 0x80,
