@@ -82,8 +82,6 @@ fn pretty_print_transaction_plan(
                 balance_commitment: dummy_commitment(),
                 nullifier: Nullifier(Fq::default()),
                 rk: dummy_pk(),
-                encrypted_backref: EncryptedBackref::try_from([0u8; 0])
-                    .expect("can create dummy encrypted backref"),
             },
             auth_sig: dummy_sig(),
             proof: dummy_proof_spend(),

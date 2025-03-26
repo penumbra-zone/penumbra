@@ -77,12 +77,11 @@ impl SpendPlan {
     pub fn spend_body(&self, fvk: &FullViewingKey) -> Body {
         // Construct the backreference for this spend.
         let backref = Backref::new(self.note.commit());
-        let encrypted_backref = backref.encrypt(&fvk.backref_key(), &self.nullifier(fvk));
+        //let encrypted_backref = backref.encrypt(&fvk.backref_key(), &self.nullifier(fvk));
         Body {
             balance_commitment: self.balance().commit(self.value_blinding),
             nullifier: self.nullifier(fvk),
             rk: self.rk(fvk),
-            encrypted_backref,
         }
     }
 

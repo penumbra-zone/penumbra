@@ -422,9 +422,6 @@ pub struct SpendBody {
     pub rk: ::core::option::Option<
         super::super::super::super::crypto::decaf377_rdsa::v1::SpendVerificationKey,
     >,
-    /// An encryption of the commitment of the input note to the sender's OVK.
-    #[prost(bytes = "vec", tag = "7")]
-    pub encrypted_backref: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for SpendBody {
     const NAME: &'static str = "SpendBody";

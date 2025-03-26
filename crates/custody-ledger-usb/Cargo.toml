@@ -21,3 +21,4 @@ tonic = {workspace = true}
 tracing = {workspace = true}
 serde = {workspace = true}
 tokio = { workspace = true, features = ["sync"] }
+hex = {workspace = true}

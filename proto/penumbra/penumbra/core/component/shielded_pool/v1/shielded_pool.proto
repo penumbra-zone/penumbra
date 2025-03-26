@@ -154,8 +154,6 @@ message SpendBody {
   sct.v1.Nullifier nullifier = 6;
   // The randomized validating key for the spend authorization signature.
   crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 4;
-  // An encryption of the commitment of the input note to the sender's OVK.
-  bytes encrypted_backref = 7;
 }
 message SpendView {
   message Visible {
