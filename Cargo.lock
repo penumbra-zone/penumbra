@@ -5521,7 +5521,9 @@ dependencies = [
  "penumbra-sdk-custody",
  "penumbra-sdk-keys",
  "penumbra-sdk-proto",
+ "penumbra-sdk-transaction",
  "serde",
+ "tokio",
  "tonic",
  "tracing",
 ]

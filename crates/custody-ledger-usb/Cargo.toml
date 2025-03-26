@@ -14,6 +14,7 @@ ledger-proto = {workspace = true}
 penumbra-sdk-custody = {workspace = true}
 penumbra-sdk-keys = {workspace = true}
 penumbra-sdk-proto = {workspace = true}
+penumbra-sdk-transaction = {workspace = true}
 tonic = {workspace = true}
 tracing = {workspace = true}
 serde = {workspace = true}
