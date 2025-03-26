@@ -141,23 +141,16 @@ impl FullViewingKey {
     }
 }
 
-impl DomainType for FullViewingKey {
-    type Proto = pb::FullViewingKey;
-}
-
-impl TryFrom<pb::FullViewingKey> for FullViewingKey {
+impl TryFrom<&[u8]> for FullViewingKey {
     type Error = anyhow::Error;
 
-    fn try_from(value: pb::FullViewingKey) -> Result<Self, Self::Error> {
-        if value.inner.len() != 64 {
-            anyhow::bail!(
-                "Wrong byte length, expected 64 but found {}",
-                value.inner.len()
-            );
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() != 64 {
+            anyhow::bail!("Wrong byte length, expected 64 but found {}", value.len());
         }
 
-        let ak_bytes: [u8; 32] = value.inner[0..32].try_into().context("fvk wrong length")?;
-        let nk_bytes: [u8; 32] = value.inner[32..64].try_into().context("fvk wrong length")?;
+        let ak_bytes: [u8; 32] = value[0..32].try_into().context("fvk wrong length")?;
+        let nk_bytes: [u8; 32] = value[32..64].try_into().context("fvk wrong length")?;
 
         let ak = ak_bytes.try_into()?;
         let nk = NullifierKey(
@@ -166,6 +159,18 @@ impl TryFrom<pb::FullViewingKey> for FullViewingKey {
         );
 
         Ok(FullViewingKey::from_components(ak, nk))
+    }
+}
+
+impl DomainType for FullViewingKey {
+    type Proto = pb::FullViewingKey;
+}
+
+impl TryFrom<pb::FullViewingKey> for FullViewingKey {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::FullViewingKey) -> Result<Self, Self::Error> {
+        Self::try_from(value.inner.as_slice())
     }
 }
 
