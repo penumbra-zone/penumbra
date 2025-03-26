@@ -5,7 +5,7 @@ use penumbra_sdk_txhash::EffectHash;
 
 /// Authorization data returned in response to a
 /// [`TransactionDescription`](crate::TransactionDescription).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct AuthorizationData {
     /// The computed authorization hash for the approved transaction.
     pub effect_hash: Option<EffectHash>,

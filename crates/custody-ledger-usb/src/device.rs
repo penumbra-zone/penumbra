@@ -7,6 +7,8 @@ use ledger_lib::{
 };
 use ledger_proto::ApduHeader;
 use penumbra_sdk_keys::{keys::AddressIndex, Address, FullViewingKey};
+use penumbra_sdk_proto::DomainType as _;
+use penumbra_sdk_transaction::{txhash::EffectHash, AuthorizationData, TransactionPlan};
 
 fn is_penumbra_app(info: &AppInfo) -> anyhow::Result<()> {
     if info.name != "Penumbra" {
@@ -23,6 +25,15 @@ fn address_index_to_weird_bytes(index: AddressIndex) -> [u8; 17] {
     out[..4].copy_from_slice(&index.account.to_le_bytes());
     out[4] = u8::from(index.randomizer != [0u8; 12]);
     out[5..].copy_from_slice(&index.randomizer);
+    out
+}
+
+fn vec_with_fixed_derivation_path(capacity: usize) -> Vec<u8> {
+    let mut out = Vec::with_capacity(12 + capacity);
+    out.extend_from_slice(&u32::to_le_bytes(0x8000_002C));
+    // :)
+    out.extend_from_slice(&u32::to_le_bytes(0x8000_1984));
+    out.extend_from_slice(&u32::to_le_bytes(0x8000_0000));
     out
 }
 
@@ -159,8 +170,11 @@ impl Device {
         self.buf[1] = header.ins;
         self.buf[2] = header.p1;
         self.buf[3] = header.p2;
-        self.buf[4] = data.len().try_into().expect("data length should be < 256");
-        self.buf[5..req_len].copy_from_slice(data);
+        // For empty data, we don't write the length at all.
+        if data.len() > 0 {
+            self.buf[4] = data.len().try_into().expect("data length should be < 256");
+            self.buf[5..req_len].copy_from_slice(data);
+        }
 
         let out = self
             .handle
@@ -177,11 +191,7 @@ impl Device {
             p1: 0,
             p2: 0,
         };
-        let mut req = Vec::with_capacity(3 * 4 + 17);
-        req.extend_from_slice(&u32::to_le_bytes(0x8000_002C));
-        // :)
-        req.extend_from_slice(&u32::to_le_bytes(0x8000_1984));
-        req.extend_from_slice(&u32::to_le_bytes(0x8000_0000));
+        let mut req = vec_with_fixed_derivation_path(17);
         // The request requires an address index which doesn't actually influence the result.
         req.extend_from_slice(&[0u8; 17]);
         tracing::debug!("sending FVK request");
@@ -199,11 +209,7 @@ impl Device {
             p1: 1,
             p2: 0,
         };
-        let mut req = Vec::with_capacity(3 * 4 + 17);
-        req.extend_from_slice(&u32::to_le_bytes(0x8000_002C));
-        // :)
-        req.extend_from_slice(&u32::to_le_bytes(0x8000_1984));
-        req.extend_from_slice(&u32::to_le_bytes(0x8000_0000));
+        let mut req = vec_with_fixed_derivation_path(17);
         // The request requires an address index which doesn't actually influence the result.
         req.extend_from_slice(&address_index_to_weird_bytes(index));
         tracing::debug!(?index, "sending confirm address request");
@@ -211,14 +217,83 @@ impl Device {
         let addr = Address::try_from(rsp.payload()?)?;
         Ok(addr)
     }
-}
 
-#[tracing::instrument]
-pub async fn main() -> anyhow::Result<()> {
-    let mut device = Device::connect_to_first().await?;
-    let fvk = device.get_fvk().await?;
-    println!("{}", fvk);
-    let addr = device.confirm_addr(AddressIndex::new(0u32)).await?;
-    println!("{}", addr);
-    todo!();
+    pub async fn authorize(&mut self, plan: TransactionPlan) -> anyhow::Result<AuthorizationData> {
+        // c.f. https://github.com/Zondax/ledger-penumbra-js/blob/d0af0e447d73de9050a258d80db8082e32734046/src/app.ts#L116
+        let plan_bytes = plan.encode_to_vec();
+
+        let start = vec_with_fixed_derivation_path(0);
+
+        let mut response = self
+            .request(
+                ApduHeader {
+                    cla: 0x80,
+                    ins: 0x02,
+                    p1: 0,
+                    p2: 0,
+                },
+                &start,
+            )
+            .await?;
+
+        let mut chunks = plan_bytes.chunks(250).peekable();
+        while let Some(chunk) = chunks.next() {
+            let is_last = chunks.peek().is_none();
+            response = self
+                .request(
+                    ApduHeader {
+                        cla: 0x80,
+                        ins: 0x02,
+                        p1: if is_last { 2 } else { 1 },
+                        p2: 0,
+                    },
+                    chunk,
+                )
+                .await?;
+        }
+
+        let response_data = response.payload()?;
+        if response_data.len() != 64 + 2 + 2 {
+            anyhow::bail!("unexpected signing response");
+        }
+        let mut auth_data = AuthorizationData::default();
+        auth_data.effect_hash = Some(EffectHash(response_data[..64].try_into()?));
+        let spend_auth_count: u8 =
+            u16::from_le_bytes(response_data[64..66].try_into()?).try_into()?;
+        let delegator_auth_count: u8 =
+            u16::from_le_bytes(response_data[66..68].try_into()?).try_into()?;
+
+        for i in 0..spend_auth_count {
+            response = self
+                .request(
+                    ApduHeader {
+                        cla: 0x80,
+                        ins: 0x05,
+                        p1: i,
+                        p2: 0,
+                    },
+                    &[],
+                )
+                .await?;
+            auth_data.spend_auths.push(response.payload()?.try_into()?);
+        }
+        for i in 0..delegator_auth_count {
+            response = self
+                .request(
+                    ApduHeader {
+                        cla: 0x80,
+                        ins: 0x06,
+                        p1: i,
+                        p2: 0,
+                    },
+                    &[],
+                )
+                .await?;
+            auth_data
+                .delegator_vote_auths
+                .push(response.payload()?.try_into()?);
+        }
+
+        Ok(auth_data)
+    }
 }
