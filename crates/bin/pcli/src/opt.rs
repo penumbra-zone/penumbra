@@ -102,6 +102,7 @@ impl Opt {
                 let custody_svc = CustodyServiceServer::new(encrypted_kms);
                 CustodyServiceClient::new(box_grpc_svc::local(custody_svc))
             }
+            #[cfg(feature = "ledger")]
             CustodyConfig::Ledger(config) => {
                 tracing::info!("using ledger custody service");
                 let service = penumbra_sdk_custody_ledger_usb::Service::new(config.clone());
