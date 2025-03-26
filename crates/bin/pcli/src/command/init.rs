@@ -6,6 +6,7 @@ use std::{
 use anyhow::Result;
 use camino::Utf8PathBuf;
 use penumbra_sdk_custody::threshold;
+#[cfg(feature = "ledger")]
 use penumbra_sdk_custody_ledger_usb as ledger;
 use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use rand_core::OsRng;
@@ -71,6 +72,7 @@ pub enum InitSubCmd {
     #[clap(skip, display_order = 200)]
     ViewOnly { full_viewing_key: String },
     /// Initialize using a ledger hardware wallet.
+    #[cfg(feature = "ledger")]
     #[clap(display_order = 250)]
     Ledger,
     /// If relevant, change the current config to an encrypted config, with a password.
@@ -389,6 +391,7 @@ impl InitCmd {
                             penumbra_sdk_custody::encrypted::InnerConfig::Threshold(c),
                         )?)
                     }
+                    #[cfg(feature = "ledger")]
                     CustodyConfig::Ledger(_config) => {
                         anyhow::bail!("An additional layer of password encryption is not (currently) possible for hardware wallets.");
                     }
@@ -398,12 +401,14 @@ impl InitCmd {
             (_, InitSubCmd::ReEncrypt, false) => {
                 anyhow::bail!("re-encrypt requires existing config to exist",);
             }
+            #[cfg(feature = "ledger")]
             (InitType::SpendKey, InitSubCmd::Ledger, false) => {
                 let config = ledger::Config::initialize(ledger::InitOptions::default()).await?;
                 let service = ledger::Service::new(config.clone());
                 let fvk = service.impl_export_full_viewing_key().await?;
                 (fvk, CustodyConfig::Ledger(config))
             }
+            #[cfg(feature = "ledger")]
             (InitType::GovernanceKey, InitSubCmd::Ledger, false) => {
                 anyhow::bail!("governance keys are not supported on ledger devices");
             }
