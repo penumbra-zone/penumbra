@@ -6,13 +6,24 @@ use ledger_lib::{
     DEFAULT_TIMEOUT,
 };
 use ledger_proto::ApduHeader;
-use penumbra_sdk_keys::FullViewingKey;
+use penumbra_sdk_keys::{keys::AddressIndex, Address, FullViewingKey};
 
 fn is_penumbra_app(info: &AppInfo) -> anyhow::Result<()> {
     if info.name != "Penumbra" {
         anyhow::bail!("unknown app: {}", &info.name);
     }
     Ok(())
+}
+
+/// Necessary because an extra byte is needed to optimize the case where there's no randomizer.
+///
+/// c.f. https://github.com/Zondax/ledger-penumbra-js/blob/d0af0e447d73de9050a258d80db8082e32734046/src/app.ts#L272
+fn address_index_to_weird_bytes(index: AddressIndex) -> [u8; 17] {
+    let mut out = [0u8; 17];
+    out[..4].copy_from_slice(&index.account.to_le_bytes());
+    out[4] = u8::from(index.randomizer != [0u8; 12]);
+    out[5..].copy_from_slice(&index.randomizer);
+    out
 }
 
 fn check_error_code(code: u16) -> anyhow::Result<()> {
@@ -166,17 +177,39 @@ impl Device {
             p1: 0,
             p2: 0,
         };
-        let mut req = Vec::with_capacity(3 * 4 + 16);
+        let mut req = Vec::with_capacity(3 * 4 + 17);
         req.extend_from_slice(&u32::to_le_bytes(0x8000_002C));
         // :)
         req.extend_from_slice(&u32::to_le_bytes(0x8000_1984));
         req.extend_from_slice(&u32::to_le_bytes(0x8000_0000));
         // The request requires an address index which doesn't actually influence the result.
-        req.extend_from_slice(&[0u8; 16]);
+        req.extend_from_slice(&[0u8; 17]);
         tracing::debug!("sending FVK request");
         let rsp = self.request(header, &req).await?;
         let fvk = FullViewingKey::try_from(rsp.payload()?)?;
         Ok(fvk)
+    }
+
+    async fn confirm_addr(&mut self, index: AddressIndex) -> anyhow::Result<Address> {
+        // https://github.com/Zondax/ledger-penumbra/blob/9f57b82ad3b843bc18e22ba841f971659bcd0fe8/docs/APDUSPEC.md#ins_get_addr        todo!()
+        let header = ApduHeader {
+            cla: 0x80,
+            ins: 0x01,
+            // We want the user to confirm the address.
+            p1: 1,
+            p2: 0,
+        };
+        let mut req = Vec::with_capacity(3 * 4 + 17);
+        req.extend_from_slice(&u32::to_le_bytes(0x8000_002C));
+        // :)
+        req.extend_from_slice(&u32::to_le_bytes(0x8000_1984));
+        req.extend_from_slice(&u32::to_le_bytes(0x8000_0000));
+        // The request requires an address index which doesn't actually influence the result.
+        req.extend_from_slice(&address_index_to_weird_bytes(index));
+        tracing::debug!(?index, "sending confirm address request");
+        let rsp = self.request(header, &req).await?;
+        let addr = Address::try_from(rsp.payload()?)?;
+        Ok(addr)
     }
 }
 
@@ -185,5 +218,7 @@ pub async fn main() -> anyhow::Result<()> {
     let mut device = Device::connect_to_first().await?;
     let fvk = device.get_fvk().await?;
     println!("{}", fvk);
+    let addr = device.confirm_addr(AddressIndex::new(0u32)).await?;
+    println!("{}", addr);
     todo!();
 }
