@@ -17,3 +17,4 @@ penumbra-sdk-proto = {workspace = true}
 tonic = {workspace = true}
 tracing = {workspace = true}
 serde = {workspace = true}
+tokio = { workspace = true, features = ["sync"] }
