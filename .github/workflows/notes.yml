@@ -20,8 +20,15 @@ jobs:
         with:
           lfs: true
 
-      - name: Install rust toolchain
-        run: rustup toolchain install nightly
+      - name: install nix
+        uses: nixbuild/nix-quick-install-action@v28
+
+      - name: setup nix cache
+        uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          backend: buildjet
 
       - name: Load Rust caching
         uses: astriaorg/buildjet-rust-cache@v2.5.1
@@ -30,12 +37,6 @@ jobs:
       # Let's still log the version of the docs we intend to build.
       - name: Print version component of deployment path
         run: echo ${{ github.event.inputs.image_tag || github.ref_name }}
-
-      # Ostensibly building from source, but the cache-loading above
-      # ensures we don't need to rebuild frequently.
-      - name: Install mdbook dependencies
-        # Make sure to install with `+nightly`, because that's the toolchain we'll use for building docs.
-        run: cargo +nightly install mdbook mdbook-katex mdbook-mermaid mdbook-linkcheck
 
       - name: Build protocol spec
         run: cd docs/protocol && mdbook build
@@ -58,7 +59,8 @@ jobs:
           PROJECT_PATH: docs/protocol
 
       - name: Build rustdocs
-        run: ./deployments/scripts/rust-docs
+        run: nix develop .#nightly --command ./deployments/scripts/rust-docs
+
       - name: Move API docs to subdirectory
         run: |
           cd docs/rustdoc

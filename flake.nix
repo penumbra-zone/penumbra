@@ -50,11 +50,52 @@
           rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
+          # Add nightly Rust toolchain, required for building the rustdocs with combined index landing page.
+          # https://github.com/oxalica/rust-overlay/blob/master/README.md#cheat-sheet-common-usage-of-rust-bin
+          nightlyRustToolchain = pkgs.rust-bin.selectLatestNightlyWith(toolchain: toolchain.default);
+          nightlyCraneLib = (crane.mkLib pkgs).overrideToolchain nightlyRustToolchain;
+
           # Important environment variables so that the build can find the necessary libraries
           PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig";
           LIBCLANG_PATH="${pkgs.libclang.lib}/lib";
           ROCKSDB_LIB_DIR="${pkgs.rocksdb.out}/lib";
         in with pkgs; with pkgs.lib; let
+          # Common development packages for all shells
+          commonDevPackages = [
+            buf
+            cargo-hack
+            cargo-nextest
+            cargo-release
+            cargo-watch
+            glibcLocales # for postgres initdb locale support
+            cometbft
+            grafana
+            grpcurl
+            grpcui
+            just
+            mdbook
+            mdbook-katex
+            mdbook-mermaid
+            mdbook-linkcheck
+            nix-prefetch-scripts
+            postgresql
+            process-compose
+            prometheus
+            protobuf
+            rocksdb
+            rsync
+            sqlfluff
+            toml-cli
+          ];
+
+          # Common shell hook content
+          commonShellHook = ''
+            export LIBCLANG_PATH=${LIBCLANG_PATH}
+            export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc} # Required for rust-analyzer
+            export ROCKSDB_LIB_DIR=${ROCKSDB_LIB_DIR}
+            export RUST_LOG="info,network_integration=debug,pclientd=debug,pcli=info,pd=info,penumbra=info"
+          '';
+
           # All the Penumbra binaries
           penumbra = (craneLib.buildPackage {
             pname = "penumbra";
@@ -148,41 +189,26 @@
             name = "penumbra-and-cometbft";
             paths = [ penumbra cometbft ];
           };
-          devShells.default = craneLib.devShell {
-            inherit LIBCLANG_PATH ROCKSDB_LIB_DIR;
-            inputsFrom = [ penumbra ];
-            packages = [
-              buf
-              cargo-hack
-              cargo-nextest
-              cargo-release
-              cargo-watch
-              glibcLocales # for postgres initdb locale support
-              cometbft
-              grafana
-              grpcurl
-              grpcui
-              just
-              mdbook
-              mdbook-katex
-              mdbook-mermaid
-              mdbook-linkcheck
-              nix-prefetch-scripts
-              postgresql
-              process-compose
-              prometheus
-              protobuf
-              rocksdb
-              rsync
-              sqlfluff
-              toml-cli
-            ];
-            shellHook = ''
-              export LIBCLANG_PATH=${LIBCLANG_PATH}
-              export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc} # Required for rust-analyzer
-              export ROCKSDB_LIB_DIR=${ROCKSDB_LIB_DIR}
-              export RUST_LOG="info,network_integration=debug,pclientd=debug,pcli=info,pd=info,penumbra=info"
-            '';
+          devShells = {
+            default = craneLib.devShell {
+              inherit LIBCLANG_PATH ROCKSDB_LIB_DIR;
+              inputsFrom = [ penumbra ];
+              packages = commonDevPackages;
+              shellHook = ''
+                ${commonShellHook}
+                echo "Using stable Rust from rust-toolchain.toml"
+              '';
+            };
+
+            nightly = nightlyCraneLib.devShell {
+              inherit LIBCLANG_PATH ROCKSDB_LIB_DIR;
+              inputsFrom = [ penumbra ];
+              packages = commonDevPackages;
+              shellHook = ''
+                ${commonShellHook}
+                echo "Using nightly Rust toolchain"
+              '';
+            };
           };
         }
       );

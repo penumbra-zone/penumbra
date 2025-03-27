@@ -16,20 +16,23 @@ jobs:
         with:
           lfs: true
 
-      - name: Install nightly rust toolchain
-        # The script for rustdoc build requires nightly toolchain.
-        run: rustup toolchain install nightly
+      - name: install nix
+        uses: nixbuild/nix-quick-install-action@v28
+
+      - name: setup nix cache
+        uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          backend: buildjet
 
       # Loading cache takes ~15s, but saves us minutes of build.
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
 
-      # Don't bother importing nix env, since we only need cargo-nightly,
-      # no other deps.
-
       # Building with warm cache takes ~40s, depending on changes.
       - name: Build rustdocs
-        run: ./deployments/scripts/rust-docs
+        run: nix develop .#nightly --command ./deployments/scripts/rust-docs
 
   # Also validate that the `mdbook` docs (guide & protocol) build correctly.
   # In particular, links are checked within the docs.

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Rebuild Rust crate documentation
+# Rebuild Rust crate documentation.
+#
+# We use a custom build process for the Rust API docs, in order to provide
+# a landing page that lists all relevant crates on a single page.
 set -euo pipefail
 
 # Set:
@@ -17,7 +20,14 @@ export RUSTDOCFLAGS="--enable-index-page -Zunstable-options --cfg docsrs"
 # Doing this in one go is useful because the JSON file with search
 # indexes is overwritten on each cargo doc invocation.
 
-cargo +nightly doc --no-deps \
+# The nix version of `cargo` does not support the `+nightly` flag.
+# There's a nix devShell specifically for nightly Rust, that's used in CI.
+# We'll still support non-nix Rust nightlies, though.
+nightly_opt=""
+if [[ -z "${IN_NIX_SHELL:-}" ]] ; then
+  nightly_opt="+nightly"
+fi
+cargo $nightly_opt doc --no-deps \
   -p ark-ff \
   -p ark-serialize \
   -p cnidarium \
@@ -66,5 +76,5 @@ cargo +nightly doc --no-deps \
   -p tendermint-config \
   -p tower-abci \
 
->&2 echo "Copying newly built index file to version-controlled path:"
+>&2 echo "Copying newly built index file to docroot for deployment"
 cp -v target/doc/index.html docs/rustdoc/index.html
