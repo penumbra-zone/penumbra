@@ -48,48 +48,110 @@
           overlays = [ (import rust-overlay) ];
           pkgs = import nixpkgs { inherit system overlays; };
           rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-          craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+          craneLibBase = crane.mkLib pkgs;
+          craneLib = craneLibBase.overrideToolchain rustToolchain;
+          craneLibNightly = craneLibBase.overrideToolchain (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default));
 
           # Important environment variables so that the build can find the necessary libraries
           PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig";
           LIBCLANG_PATH="${pkgs.libclang.lib}/lib";
           ROCKSDB_LIB_DIR="${pkgs.rocksdb.out}/lib";
         in with pkgs; with pkgs.lib; let
-          # All the Penumbra binaries
-          penumbra = (craneLib.buildPackage {
-            pname = "penumbra";
-            src = cleanSourceWith {
-              src = if penumbraRelease == null then craneLib.path ./. else fetchFromGitHub {
-                owner = "penumbra-zone";
-                repo = "penumbra";
-                rev = "v${penumbraRelease.version}";
-                sha256 = "${penumbraRelease.sha256}";
-              };
-              filter = path: type:
-                # Retain non-rust asset files as build inputs:
-                # * no_lfs, param, bin: proving and verification parameters
-                # * zip: frontend bundled assets
-                # * sql: database schema files for indexing
-                # * csv: default genesis allocations for testnet generation
-                # * json: default validator info for testnet generation
-                (builtins.match ".*\.(no_lfs|param|bin|zip|sql|csv|json)$" path != null) ||
-                # ... as well as all the normal cargo source files:
-                (craneLib.filterCargoSources path type);
+          penumbra-src = cleanSourceWith {
+            src = if penumbraRelease == null then craneLib.path ./. else fetchFromGitHub {
+              owner = "penumbra-zone";
+              repo = "penumbra";
+              rev = "v${penumbraRelease.version}";
+              sha256 = "${penumbraRelease.sha256}";
             };
+            filter = path: type:
+              # Retain non-rust asset files as build inputs:
+              # * no_lfs, param, bin: proving and verification parameters
+              # * zip: frontend bundled assets
+              # * sql: database schema files for indexing
+              # * csv: default genesis allocations for testnet generation
+              # * json: default validator info for testnet generation
+              (builtins.match ".*\.(no_lfs|param|bin|zip|sql|csv|json)$" path != null) ||
+              # ... as well as all the normal cargo source files:
+              (craneLib.filterCargoSources path type);
+          };
+          penumbra-common-args = {
             nativeBuildInputs = [ pkg-config ];
             buildInputs = if stdenv.hostPlatform.isDarwin then 
               with pkgs.darwin.apple_sdk.frameworks; [clang openssl rocksdb SystemConfiguration CoreServices]
             else
               [clang openssl rocksdb];
-
+            src = penumbra-src;
             inherit system PKG_CONFIG_PATH LIBCLANG_PATH ROCKSDB_LIB_DIR;
+          };
+          # All the Penumbra binaries
+          penumbra = (craneLib.buildPackage (penumbra-common-args // {
+            cargoArtifacts = craneLib.buildDepsOnly penumbra-common-args;
+            pname = "penumbra";
             cargoExtraArgs = "-p pd -p pcli -p pclientd -p pindexer -p pmonitor";
             meta = {
               description = "A fully private proof-of-stake network and decentralized exchange for the Cosmos ecosystem";
               homepage = "https://penumbra.zone";
               license = [ licenses.mit licenses.asl20 ];
             };
-          }).overrideAttrs (_: { doCheck = false; }); # Disable tests to improve build times
+          })).overrideAttrs (_: { doCheck = false; }); # Disable tests to improve build times
+          # penumbra documentation
+          penumbra-docs = (craneLibNightly.cargoDoc (penumbra-common-args // {
+            pname = "penumbra-docs";
+            cargoArtifacts = craneLibNightly.buildDepsOnly penumbra-common-args;
+            env = {
+              RUSTDOCFLAGS = "--enable-index-page -Zunstable-options --cfg docsrs";
+            };
+            cargoDocExtraArgs = builtins.concatStringsSep " " (map (x: "-p ${x}") [
+              "ark-ff"
+              "ark-serialize"
+              "cnidarium"
+              "cnidarium-component"
+              "cometindex"
+              "decaf377-fmd"
+              "decaf377-ka"
+              "decaf377-rdsa"
+              "decaf377@0.10.1"
+              "ibc-types"
+              "jmt"
+              "pcli"
+              "pclientd"
+              "pd"
+              "pmonitor"
+              "penumbra-sdk-app"
+              "penumbra-sdk-asset"
+              "penumbra-sdk-community-pool"
+              "penumbra-sdk-custody"
+              "penumbra-sdk-dex"
+              "penumbra-sdk-distributions"
+              "penumbra-sdk-fee"
+              "penumbra-sdk-governance"
+              "penumbra-sdk-ibc"
+              "penumbra-sdk-keys"
+              "penumbra-sdk-measure"
+              "penumbra-sdk-mock-consensus"
+              "penumbra-sdk-mock-tendermint-proxy"
+              "penumbra-sdk-mock-client"
+              "penumbra-sdk-num"
+              "penumbra-sdk-proof-params"
+              "penumbra-sdk-proof-setup"
+              "penumbra-sdk-proto"
+              "penumbra-sdk-sct"
+              "penumbra-sdk-shielded-pool"
+              "penumbra-sdk-stake"
+              "penumbra-sdk-tct"
+              "penumbra-sdk-transaction"
+              "penumbra-sdk-txhash"
+              "penumbra-sdk-view"
+              "penumbra-sdk-wallet"
+              "pindexer"
+              "poseidon-permutation"
+              "poseidon377"
+              "tendermint"
+              "tendermint-config"
+              "tower-abci"
+          ]);
+          })).overrideAttrs (_: { doCheck = false; }); # Disable tests to improve build times
 
           # CometBFT
           cometbft = (buildGoModule rec {
@@ -129,7 +191,7 @@
             };
           }).overrideAttrs (_: { doCheck = false; }); # Disable tests to improve build times
         in rec {
-          packages = { inherit penumbra cometbft; };
+          packages = { inherit penumbra cometbft penumbra-docs; };
           apps = {
             pd.type = "app";
             pd.program = "${penumbra}/bin/pd";
