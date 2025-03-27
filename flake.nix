@@ -51,10 +51,11 @@
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
           # Add nightly Rust toolchain, required for building the rustdocs with combined index landing page.
-          nightlyRustToolchain = pkgs.rust-bin.nightly.latest.default.override {
+          # https://github.com/oxalica/rust-overlay/blob/master/README.md#cheat-sheet-common-usage-of-rust-bin
+          nightlyRustToolchain = pkgs.rust-bin.selectLatestNightlyWith(toolchain: toolchain.override {
             extensions = [ "rust-src" "rust-analyzer" ];
             targets = [ "wasm32-unknown-unknown" ];
-          };
+          });
           nightlyCraneLib = (crane.mkLib pkgs).overrideToolchain nightlyRustToolchain;
 
           # Important environment variables so that the build can find the necessary libraries
