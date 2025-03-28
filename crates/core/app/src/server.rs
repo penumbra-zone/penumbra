@@ -1,10 +1,11 @@
 //! Facilities related to the Penumbra app's ABCI server.
 
 use {
-    self::{
-        consensus::Consensus, events::EventIndexLayer, info::Info, mempool::Mempool,
-        snapshot::Snapshot,
-    },
+    consensus::Consensus,
+    events::EventIndexLayer,
+    info::Info,
+    mempool::Mempool,
+    snapshot::Snapshot,
     cnidarium::Storage,
     penumbra_sdk_tower_trace::trace::request_span,
     tendermint::v0_37::abci::{
@@ -66,17 +67,15 @@ pub fn new(
         .consensus(consensus)
         .snapshot(snapshot)
         .mempool(mempool)
-        .info(info.clone())
+        .info(info)
         .finish()
-        // Safety: the consensus, snapshot, mempool, and info services have all been provided
-        // to the builder above.
+        // All required ABCI components have been provided to the builder.
         .expect("all components of abci have been provided")
 }
 
 #[cfg(test)]
 mod bounds_test {
     /// Show that a server satisfies the trait bounds needed to listen on a TCP port.
-    #[allow(dead_code, unreachable_code, unused_variables)]
     async fn servers_can_listen() {
         let storage: cnidarium::Storage = todo!();
         let addr: std::net::SocketAddr = todo!();
