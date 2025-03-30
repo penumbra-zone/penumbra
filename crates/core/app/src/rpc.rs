@@ -10,8 +10,10 @@ use {
     self::query::AppQueryServer,
     crate::PenumbraHost,
     anyhow::Context,
-    cnidarium::proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer,
-    cnidarium::rpc::Server as StorageServer,
+    cnidarium::{
+        proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer,
+        rpc::Server as StorageServer,
+    },
     ibc_proto::{
         cosmos::bank::v1beta1::query_server::QueryServer as TransferQueryServer,
         ibc::{
@@ -27,6 +29,7 @@ use {
     penumbra_sdk_compact_block::component::rpc::Server as CompactBlockServer,
     penumbra_sdk_dex::component::rpc::Server as DexServer,
     penumbra_sdk_fee::component::rpc::Server as FeeServer,
+    penumbra_sdk_funding::component::rpc::Server as FundingServer,
     penumbra_sdk_governance::component::rpc::Server as GovernanceServer,
     penumbra_sdk_proto::{
         core::{
@@ -39,6 +42,7 @@ use {
                     simulation_service_server::SimulationServiceServer,
                 },
                 fee::v1::query_service_server::QueryServiceServer as FeeQueryServiceServer,
+                funding::v1::funding_service_server::FundingServiceServer as FundingQueryServiceServer,
                 governance::v1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
                 sct::v1::query_service_server::QueryServiceServer as SctQueryServiceServer,
                 shielded_pool::v1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
@@ -114,6 +118,9 @@ pub fn routes(
         .add_service(we(ConnectionQueryServer::new(ibc.clone())))
         .add_service(we(TendermintProxyServiceServer::new(tm_proxy)))
         .add_service(we(SimulationServiceServer::new(DexServer::new(
+            storage.clone(),
+        ))))
+        .add_service(we(FundingQueryServiceServer::new(FundingServer::new(
             storage.clone(),
         ))))
         .add_service(we(tonic_reflection::server::Builder::configure()
