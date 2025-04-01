@@ -333,7 +333,7 @@ pub trait PositionManager: StateWrite + PositionRead {
     /// Some positions are `close_on_fill` i.e. they are programmed to close after
     /// execution exhausts either side of their reserves. This method returns the
     /// position that was written to the chain state, making it possible for callers
-    /// to inspect any change that has occured during execution handling.
+    /// to inspect any change that has occurred during execution handling.
     #[tracing::instrument(level = "debug", skip(self, new_state))]
     async fn position_execution(
         &mut self,

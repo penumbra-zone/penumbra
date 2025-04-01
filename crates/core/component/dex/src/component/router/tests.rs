@@ -1519,8 +1519,8 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-/// This test reproduces a chain divergence bug that occured in testnet v0.53.1
-/// The bug occured during path search and would cause the reported spill price
+/// This test reproduces a chain divergence bug that occurred in testnet v0.53.1
+/// The bug occurred during path search and would cause the reported spill price
 /// to be dependent on the order of sub-path relaxation which is non-deterministic.
 /// The bug was located in the condition of mutation of the `PathCache`. Previously,
 /// we would only mutate the cache if the new path was better than the previous path.
