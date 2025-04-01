@@ -286,6 +286,9 @@ pub enum TxCmd {
         /// Only withdraw funds from the specified wallet id within Penumbra.
         #[clap(long, default_value = "0", display_order = 200)]
         source: u32,
+        /// Optional. Set the IBC ICS-20 packet memo field to the provided text.
+        #[clap(long)]
+        memo: Option<String>,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
@@ -1153,6 +1156,7 @@ impl TxCmd {
                 timeout_timestamp,
                 channel,
                 source,
+                memo,
                 fee_tier,
                 use_transparent_address,
             } => {
@@ -1277,7 +1281,7 @@ impl TxCmd {
                     // TODO: impl From<u64> for ChannelId
                     source_channel: ChannelId::from_str(format!("channel-{}", channel).as_ref())?,
                     use_compat_address: false,
-                    ics20_memo: "".to_string(),
+                    ics20_memo: memo.clone().unwrap_or_default(),
                     use_transparent_address: *use_transparent_address,
                 };
 
