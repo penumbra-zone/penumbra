@@ -126,7 +126,7 @@ impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 ///                                                  ║            
 ///                                                  ║            
 ///                                           User initiated      
-///                                              withdrawl        
+///                                              withdraw        
 ///                                                  ║            
 ///                                                  ║            
 ///                                                  ║            

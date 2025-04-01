@@ -39,7 +39,7 @@ pub struct Ics20Withdrawal {
     pub source_channel: ChannelId,
 
     // Whether to use a "compat" (bech32, non-m) address for the return address in the withdrawal,
-    // for compatability with chains that expect to be able to parse the return address as bech32.
+    // for compatibility with chains that expect to be able to parse the return address as bech32.
     pub use_compat_address: bool,
 
     // Arbitrary string data to be included in the `memo` field
@@ -88,7 +88,7 @@ impl Ics20Withdrawal {
             anyhow::bail!("timeout time must be non-zero");
         }
 
-        // in order to prevent clients from inadvertantly identifying themselves by their clock
+        // in order to prevent clients from inadvertently identifying themselves by their clock
         // skew, enforce that timeout time is rounded to the nearest minute
         if self.timeout_time % 60_000_000_000 != 0 {
             anyhow::bail!(

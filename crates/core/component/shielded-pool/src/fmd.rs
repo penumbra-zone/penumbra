@@ -211,7 +211,7 @@ impl Default for MetaParameters {
 ///
 /// This allows algorithms to hold arbitrary state. The algorithms need to be able
 /// to start from having no state and function appropriately, which allows for good
-/// backwards-compatability.
+/// backwards-compatibility.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(
     try_from = "pb::FmdMetaParametersAlgorithmState",
