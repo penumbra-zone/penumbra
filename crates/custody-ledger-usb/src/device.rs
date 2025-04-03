@@ -12,7 +12,10 @@ use penumbra_sdk_transaction::{txhash::EffectHash, AuthorizationData, Transactio
 
 fn is_penumbra_app(info: &AppInfo) -> anyhow::Result<()> {
     if info.name != "Penumbra" {
-        anyhow::bail!("unknown app: {}", &info.name);
+        anyhow::bail!(
+            "unknown app: {}. Make sure to open the Penumbra app on your device.",
+            &info.name
+        );
     }
     Ok(())
 }
