@@ -1253,14 +1253,9 @@ impl Component {
         positions: &BTreeMap<PositionId, Position>,
     ) -> anyhow::Result<()> {
         // Get the position that was executed against
-        let position = match positions.get(&event.position_id) {
-            Some(x) => x,
-            None => {
-                tracing::warn!("unknown position {} executed against", event.position_id);
-                return Ok(());
-            }
-        };
-
+        let position = positions
+            .get(&event.position_id)
+            .expect("position must exist for execution");
         let current = Reserves {
             r1: event.reserves_1,
             r2: event.reserves_2,
@@ -1384,12 +1379,7 @@ impl Component {
                 reserves_1,
                 reserves_2,
                 reserves_rowid
-            )
-            SELECT $1, $2, $3, $4, $5, $6, $7, $8
-            WHERE EXISTS (
-                SELECT 1 FROM dex_ex_position_state WHERE position_id = $1
-            )
-            ",
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         )
         .bind(event.position_id.0)
         .bind(height)
