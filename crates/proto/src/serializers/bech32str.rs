@@ -77,7 +77,7 @@ pub mod validator_identity_key {
     use super::*;
 
     /// The Bech32 prefix used for validator identity keys.
-    pub const BECH32_PREFIX: &str = "penumbravalid";
+    pub const BECH32_PREFIX: &str = "cyclesvalid";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
@@ -99,7 +99,7 @@ pub mod validator_governance_key {
     use super::*;
 
     /// The Bech32 prefix used for validator governance keys.
-    pub const BECH32_PREFIX: &str = "penumbragovern";
+    pub const BECH32_PREFIX: &str = "cyclesgovern";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
@@ -187,7 +187,7 @@ pub mod full_viewing_key {
     use super::*;
 
     /// The Bech32 prefix used for full viewing keys.
-    pub const BECH32_PREFIX: &str = "penumbrafullviewingkey";
+    pub const BECH32_PREFIX: &str = "cyclesfullviewingkey";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
@@ -209,7 +209,7 @@ pub mod wallet_id {
     use super::*;
 
     /// The Bech32 prefix used for wallet ids.
-    pub const BECH32_PREFIX: &str = "penumbrawalletid";
+    pub const BECH32_PREFIX: &str = "cycleswalletid";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
@@ -231,7 +231,7 @@ pub mod spend_key {
     use super::*;
 
     /// The Bech32 prefix used for spend keys.
-    pub const BECH32_PREFIX: &str = "penumbraspendkey";
+    pub const BECH32_PREFIX: &str = "cyclesspendkey";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
