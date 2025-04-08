@@ -121,7 +121,7 @@ pub mod address {
     use super::*;
 
     /// The Bech32 prefix used for addresses.
-    pub const BECH32_PREFIX: &str = "penumbra";
+    pub const BECH32_PREFIX: &str = "cycles";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
@@ -143,7 +143,7 @@ pub mod compat_address {
     use super::*;
 
     /// The Bech32 prefix used for compat addresses (Bech32, not Bech32m, addresses).
-    pub const BECH32_PREFIX: &str = "penumbracompat1";
+    pub const BECH32_PREFIX: &str = "cyclescompat1";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
