@@ -42,7 +42,7 @@ pub async fn migrate(
     let (migration_duration, post_upgrade_root_hash) = {
         let start_time = std::time::SystemTime::now();
 
-        migrate_app_version(&mut delta, 9).await?;
+        migrate_app_version(&mut delta, 10).await?;
 
         // Reset the application height and halt flag.
         delta.ready_to_start();
