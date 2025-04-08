@@ -2999,9 +2999,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd68e32f5bd94849131670d34e21b0fb66057e91bee8e451e7f4e216e71616d2"
+checksum = "2370a3055f69d9dfe7382080a509560d2dd412d9f9f2a44e3a68945e5ec46955"
 dependencies = [
  "ibc-types-core-channel",
  "ibc-types-core-client",
@@ -3017,9 +3017,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-channel"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c57da64f7e945e7443035275cc279e0176c988ea625968c2526706aafcff1766"
+checksum = "06058daf96374a50364aac20de8dbf78e493a775dc10b8584830b59f71fc8522"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3050,9 +3050,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-client"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "108a89f64ffa39e04a7e29de9d9824523c3164f8518927716be870ad8a7aedf9"
+checksum = "f44e3d3c92c22dacd2c8ca0a88af6241c15826a09aa234aa194c93c877a7c62a"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3077,9 +3077,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-commitment"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8949e33fbb9c3f1ae49588f4829977e80439f3dfc1491b5a69492f5e4a036949"
+checksum = "f410ddb6af18ec45b05817cd31458566954bf7277172522514be6d8205b5361b"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3112,9 +3112,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-connection"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f63035288d11e5830daf20fd99507a671ab1cc03fa04752d75ef1c75e2786543"
+checksum = "eb38f6cbfad8ccad7b7549dff3ef741b81881963708e959429dbe31273f8421d"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3142,9 +3142,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-domain-type"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2c543a23a77a5d814e0aeffd5a918964468a8b213f664897bc3f8c50cc7d5c1"
+checksum = "2dd7cacffb213747dfb9ab0e6cc3be15a8650310d424375518d780e1750ab92d"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3153,9 +3153,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-identifier"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2ed2d7f06055bb2548564bf02c8c4b47561134f282adae61dc5c6ed722e1cde"
+checksum = "a5d6f619f4e7ccaf76140c907ca994a70f220ee6ad4b60e2dc12403cf4250ace"
 dependencies = [
  "displaydoc",
  "serde",
@@ -3164,9 +3164,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-lightclients-tendermint"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00fd846b7eedca1dfbb7babeb55e0d74fb0d09a7db63da93737d54a581a96371"
+checksum = "84c5f0e9ae4354c692476d527432f9157c499ff25b528e008e7d353b3d49f473"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3201,9 +3201,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-path"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f4da80e010427aff50f227920cdc8f7879469ce2db181cbcf92dc228172a334"
+checksum = "753ca9e6a7c27356e4ed0ce6b290abd1c3d01645803d825b98f992ebd8bd6964"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3224,9 +3224,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-timestamp"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "748b2fbebe30ca799d31f6fc220d705b5180a608db842e29a3722671411d81a6"
+checksum = "0f024a20672250555fa537bf8fef31aba6f4ab8f86b272e8025338cc004c3edb"
 dependencies = [
  "bytes",
  "displaydoc",
@@ -3243,9 +3243,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-transfer"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fcb46fe34a87db49bc9bb20918d7f882871a20d741d866d217c52a5dbe16a72"
+checksum = "6684f2e9a5f0fc723e22a185852a22a02d3c6d20d8bf863c37fe5c814be5f7ef"
 dependencies = [
  "displaydoc",
  "serde",
