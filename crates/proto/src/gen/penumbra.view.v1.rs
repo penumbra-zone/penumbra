@@ -22,9 +22,12 @@ impl ::prost::Name for LqtVotingNotesRequest {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LqtVotingNotesResponse {
-    /// The delegation note that can be used to vote with in current epoch.
+    /// The delegation note that can be used to vote with in current epoch, only if `already_voted` is false.
     #[prost(message, optional, tag = "1")]
     pub note_record: ::core::option::Option<SpendableNoteRecord>,
+    /// Flag indicating whether each note was already used for voting in the current epoch.
+    #[prost(bool, tag = "2")]
+    pub already_voted: bool,
 }
 impl ::prost::Name for LqtVotingNotesResponse {
     const NAME: &'static str = "LqtVotingNotesResponse";
