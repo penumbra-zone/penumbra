@@ -1,4 +1,4 @@
-# Dev depedencies are considered circular.
+# Dev dependencies are considered circular.
 # Previously, this test suite was located in `penumbra-sdk-app`.
 # 
 [package]

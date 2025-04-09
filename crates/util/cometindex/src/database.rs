@@ -2,7 +2,7 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 
 /// Create a Database, with, for sanity, some read only settings.
 ///
-/// These will be overrideable by a consumer who knows what they're doing,
+/// These will be overridable by a consumer who knows what they're doing,
 /// but prevents basic mistakes.
 /// c.f. https://github.com/launchbadge/sqlx/issues/481#issuecomment-727011811
 pub async fn read_only_db(url: &str) -> anyhow::Result<PgPool> {
