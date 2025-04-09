@@ -3743,9 +3743,15 @@ impl serde::Serialize for LqtVotingNotesResponse {
         if self.note_record.is_some() {
             len += 1;
         }
+        if self.already_voted {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LqtVotingNotesResponse", len)?;
         if let Some(v) = self.note_record.as_ref() {
             struct_ser.serialize_field("noteRecord", v)?;
+        }
+        if self.already_voted {
+            struct_ser.serialize_field("alreadyVoted", &self.already_voted)?;
         }
         struct_ser.end()
     }
@@ -3759,11 +3765,14 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesResponse {
         const FIELDS: &[&str] = &[
             "note_record",
             "noteRecord",
+            "already_voted",
+            "alreadyVoted",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             NoteRecord,
+            AlreadyVoted,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3787,6 +3796,7 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesResponse {
                     {
                         match value {
                             "noteRecord" | "note_record" => Ok(GeneratedField::NoteRecord),
+                            "alreadyVoted" | "already_voted" => Ok(GeneratedField::AlreadyVoted),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3807,6 +3817,7 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesResponse {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut note_record__ = None;
+                let mut already_voted__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteRecord => {
@@ -3815,6 +3826,12 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesResponse {
                             }
                             note_record__ = map_.next_value()?;
                         }
+                        GeneratedField::AlreadyVoted => {
+                            if already_voted__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("alreadyVoted"));
+                            }
+                            already_voted__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3822,6 +3839,7 @@ impl<'de> serde::Deserialize<'de> for LqtVotingNotesResponse {
                 }
                 Ok(LqtVotingNotesResponse {
                     note_record: note_record__,
+                    already_voted: already_voted__.unwrap_or_default(),
                 })
             }
         }
