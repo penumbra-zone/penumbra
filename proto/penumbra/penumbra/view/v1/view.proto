@@ -168,8 +168,10 @@ message LqtVotingNotesRequest {
 }
 
 message LqtVotingNotesResponse {
-  // The delegation note that can be used to vote with in current epoch. 
+  // The delegation note that can be used to vote with in current epoch, only if `already_voted` is false.
   SpendableNoteRecord note_record = 1;
+  // Flag indicating whether each note was already used for voting in the current epoch.
+  bool already_voted = 2;
 }
 
 // Note: implementations must not accept messages with both `epoch_index`

@@ -1915,6 +1915,7 @@ impl ViewService for ViewServer {
         let stream = tokio_stream::iter(notes.into_iter().map(|(note, _)| {
             Result::<_, tonic::Status>::Ok(pb::LqtVotingNotesResponse {
                 note_record: Some(note.into()),
+                already_voted: false,
             })
         }));
         Ok(tonic::Response::new(stream.boxed()))
