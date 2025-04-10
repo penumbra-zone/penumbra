@@ -58,30 +58,6 @@ members = [
   "tools/parameter-setup",
 ]
 
-# Config for 'cargo dist'
-[workspace.metadata.dist]
-# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.13.3"
-# CI backends to support
-ci = ["github"]
-# The archive format to use for non-windows builds (defaults .tar.xz)
-unix-archive = ".tar.gz"
-# Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu"]
-# The installers to generate for each app
-installers = ["shell"]
-# Publish jobs to run in CI
-pr-run-mode = "skip"
-# Skip checking whether the specified configuration files are up to date
-allow-dirty = ["ci"]
-# Whether to install an updater program
-install-updater = false
-
-[workspace.metadata.dist.github-custom-runners]
-aarch64-apple-darwin = "macos-13-large"
-x86_64-apple-darwin = "macos-13-large"
-x86_64-unknown-linux-gnu = "buildjet-32vcpu-ubuntu-2204"
-
 # The profile that 'cargo dist' will build with
 [profile.dist]
 inherits = "release"
