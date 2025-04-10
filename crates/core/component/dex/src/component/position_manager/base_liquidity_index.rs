@@ -23,7 +23,7 @@ pub(crate) trait AssetByLiquidityIndex: StateWrite {
     /// - A primary index that maps a "start" asset A (aka. base asset)
     ///   to an "end" asset B (aka. quote asset) ordered by the amount of
     ///   liquidity available for B -> A (not a typo).
-    /// - An auxilliary index that maps a directed trading pair `A -> B`
+    /// - An auxiliary index that maps a directed trading pair `A -> B`
     ///   to the aggregate liquidity for B -> A (used in the primary composite key)
     ///
     /// If we want liquidity rankings for assets adjacent to A, the ranking has to be
