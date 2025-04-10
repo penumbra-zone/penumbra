@@ -39,7 +39,7 @@ jobs:
         run: echo ${{ github.event.inputs.image_tag || github.ref_name }}
 
       - name: Build protocol spec
-        run: cd docs/protocol && mdbook build
+        run: cd docs/protocol/ && nix develop --command mdbook build
 
       - name: Move protocol spec to subdirectory
         run: |
