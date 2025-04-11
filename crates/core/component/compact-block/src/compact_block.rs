@@ -68,7 +68,7 @@ impl Default for CompactBlock {
 }
 
 impl CompactBlock {
-    /// Returns true if the compact block is empty.
+    /// Returns true if the compact block contains any data that requires scanning.
     pub fn requires_scanning(&self) -> bool {
         !self.state_payloads.is_empty() // need to scan notes
             || !self.nullifiers.is_empty() // need to collect nullifiers
