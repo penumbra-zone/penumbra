@@ -48,11 +48,22 @@ fn check_version(ctx: CheckContext, expected: u64, found: Option<u64>) -> anyhow
                 expected, expected_name
             )?;
             write!(&mut error, "  found {} (penumbra {})\n", found, found_name)?;
-            write!(
-                &mut error,
-                "make sure you're running penumbra {}",
-                expected_name
-            )?;
+            write!(&mut error, "Are you using the right node directory?\n")?;
+            // For a greater difference, the wrong directory is probably being used.
+            if found == expected - 1 {
+                write!(&mut error, "Does a migration need to happen?\n")?;
+                write!(
+                    &mut error,
+                    "If so, then run `pd migrate` with version {}",
+                    expected_name
+                )?;
+            } else {
+                write!(
+                    &mut error,
+                    "make sure you're running penumbra {}",
+                    expected_name
+                )?;
+            }
             Err(anyhow!(error))
         }
         CheckContext::Migration => {
