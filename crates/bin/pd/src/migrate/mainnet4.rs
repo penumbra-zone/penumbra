@@ -3,6 +3,7 @@
 //! This migration is a no-op in terms of state. It'll perform the required
 //! APP_VERSION munging for UIP-6, and generate the usual new genesis and validator
 //! watermark files.use cnidarium::{StateDelta, Storage};
+use cnidarium::{StateDelta, Storage};
 use jmt::RootHash;
 use penumbra_sdk_app::app::StateReadExt as _;
 use penumbra_sdk_app::app_version::migrate_app_version;
