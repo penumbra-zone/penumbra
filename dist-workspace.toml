@@ -1,0 +1,31 @@
+[workspace]
+members = ["cargo:."]
+
+# Config for 'dist'
+[dist]
+# The preferred dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.28.0"
+# CI backends to support
+ci = "github"
+# The archive format to use for non-windows builds (defaults .tar.xz)
+unix-archive = ".tar.gz"
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = ["aarch64-apple-darwin", "aarch64-unknown-linux-gnu", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu"]
+# The installers to generate for each app
+installers = ["shell"]
+# Which actions to run on pull requests
+pr-run-mode = "skip"
+# Skip checking whether the specified configuration files are up to date
+allow-dirty = ["ci"]
+# Whether to install an updater program
+install-updater = false
+# Path that installers should place binaries in
+install-path = "CARGO_HOME"
+# Build only the required packages, and individually
+precise-builds = true
+
+[dist.github-custom-runners]
+aarch64-apple-darwin = "macos-13-large"
+x86_64-apple-darwin = "macos-13-large"
+x86_64-unknown-linux-gnu = "buildjet-32vcpu-ubuntu-2204"
+aarch64-unknown-linux-gnu = "buildjet-32vcpu-ubuntu-2204-arm"
