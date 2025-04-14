@@ -24,7 +24,7 @@ colored = "2.1.0"
 directories = {workspace = true}
 futures = {workspace = true}
 indicatif = {workspace = true}
-pcli = {version = "2.0.0-alpha.6", path = "../pcli", default-features = true}
+pcli = {version = "2.0.0-alpha.7", path = "../pcli", default-features = true}
 penumbra-sdk-app = {workspace = true}
 penumbra-sdk-asset = {workspace = true, default-features = false}
 penumbra-sdk-compact-block = {workspace = true, default-features = false}
