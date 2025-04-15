@@ -311,7 +311,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
         );
     }
 
-    // Confirm that the new validator's voting power has not changed immeditaly.
+    // Confirm that the new validator's voting power has not changed immediately.
     let new_validator_original_power = {
         use penumbra_sdk_sct::component::clock::EpochRead;
         let pre_delegate_power = pre_delegate_snapshot

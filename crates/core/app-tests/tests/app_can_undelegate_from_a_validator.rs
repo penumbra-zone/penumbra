@@ -57,7 +57,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
             .latest_snapshot()
             .get_current_epoch()
             .await
-            .expect("should be able to get curent epoch")
+            .expect("should be able to get current epoch")
     };
 
     // Configure an AppState with slightly shorter epochs than usual.
