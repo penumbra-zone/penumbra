@@ -40,6 +40,7 @@ members = [
   "crates/crypto/proof-setup",
   "crates/crypto/tct",
   "crates/custody",
+  "crates/custody-ledger-usb",
   "crates/misc/measure",
   "crates/misc/tct-visualize",
   "crates/proto",
@@ -144,6 +145,8 @@ ics23                            = { version = "0.12.0" }
 im                               = { version = "^15.1.0" }
 indicatif                        = { version = "0.16" }
 jmt                              = { version = "0.11", features = ["migration"] }
+ledger-lib = { git = "https://github.com/ledger-community/rust-ledger", rev = "510bb3ca30639af4bdb12a918b6bbbdb75fa5f52" }
+ledger-proto = { git = "https://github.com/ledger-community/rust-ledger", rev = "510bb3ca30639af4bdb12a918b6bbbdb75fa5f52" }
 metrics                          = { version = "0.24.1" }
 metrics-exporter-prometheus      = { version = "0.16", features = ["http-listener"] }
 metrics-tracing-context          = { version = "0.17.0" }
@@ -155,10 +158,11 @@ pbjson                           = { version = "0.7.0" }
 pbjson-types                     = { version = "0.7.0" }
 penumbra-sdk-app                     = { default-features = false, version = "1.4.0", path = "crates/core/app" }
 penumbra-sdk-asset                   = { default-features = false, version = "1.4.0", path = "crates/core/asset" }
+penumbra-sdk-auction                 = { default-features = false, version = "1.4.0", path = "crates/core/component/auction" }
 penumbra-sdk-community-pool          = { default-features = false, version = "1.4.0", path = "crates/core/component/community-pool" }
 penumbra-sdk-compact-block           = { default-features = false, version = "1.4.0", path = "crates/core/component/compact-block" }
 penumbra-sdk-custody                 = { version = "1.4.0", path = "crates/custody" }
-penumbra-sdk-auction                 = { default-features = false, version = "1.4.0", path = "crates/core/component/auction" }
+penumbra-sdk-custody-ledger-usb      = { version = "1.4.0", path = "crates/custody-ledger-usb" }
 penumbra-sdk-dex                     = { default-features = false, version = "1.4.0", path = "crates/core/component/dex" }
 penumbra-sdk-distributions           = { default-features = false, version = "1.4.0", path = "crates/core/component/distributions" }
 penumbra-sdk-fee                     = { default-features = false, version = "1.4.0", path = "crates/core/component/fee" }
@@ -229,3 +233,8 @@ tracing                          = { version = "0.1" }
 tracing-subscriber               = { version = "0.3.17", features = ["env-filter"] }
 url                              = { version = "2.2" }
 getrandom                        = { version = "0.2", default-features = false }
+
+[patch.crates-io]
+# Without this, the git dependency for ledger-lib will depend on the crates.io v0.1 version,
+# and will fail to build.
+ledger-proto = { git = "https://github.com/ledger-community/rust-ledger", rev = "510bb3ca30639af4bdb12a918b6bbbdb75fa5f52" }
