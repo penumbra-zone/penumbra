@@ -1,0 +1,20 @@
+[package]
+name = "elcuity"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
+description = "Tool for liquidity tournament related testing"
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
+publish = false
+
+[package.metadata.dist]
+dist = true
+
+[dependencies]
+anyhow = {workspace = true}
+clap = {workspace = true, features = ["derive", "env"]}
+tokio = {workspace = true}
+tracing = {workspace = true}
+tracing-subscriber = {workspace = true, features = ["env-filter"]}

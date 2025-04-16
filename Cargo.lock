@@ -2012,6 +2012,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "elcuity"
+version = "2.0.0-alpha.9"
+dependencies = [
+ "anyhow",
+ "clap",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
 name = "elliptic-curve"
 version = "0.13.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
