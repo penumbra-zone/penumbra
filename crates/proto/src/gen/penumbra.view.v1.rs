@@ -68,25 +68,46 @@ impl ::prost::Name for TournamentVotesRequest {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TournamentVotesResponse {
-    /// The incentivized asset receiving this vote.
-    #[prost(message, optional, tag = "1")]
-    pub incentivized_asset: ::core::option::Option<
-        super::super::core::asset::v1::AssetId,
-    >,
-    /// The amount of voting power that this specific vote contributed.
-    #[prost(message, optional, tag = "2")]
-    pub vote_power: ::core::option::Option<super::super::core::num::v1::Amount>,
-    /// The amount of rewards issued for votes on this asset.
-    #[prost(message, optional, tag = "3")]
-    pub reward: ::core::option::Option<super::super::core::asset::v1::Value>,
-    /// The transaction ID for the vote.
-    #[prost(message, optional, tag = "4")]
-    pub transaction: ::core::option::Option<
-        super::super::core::txhash::v1::TransactionId,
-    >,
-    /// Epoch index the vote occured in.
-    #[prost(uint64, tag = "5")]
-    pub epoch_index: u64,
+    /// A list of votes cast for the incentivized asset.
+    #[prost(message, repeated, tag = "1")]
+    pub votes: ::prost::alloc::vec::Vec<tournament_votes_response::Vote>,
+}
+/// Nested message and enum types in `TournamentVotesResponse`.
+pub mod tournament_votes_response {
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Vote {
+        /// The incentivized asset receiving this vote.
+        #[prost(message, optional, tag = "1")]
+        pub incentivized_asset: ::core::option::Option<
+            super::super::super::core::asset::v1::AssetId,
+        >,
+        /// The amount of voting power that this specific vote contributed.
+        #[prost(message, optional, tag = "2")]
+        pub vote_power: ::core::option::Option<
+            super::super::super::core::num::v1::Amount,
+        >,
+        /// The amount of rewards issued for votes on this asset.
+        #[prost(message, optional, tag = "3")]
+        pub reward: ::core::option::Option<super::super::super::core::asset::v1::Value>,
+        /// The transaction ID for the vote.
+        #[prost(message, optional, tag = "4")]
+        pub transaction: ::core::option::Option<
+            super::super::super::core::txhash::v1::TransactionId,
+        >,
+        /// Epoch index the vote occured in.
+        #[prost(uint64, tag = "5")]
+        pub epoch_index: u64,
+    }
+    impl ::prost::Name for Vote {
+        const NAME: &'static str = "Vote";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            "penumbra.view.v1.TournamentVotesResponse.Vote".into()
+        }
+        fn type_url() -> ::prost::alloc::string::String {
+            "/penumbra.view.v1.TournamentVotesResponse.Vote".into()
+        }
+    }
 }
 impl ::prost::Name for TournamentVotesResponse {
     const NAME: &'static str = "TournamentVotesResponse";

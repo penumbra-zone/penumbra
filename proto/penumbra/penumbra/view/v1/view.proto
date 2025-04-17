@@ -187,16 +187,21 @@ message TournamentVotesRequest {
 }
 
 message TournamentVotesResponse {
-  // The incentivized asset receiving this vote.
-  core.asset.v1.AssetId incentivized_asset = 1;
-  // The amount of voting power that this specific vote contributed.
-  core.num.v1.Amount vote_power = 2;
-  // The amount of rewards issued for votes on this asset.
-  core.asset.v1.Value reward = 3;
-  // The transaction ID for the vote. 
-  core.txhash.v1.TransactionId transaction = 4;
-  // Epoch index the vote occured in.
-  uint64 epoch_index = 5;
+  message Vote {
+    // The incentivized asset receiving this vote.
+    core.asset.v1.AssetId incentivized_asset = 1;
+    // The amount of voting power that this specific vote contributed.
+    core.num.v1.Amount vote_power = 2;
+    // The amount of rewards issued for votes on this asset.
+    core.asset.v1.Value reward = 3;
+    // The transaction ID for the vote. 
+    core.txhash.v1.TransactionId transaction = 4;
+    // Epoch index the vote occured in.
+    uint64 epoch_index = 5;
+  }
+  
+  // A list of votes cast for the incentivized asset.
+  repeated Vote votes = 1;
 }
 
 // There's only one transparent address per wallet, so this request has no parameters;
