@@ -50,7 +50,7 @@ pub struct TournamentVotesRequest {
     /// Retrieves votes as of the specified block height.
     #[prost(uint64, tag = "2")]
     pub block_height: u64,
-    /// If present, filter balances to only include the account specified by the `AddressIndex`.
+    /// If present, filter votes to only include the account specified by the `AddressIndex`.
     #[prost(message, optional, tag = "3")]
     pub account_filter: ::core::option::Option<
         super::super::core::keys::v1::AddressIndex,
@@ -68,7 +68,7 @@ impl ::prost::Name for TournamentVotesRequest {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TournamentVotesResponse {
-    /// A list of votes cast for different incentivized assets.
+    /// A list of votes cast for the incentivized asset.
     #[prost(message, repeated, tag = "1")]
     pub votes: ::prost::alloc::vec::Vec<tournament_votes_response::Vote>,
 }
@@ -94,6 +94,9 @@ pub mod tournament_votes_response {
         pub transaction: ::core::option::Option<
             super::super::super::core::txhash::v1::TransactionId,
         >,
+        /// Epoch index the vote occured in.
+        #[prost(uint64, tag = "5")]
+        pub epoch_index: u64,
     }
     impl ::prost::Name for Vote {
         const NAME: &'static str = "Vote";
@@ -3096,12 +3099,12 @@ pub mod view_service_client {
                 .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "LatestSwaps"));
             self.inner.server_streaming(req, path, codec).await
         }
-        /// Gets details on the list votes cast in the current epoch for incentivized assets.
+        /// Gets a list of votes cast in the liquidity tournament for a specific epoch or up to certain block height.
         pub async fn tournament_votes(
             &mut self,
             request: impl tonic::IntoRequest<super::TournamentVotesRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::TournamentVotesResponse>,
+            tonic::Response<tonic::codec::Streaming<super::TournamentVotesResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -3121,7 +3124,7 @@ pub mod view_service_client {
                 .insert(
                     GrpcMethod::new("penumbra.view.v1.ViewService", "TournamentVotes"),
                 );
-            self.inner.unary(req, path, codec).await
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Gets the spendable note records that are eligible for voting in the current epoch.
         pub async fn lqt_voting_notes(
@@ -3537,12 +3540,18 @@ pub mod view_service_server {
             tonic::Response<Self::LatestSwapsStream>,
             tonic::Status,
         >;
-        /// Gets details on the list votes cast in the current epoch for incentivized assets.
+        /// Server streaming response type for the TournamentVotes method.
+        type TournamentVotesStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::TournamentVotesResponse, tonic::Status>,
+            >
+            + std::marker::Send
+            + 'static;
+        /// Gets a list of votes cast in the liquidity tournament for a specific epoch or up to certain block height.
         async fn tournament_votes(
             &self,
             request: tonic::Request<super::TournamentVotesRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::TournamentVotesResponse>,
+            tonic::Response<Self::TournamentVotesStream>,
             tonic::Status,
         >;
         /// Server streaming response type for the LqtVotingNotes method.
@@ -5086,11 +5095,13 @@ pub mod view_service_server {
                     struct TournamentVotesSvc<T: ViewService>(pub Arc<T>);
                     impl<
                         T: ViewService,
-                    > tonic::server::UnaryService<super::TournamentVotesRequest>
-                    for TournamentVotesSvc<T> {
+                    > tonic::server::ServerStreamingService<
+                        super::TournamentVotesRequest,
+                    > for TournamentVotesSvc<T> {
                         type Response = super::TournamentVotesResponse;
+                        type ResponseStream = T::TournamentVotesStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
+                            tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
@@ -5121,7 +5132,7 @@ pub mod view_service_server {
                                 max_decoding_message_size,
                                 max_encoding_message_size,
                             );
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
