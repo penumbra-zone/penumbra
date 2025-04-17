@@ -240,3 +240,12 @@ how to delete previous versions of the schema.
         context: EventBatchContext,
     ) -> Result<(), anyhow::Error>;
 }
+
+/// The PostgreSQL schema for CometBFT ABCI event databases, obtained from upstream sources,
+/// and provided here for convenience.
+const VENDOR_SQL: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/vendor/schema.sql"));
+
+/// Emit the PostgreSQL schema for CometBFT ABCI event databases.
+pub fn cometbft_postgresql_schema() -> String {
+    VENDOR_SQL.into()
+}

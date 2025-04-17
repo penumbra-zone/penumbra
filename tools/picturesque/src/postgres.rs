@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use cometindex::index::cometbft_postgresql_schema;
 use std::{
     fs::create_dir_all,
     path::{Path, PathBuf},
@@ -7,11 +8,6 @@ use std::{
 };
 use tokio::process::Command;
 use tokio::{io::AsyncWriteExt as _, task::JoinHandle};
-
-const VENDOR_SQL: &'static str = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../../crates/util/cometindex/vendor/schema.sql"
-));
 
 const DB_NAME: &'static str = "penumbra_raw";
 
@@ -180,7 +176,9 @@ impl Context {
             .stderr(Stdio::piped())
             .spawn()?;
         let mut stdin = child.stdin.take().ok_or(anyhow!("missing stdin"))?;
-        stdin.write_all(VENDOR_SQL.as_bytes()).await?;
+        stdin
+            .write_all(cometbft_postgresql_schema().as_bytes())
+            .await?;
         let output = child.wait_with_output().await?;
         anyhow::ensure!(
             output.status.success(),
