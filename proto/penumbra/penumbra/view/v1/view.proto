@@ -182,24 +182,19 @@ message TournamentVotesRequest {
   uint64 epoch_index = 1;
   // Retrieves votes as of the specified block height.
   uint64 block_height = 2;
-  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  // If present, filter votes to only include the account specified by the `AddressIndex`.
   core.keys.v1.AddressIndex account_filter = 3;
 }
 
 message TournamentVotesResponse {
-  message Vote {
-    // The incentivized asset receiving this vote.
-    core.asset.v1.AssetId incentivized_asset = 1;
-    // The amount of voting power that this specific vote contributed.
-    core.num.v1.Amount vote_power = 2;
-    // The amount of rewards issued for votes on this asset.
-    core.asset.v1.Value reward = 3;
-    // The transaction ID for the vote. 
-    core.txhash.v1.TransactionId transaction = 4;
-  }
-  
-  // A list of votes cast for different incentivized assets.
-  repeated Vote votes = 1;
+  // The incentivized asset receiving this vote.
+  core.asset.v1.AssetId incentivized_asset = 1;
+  // The amount of voting power that this specific vote contributed.
+  core.num.v1.Amount vote_power = 2;
+  // The amount of rewards issued for votes on this asset.
+  core.asset.v1.Value reward = 3;
+  // The transaction ID for the vote. 
+  core.txhash.v1.TransactionId transaction = 4;
 }
 
 // There's only one transparent address per wallet, so this request has no parameters;

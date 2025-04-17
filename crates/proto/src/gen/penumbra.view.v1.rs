@@ -50,7 +50,7 @@ pub struct TournamentVotesRequest {
     /// Retrieves votes as of the specified block height.
     #[prost(uint64, tag = "2")]
     pub block_height: u64,
-    /// If present, filter balances to only include the account specified by the `AddressIndex`.
+    /// If present, filter votes to only include the account specified by the `AddressIndex`.
     #[prost(message, optional, tag = "3")]
     pub account_filter: ::core::option::Option<
         super::super::core::keys::v1::AddressIndex,
@@ -68,43 +68,22 @@ impl ::prost::Name for TournamentVotesRequest {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TournamentVotesResponse {
-    /// A list of votes cast for different incentivized assets.
-    #[prost(message, repeated, tag = "1")]
-    pub votes: ::prost::alloc::vec::Vec<tournament_votes_response::Vote>,
-}
-/// Nested message and enum types in `TournamentVotesResponse`.
-pub mod tournament_votes_response {
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Vote {
-        /// The incentivized asset receiving this vote.
-        #[prost(message, optional, tag = "1")]
-        pub incentivized_asset: ::core::option::Option<
-            super::super::super::core::asset::v1::AssetId,
-        >,
-        /// The amount of voting power that this specific vote contributed.
-        #[prost(message, optional, tag = "2")]
-        pub vote_power: ::core::option::Option<
-            super::super::super::core::num::v1::Amount,
-        >,
-        /// The amount of rewards issued for votes on this asset.
-        #[prost(message, optional, tag = "3")]
-        pub reward: ::core::option::Option<super::super::super::core::asset::v1::Value>,
-        /// The transaction ID for the vote.
-        #[prost(message, optional, tag = "4")]
-        pub transaction: ::core::option::Option<
-            super::super::super::core::txhash::v1::TransactionId,
-        >,
-    }
-    impl ::prost::Name for Vote {
-        const NAME: &'static str = "Vote";
-        const PACKAGE: &'static str = "penumbra.view.v1";
-        fn full_name() -> ::prost::alloc::string::String {
-            "penumbra.view.v1.TournamentVotesResponse.Vote".into()
-        }
-        fn type_url() -> ::prost::alloc::string::String {
-            "/penumbra.view.v1.TournamentVotesResponse.Vote".into()
-        }
-    }
+    /// The incentivized asset receiving this vote.
+    #[prost(message, optional, tag = "1")]
+    pub incentivized_asset: ::core::option::Option<
+        super::super::core::asset::v1::AssetId,
+    >,
+    /// The amount of voting power that this specific vote contributed.
+    #[prost(message, optional, tag = "2")]
+    pub vote_power: ::core::option::Option<super::super::core::num::v1::Amount>,
+    /// The amount of rewards issued for votes on this asset.
+    #[prost(message, optional, tag = "3")]
+    pub reward: ::core::option::Option<super::super::core::asset::v1::Value>,
+    /// The transaction ID for the vote.
+    #[prost(message, optional, tag = "4")]
+    pub transaction: ::core::option::Option<
+        super::super::core::txhash::v1::TransactionId,
+    >,
 }
 impl ::prost::Name for TournamentVotesResponse {
     const NAME: &'static str = "TournamentVotesResponse";
