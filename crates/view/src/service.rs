@@ -52,8 +52,7 @@ use penumbra_sdk_proto::{
         AppParametersResponse, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
         BroadcastTransactionResponse, FmdParametersResponse, GasPricesResponse,
         NoteByCommitmentResponse, StatusResponse, SwapByCommitmentResponse,
-        TournamentVotesResponse, TransactionPlannerResponse, WalletIdRequest, WalletIdResponse,
-        WitnessResponse,
+        TransactionPlannerResponse, WalletIdRequest, WalletIdResponse, WitnessResponse,
     },
     DomainType,
 };
@@ -422,6 +421,9 @@ impl ViewService for ViewServer {
         Pin<Box<dyn futures::Stream<Item = Result<pb::LatestSwapsResponse, tonic::Status>> + Send>>;
     type LqtVotingNotesStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::LqtVotingNotesResponse, tonic::Status>> + Send>,
+    >;
+    type TournamentVotesStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::TournamentVotesResponse, tonic::Status>> + Send>,
     >;
 
     #[instrument(skip_all, level = "trace")]
@@ -1881,7 +1883,7 @@ impl ViewService for ViewServer {
     async fn tournament_votes(
         &self,
         _request: tonic::Request<pb::TournamentVotesRequest>,
-    ) -> Result<tonic::Response<TournamentVotesResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::TournamentVotesStream>, tonic::Status> {
         unimplemented!("tournament_votes currently only implemented on web")
     }
 

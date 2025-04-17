@@ -153,8 +153,8 @@ service ViewService {
   // Gets the latest swaps controlled by the user's wallet. 
   rpc LatestSwaps(LatestSwapsRequest) returns (stream LatestSwapsResponse);
 
-  // Gets details on the list votes cast in the current epoch for incentivized assets. 
-  rpc TournamentVotes(TournamentVotesRequest) returns (TournamentVotesResponse);
+  // Gets a list of votes cast in the liquidity tournament for a specific epoch or up to certain block height. 
+  rpc TournamentVotes(TournamentVotesRequest) returns (stream TournamentVotesResponse);
 
   // Gets the spendable note records that are eligible for voting in the current epoch.
   rpc LqtVotingNotes(LqtVotingNotesRequest) returns (stream LqtVotingNotesResponse);
@@ -182,7 +182,7 @@ message TournamentVotesRequest {
   uint64 epoch_index = 1;
   // Retrieves votes as of the specified block height.
   uint64 block_height = 2;
-  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  // If present, filter votes to only include the account specified by the `AddressIndex`.
   core.keys.v1.AddressIndex account_filter = 3;
 }
 
@@ -196,9 +196,11 @@ message TournamentVotesResponse {
     core.asset.v1.Value reward = 3;
     // The transaction ID for the vote. 
     core.txhash.v1.TransactionId transaction = 4;
+    // Epoch index the vote occured in.
+    uint64 epoch_index = 5;
   }
   
-  // A list of votes cast for different incentivized assets.
+  // A list of votes cast for the incentivized asset.
   repeated Vote votes = 1;
 }
 
