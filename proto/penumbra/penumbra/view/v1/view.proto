@@ -153,8 +153,8 @@ service ViewService {
   // Gets the latest swaps controlled by the user's wallet. 
   rpc LatestSwaps(LatestSwapsRequest) returns (stream LatestSwapsResponse);
 
-  // Gets details on the list votes cast in the current epoch for incentivized assets. 
-  rpc TournamentVotes(TournamentVotesRequest) returns (TournamentVotesResponse);
+  // Gets a list of votes cast in the liquidity tournament for a specific epoch or up to certain block height. 
+  rpc TournamentVotes(TournamentVotesRequest) returns (stream TournamentVotesResponse);
 
   // Gets the spendable note records that are eligible for voting in the current epoch.
   rpc LqtVotingNotes(LqtVotingNotesRequest) returns (stream LqtVotingNotesResponse);
