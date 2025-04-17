@@ -52,8 +52,7 @@ use penumbra_sdk_proto::{
         AppParametersResponse, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
         BroadcastTransactionResponse, FmdParametersResponse, GasPricesResponse,
         NoteByCommitmentResponse, StatusResponse, SwapByCommitmentResponse,
-        TransactionPlannerResponse, WalletIdRequest, WalletIdResponse,
-        WitnessResponse,
+        TransactionPlannerResponse, WalletIdRequest, WalletIdResponse, WitnessResponse,
     },
     DomainType,
 };
