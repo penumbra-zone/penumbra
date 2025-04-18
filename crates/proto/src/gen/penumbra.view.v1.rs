@@ -66,12 +66,8 @@ impl ::prost::Name for TournamentVotesRequest {
         "/penumbra.view.v1.TournamentVotesRequest".into()
     }
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TournamentVotesResponse {
-    /// A list of votes cast for the incentivized asset.
-    #[prost(message, repeated, tag = "1")]
-    pub votes: ::prost::alloc::vec::Vec<tournament_votes_response::Vote>,
-}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct TournamentVotesResponse {}
 /// Nested message and enum types in `TournamentVotesResponse`.
 pub mod tournament_votes_response {
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -94,9 +90,14 @@ pub mod tournament_votes_response {
         pub transaction: ::core::option::Option<
             super::super::super::core::txhash::v1::TransactionId,
         >,
-        /// Epoch index the vote occured in.
+        /// The epoch index the vote occured in.
         #[prost(uint64, tag = "5")]
         pub epoch_index: u64,
+        /// The asset ID linked to the reward denomination.
+        #[prost(message, optional, tag = "6")]
+        pub reward_asset: ::core::option::Option<
+            super::super::super::core::asset::v1::AssetId,
+        >,
     }
     impl ::prost::Name for Vote {
         const NAME: &'static str = "Vote";

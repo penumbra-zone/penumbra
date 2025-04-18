@@ -196,12 +196,11 @@ message TournamentVotesResponse {
     core.asset.v1.Value reward = 3;
     // The transaction ID for the vote. 
     core.txhash.v1.TransactionId transaction = 4;
-    // Epoch index the vote occured in.
+    // The epoch index the vote occured in.
     uint64 epoch_index = 5;
+    // The asset ID linked to the reward denomination.
+    core.asset.v1.AssetId reward_asset = 6;
   }
-  
-  // A list of votes cast for the incentivized asset.
-  repeated Vote votes = 1;
 }
 
 // There's only one transparent address per wallet, so this request has no parameters;

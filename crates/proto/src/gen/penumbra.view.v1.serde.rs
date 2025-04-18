@@ -6226,14 +6226,8 @@ impl serde::Serialize for TournamentVotesResponse {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if !self.votes.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TournamentVotesResponse", len)?;
-        if !self.votes.is_empty() {
-            struct_ser.serialize_field("votes", &self.votes)?;
-        }
+        let len = 0;
+        let struct_ser = serializer.serialize_struct("penumbra.view.v1.TournamentVotesResponse", len)?;
         struct_ser.end()
     }
 }
@@ -6244,12 +6238,10 @@ impl<'de> serde::Deserialize<'de> for TournamentVotesResponse {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "votes",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Votes,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -6271,10 +6263,7 @@ impl<'de> serde::Deserialize<'de> for TournamentVotesResponse {
                     where
                         E: serde::de::Error,
                     {
-                        match value {
-                            "votes" => Ok(GeneratedField::Votes),
-                            _ => Ok(GeneratedField::__SkipField__),
-                        }
+                            Ok(GeneratedField::__SkipField__)
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -6292,22 +6281,10 @@ impl<'de> serde::Deserialize<'de> for TournamentVotesResponse {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut votes__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::Votes => {
-                            if votes__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("votes"));
-                            }
-                            votes__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::__SkipField__ => {
-                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
-                        }
-                    }
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(TournamentVotesResponse {
-                    votes: votes__.unwrap_or_default(),
                 })
             }
         }
@@ -6337,6 +6314,9 @@ impl serde::Serialize for tournament_votes_response::Vote {
         if self.epoch_index != 0 {
             len += 1;
         }
+        if self.reward_asset.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TournamentVotesResponse.Vote", len)?;
         if let Some(v) = self.incentivized_asset.as_ref() {
             struct_ser.serialize_field("incentivizedAsset", v)?;
@@ -6354,6 +6334,9 @@ impl serde::Serialize for tournament_votes_response::Vote {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        if let Some(v) = self.reward_asset.as_ref() {
+            struct_ser.serialize_field("rewardAsset", v)?;
         }
         struct_ser.end()
     }
@@ -6373,6 +6356,8 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
             "transaction",
             "epoch_index",
             "epochIndex",
+            "reward_asset",
+            "rewardAsset",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -6382,6 +6367,7 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
             Reward,
             Transaction,
             EpochIndex,
+            RewardAsset,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -6409,6 +6395,7 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
                             "reward" => Ok(GeneratedField::Reward),
                             "transaction" => Ok(GeneratedField::Transaction),
                             "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            "rewardAsset" | "reward_asset" => Ok(GeneratedField::RewardAsset),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -6433,6 +6420,7 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
                 let mut reward__ = None;
                 let mut transaction__ = None;
                 let mut epoch_index__ = None;
+                let mut reward_asset__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::IncentivizedAsset => {
@@ -6467,6 +6455,12 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::RewardAsset => {
+                            if reward_asset__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rewardAsset"));
+                            }
+                            reward_asset__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -6478,6 +6472,7 @@ impl<'de> serde::Deserialize<'de> for tournament_votes_response::Vote {
                     reward: reward__,
                     transaction: transaction__,
                     epoch_index: epoch_index__.unwrap_or_default(),
+                    reward_asset: reward_asset__,
                 })
             }
         }
