@@ -2016,9 +2016,15 @@ name = "elcuity"
 version = "2.0.0-alpha.9"
 dependencies = [
  "anyhow",
+ "async-stream",
  "clap",
+ "futures",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-custody",
+ "penumbra-sdk-fee",
  "penumbra-sdk-proto",
  "penumbra-sdk-view",
+ "rand_core",
  "tokio",
  "tonic",
  "tracing",

@@ -14,10 +14,16 @@ dist = true
 
 [dependencies]
 anyhow = {workspace = true}
+async-stream = {workspace = true}
 clap = {workspace = true, features = ["derive", "env"]}
+futures = {workspace = true}
+penumbra-sdk-asset = {workspace = true}
+penumbra-sdk-custody = {workspace = true}
+penumbra-sdk-fee = {workspace = true}
+penumbra-sdk-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
+penumbra-sdk-view = {workspace = true}
+rand_core = {workspace = true}
 tokio = {workspace = true}
 tonic = {workspace = true}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true, features = ["env-filter"]}
-penumbra-sdk-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
-penumbra-sdk-view = {workspace = true}
