@@ -16,5 +16,8 @@ dist = true
 anyhow = {workspace = true}
 clap = {workspace = true, features = ["derive", "env"]}
 tokio = {workspace = true}
+tonic = {workspace = true}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true, features = ["env-filter"]}
+penumbra-sdk-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
+penumbra-sdk-view = {workspace = true}
