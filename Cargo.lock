@@ -2025,6 +2025,7 @@ dependencies = [
  "penumbra-sdk-proto",
  "penumbra-sdk-view",
  "rand_core",
+ "rustls 0.23.21",
  "tokio",
  "tonic",
  "tracing",

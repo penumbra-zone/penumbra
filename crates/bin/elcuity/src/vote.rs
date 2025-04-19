@@ -7,17 +7,24 @@ use penumbra_sdk_custody::AuthorizeRequest;
 use penumbra_sdk_proto::core::component::sct::v1::EpochByHeightRequest;
 use penumbra_sdk_view::Planner;
 use rand_core::OsRng;
+use tokio::time::{Duration, Instant};
 
 use crate::clients::Clients;
 
 fn stream_epochs(clients: &Clients) -> BoxStream<'static, anyhow::Result<u64>> {
+    const POLL_S: u64 = 30;
+
     let mut view = clients.view();
     let mut sct = clients.sct_query_service();
     try_stream! {
         let mut epoch = None;
-        let mut status_stream = view.status_stream().await?;
-        while let Some(status) = status_stream.try_next().await? {
-            let height = status.latest_known_block_height;
+        loop {
+            let start = Instant::now();
+            let status = view.status().await?;
+            if status.catching_up {
+                continue;
+            }
+            let height = status.full_sync_height;
             let current_epoch = sct.epoch_by_height(EpochByHeightRequest { height }).await?.into_inner().epoch.map(|x| x.index);
             match (epoch, current_epoch) {
                 (None, Some(x)) => {
@@ -29,6 +36,7 @@ fn stream_epochs(clients: &Clients) -> BoxStream<'static, anyhow::Result<u64>> {
                 }
                 (_, _) => {}
             }
+            tokio::time::sleep_until(start + Duration::from_secs(POLL_S)).await;
         }
     }
     .boxed()
