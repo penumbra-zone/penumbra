@@ -23,6 +23,7 @@ penumbra-sdk-fee = {workspace = true}
 penumbra-sdk-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
 penumbra-sdk-view = {workspace = true}
 rand_core = {workspace = true}
+rustls = {workspace = true}
 tokio = {workspace = true}
 tonic = {workspace = true}
 tracing = {workspace = true}
