@@ -20,6 +20,7 @@ futures = {workspace = true}
 penumbra-sdk-asset = {workspace = true}
 penumbra-sdk-custody = {workspace = true}
 penumbra-sdk-fee = {workspace = true}
+penumbra-sdk-keys = {workspace = true}
 penumbra-sdk-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
 penumbra-sdk-view = {workspace = true}
 rand_core = {workspace = true}

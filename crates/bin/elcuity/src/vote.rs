@@ -9,7 +9,7 @@ use penumbra_sdk_view::Planner;
 use rand_core::OsRng;
 use tokio::time::{Duration, Instant};
 
-use crate::clients::Clients;
+use crate::{clients::Clients, planner::build_and_submit};
 
 fn stream_epochs(clients: &Clients) -> BoxStream<'static, anyhow::Result<u64>> {
     const POLL_S: u64 = 30;
@@ -45,39 +45,24 @@ fn stream_epochs(clients: &Clients) -> BoxStream<'static, anyhow::Result<u64>> {
 #[tracing::instrument(skip(clients))]
 async fn vote(clients: &Clients, epoch: u64, denom: Denom) -> anyhow::Result<()> {
     let mut view = clients.view();
-    let mut custody = clients.custody();
-
-    let gas_prices = view.gas_prices().await?;
-
-    let rewards_addr = view.address_by_index(Default::default()).await?;
-    let voting_notes = view.lqt_voting_notes(epoch, None).await?;
-
-    let mut planner = Planner::new(OsRng);
-
-    planner.set_gas_prices(gas_prices);
-
-    // First, tell the planner to make all the necessary votes.
-    planner.lqt_vote(u16::try_from(epoch)?, denom, rewards_addr, &voting_notes);
-    // We also want to go ahead and do the consolidation thing,
-    // to reduce the number of votes we need in the next epoch.
-    // To do so, we need to spend all of these notes, and produce one output per
-    // delegator token.
-    for note in voting_notes {
-        planner.spend(note.note, note.position);
-    }
-
-    let plan = planner.plan(view.as_mut(), Default::default()).await?;
-    let auth_data = custody
-        .authorize(AuthorizeRequest {
-            plan: plan.clone(),
-            pre_authorizations: Default::default(),
-        })
-        .await?
-        .data
-        .expect("auth data should be present")
-        .try_into()?;
     tracing::info!("submitting vote");
-    let tx = view.witness_and_build(plan, auth_data).await?;
+    let tx = build_and_submit(clients, Default::default(), |planner| async {
+        let rewards_addr = view.address_by_index(Default::default()).await?;
+        let voting_notes = view.lqt_voting_notes(epoch, None).await?;
+
+        // First, tell the planner to make all the necessary votes.
+        planner.lqt_vote(u16::try_from(epoch)?, denom, rewards_addr, &voting_notes);
+        // We also want to go ahead and do the consolidation thing,
+        // to reduce the number of votes we need in the next epoch.
+        // To do so, we need to spend all of these notes, and produce one output per
+        // delegator token.
+        for note in voting_notes {
+            planner.spend(note.note, note.position);
+        }
+
+        Ok(())
+    });
+
     let tx_id = tx.id().to_string();
     tracing::info!(tx_id, "vote cast");
 
