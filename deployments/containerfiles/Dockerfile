@@ -5,6 +5,7 @@ FROM docker.io/rust:1-slim-bookworm AS build-env
 # Install build dependencies. These packages should match what's recommended on
 # https://guide.penumbra.zone/main/pcli/install.html
 # We don't install git-lfs, because the git artifacts are copied in from the build host.
+# In order to build pcli with ledger support, add `libdbus-1-dev` & `libusb-1.0-0-dev`.
 RUN apt-get update && apt-get install -y \
         build-essential \
         pkg-config \
@@ -26,7 +27,9 @@ COPY tools ./tools
 RUN rustup install && cargo fetch
 # Build Penumbra binaries
 COPY . .
-RUN cargo build --release
+# Use `--bins` flag to force dependency resolution per-binary, rather than once for the workspace.
+# Doing so ensures the minimal feature set is used, leaving ledger support for pcli as off by default.
+RUN cargo build --release --bins
 
 # Runtime image.
 FROM docker.io/debian:bookworm-slim
