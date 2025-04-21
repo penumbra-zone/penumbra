@@ -69,6 +69,7 @@ penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
 penumbra-sdk-tct = {workspace = true, default-features = true}
 penumbra-sdk-txhash = {workspace = true, default-features = false}
 rand_chacha = {workspace = true}
+rand = {workspace = true}
 rand_core = {workspace = true}
 regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}

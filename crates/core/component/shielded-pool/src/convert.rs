@@ -18,6 +18,7 @@ use penumbra_sdk_num::{
     Amount, AmountVar,
 };
 use penumbra_sdk_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use rand::{CryptoRng, Rng};
 
 /// The public input for a [`ConvertProof`].
 #[derive(Clone, Debug)]
@@ -195,16 +196,15 @@ pub struct ConvertProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl ConvertProof {
     /// Generate a [`ConvertProof`]
-    pub fn prove(
-        blinding_r: Fq,
-        blinding_s: Fq,
+    pub fn prove<R: CryptoRng + Rng>(
+        rng: &mut R,
         pk: &ProvingKey<Bls12_377>,
         public: ConvertProofPublic,
         private: ConvertProofPrivate,
     ) -> Result<Self> {
         let circuit = ConvertCircuit::new(public, private);
-        let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
-            circuit, pk, blinding_r, blinding_s,
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(
+            pk, circuit, rng,
         )?;
         let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
         Proof::serialize_compressed(&proof, &mut proof_bytes[..]).expect("can serialize Proof");

@@ -19,8 +19,8 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
 #[allow(clippy::too_many_arguments)]
-fn prove(r: Fq, s: Fq, public: SwapClaimProofPublic, private: SwapClaimProofPrivate) {
-    let _proof = SwapClaimProof::prove(r, s, &SWAPCLAIM_PROOF_PROVING_KEY, public, private)
+fn prove(public: SwapClaimProofPublic, private: SwapClaimProofPrivate) {
+    let _proof = SwapClaimProof::prove(&mut OsRng, &SWAPCLAIM_PROOF_PROVING_KEY, public, private)
         .expect("can create proof");
 }
 
@@ -99,11 +99,8 @@ fn swap_claim_proving_time(c: &mut Criterion) {
         note_blinding_2,
     };
 
-    let r = Fq::rand(&mut OsRng);
-    let s = Fq::rand(&mut OsRng);
-
     c.bench_function("swap claim proving", |b| {
-        b.iter(|| prove(r, s, public.clone(), private.clone()))
+        b.iter(|| prove(public.clone(), private.clone()))
     });
 
     // Also print out the number of constraints.

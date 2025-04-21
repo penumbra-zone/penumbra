@@ -1,11 +1,11 @@
-use decaf377::{Fq, Fr};
+use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_sdk_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_keys::{keys::AddressIndex, FullViewingKey};
 use penumbra_sdk_proto::{core::component::shielded_pool::v1 as pb, DomainType};
 use penumbra_sdk_sct::Nullifier;
 use penumbra_sdk_tct as tct;
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{CryptoRng, OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use super::{Body, Spend, SpendProof};
@@ -19,8 +19,6 @@ pub struct SpendPlan {
     pub position: tct::Position,
     pub randomizer: Fr,
     pub value_blinding: Fr,
-    pub proof_blinding_r: Fq,
-    pub proof_blinding_s: Fq,
 }
 
 impl SpendPlan {
@@ -35,8 +33,6 @@ impl SpendPlan {
             position,
             randomizer: Fr::rand(rng),
             value_blinding: Fr::rand(rng),
-            proof_blinding_r: Fq::rand(rng),
-            proof_blinding_s: Fq::rand(rng),
         }
     }
 
@@ -119,8 +115,7 @@ impl SpendPlan {
             nk: *fvk.nullifier_key(),
         };
         SpendProof::prove(
-            self.proof_blinding_r,
-            self.proof_blinding_s,
+            &mut OsRng,
             &penumbra_sdk_proof_params::SPEND_PROOF_PROVING_KEY,
             public,
             private,
@@ -141,6 +136,7 @@ impl DomainType for SpendPlan {
     type Proto = pb::SpendPlan;
 }
 
+#[allow(deprecated)]
 impl From<SpendPlan> for pb::SpendPlan {
     fn from(msg: SpendPlan) -> Self {
         Self {
@@ -148,8 +144,8 @@ impl From<SpendPlan> for pb::SpendPlan {
             position: u64::from(msg.position),
             randomizer: msg.randomizer.to_bytes().to_vec(),
             value_blinding: msg.value_blinding.to_bytes().to_vec(),
-            proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec(),
-            proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec(),
+            proof_blinding_r: vec![],
+            proof_blinding_s: vec![],
         }
     }
 }
@@ -167,10 +163,6 @@ impl TryFrom<pb::SpendPlan> for SpendPlan {
                 .expect("randomizer malformed"),
             value_blinding: Fr::from_bytes_checked(msg.value_blinding.as_slice().try_into()?)
                 .expect("value_blinding malformed"),
-            proof_blinding_r: Fq::from_bytes_checked(msg.proof_blinding_r.as_slice().try_into()?)
-                .expect("proof_blinding_r malformed"),
-            proof_blinding_s: Fq::from_bytes_checked(msg.proof_blinding_s.as_slice().try_into()?)
-                .expect("proof_blinding_s malformed"),
         })
     }
 }

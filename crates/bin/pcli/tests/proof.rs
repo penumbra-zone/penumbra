@@ -73,8 +73,6 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     let nullifier = Nullifier::derive(&nk, 0.into(), &note_commitment);
 
     // Random elements to provide ZK (see Section 3.2 Groth16 paper, bottom of page 17)
-    let blinding_r = Fq::rand(&mut OsRng);
-    let blinding_s = Fq::rand(&mut OsRng);
     let public = SpendProofPublic {
         anchor,
         balance_commitment,
@@ -89,7 +87,7 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
         ak,
         nk,
     };
-    let proof = SpendProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+    let proof = SpendProof::prove(&mut OsRng, pk, public.clone(), private)
         .expect("can create proof");
 
     let proof_result = proof.verify(vk, public);
@@ -137,9 +135,6 @@ fn delegator_vote_proof_parameters_vs_current_delegator_vote_circuit() {
     let rk: VerificationKey<SpendAuth> = rsk.into();
     let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-    let blinding_r = Fq::rand(&mut OsRng);
-    let blinding_s = Fq::rand(&mut OsRng);
-
     let public = DelegatorVoteProofPublic {
         anchor,
         balance_commitment,
@@ -155,7 +150,7 @@ fn delegator_vote_proof_parameters_vs_current_delegator_vote_circuit() {
         ak,
         nk,
     };
-    let proof = DelegatorVoteProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+    let proof = DelegatorVoteProof::prove(&mut OsRng, pk, public.clone(), private)
         .expect("can create proof");
 
     let proof_result = proof.verify(vk, public);
@@ -218,9 +213,7 @@ fn swap_proof_parameters_vs_current_swap_circuit() {
         swap_plaintext,
     };
 
-    let blinding_r = Fq::rand(&mut OsRng);
-    let blinding_s = Fq::rand(&mut OsRng);
-    let proof = SwapProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+    let proof = SwapProof::prove(&mut OsRng, pk, public.clone(), private)
         .expect("can create proof");
 
     let proof_result = proof.verify(vk, public);
@@ -309,10 +302,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
         note_blinding_2,
     };
 
-    let blinding_r = Fq::rand(&mut rng);
-    let blinding_s = Fq::rand(&mut rng);
-
-    let proof = SwapClaimProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+    let proof = SwapClaimProof::prove(&mut OsRng, pk, public.clone(), private)
         .expect("can create proof");
 
     let proof_result = proof.verify(vk, public);
@@ -359,9 +349,7 @@ fn output_proof_parameters_vs_current_output_circuit() {
         (public, private)
     };
 
-    let blinding_r = Fq::rand(&mut OsRng);
-    let blinding_s = Fq::rand(&mut OsRng);
-    let proof = OutputProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+    let proof = OutputProof::prove(&mut OsRng, pk, public.clone(), private)
         .expect("can create proof");
 
     let proof_result = proof.verify(vk, public);
@@ -449,10 +437,7 @@ fn undelegate_claim_parameters_vs_current_undelegate_claim_circuit() {
         )
     };
 
-    let blinding_r = Fq::rand(&mut rng);
-    let blinding_s = Fq::rand(&mut rng);
-
-    let proof = UndelegateClaimProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+    let proof = UndelegateClaimProof::prove(&mut OsRng, pk, public.clone(), private)
         .expect("can create proof");
 
     let proof_result = proof.verify(vk, public);

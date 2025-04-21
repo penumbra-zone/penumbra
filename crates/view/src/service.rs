@@ -7,7 +7,6 @@ use std::{
 use anyhow::{anyhow, Context};
 use async_stream::try_stream;
 use camino::Utf8Path;
-use decaf377::Fq;
 use futures::stream::{self, StreamExt, TryStreamExt};
 use penumbra_sdk_auction::auction::dutch::actions::view::{
     ActionDutchAuctionScheduleView, ActionDutchAuctionWithdrawView,
@@ -622,8 +621,6 @@ impl ViewService for ViewServer {
                 position: swap_record.position,
                 output_data: swap_record.output_data,
                 epoch_duration: app_params.sct_params.epoch_duration,
-                proof_blinding_r: Fq::rand(&mut OsRng),
-                proof_blinding_s: Fq::rand(&mut OsRng),
             });
         }
 

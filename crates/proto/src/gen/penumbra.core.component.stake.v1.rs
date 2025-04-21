@@ -540,9 +540,11 @@ pub struct UndelegateClaimPlan {
     #[prost(bytes = "vec", tag = "6")]
     pub balance_blinding: ::prost::alloc::vec::Vec<u8>,
     /// The first blinding factor to use for the ZK undelegate claim proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "7")]
     pub proof_blinding_r: ::prost::alloc::vec::Vec<u8>,
     /// The second blinding factor to use for the ZK undelegate claim proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "8")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
     /// The height during which unbonding began.

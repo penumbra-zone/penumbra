@@ -28,6 +28,7 @@ use penumbra_sdk_shielded_pool::{
     note::{self, NoteVar},
     Rseed,
 };
+use rand::{CryptoRng, Rng};
 use tap::Tap;
 use tct::{Root, StateCommitment};
 
@@ -418,18 +419,17 @@ pub enum VerificationError {
 impl SwapClaimProof {
     #![allow(clippy::too_many_arguments)]
     /// Generate an [`SwapClaimProof`] given the proving key, public inputs,
-    /// witness data, and two random elements `blinding_r` and `blinding_s`.
-    pub fn prove(
-        blinding_r: Fq,
-        blinding_s: Fq,
+    /// witness data, OsRng.
+    pub fn prove<R: CryptoRng + Rng>(
+        rng: &mut R,
         pk: &ProvingKey<Bls12_377>,
         public: SwapClaimProofPublic,
         private: SwapClaimProofPrivate,
     ) -> anyhow::Result<Self> {
         let circuit = SwapClaimCircuit { public, private };
 
-        let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
-            circuit, pk, blinding_r, blinding_s,
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(
+            pk, circuit, rng,
         )
         .map_err(|err| anyhow::anyhow!(err))?;
 

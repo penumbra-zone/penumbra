@@ -570,8 +570,6 @@ impl TxCmd {
                         position: swap_record.position,
                         output_data: swap_record.output_data,
                         epoch_duration: params.sct_params.epoch_duration,
-                        proof_blinding_r: Fq::rand(&mut OsRng),
-                        proof_blinding_s: Fq::rand(&mut OsRng),
                     })
                     .plan(app.view(), AddressIndex::new(*source))
                     .await
@@ -899,8 +897,6 @@ impl TxCmd {
                                 penalty,
                                 unbonding_amount,
                                 balance_blinding: Fr::rand(&mut OsRng),
-                                proof_blinding_r: Fq::rand(&mut OsRng),
-                                proof_blinding_s: Fq::rand(&mut OsRng),
                             })
                             .plan(
                                 app.view

@@ -114,8 +114,6 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
         position: swap_auth_path.position(),
         output_data,
         epoch_duration,
-        proof_blinding_r: Fq::rand(&mut rng),
-        proof_blinding_s: Fq::rand(&mut rng),
     };
     let claim = claim_plan.swap_claim(&test_keys::FULL_VIEWING_KEY, &swap_auth_path);
 

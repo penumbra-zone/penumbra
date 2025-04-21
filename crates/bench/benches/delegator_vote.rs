@@ -19,9 +19,9 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
 #[allow(clippy::too_many_arguments)]
-fn prove(r: Fq, s: Fq, public: DelegatorVoteProofPublic, private: DelegatorVoteProofPrivate) {
+fn prove(public: DelegatorVoteProofPublic, private: DelegatorVoteProofPrivate) {
     let _proof =
-        DelegatorVoteProof::prove(r, s, &DELEGATOR_VOTE_PROOF_PROVING_KEY, public, private)
+        DelegatorVoteProof::prove(&mut OsRng, &DELEGATOR_VOTE_PROOF_PROVING_KEY, public, private)
             .expect("can create proof");
 }
 
@@ -56,8 +56,6 @@ fn delegator_vote_proving_time(c: &mut Criterion) {
         .unwrap();
     let start_position = sct.witness(first_note_commitment).unwrap().position();
 
-    let r = Fq::rand(&mut OsRng);
-    let s = Fq::rand(&mut OsRng);
     let public = DelegatorVoteProofPublic {
         anchor,
         balance_commitment,
@@ -75,7 +73,7 @@ fn delegator_vote_proving_time(c: &mut Criterion) {
     };
 
     c.bench_function("delegator proving", |b| {
-        b.iter(|| prove(r, s, public.clone(), private.clone()))
+        b.iter(|| prove(public.clone(), private.clone()))
     });
 
     // Also print out the number of constraints.

@@ -181,9 +181,9 @@ message SpendPlan {
   // The blinding factor to use for the value commitment.
   bytes value_blinding = 4;
   // The first blinding factor to use for the ZK spend proof.
-  bytes proof_blinding_r = 5;
+  bytes proof_blinding_r = 5 [deprecated = true];
   // The second blinding factor to use for the ZK spend proof.
-  bytes proof_blinding_s = 6;
+  bytes proof_blinding_s = 6 [deprecated = true];
 }
 
 // Creates a new shielded note.
@@ -235,9 +235,9 @@ message OutputPlan {
   // The blinding factor to use for the value commitment.
   bytes value_blinding = 4;
   // The first blinding factor to use for the ZK output proof.
-  bytes proof_blinding_r = 5;
+  bytes proof_blinding_r = 5 [deprecated = true];
   // The second blinding factor to use for the ZK output proof.
-  bytes proof_blinding_s = 6;
+  bytes proof_blinding_s = 6 [deprecated = true];
 }
 
 // Query operations for the shielded pool component.

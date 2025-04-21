@@ -1,4 +1,4 @@
-use decaf377::{Fq, Fr};
+use decaf377::Fr;
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey, VerificationKeyBytes};
 use ed25519_consensus::SigningKey as Ed25519SigningKey;
 use ibc_proto::ics23::CommitmentProof;
@@ -166,8 +166,6 @@ fn undelegate_claim_plan_strategy() -> impl Strategy<Value = UndelegateClaimPlan
                     penalty: Penalty::from_bps(penalty_bps),
                     unbonding_amount,
                     balance_blinding: Fr::rand(&mut OsRng),
-                    proof_blinding_r: Fq::rand(&mut OsRng),
-                    proof_blinding_s: Fq::rand(&mut OsRng),
                     unbonding_start_height,
                 }
             },
@@ -242,8 +240,6 @@ fn swap_plaintext_strategy() -> impl Strategy<Value = SwapPlaintext> {
 
 fn swap_plan_strategy() -> impl Strategy<Value = SwapPlan> {
     (swap_plaintext_strategy()).prop_map(|swap_plaintext| SwapPlan {
-        proof_blinding_r: Fq::rand(&mut OsRng),
-        proof_blinding_s: Fq::rand(&mut OsRng),
         swap_plaintext,
         fee_blinding: Fr::rand(&mut OsRng),
     })
@@ -301,8 +297,6 @@ fn swap_claim_plan_strategy() -> impl Strategy<Value = SwapClaimPlan> {
             position: penumbra_sdk_tct::Position::from(0u64),
             output_data,
             epoch_duration: 1000u64,
-            proof_blinding_r: Fq::rand(&mut OsRng),
-            proof_blinding_s: Fq::rand(&mut OsRng),
         },
     )
 }
@@ -406,8 +400,6 @@ fn delegator_vote_strategy() -> impl Strategy<Value = DelegatorVotePlan> {
                 unbonded_amount,
                 position: penumbra_sdk_tct::Position::from(0u64),
                 randomizer: Fr::rand(&mut OsRng),
-                proof_blinding_r: Fq::rand(&mut OsRng),
-                proof_blinding_s: Fq::rand(&mut OsRng),
             },
         )
 }

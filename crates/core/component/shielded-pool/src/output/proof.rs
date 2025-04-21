@@ -25,6 +25,7 @@ use penumbra_sdk_asset::{
     Value,
 };
 use penumbra_sdk_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use rand::{CryptoRng, Rng};
 
 /// The public input for an [`OutputProof`].
 #[derive(Clone, Debug)]
@@ -174,16 +175,15 @@ impl OutputProof {
     #![allow(clippy::too_many_arguments)]
     /// Generate an [`OutputProof`] given the proving key, public inputs,
     /// witness data, and two random elements `blinding_r` and `blinding_s`.
-    pub fn prove(
-        blinding_r: Fq,
-        blinding_s: Fq,
+    pub fn prove<R: CryptoRng + Rng>(
+        rng: &mut R,
         pk: &ProvingKey<Bls12_377>,
         public: OutputProofPublic,
         private: OutputProofPrivate,
     ) -> anyhow::Result<Self> {
         let circuit = OutputCircuit::new(public, private);
-        let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
-            circuit, pk, blinding_r, blinding_s,
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(
+            pk, circuit, rng,
         )
         .map_err(|err| anyhow::anyhow!(err))?;
         let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];

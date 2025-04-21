@@ -1,5 +1,5 @@
 use ark_ff::Zero;
-use decaf377::{Fq, Fr};
+use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_sdk_asset::{Balance, Value};
 use penumbra_sdk_keys::FullViewingKey;
@@ -10,6 +10,7 @@ use penumbra_sdk_sct::Nullifier;
 use penumbra_sdk_shielded_pool::Note;
 use penumbra_sdk_tct as tct;
 use rand::{CryptoRng, RngCore};
+use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 
 use crate::delegator_vote::action::{DelegatorVote, DelegatorVoteBody};
@@ -36,10 +37,6 @@ pub struct DelegatorVotePlan {
     pub position: tct::Position,
     /// The randomizer to use.
     pub randomizer: Fr,
-    /// The first blinding factor used for generating the ZK proof.
-    pub proof_blinding_r: Fq,
-    /// The second blinding factor used for generating the ZK proof.
-    pub proof_blinding_s: Fq,
 }
 
 impl DelegatorVotePlan {
@@ -62,8 +59,6 @@ impl DelegatorVotePlan {
             unbonded_amount,
             position,
             randomizer: Fr::rand(rng),
-            proof_blinding_r: Fq::rand(rng),
-            proof_blinding_s: Fq::rand(rng),
         }
     }
 
@@ -120,8 +115,7 @@ impl DelegatorVotePlan {
             nk: *fvk.nullifier_key(),
         };
         DelegatorVoteProof::prove(
-            self.proof_blinding_r,
-            self.proof_blinding_s,
+            &mut OsRng,
             &DELEGATOR_VOTE_PROOF_PROVING_KEY,
             public,
             private,
@@ -152,6 +146,7 @@ impl DelegatorVotePlan {
     }
 }
 
+#[allow(deprecated)]
 impl From<DelegatorVotePlan> for pb::DelegatorVotePlan {
     fn from(inner: DelegatorVotePlan) -> Self {
         pb::DelegatorVotePlan {
@@ -162,8 +157,8 @@ impl From<DelegatorVotePlan> for pb::DelegatorVotePlan {
             unbonded_amount: Some(inner.unbonded_amount.into()),
             staked_note_position: inner.position.into(),
             randomizer: inner.randomizer.to_bytes().to_vec(),
-            proof_blinding_r: inner.proof_blinding_r.to_bytes().to_vec(),
-            proof_blinding_s: inner.proof_blinding_s.to_bytes().to_vec(),
+            proof_blinding_r: vec![],
+            proof_blinding_s: vec![],
         }
     }
 }
@@ -172,15 +167,6 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::DelegatorVotePlan) -> Result<Self, Self::Error> {
-        let proof_blinding_r_bytes: [u8; 32] = value
-            .proof_blinding_r
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("malformed r in `DelegatorVotePlan`"))?;
-        let proof_blinding_s_bytes: [u8; 32] = value
-            .proof_blinding_s
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("malformed s in `DelegatorVotePlan`"))?;
-
         Ok(DelegatorVotePlan {
             proposal: value.proposal,
             start_position: value.start_position.into(),
@@ -205,10 +191,6 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
                     .map_err(|_| anyhow::anyhow!("invalid randomizer"))?,
             )
             .expect("randomizer malformed"),
-            proof_blinding_r: Fq::from_bytes_checked(&proof_blinding_r_bytes)
-                .expect("proof_blinding_r malformed"),
-            proof_blinding_s: Fq::from_bytes_checked(&proof_blinding_s_bytes)
-                .expect("proof_blinding_s malformed"),
         })
     }
 }

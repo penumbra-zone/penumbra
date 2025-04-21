@@ -17,8 +17,8 @@ use penumbra_sdk_shielded_pool::{
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
-fn prove(r: Fq, s: Fq, public: OutputProofPublic, private: OutputProofPrivate) {
-    let _proof = OutputProof::prove(r, s, &OUTPUT_PROOF_PROVING_KEY, public, private)
+fn prove(public: OutputProofPublic, private: OutputProofPrivate) {
+    let _proof = OutputProof::prove(&mut OsRng, &OUTPUT_PROOF_PROVING_KEY, public, private)
         .expect("can generate proof");
 }
 
@@ -49,11 +49,8 @@ fn output_proving_time(c: &mut Criterion) {
         balance_blinding,
     };
 
-    let r = Fq::rand(&mut OsRng);
-    let s = Fq::rand(&mut OsRng);
-
     c.bench_function("output proving", |b| {
-        b.iter(|| prove(r, s, public.clone(), private.clone()))
+        b.iter(|| prove(public.clone(), private.clone()))
     });
 
     // Also print out the number of constraints.

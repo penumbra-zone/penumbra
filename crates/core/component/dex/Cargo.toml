@@ -74,6 +74,7 @@ penumbra-sdk-tct = {workspace = true, default-features = false}
 penumbra-sdk-txhash = {workspace = true, default-features = false}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 prost = {workspace = true}
+rand = {workspace = true}
 rand_core = {workspace = true}
 regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}

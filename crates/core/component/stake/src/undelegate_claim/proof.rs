@@ -4,13 +4,14 @@ use ark_groth16::{PreparedVerifyingKey, ProvingKey};
 use base64::prelude::*;
 use penumbra_sdk_proto::{core::component::stake::v1 as pb, DomainType};
 
-use decaf377::{Fq, Fr};
+use decaf377::Fr;
 use penumbra_sdk_asset::{asset, balance, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proof_params::VerifyingKeyExt;
 use penumbra_sdk_shielded_pool::{ConvertProof, ConvertProofPrivate, ConvertProofPublic};
 
 use crate::Penalty;
+use rand::{CryptoRng, Rng};
 
 /// The public inputs to an [`UndelegateClaimProof`].
 #[derive(Clone, Debug)]
@@ -54,14 +55,13 @@ impl UndelegateClaimProof {
     #![allow(clippy::too_many_arguments)]
     /// Generate an `UndelegateClaimProof` given the proving key, public inputs,
     /// witness data, and two random elements `blinding_r` and `blinding_s`.
-    pub fn prove(
-        blinding_r: Fq,
-        blinding_s: Fq,
+    pub fn prove<R: CryptoRng + Rng>(
+        rng: &mut R,
         pk: &ProvingKey<Bls12_377>,
         public: UndelegateClaimProofPublic,
         private: UndelegateClaimProofPrivate,
     ) -> anyhow::Result<Self> {
-        let proof = ConvertProof::prove(blinding_r, blinding_s, pk, public.into(), private.into())?;
+        let proof = ConvertProof::prove(rng, pk, public.into(), private.into())?;
         Ok(Self(proof))
     }
 
@@ -99,7 +99,7 @@ impl TryFrom<pb::ZkUndelegateClaimProof> for UndelegateClaimProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use decaf377::{Fq, Fr};
+    use decaf377::Fr;
     use decaf377_rdsa as rdsa;
     use penumbra_sdk_num::Amount;
     use penumbra_sdk_proof_params::generate_prepared_test_parameters;
@@ -137,11 +137,8 @@ mod tests {
             let public = UndelegateClaimProofPublic { balance_commitment, unbonding_id, penalty };
             let private = UndelegateClaimProofPrivate { unbonding_amount, balance_blinding };
 
-            let blinding_r = Fq::rand(&mut rng);
-            let blinding_s = Fq::rand(&mut rng);
             let proof = UndelegateClaimProof::prove(
-                blinding_r,
-                blinding_s,
+                &mut rng,
                 &pk,
                 public.clone(),
                 private

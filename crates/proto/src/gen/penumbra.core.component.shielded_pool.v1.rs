@@ -508,9 +508,11 @@ pub struct SpendPlan {
     #[prost(bytes = "vec", tag = "4")]
     pub value_blinding: ::prost::alloc::vec::Vec<u8>,
     /// The first blinding factor to use for the ZK spend proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "5")]
     pub proof_blinding_r: ::prost::alloc::vec::Vec<u8>,
     /// The second blinding factor to use for the ZK spend proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "6")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }
@@ -651,9 +653,11 @@ pub struct OutputPlan {
     #[prost(bytes = "vec", tag = "4")]
     pub value_blinding: ::prost::alloc::vec::Vec<u8>,
     /// The first blinding factor to use for the ZK output proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "5")]
     pub proof_blinding_r: ::prost::alloc::vec::Vec<u8>,
     /// The second blinding factor to use for the ZK output proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "6")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }

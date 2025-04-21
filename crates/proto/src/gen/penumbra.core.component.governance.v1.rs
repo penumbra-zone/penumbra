@@ -284,9 +284,11 @@ pub struct DelegatorVotePlan {
     #[prost(bytes = "vec", tag = "7")]
     pub randomizer: ::prost::alloc::vec::Vec<u8>,
     /// The first blinding factor to use for the ZK delegator vote proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "8")]
     pub proof_blinding_r: ::prost::alloc::vec::Vec<u8>,
     /// The second blinding factor to use for the ZK delegator vote proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "9")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }

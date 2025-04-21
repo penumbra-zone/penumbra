@@ -74,8 +74,6 @@ where
             position: swap.position,
             output_data,
             epoch_duration,
-            proof_blinding_r: Fq::rand(&mut rng),
-            proof_blinding_s: Fq::rand(&mut rng),
         };
         plan.actions.push(action_plan.into());
         plans.push(plan);

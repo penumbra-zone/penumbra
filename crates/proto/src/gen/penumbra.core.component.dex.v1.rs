@@ -203,9 +203,11 @@ pub struct SwapPlan {
     #[prost(bytes = "vec", tag = "2")]
     pub fee_blinding: ::prost::alloc::vec::Vec<u8>,
     /// The first blinding factor to use for the ZK swap proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "3")]
     pub proof_blinding_r: ::prost::alloc::vec::Vec<u8>,
     /// The second blinding factor to use for the ZK swap proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "4")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }
@@ -234,9 +236,11 @@ pub struct SwapClaimPlan {
     #[prost(uint64, tag = "4")]
     pub epoch_duration: u64,
     /// The first blinding factor to use for the ZK swap claim proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "5")]
     pub proof_blinding_r: ::prost::alloc::vec::Vec<u8>,
     /// The second blinding factor to use for the ZK swap claim proof.
+    #[deprecated]
     #[prost(bytes = "vec", tag = "6")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }

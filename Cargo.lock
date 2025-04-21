@@ -5723,6 +5723,7 @@ dependencies = [
  "penumbra-sdk-tct",
  "penumbra-sdk-txhash",
  "proptest",
+ "rand",
  "rand_chacha",
  "rand_core",
  "regex",

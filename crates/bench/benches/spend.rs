@@ -18,8 +18,8 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
 #[allow(clippy::too_many_arguments)]
-fn prove(r: Fq, s: Fq, public: SpendProofPublic, private: SpendProofPrivate) {
-    let _proof = SpendProof::prove(r, s, &SPEND_PROOF_PROVING_KEY, public, private)
+fn prove(public: SpendProofPublic, private: SpendProofPrivate) {
+    let _proof = SpendProof::prove(&mut OsRng, &SPEND_PROOF_PROVING_KEY, public, private)
         .expect("can create proof");
 }
 
@@ -48,8 +48,6 @@ fn spend_proving_time(c: &mut Criterion) {
     let rk: VerificationKey<SpendAuth> = rsk.into();
     let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-    let r = Fq::rand(&mut OsRng);
-    let s = Fq::rand(&mut OsRng);
     let public = SpendProofPublic {
         anchor,
         balance_commitment,
@@ -66,7 +64,7 @@ fn spend_proving_time(c: &mut Criterion) {
     };
 
     c.bench_function("spend proving", |b| {
-        b.iter(|| prove(r, s, public.clone(), private.clone()))
+        b.iter(|| prove(public.clone(), private.clone()))
     });
 
     // Also print out the number of constraints.

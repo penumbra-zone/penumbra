@@ -176,8 +176,7 @@ async fn invalid_dummy_spend() {
         nk,
     };
     let bad_proof = SpendProof::prove(
-        Fq::rand(&mut OsRng),
-        Fq::rand(&mut OsRng),
+        &mut OsRng,
         &penumbra_sdk_proof_params::SPEND_PROOF_PROVING_KEY,
         public,
         private,
