@@ -3,10 +3,7 @@ use async_stream::try_stream;
 use clap::Args;
 use futures::{stream::BoxStream, StreamExt as _, TryStreamExt as _};
 use penumbra_sdk_asset::asset::{Denom, REGISTRY};
-use penumbra_sdk_custody::AuthorizeRequest;
 use penumbra_sdk_proto::core::component::sct::v1::EpochByHeightRequest;
-use penumbra_sdk_view::Planner;
-use rand_core::OsRng;
 use tokio::time::{Duration, Instant};
 
 use crate::{clients::Clients, planner::build_and_submit};
@@ -46,7 +43,7 @@ fn stream_epochs(clients: &Clients) -> BoxStream<'static, anyhow::Result<u64>> {
 async fn vote(clients: &Clients, epoch: u64, denom: Denom) -> anyhow::Result<()> {
     let mut view = clients.view();
     tracing::info!("submitting vote");
-    let tx = build_and_submit(clients, Default::default(), |planner| async {
+    let tx = build_and_submit(clients, Default::default(), |mut planner| async {
         let rewards_addr = view.address_by_index(Default::default()).await?;
         let voting_notes = view.lqt_voting_notes(epoch, None).await?;
 
@@ -60,11 +57,11 @@ async fn vote(clients: &Clients, epoch: u64, denom: Denom) -> anyhow::Result<()>
             planner.spend(note.note, note.position);
         }
 
-        Ok(())
-    });
+        Ok(planner)
+    })
+    .await?;
 
-    let tx_id = tx.id().to_string();
-    tracing::info!(tx_id, "vote cast");
+    tracing::info!(tx_id = format!("{}", tx.id()), "vote cast");
 
     Ok(())
 }

@@ -1,6 +1,10 @@
 use std::future::Future;
 
+use penumbra_sdk_custody::AuthorizeRequest;
+use penumbra_sdk_keys::keys::AddressIndex;
+use penumbra_sdk_transaction::Transaction;
 use penumbra_sdk_view::Planner;
+use rand_core::OsRng;
 
 use crate::clients::Clients;
 
@@ -10,15 +14,15 @@ pub async fn build_and_submit<F, Fut>(
     add_to_plan: F,
 ) -> anyhow::Result<Transaction>
 where
-    F: FnOnce(&mut Planner<OsRng>) -> Fut,
-    Fut: Future<Output = anyhow::Result<()>>,
+    F: FnOnce(Planner<OsRng>) -> Fut,
+    Fut: Future<Output = anyhow::Result<Planner<OsRng>>>,
 {
     let mut view = clients.view();
     let mut custody = clients.custody();
 
     let mut planner = Planner::new(OsRng);
     planner.set_gas_prices(view.gas_prices().await?);
-    add_to_plan(&mut planner).await?;
+    let mut planner = add_to_plan(planner).await?;
     let plan = planner.plan(view.as_mut(), source).await?;
     let auth_data = custody
         .authorize(AuthorizeRequest {

@@ -3,6 +3,7 @@ use std::str::FromStr;
 use anyhow::Context;
 use penumbra_sdk_custody::CustodyClient;
 use penumbra_sdk_proto::box_grpc_svc::BoxGrpcService;
+use penumbra_sdk_proto::core::component::dex::v1 as pb_dex;
 use penumbra_sdk_proto::core::component::sct::v1 as pb_sct;
 use penumbra_sdk_proto::custody::v1::custody_service_client::CustodyServiceClient;
 use penumbra_sdk_proto::{box_grpc_svc, view::v1::view_service_client::ViewServiceClient};
@@ -10,6 +11,9 @@ use penumbra_sdk_view::{ViewClient, ViewServer};
 use tonic::transport::Channel;
 
 pub type SctQueryServiceClient = pb_sct::query_service_client::QueryServiceClient<Channel>;
+
+pub type DexSimulationServiceClient =
+    pb_dex::simulation_service_client::SimulationServiceClient<Channel>;
 
 pub type DynViewClient = dyn ViewClient + Send + 'static;
 
@@ -58,5 +62,10 @@ impl Clients {
     /// Get an SCT Query Service client.
     pub fn sct_query_service(&self) -> SctQueryServiceClient {
         SctQueryServiceClient::new(self.node_channel.clone())
+    }
+
+    /// Get a Dex Simulation Service client.
+    pub fn dex_simulation_service(&self) -> DexSimulationServiceClient {
+        DexSimulationServiceClient::new(self.node_channel.clone())
     }
 }
