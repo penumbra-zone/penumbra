@@ -67,16 +67,18 @@
             cargo-nextest
             cargo-release
             cargo-watch
-            glibcLocales # for postgres initdb locale support
             cometbft
+            dbus
+            glibcLocales # for postgres initdb locale support
             grafana
-            grpcurl
             grpcui
+            grpcurl
             just
+            libusb1
             mdbook
             mdbook-katex
-            mdbook-mermaid
             mdbook-linkcheck
+            mdbook-mermaid
             nix-prefetch-scripts
             postgresql
             process-compose

@@ -1,0 +1,23 @@
+[package]
+name = "penumbra-sdk-custody-ledger-usb"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "Ledger USB custody for Penumbra"
+version = {workspace = true}
+license = {workspace = true}
+edition = {workspace = true}
+# TODO: revisit this once git dependencies are removed.
+publish = false
+
+[dependencies]
+anyhow = {workspace = true}
+ledger-lib = {workspace = true}
+ledger-proto = {workspace = true}
+penumbra-sdk-custody = {workspace = true}
+penumbra-sdk-keys = {workspace = true}
+penumbra-sdk-proto = {workspace = true}
+penumbra-sdk-transaction = {workspace = true}
+tonic = {workspace = true}
+tracing = {workspace = true}
+serde = {workspace = true}
+tokio = { workspace = true, features = ["sync"] }

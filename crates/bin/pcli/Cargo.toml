@@ -29,6 +29,7 @@ parallel = [
     "penumbra-sdk-transaction/parallel",
     "penumbra-sdk-wallet/parallel",
 ]
+ledger = ["penumbra-sdk-custody-ledger-usb"]
 
 [dependencies]
 anyhow = {workspace = true}
@@ -67,6 +68,7 @@ penumbra-sdk-asset = {workspace = true, default-features = false}
 penumbra-sdk-community-pool = {workspace = true, default-features = false}
 penumbra-sdk-compact-block = {workspace = true, default-features = false}
 penumbra-sdk-custody = {workspace = true}
+penumbra-sdk-custody-ledger-usb = {workspace = true, optional = true}
 penumbra-sdk-auction = {workspace = true, default-features = false}
 penumbra-sdk-dex = {workspace = true, default-features = false}
 penumbra-sdk-fee = {workspace = true, default-features = false}
