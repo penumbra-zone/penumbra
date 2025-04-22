@@ -1,10 +1,12 @@
-use std::future::Future;
-
+use anyhow::anyhow;
+use futures::TryStreamExt as _;
 use penumbra_sdk_custody::AuthorizeRequest;
 use penumbra_sdk_keys::keys::AddressIndex;
+use penumbra_sdk_proto::view::v1::broadcast_transaction_response::Status as BroadcastStatus;
 use penumbra_sdk_transaction::Transaction;
 use penumbra_sdk_view::Planner;
 use rand_core::OsRng;
+use std::future::Future;
 
 use crate::clients::Clients;
 
@@ -34,6 +36,20 @@ where
         .expect("auth data should be present")
         .try_into()?;
     let tx = view.witness_and_build(plan, auth_data).await?;
+    let mut rsp = view.broadcast_transaction(tx.clone(), true).await?;
+    let tx_id = format!("{}", tx.id());
+
+    while let Some(rsp) = rsp.try_next().await? {
+        match rsp.status.ok_or(anyhow!("missing status"))? {
+            BroadcastStatus::BroadcastSuccess(_) => {
+                tracing::info!(tx_id, "transaction broadcast");
+            }
+            BroadcastStatus::Confirmed(c) => {
+                tracing::info!(tx_id, height = c.detection_height, "transaction confirmed");
+                break;
+            }
+        }
+    }
 
     Ok(tx)
 }
