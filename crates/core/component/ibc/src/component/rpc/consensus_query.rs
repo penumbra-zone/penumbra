@@ -626,19 +626,10 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
         let port_id: PortId = PortId::from_str(&request.port_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
 
-        let ack_counter = snapshot
-            .get_ack_sequence(&chan_id, &port_id)
-            .await
-            .map_err(|e| {
-                tonic::Status::aborted(format!(
-                    "couldn't get ack sequence for channel {chan_id} and port {port_id}: {e}"
-                ))
-            })?;
-
         let mut acks = vec![];
-        for ack_idx in 0..ack_counter {
+        for ack_idx in &request.packet_commitment_sequences {
             let maybe_ack = snapshot
-                .get_packet_acknowledgement(&port_id, &chan_id, ack_idx)
+                .get_packet_acknowledgement(&port_id, &chan_id, *ack_idx)
                 .await.map_err(|e| {
                     tonic::Status::aborted(format!(
                         "couldn't get packet acknowledgement for channel {chan_id} and port {port_id} at index {ack_idx}: {e}"
@@ -651,7 +642,7 @@ impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> 
                 let ack_state = PacketState {
                     port_id: request.port_id.clone(),
                     channel_id: request.channel_id.clone(),
-                    sequence: ack_idx,
+                    sequence: *ack_idx,
                     data: ack.clone(),
                 };
 
