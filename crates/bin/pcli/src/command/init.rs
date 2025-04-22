@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use penumbra_sdk_custody::threshold;
 #[cfg(feature = "ledger")]
@@ -46,10 +46,7 @@ pub enum InitTopSubCmd {
     Spend(InitSubCmd),
     /// Initialize `pcli` in view-only mode, without spending keys.
     #[clap(display_order = 200)]
-    ViewOnly {
-        /// The full viewing key for the wallet to view.
-        full_viewing_key: String,
-    },
+    ViewOnly {},
     /// Initialize a separate validator governance key for an existing `pcli` configuration (this
     /// option is only meaningful for validators).
     #[clap(subcommand, display_order = 300)]
@@ -70,7 +67,7 @@ pub enum InitSubCmd {
     // This is not accessible directly by the user, because it's impermissible to initialize the
     // governance subkey as view-only.
     #[clap(skip, display_order = 200)]
-    ViewOnly { full_viewing_key: String },
+    ViewOnly,
     /// Initialize using a ledger hardware wallet.
     #[cfg(feature = "ledger")]
     #[clap(display_order = 250)]
@@ -100,6 +97,25 @@ pub enum SoftKmsInitCmd {
         #[clap(long, action)]
         legacy_raw_bip39_derivation: bool,
     },
+}
+
+// Reusable function for prompting interactively for key material.
+fn prompt_for_password(msg: &str) -> Result<String> {
+    let mut password = String::new();
+    // The `rpassword` crate doesn't support reading from stdin, so we check
+    // for an interactive session. We must support non-interactive use cases,
+    // for integration with other tooling.
+    if std::io::stdin().is_terminal() {
+        password = rpassword::prompt_password(msg)?;
+    } else {
+        while let Ok(n_bytes) = std::io::stdin().lock().read_to_string(&mut password) {
+            if n_bytes == 0 {
+                break;
+            }
+            password = password.trim().to_string();
+        }
+    }
+    Ok(password)
 }
 
 impl SoftKmsInitCmd {
@@ -133,23 +149,9 @@ impl SoftKmsInitCmd {
             SoftKmsInitCmd::ImportPhrase {
                 legacy_raw_bip39_derivation,
             } => {
-                let mut seed_phrase = String::new();
-                // The `rpassword` crate doesn't support reading from stdin, so we check
-                // for an interactive session. We must support non-interactive use cases,
-                // for integration with other tooling.
-                if std::io::stdin().is_terminal() {
-                    seed_phrase = rpassword::prompt_password("Enter seed phrase: ")?;
-                } else {
-                    while let Ok(n_bytes) = std::io::stdin().lock().read_to_string(&mut seed_phrase)
-                    {
-                        if n_bytes == 0 {
-                            break;
-                        }
-                        seed_phrase = seed_phrase.trim().to_string();
-                    }
-                }
-
-                let seed_phrase = SeedPhrase::from_str(&seed_phrase)?;
+                let seed_phrase = prompt_for_password("Enter seed phrase: ")?;
+                let seed_phrase = SeedPhrase::from_str(&seed_phrase)
+                    .context("failed to parse input as seed phrase")?;
 
                 if *legacy_raw_bip39_derivation {
                     SpendKey::from_seed_phrase_bip39(seed_phrase, 0)
@@ -272,10 +274,7 @@ impl InitCmd {
         let (init_type, subcmd) = match self.subcmd.clone() {
             InitTopSubCmd::Spend(subcmd) => (InitType::SpendKey, subcmd),
             InitTopSubCmd::ValidatorGovernanceSubkey(subcmd) => (InitType::GovernanceKey, subcmd),
-            InitTopSubCmd::ViewOnly { full_viewing_key } => (
-                InitType::SpendKey,
-                InitSubCmd::ViewOnly { full_viewing_key },
-            ),
+            InitTopSubCmd::ViewOnly {} => (InitType::SpendKey, InitSubCmd::ViewOnly),
             InitTopSubCmd::UnsafeWipe {} => {
                 println!("Deleting all data in {}...", home_dir.as_ref());
                 std::fs::remove_dir_all(home_dir.as_ref())?;
@@ -351,8 +350,10 @@ impl InitCmd {
             (_, InitSubCmd::Threshold(ThresholdInitCmd::Deal { .. }), _) => {
                 unreachable!("this should already have been handled above")
             }
-            (InitType::SpendKey, InitSubCmd::ViewOnly { full_viewing_key }, false) => {
-                let full_viewing_key = full_viewing_key.parse()?;
+            (InitType::SpendKey, InitSubCmd::ViewOnly {}, false) => {
+                let full_viewing_key = prompt_for_password("Enter full viewing key: ")?
+                    .parse()
+                    .context("failed to parse input as FullViewingKey")?;
                 (full_viewing_key, CustodyConfig::ViewOnly)
             }
             (InitType::GovernanceKey, InitSubCmd::ViewOnly { .. }, false) => {
