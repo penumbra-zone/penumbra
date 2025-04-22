@@ -19,7 +19,7 @@ use penumbra_sdk_dex::{
 use penumbra_sdk_num::{fixpoint::U128x128, Amount};
 use penumbra_sdk_proto::core::component::dex::v1::{
     simulate_trade_request::{routing::Setting, Routing},
-    SimulateTradeRequest,
+    LiquidityPositionByIdRequest, SimulateTradeRequest,
 };
 use rand_core::OsRng;
 use tokio::time::Instant;
@@ -29,7 +29,7 @@ use crate::{clients::Clients, planner::build_and_submit};
 const POSITION_CHUNK_SIZE: usize = 5;
 const DEFAULT_PRICE: u8 = 1;
 const DEFAULT_FEE_BPS: u16 = 500;
-const ADJUST_WAIT_SECS: u64 = 30;
+const ADJUST_WAIT_SECS: u64 = 120;
 
 async fn close_all_positions(clients: &Clients, pair: TradingPair) -> anyhow::Result<()> {
     let mut view = clients.view();
@@ -56,13 +56,24 @@ async fn close_all_positions(clients: &Clients, pair: TradingPair) -> anyhow::Re
 
 async fn withdraw_all_positions(clients: &Clients, pair: TradingPair) -> anyhow::Result<()> {
     let mut view = clients.view();
+    let mut dex_query_service = clients.dex_query_service();
     let position_ids = view
         .owned_position_ids(Some(position::State::Closed), Some(pair))
         .await?;
     for chunk in position_ids.chunks(POSITION_CHUNK_SIZE) {
         let tx = build_and_submit(clients, Default::default(), |mut planner| async {
             for position_id in chunk {
-                planner.position_close(*position_id);
+                let position: Position = dex_query_service
+                    .liquidity_position_by_id(LiquidityPositionByIdRequest {
+                        position_id: Some((*position_id).into()),
+                    })
+                    .await?
+                    .into_inner()
+                    .data
+                    .ok_or(anyhow!("expected position to be known by the Dex"))?
+                    .try_into()?;
+
+                planner.position_withdraw(*position_id, position.reserves, position.phi.pair, 0);
             }
             Ok(planner)
         })

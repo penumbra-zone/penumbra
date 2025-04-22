@@ -12,6 +12,8 @@ use tonic::transport::Channel;
 
 pub type SctQueryServiceClient = pb_sct::query_service_client::QueryServiceClient<Channel>;
 
+pub type DexQueryServiceClient = pb_dex::query_service_client::QueryServiceClient<Channel>;
+
 pub type DexSimulationServiceClient =
     pb_dex::simulation_service_client::SimulationServiceClient<Channel>;
 
@@ -67,5 +69,10 @@ impl Clients {
     /// Get a Dex Simulation Service client.
     pub fn dex_simulation_service(&self) -> DexSimulationServiceClient {
         DexSimulationServiceClient::new(self.node_channel.clone())
+    }
+
+    /// Get a Dex Query Service client
+    pub fn dex_query_service(&self) -> DexQueryServiceClient {
+        DexQueryServiceClient::new(self.node_channel.clone())
     }
 }
