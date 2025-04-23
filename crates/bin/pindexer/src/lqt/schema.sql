@@ -196,7 +196,7 @@ WITH delegator_streaks AS (
 ), stage0 AS (
     SELECT
         address,
-        COUNT(*) AS epochs_voted_in,
+        COUNT(DISTINCT lqt._votes.epoch) AS epochs_voted_in,
         SUM(amount) AS total_rewards,
         SUM(power) AS total_voting_power
     FROM lqt._votes
