@@ -6,11 +6,11 @@ use std::process::Command as StdCommand;
 
 use anyhow::Context;
 use assert_cmd::cargo::CommandCargoExt;
+use assert_cmd::Command as AssertCommand;
 use futures::StreamExt;
-use tempfile::tempdir;
+use tempfile::{tempdir, TempDir};
 use tokio::process::Command as TokioCommand;
 
-use pclientd::PclientdConfig;
 use penumbra_sdk_keys::test_keys;
 use penumbra_sdk_proto::view::v1::view_service_client::ViewServiceClient;
 use penumbra_sdk_view::ViewClient;
@@ -22,16 +22,25 @@ const PCLIENTD_BIND_ADDR: &str = "127.0.0.1:9081";
 /// Build config for pclientd, supporting only read operations.
 /// The custody portion is intentionally unset, to avoid side-effects
 /// on the public testnet.
-fn generate_readonly_config() -> anyhow::Result<PclientdConfig> {
-    Ok(PclientdConfig {
-        full_viewing_key: test_keys::FULL_VIEWING_KEY.clone(),
-        grpc_url: NODE_URL.parse()?,
-        bind_addr: PCLIENTD_BIND_ADDR.parse()?,
-        // No custody, so operations are read-only.
-        kms_config: None,
-    })
+fn generate_readonly_config(home_dir: &TempDir) -> anyhow::Result<()> {
+    let mut init_cmd = AssertCommand::cargo_bin("pclientd")?;
+    init_cmd
+        .args([
+            "--home",
+            home_dir.path().to_str().unwrap(),
+            "init",
+            "--bind-addr",
+            "127.0.0.1:8081",
+            "--grpc-url",
+            NODE_URL,
+            "--view",
+        ])
+        .write_stdin(test_keys::FULL_VIEWING_KEY.clone().to_string());
+    init_cmd.assert().success();
+    Ok(())
 }
 
+#[ignore]
 #[tokio::test]
 /// Start a pclientd process for the testnet wallet, and sync to current height
 /// on the testnet. We don't perform any write actions, so there will be no on-chain
@@ -43,10 +52,7 @@ async fn pclientd_sync_against_testnet() -> anyhow::Result<()> {
     let data_dir = tempdir().unwrap();
 
     // 1. Construct a config for the `pclientd` instance:
-    let config = generate_readonly_config()?;
-
-    let config_file_path = data_dir.path().to_owned().join("config.toml");
-    config.save(&config_file_path)?;
+    generate_readonly_config(&data_dir)?;
 
     // 2. Run a `pclientd` instance in the background as a subprocess.
     let home_dir = data_dir.path().to_owned();

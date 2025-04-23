@@ -46,6 +46,7 @@ penumbra-sdk-view = {workspace = true}
 prost = {workspace = true}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
+rpassword = {workspace = true}
 rustls = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}

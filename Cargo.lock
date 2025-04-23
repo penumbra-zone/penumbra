@@ -4911,6 +4911,7 @@ dependencies = [
  "prost 0.13.4",
  "rand",
  "rand_core",
+ "rpassword",
  "rustls 0.23.21",
  "serde",
  "serde_json",

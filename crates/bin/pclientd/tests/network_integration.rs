@@ -10,14 +10,13 @@ use std::{ops::Deref, process::Command as StdCommand};
 
 use anyhow::Context;
 use assert_cmd::cargo::CommandCargoExt;
+use assert_cmd::Command as AssertCommand;
 use base64::prelude::*;
 use futures::{FutureExt, StreamExt, TryStreamExt};
-use tempfile::tempdir;
+use tempfile::{tempdir, TempDir};
 use tokio::process::Command as TokioCommand;
 
-use pclientd::PclientdConfig;
 use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_sdk_custody::soft_kms;
 use penumbra_sdk_keys::test_keys;
 use penumbra_sdk_proto::{
     core::{component::fee::v1::Fee, component::ibc::v1::IbcRelay},
@@ -31,18 +30,24 @@ use penumbra_sdk_proto::{
 };
 use penumbra_sdk_view::ViewClient;
 
-fn generate_config() -> anyhow::Result<PclientdConfig> {
-    Ok(PclientdConfig {
-        full_viewing_key: test_keys::FULL_VIEWING_KEY.clone(),
-        grpc_url: std::env::var("PENUMBRA_NODE_PD_URL")
-            .unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned())
-            .parse()?,
-        bind_addr: "127.0.0.1:8081".parse()?,
-        kms_config: Some(soft_kms::Config {
-            spend_key: test_keys::SPEND_KEY.clone(),
-            auth_policy: Vec::new(),
-        }),
-    })
+// Generate a working pclientd config in the target directory.
+fn generate_custody_config(home_dir: &TempDir) -> anyhow::Result<()> {
+    let mut init_cmd = AssertCommand::cargo_bin("pclientd")?;
+    init_cmd
+        .args([
+            "--home",
+            home_dir.path().to_str().unwrap(),
+            "init",
+            "--bind-addr",
+            "127.0.0.1:8081",
+            "--grpc-url",
+            std::env::var("PENUMBRA_NODE_PD_URL")
+                .unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned())
+                .as_str(),
+        ])
+        .write_stdin(test_keys::SEED_PHRASE.to_string());
+    init_cmd.assert().success();
+    Ok(())
 }
 
 #[ignore]
@@ -53,11 +58,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     let data_dir = tempdir().unwrap();
 
     // 1. Construct a config for the `pclientd` instance:
-    let config = generate_config()?;
-
-    let mut config_file_path = data_dir.path().to_owned();
-    config_file_path.push("config.toml");
-    config.save(&config_file_path)?;
+    generate_custody_config(&data_dir)?;
 
     // 2. Run a `pclientd` instance in the background as a subprocess.
     let home_dir = data_dir.path().to_owned();
@@ -235,11 +236,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     let data_dir = tempdir().unwrap();
 
     // 1. Construct a config for the `pclientd` instance:
-    let config = generate_config()?;
-
-    let mut config_file_path = data_dir.path().to_owned();
-    config_file_path.push("config.toml");
-    config.save(&config_file_path)?;
+    generate_custody_config(&data_dir)?;
 
     // 2. Run a `pclientd` instance in the background as a subprocess.
     let home_dir = data_dir.path().to_owned();

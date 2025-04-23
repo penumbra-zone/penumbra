@@ -1,6 +1,8 @@
 // Requires nightly.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
+use std::io::IsTerminal;
+use std::io::Read;
 use std::net::SocketAddr;
 use std::path::Path;
 
@@ -20,12 +22,13 @@ use penumbra_sdk_proto::{
     view::v1::view_service_server::ViewServiceServer,
 };
 use penumbra_sdk_view::{Storage, ViewServer};
+use rpassword::prompt_password;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use std::fs;
 use std::fs::File;
-use std::io::{self, BufRead, Write};
+use std::io::Write;
 use std::str::FromStr;
 use tonic::transport::Server;
 use url::Url;
@@ -88,15 +91,18 @@ pub struct Opt {
 #[derive(Debug, clap::Subcommand)]
 pub enum Command {
     /// Generate configs for `pclientd` in view or custody mode.
+    ///
+    /// In custody mode, pclientd will have spend authority over the configured account,
+    /// enabling it to perform transactions on behalf of the wallet.
+    ///
+    /// In view mode, pclientd will be able to read all transactions related to the
+    /// configured account, but cannot create new transactions.
     Init {
-        /// If provided, initialize in view mode with the given full viewing key.
-        #[clap(long, display_order = 100, value_name = "FULL_VIEWING_KEY")]
-        view: Option<String>,
-        /// If provided, initialize in custody mode with the given seed phrase.
+        /// If provided, initialize in view mode, by providing a full viewing key.
         ///
-        /// If the value '-' is provided, the seed phrase will be read from stdin.
-        #[clap(long, display_order = 200)]
-        custody: Option<String>,
+        /// Otherwise, a prompt will accept a seed phrase.
+        #[clap(long, display_order = 100)]
+        view: bool,
         /// Sets the URL of the gRPC endpoint used to talk to pd.
         #[clap(
             long,
@@ -169,6 +175,25 @@ impl Opt {
         }
     }
 
+    // Reusable function for prmopting for sensitive info on the CLI.
+    fn prompt_for_password(&self, msg: &str) -> Result<String> {
+        let mut password = String::new();
+        // The `rpassword` crate doesn't support reading from stdin, so we check
+        // for an interactive session. We must support non-interactive use cases,
+        // for integration with other tooling.
+        if std::io::stdin().is_terminal() {
+            password = prompt_password(msg)?;
+        } else {
+            while let Ok(n_bytes) = std::io::stdin().lock().read_to_string(&mut password) {
+                if n_bytes == 0 {
+                    break;
+                }
+                password = password.trim().to_string();
+            }
+        }
+        Ok(password)
+    }
+
     pub async fn exec(self) -> Result<()> {
         let opt = self;
         match &opt.cmd {
@@ -184,56 +209,38 @@ impl Opt {
             }
             Command::Init {
                 view,
-                custody,
                 grpc_url,
                 bind_addr,
             } => {
                 // Check that the home directory is empty.
                 opt.check_home_nonempty()?;
 
-                let seed_phrase = match custody {
-                    None => None,
-                    Some(seed_phrase) => {
-                        // Read seed phrase from std_in if '-' is supplied
-                        if seed_phrase == "-" {
-                            println!("Enter your seed phrase to enable pclientd custody mode: ");
+                // Initialize key vars, which will differ based on view or custody mode.
+                let key_material: String;
+                let spend_key: Option<SpendKey>;
+                let full_viewing_key: FullViewingKey;
 
-                            let stdin = io::stdin();
-                            let line = stdin
-                                .lock()
-                                .lines()
-                                .next()
-                                .expect("There was no next line.")
-                                .expect("The line could not be read.");
-
-                            Some(line)
-                        } else {
-                            Some(seed_phrase.clone())
-                        }
-                    }
-                };
-
-                let (spend_key, full_viewing_key) = match (seed_phrase, view) {
-                    (Some(seed_phrase), None) => {
-                        let spend_key = SpendKey::from_seed_phrase_bip44(
-                            SeedPhrase::from_str(seed_phrase.as_str())?,
-                            &Bip44Path::new(0),
-                        );
-                        let full_viewing_key = spend_key.full_viewing_key().clone();
-                        (Some(spend_key), full_viewing_key)
-                    }
-                    (None, Some(view)) => (None, view.parse()?),
-                    (None, None) => {
-                        return Err(anyhow::anyhow!(
-                            "Must provide either a seed phrase or a full viewing key."
-                        ))
-                    }
-                    (Some(_), Some(_)) => {
-                        return Err(anyhow::anyhow!(
-                            "Cannot provide both a seed phrase and a full viewing key."
-                        ))
-                    }
-                };
+                // If view-only mode is requested, prompt for a FullViewingKey.
+                if *view {
+                    key_material = opt
+                        .prompt_for_password("Enter full viewing key: ")?
+                        .to_owned();
+                    full_viewing_key = key_material.parse()?;
+                    spend_key = None;
+                // Otherwise, we're in full custody mode.
+                } else {
+                    key_material = opt
+                        .prompt_for_password(
+                            "Enter your seed phrase to enable pclientd custody mode: ",
+                        )?
+                        .to_owned();
+                    let sk = SpendKey::from_seed_phrase_bip44(
+                        SeedPhrase::from_str(key_material.as_str())?,
+                        &Bip44Path::new(0),
+                    );
+                    full_viewing_key = sk.full_viewing_key().clone();
+                    spend_key = Some(sk);
+                }
 
                 println!(
                     "Initializing configuration at: {:?}",
