@@ -175,12 +175,14 @@ WITH delegator_streaks AS (
             address,
             epoch,
             LEAD(epoch) OVER (PARTITION BY address ORDER BY epoch ASC) AS next_epoch,
-            MAX(epoch) OVER (PARTITION BY address) AS max_epoch
+            MAX(epoch) OVER (PARTITION BY address) AS max_epoch,
+            MIN(epoch) OVER (PARTITION BY address) AS min_epoch
         FROM lqt._votes
     ), gaps AS (
         SELECT DISTINCT ON (address)
             address,
             max_epoch,
+            min_epoch,
             epoch AS gap_start,
             next_epoch AS gap_end
         FROM epochs
@@ -190,26 +192,31 @@ WITH delegator_streaks AS (
         CASE
             WHEN max_epoch < (SELECT MAX(epoch) FROM lqt._finished_epochs) THEN 0
             WHEN gap_end - gap_start > 1 THEN max_epoch - gap_end + 1
-            ELSE max_epoch - (SELECT MIN(epoch) FROM lqt._finished_epochs) + 1
+            ELSE max_epoch - min_epoch + 1
         END AS streak
         FROM gaps
-), stage0 AS (
+), rewards AS (
     SELECT
         address,
-        COUNT(*) AS epochs_voted_in,
-        SUM(amount) AS total_rewards,
-        SUM(power) AS total_voting_power
+        SUM(amount) AS total_rewards
+    FROM lqt._delegator_rewards
+    GROUP BY address
+), epochs AS (
+    SELECT
+        address,
+        SUM(power) AS total_voting_power,
+        COUNT(DISTINCT epoch) AS epochs_voted_in
     FROM lqt._votes
-    JOIN lqt._delegator_rewards USING (address)
     GROUP BY address
 ) SELECT
     address,
     epochs_voted_in,
-    total_rewards,
-    total_voting_power,
+    COALESCE(total_rewards, 0) AS total_rewards,
+    COALESCE(total_voting_power, 0) AS total_voting_power,
     streak
-FROM stage0
-JOIN delegator_streaks USING (address);
+FROM epochs
+JOIN delegator_streaks USING (address)
+LEFT JOIN rewards USING (address);
 COMMENT ON VIEW lqt.delegator_summary IS
 $$A summary of a delegator's rewards across all epochs.$$;
 COMMENT ON COLUMN lqt.delegator_summary.address IS
