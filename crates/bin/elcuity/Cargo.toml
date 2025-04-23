@@ -16,6 +16,7 @@ dist = true
 anyhow = {workspace = true}
 async-stream = {workspace = true}
 clap = {workspace = true, features = ["derive", "env"]}
+decaf377 = {workspace = true}
 futures = {workspace = true}
 penumbra-sdk-asset = {workspace = true}
 penumbra-sdk-custody = {workspace = true}

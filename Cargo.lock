@@ -2018,6 +2018,7 @@ dependencies = [
  "anyhow",
  "async-stream",
  "clap",
+ "decaf377",
  "futures",
  "penumbra-sdk-asset",
  "penumbra-sdk-custody",

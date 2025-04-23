@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 mod clients;
 mod lp;
 mod planner;
+mod swap;
 mod vote;
 
 /// A suite for automated tournament actions.
@@ -24,7 +25,10 @@ pub struct Opt {
 pub enum Command {
     /// Vote continuously for a given asset.
     Vote(vote::Opt),
+    /// Provide liquididty.
     Lp(lp::Opt),
+    /// Swap between different assets.
+    Swap(swap::Opt),
 }
 
 impl Opt {
@@ -34,6 +38,7 @@ impl Opt {
         match self.command {
             Command::Vote(opt) => opt.run(&clients).await?,
             Command::Lp(opt) => opt.run(&clients).await?,
+            Command::Swap(opt) => opt.run(&clients).await?,
         }
         Ok(())
     }
