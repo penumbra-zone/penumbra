@@ -175,12 +175,14 @@ WITH delegator_streaks AS (
             address,
             epoch,
             LEAD(epoch) OVER (PARTITION BY address ORDER BY epoch ASC) AS next_epoch,
-            MAX(epoch) OVER (PARTITION BY address) AS max_epoch
+            MAX(epoch) OVER (PARTITION BY address) AS max_epoch,
+            MIN(epoch) OVER (PARTITION BY address) AS min_epoch
         FROM lqt._votes
     ), gaps AS (
         SELECT DISTINCT ON (address)
             address,
             max_epoch,
+            min_epoch,
             epoch AS gap_start,
             next_epoch AS gap_end
         FROM epochs
@@ -190,7 +192,7 @@ WITH delegator_streaks AS (
         CASE
             WHEN max_epoch < (SELECT MAX(epoch) FROM lqt._finished_epochs) THEN 0
             WHEN gap_end - gap_start > 1 THEN max_epoch - gap_end + 1
-            ELSE max_epoch - (SELECT MIN(epoch) FROM lqt._finished_epochs) + 1
+            ELSE max_epoch - min_epoch + 1
         END AS streak
         FROM gaps
 ), rewards AS (
