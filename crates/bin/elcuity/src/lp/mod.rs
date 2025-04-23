@@ -263,10 +263,11 @@ async fn create_position_at_current_spread(
     clients: &Clients,
     pair: DirectedTradingPair,
     liquidity_target: Value,
+    default_price: U128x128,
 ) -> anyhow::Result<()> {
     let (price, fee_bps) = match spread(clients, pair).await? {
         Some((buy, sell)) => spread_to_price_and_fee_bps(buy, sell),
-        None => (U128x128::from(DEFAULT_PRICE), DEFAULT_FEE_BPS),
+        None => (default_price, DEFAULT_FEE_BPS),
     };
     let balance_limits = calculate_balance_limits(clients).await?;
     let position = make_position(&balance_limits, pair, liquidity_target, price, fee_bps);
@@ -285,6 +286,7 @@ async fn adjust_liquidity_provision(
     clients: &Clients,
     other_asset: asset::Id,
     liquidity_target: Amount,
+    default_price: U128x128,
 ) -> anyhow::Result<()> {
     let pair = DirectedTradingPair::new(other_asset, *STAKING_TOKEN_ASSET_ID);
     let target = Value {
@@ -293,7 +295,7 @@ async fn adjust_liquidity_provision(
     };
     close_all_positions(clients, pair.to_canonical()).await?;
     withdraw_all_positions(clients, pair.to_canonical()).await?;
-    create_position_at_current_spread(clients, pair, target).await?;
+    create_position_at_current_spread(clients, pair, target, default_price).await?;
     Ok(())
 }
 
@@ -305,6 +307,9 @@ pub struct Opt {
     /// The amount of liquidity to provide, in terms of the staking token.
     #[clap(long)]
     liquidity_target: u32,
+    /// If provided, a price to use instead of 1 as the default.
+    #[clap(long)]
+    default_price: Option<f64>,
 }
 
 impl Opt {
@@ -317,9 +322,16 @@ impl Opt {
             .default_unit()
             .value(Amount::from(self.liquidity_target))
             .amount;
+        let default_price = self
+            .default_price
+            .map(|x| U128x128::try_from(x))
+            .transpose()?
+            .unwrap_or(U128x128::from(DEFAULT_PRICE));
         loop {
             let start = Instant::now();
-            if let Err(e) = adjust_liquidity_provision(clients, other_asset, liquidity_target).await
+            if let Err(e) =
+                adjust_liquidity_provision(clients, other_asset, liquidity_target, default_price)
+                    .await
             {
                 tracing::error!(
                     error = format!("{}", e),
