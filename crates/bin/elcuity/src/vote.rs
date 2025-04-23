@@ -69,6 +69,8 @@ async fn vote(clients: &Clients, epoch: u64, denom: Denom) -> anyhow::Result<()>
 #[derive(Debug, Args)]
 pub struct Opt {
     /// The denom that should continuously be voted for.
+    ///
+    /// Must be specified as a base denom for an IBC transfer asset, e.g. `transfer/channel-1/uusdc`.
     #[clap(long = "for")]
     denom: String,
 }

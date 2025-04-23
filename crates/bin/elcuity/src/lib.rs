@@ -11,10 +11,10 @@ mod vote;
 /// Relies on an external view and custody service.
 #[derive(Debug, Parser)]
 pub struct Opt {
-    /// A URL for the GRPC endpoint.
+    /// A URL for the gRPC endpoint of pd, for communicating with the network.
     #[clap(long)]
     grpc_url: String,
-    /// A URL for the view service.
+    /// A URL for the gRPC endpoint of the view service, e.g. pclientd.
     #[clap(long)]
     view_service: String,
     #[clap(subcommand)]
@@ -24,8 +24,13 @@ pub struct Opt {
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Vote continuously for a given asset.
+    ///
+    /// This action will repeatedly vote in the liquidity tournament, for a given denom.
+    /// The denom must be specified as the base denom of an IBC transfer asset, e.g. 'transfer/channel-1/uusdc'.
+    /// In order to cast votes, you must have staked UM previously: the vote command will not
+    /// delegate for you.
     Vote(vote::Opt),
-    /// Provide liquididty.
+    /// Provide liquidity.
     Lp(lp::Opt),
     /// Swap between different assets.
     Swap(swap::Opt),
