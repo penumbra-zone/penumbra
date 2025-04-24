@@ -82,9 +82,16 @@ pub async fn swap(clients: &Clients, input: Value, to: asset::Id) -> anyhow::Res
 
 #[derive(Debug, Args)]
 pub struct Opt {
-    #[clap(long)]
+    #[clap(long, display_order = 100)]
+    /// The starting amount to allocate for trades, specified in UM.
+    ///
+    /// Once a cycle of trading is completed, and the assets are swapped back into UM,
+    /// the value is topped up by withdrawing additional UM from the wallet's balance
+    /// to reach the declared starting amount again. Thus each cycle will drain a bit more
+    /// funds from the balance, potentially draining the wallet entirely.
     starting_amount: u32,
-    #[clap(long)]
+    #[clap(long, display_order = 200)]
+    /// The asset(s) to swap UM for. Can be declared multiple times.
     cycle: Vec<String>,
 }
 

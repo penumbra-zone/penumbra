@@ -302,13 +302,22 @@ async fn adjust_liquidity_provision(
 #[derive(Debug, Args)]
 pub struct Opt {
     /// The denom to provide liquidity for, relative to the staking token.
-    #[clap(long = "for")]
+    ///
+    /// Must be specified as an IBC transfer asset, e.g. `transfer/channel-1/uusdc`.
+    #[clap(long = "for", display_order = 100)]
     denom: String,
     /// The amount of liquidity to provide, in terms of the staking token.
-    #[clap(long)]
+    ///
+    /// For instance, `elcuity lp --for transfer/channel-1/uusdc --liquidity-target 100`
+    /// would provision 1) `50penumbra` and 2) `50penumbra` worth of `transfer/channel-1/uusdc`,
+    /// resolving the price for the latter on the DEX, or using the `--default-price` arg if set.
+    #[clap(long, display_order = 200)]
     liquidity_target: u32,
     /// If provided, a price to use instead of 1 as the default.
-    #[clap(long)]
+    ///
+    /// The price of the IBC transfer asset will be looked up on the DEX. If no price is found on
+    /// the DEX, then the default value of `1` will be used, meaning `
+    #[clap(long, display_order = 300)]
     default_price: Option<f64>,
 }
 

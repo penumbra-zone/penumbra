@@ -32,8 +32,14 @@ pub enum Command {
     /// delegate for you.
     Vote(vote::Opt),
     /// Provide liquidity.
+    ///
+    /// This action will create liquidity positions (LPs) and maintain them over time.
     Lp(lp::Opt),
     /// Swap between different assets.
+    ///
+    /// This action will repeatedly swap assets, executing trades on the DEX.
+    /// It supports multi-hop trades by repetitions of the `--cycle` flag
+    /// to declare denom to route through.
     Swap(swap::Opt),
 }
 
