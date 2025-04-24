@@ -1,3 +1,4 @@
+use anyhow::Context;
 use clap::{Parser, Subcommand};
 
 mod clients;
@@ -39,7 +40,9 @@ pub enum Command {
 impl Opt {
     /// Run the command with the parsed options
     pub async fn run(self) -> anyhow::Result<()> {
-        let clients = clients::Clients::init(self.grpc_url, self.view_service).await?;
+        let clients = clients::Clients::init(self.grpc_url, self.view_service)
+            .await
+            .context("failed to configure client connections")?;
         match self.command {
             Command::Vote(opt) => opt.run(&clients).await?,
             Command::Lp(opt) => opt.run(&clients).await?,

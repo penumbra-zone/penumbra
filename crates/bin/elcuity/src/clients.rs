@@ -38,8 +38,11 @@ impl Clients {
         let node_channel = ViewServer::get_pd_channel(FromStr::from_str(&node_url)?)
             .await
             .context(format!("failed to connect to node at {}", &node_url))?;
-        let endpoint = tonic::transport::Endpoint::new(view_url)?;
-        let svc = box_grpc_svc::connect(endpoint).await?;
+        let endpoint = tonic::transport::Endpoint::new(view_url.clone())?;
+        let svc = box_grpc_svc::connect(endpoint).await.context(format!(
+            "failed to connect to view service at {}",
+            &view_url
+        ))?;
         let view_client = ViewServiceClient::new(svc.clone());
         let custody_client = CustodyServiceClient::new(svc);
         Ok(Self {
