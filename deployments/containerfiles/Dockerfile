@@ -48,6 +48,7 @@ RUN groupadd --gid ${GID} ${USERNAME} \
 
 # Install chain binaries
 COPY --from=build-env \
+            /usr/src/penumbra/target/release/elcuity \
             /usr/src/penumbra/target/release/pcli \
             /usr/src/penumbra/target/release/pclientd \
             /usr/src/penumbra/target/release/pd \
