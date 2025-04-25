@@ -2012,6 +2012,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "elcuity"
+version = "2.0.0-alpha.9"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "clap",
+ "decaf377",
+ "futures",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-custody",
+ "penumbra-sdk-dex",
+ "penumbra-sdk-fee",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-transaction",
+ "penumbra-sdk-view",
+ "rand_core",
+ "rustls 0.23.21",
+ "tokio",
+ "tonic",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
 name = "elliptic-curve"
 version = "0.13.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"

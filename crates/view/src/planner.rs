@@ -549,7 +549,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Add spends and change outputs as required to balance the transaction, using the view service
     /// provided to supply the notes and other information.
-    pub async fn plan<V: ViewClient>(
+    pub async fn plan<V: ViewClient + ?Sized>(
         &mut self,
         view: &mut V,
         mut source: AddressIndex,
