@@ -17,7 +17,7 @@ pub const SWEEP_COUNT: usize = 8;
 #[instrument(skip(view, rng))]
 pub async fn sweep<V, R>(view: &mut V, mut rng: R) -> anyhow::Result<Vec<TransactionPlan>>
 where
-    V: ViewClient,
+    V: ViewClient + Send,
     R: RngCore + CryptoRng,
 {
     let mut plans = Vec::new();
@@ -87,7 +87,7 @@ where
 #[instrument(skip(view, rng))]
 async fn sweep_notes<V, R>(view: &mut V, mut rng: R) -> anyhow::Result<Vec<TransactionPlan>>
 where
-    V: ViewClient,
+    V: ViewClient + Send,
     R: RngCore + CryptoRng,
 {
     let gas_prices = view.gas_prices().await?;
