@@ -54,12 +54,32 @@ impl Component for Distributions {
             .expect("failed to retrieve current epoch from state");
         let epoch_index = current_epoch.index;
 
-        let increase: Amount = state
+        let params = state
             .get_distributions_params()
             .await
-            .expect("distribution parameters should be available")
-            .liquidity_tournament_incentive_per_block
-            .into();
+            .expect("distribution parameters should be available");
+        let increase = Amount::from(params.liquidity_tournament_incentive_per_block);
+        let current_block = u64::try_from(end_block.height).unwrap_or_default();
+        let end_block = params
+            .liquidity_tournament_end_block
+            .map_or(0u64, |b| b.get());
+        if current_block >= end_block {
+            // Doing this unconditionally for robustness. This should, in theory,
+            // only need to be an edge trigger though, like the event.
+            tracing::debug!(epoch_index, "zeroing out LQT reward issuance");
+            state.set_lqt_reward_issuance_for_epoch(epoch_index, 0u64.into());
+            if current_block == end_block {
+                state.record_proto(
+                    event::EventLqtPoolSizeIncrease {
+                        epoch_index,
+                        increase: 0u64.into(),
+                        new_total: 0u64.into(),
+                    }
+                    .to_proto(),
+                )
+            }
+            return;
+        }
 
         let new_total = state.increment_lqt_issuance(epoch_index, increase).await;
 

@@ -127,6 +127,10 @@ pub async fn distribute_rewards(mut state: impl StateWrite) -> anyhow::Result<()
         .get_lqt_reward_issuance_for_epoch(current_epoch)
         .await
         .unwrap_or_default();
+    if initial_budget <= 0u64.into() {
+        tracing::info!("no budget for LQT, so not distributing any rewards");
+        return Ok(());
+    }
     state
         .community_pool_withdraw(Value {
             asset_id: *STAKING_TOKEN_ASSET_ID,
