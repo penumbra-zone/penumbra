@@ -1,8 +1,9 @@
 syntax = "proto3";
 package penumbra.core.component.sct.v1;
 
-import "penumbra/crypto/tct/v1/tct.proto";
 import "google/protobuf/timestamp.proto";
+import "ibc/core/commitment/v1/commitment.proto";
+import "penumbra/crypto/tct/v1/tct.proto";
 
 // Configuration data for the SCT component.
 message SctParameters {
@@ -130,9 +131,27 @@ message TimestampByHeightResponse {
   google.protobuf.Timestamp timestamp = 1;
 }
 
+message SctFrontierRequest {
+  // Whether to include a proof of inclusion for the returned anchor
+  bool with_proof = 1;
+}
+
+message SctFrontierResponse {
+  // The height of the frontier we are returning.
+  uint64 height = 1;
+  // The SCT anchor at the given height.
+  crypto.tct.v1.MerkleRoot anchor = 2;
+  // A blob of bytes that corresponds to the compact frontier
+  // at the given height.
+  bytes compact_frontier = 3;
+  // A proof of existence or non-existence, if requested.
+  .ibc.core.commitment.v1.MerkleProof proof = 4;
+}
+
 // Query operations for the SCT component.
 service QueryService {
   rpc AnchorByHeight(AnchorByHeightRequest) returns (AnchorByHeightResponse);
   rpc EpochByHeight(EpochByHeightRequest) returns (EpochByHeightResponse);
   rpc TimestampByHeight(TimestampByHeightRequest) returns (TimestampByHeightResponse);
+  rpc SctFrontier(SctFrontierRequest) returns (SctFrontierResponse);
 }

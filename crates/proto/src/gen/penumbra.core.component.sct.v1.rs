@@ -391,6 +391,52 @@ impl ::prost::Name for TimestampByHeightResponse {
         "/penumbra.core.component.sct.v1.TimestampByHeightResponse".into()
     }
 }
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct SctFrontierRequest {
+    /// Whether to include a proof of inclusion for the returned anchor
+    #[prost(bool, tag = "1")]
+    pub with_proof: bool,
+}
+impl ::prost::Name for SctFrontierRequest {
+    const NAME: &'static str = "SctFrontierRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.sct.v1.SctFrontierRequest".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.sct.v1.SctFrontierRequest".into()
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SctFrontierResponse {
+    /// The height of the frontier we are returning.
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+    /// The SCT anchor at the given height.
+    #[prost(message, optional, tag = "2")]
+    pub anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::MerkleRoot,
+    >,
+    /// A blob of bytes that corresponds to the compact frontier
+    /// at the given height.
+    #[prost(bytes = "vec", tag = "3")]
+    pub compact_frontier: ::prost::alloc::vec::Vec<u8>,
+    /// A proof of existence or non-existence, if requested.
+    #[prost(message, optional, tag = "4")]
+    pub proof: ::core::option::Option<
+        ::ibc_proto::ibc::core::commitment::v1::MerkleProof,
+    >,
+}
+impl ::prost::Name for SctFrontierResponse {
+    const NAME: &'static str = "SctFrontierResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.sct.v1.SctFrontierResponse".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.sct.v1.SctFrontierResponse".into()
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
@@ -571,6 +617,35 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        pub async fn sct_frontier(
+            &mut self,
+            request: impl tonic::IntoRequest<super::SctFrontierRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::SctFrontierResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.sct.v1.QueryService/SctFrontier",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.sct.v1.QueryService",
+                        "SctFrontier",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -606,6 +681,13 @@ pub mod query_service_server {
             request: tonic::Request<super::TimestampByHeightRequest>,
         ) -> std::result::Result<
             tonic::Response<super::TimestampByHeightResponse>,
+            tonic::Status,
+        >;
+        async fn sct_frontier(
+            &self,
+            request: tonic::Request<super::SctFrontierRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::SctFrontierResponse>,
             tonic::Status,
         >;
     }
@@ -807,6 +889,51 @@ pub mod query_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = TimestampByHeightSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.sct.v1.QueryService/SctFrontier" => {
+                    #[allow(non_camel_case_types)]
+                    struct SctFrontierSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::SctFrontierRequest>
+                    for SctFrontierSvc<T> {
+                        type Response = super::SctFrontierResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::SctFrontierRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::sct_frontier(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = SctFrontierSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
