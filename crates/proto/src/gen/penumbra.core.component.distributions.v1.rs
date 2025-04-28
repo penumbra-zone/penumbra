@@ -8,6 +8,9 @@ pub struct DistributionsParameters {
     /// The amount of staking token flowing from the community pool to the liquidity tournament each block.
     #[prost(uint64, tag = "2")]
     pub liquidity_tournament_incentive_per_block: u64,
+    /// If non-zero, no rewards will be distributed at a height >= this height.
+    #[prost(uint64, tag = "3")]
+    pub liquidity_tournament_end_block: u64,
 }
 impl ::prost::Name for DistributionsParameters {
     const NAME: &'static str = "DistributionsParameters";
