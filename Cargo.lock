@@ -5541,7 +5541,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-custody-ledger-usb"
-version = "2.0.0-alpha.8"
+version = "2.0.0-alpha.9"
 dependencies = [
  "anyhow",
  "ledger-lib",
