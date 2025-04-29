@@ -69,6 +69,7 @@ impl AppParameters {
                 DistributionsParameters {
                     staking_issuance_per_block: _,
                     liquidity_tournament_incentive_per_block: _,
+                    liquidity_tournament_end_block: _,
                 },
             fee_params:
                 FeeParameters {
@@ -168,6 +169,7 @@ impl AppParameters {
                 DistributionsParameters {
                     staking_issuance_per_block: _,
                     liquidity_tournament_incentive_per_block: _,
+                    liquidity_tournament_end_block: _,
                 },
             fee_params:
                 FeeParameters {
