@@ -14,6 +14,8 @@ message DistributionsParameters {
   uint64 staking_issuance_per_block = 1;
   // The amount of staking token flowing from the community pool to the liquidity tournament each block.
   uint64 liquidity_tournament_incentive_per_block = 2;
+  // If non-zero, no rewards will be distributed at a height >= this height.
+  uint64 liquidity_tournament_end_block = 3;
 }
 
 // Genesis data for the distributions module.
