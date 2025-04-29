@@ -9,7 +9,6 @@ use anyhow::{ensure, Context};
 use decaf377::Fq;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::{penumbra::core::asset::v1 as pb, view::v1::AssetsResponse, DomainType};
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -226,7 +225,6 @@ impl Inner {
     /// not include a unit for the base denomination.
     pub fn new(base_denom: String, mut units: Vec<BareDenomUnit>) -> Self {
         let id = Id(Fq::from_le_bytes_mod_order(
-            // XXX choice of hash function?
             blake2b_simd::Params::default()
                 .personal(b"Penumbra_AssetID")
                 .hash(base_denom.as_bytes())
@@ -377,18 +375,14 @@ impl Metadata {
 
     /// Returns the IBC transfer path and base denom
     /// if this is an IBC transferred asset, `None` otherwise.
-    pub fn ibc_transfer_path(&self) -> anyhow::Result<Option<(String, String)>> {
+    ///
+    /// This *MUST NOT* be used on safety critical paths.
+    /// The reason is that this function has not received a great
+    /// deal of testing and is meant for low stakes RPC usecases.
+    /// Hence: `best_effort_ibc_transfer_parse`.
+    pub fn best_effort_ibc_transfer_parse(&self) -> Option<(String, String)> {
         let base_denom = self.base_denom().denom;
-        // The base denom portion of an IBC asset path may contain slashes: https://github.com/cosmos/ibc/issues/737
-        let re = Regex::new(r"^(?<path>transfer/channel-[0-9]+)/(?<denom>[\w\/]+)$")
-            .context("error instantiating denom matching regex")?;
-
-        let Some(caps) = re.captures(&base_denom) else {
-            // Not an IBC asset
-            return Ok(None);
-        };
-
-        Ok(Some((caps["path"].to_string(), caps["denom"].to_string())))
+        parse::ibc_transfer_path(&base_denom)
     }
 }
 
@@ -582,6 +576,94 @@ impl Debug for Unit {
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.units[self.unit_index].denom.as_str())
+    }
+}
+
+pub mod parse {
+    use lazy_static::lazy_static;
+
+    lazy_static! {
+        static ref IBC_RE: regex::Regex = regex::Regex::new(
+            r"^(?<path>transfer/[a-z0-9][a-z0-9\-]{0,63}(?:/transfer/[a-z0-9][a-z0-9\-]{0,63})*)/(?<denom>[^/][A-Za-z0-9/._\-]*)$"
+        ).expect("regex compilation works");
+    }
+
+    pub fn ibc_transfer_path(base: &str) -> Option<(String, String)> {
+        // for future ref, here are some denom strings that we must support:
+        // - transfer/channel-2/uusdc
+        // - transfer/channel-4/factory/osmo1q77cw0mmlluxu0wr29fcdd0tdnh78gzhkvhe4n6ulal9qvrtu43qtd0nh8/shitmos
+        // - transfer/channel-0/transfer/08-wasm-1369/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
+        // - transfer/channel-4/gamm/pool/1402
+        let caps = IBC_RE.captures(base)?;
+        Some((caps["path"].to_owned(), caps["denom"].to_owned()))
+    }
+}
+
+#[cfg(test)]
+mod ibc_transfer_path_tests {
+    use crate::asset::denom_metadata::parse::ibc_transfer_path as p;
+
+    /// Noble USDC
+    /// transfer/channel-2/uusdc
+    #[test]
+    fn single_hop_uusdc() {
+        let got = p("transfer/channel-2/uusdc");
+        assert_eq!(
+            got,
+            Some(("transfer/channel-2".to_string(), "uusdc".to_string()))
+        );
+    }
+
+    /// Beloved shitmos
+    /// transfer/channel-4/factory/osmo1q77cw0mmlluxu0wr29fcdd0tdnh78gzhkvhe4n6ulal9qvrtu43qtd0nh8/shitmos
+    #[test]
+    fn factory_shitmos() {
+        let got = p("transfer/channel-4/factory/osmo1q77cw0mmlluxu0wr29fcdd0tdnh78gzhkvhe4n6ulal9qvrtu43qtd0nh8/shitmos");
+        assert_eq!(
+            got,
+            Some((
+                "transfer/channel-4".to_string(),
+                "factory/osmo1q77cw0mmlluxu0wr29fcdd0tdnh78gzhkvhe4n6ulal9qvrtu43qtd0nh8/shitmos"
+                    .to_string()
+            ))
+        );
+    }
+
+    /// cw20:inj19vy83ne9tzta2yqynj8yg7dq9ghca6yqn9hyej  (NOT an IBC asset)
+    #[test]
+    fn cw20_filtered_out() {
+        let got = p("cw20:inj19vy83ne9tzta2yqynj8yg7dq9ghca6yqn9hyej");
+        assert_eq!(got, None);
+    }
+
+    /// Eureka asset
+    /// transfer/channel-0/transfer/08-wasm-1369/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
+    #[test]
+    fn multihop_wasm_evm_hex() {
+        let got = p(
+            "transfer/channel-0/transfer/08-wasm-1369/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        );
+        assert_eq!(
+            got,
+            Some((
+                "transfer/channel-0/transfer/08-wasm-1369".to_string(),
+                "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2".to_string()
+            ))
+        );
+    }
+
+    /// Gamma pool
+    /// transfer/channel-4/gamm/pool/1402
+    #[test]
+    fn gamm_pool() {
+        let got = p("transfer/channel-4/gamm/pool/1402");
+        assert_eq!(
+            got,
+            Some((
+                "transfer/channel-4".to_string(),
+                "gamm/pool/1402".to_string()
+            ))
+        );
     }
 }
 
