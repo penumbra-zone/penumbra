@@ -60,15 +60,17 @@ impl Component for Distributions {
             .expect("distribution parameters should be available");
         let increase = Amount::from(params.liquidity_tournament_incentive_per_block);
         let current_block = u64::try_from(end_block.height).unwrap_or_default();
-        let end_block = params
+        // If the end_block is defined, and the current block is at least past there,
+        // then we want to make sure to not issue any rewards.
+        if let Some(end_block) = params
             .liquidity_tournament_end_block
-            .map_or(0u64, |b| b.get());
-        if current_block >= end_block {
+            .filter(|b| current_block >= b.get())
+        {
             // Doing this unconditionally for robustness. This should, in theory,
             // only need to be an edge trigger though, like the event.
             tracing::debug!(epoch_index, "zeroing out LQT reward issuance");
             state.set_lqt_reward_issuance_for_epoch(epoch_index, 0u64.into());
-            if current_block == end_block {
+            if current_block == end_block.get() {
                 state.record_proto(
                     event::EventLqtPoolSizeIncrease {
                         epoch_index,
