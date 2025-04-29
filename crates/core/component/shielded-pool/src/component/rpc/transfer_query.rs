@@ -68,10 +68,9 @@ impl TransferQuery for Server {
                 let (_key, denom) = i.expect("should not be an error");
 
                 // Convert the key to an IBC asset path
-                match denom.ibc_transfer_path() {
-                    Ok(None) => return None,
-                    Err(e) => return Some(Err(e)),
-                    Ok(Some((path, base_denom))) => Some(Ok(DenomTrace { path, base_denom })),
+                match denom.best_effort_ibc_transfer_parse() {
+                    None => return None,
+                    Some((path, base_denom)) => Some(Ok(DenomTrace { path, base_denom })),
                 }
             })
             .collect::<Vec<_>>()

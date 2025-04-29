@@ -5280,6 +5280,7 @@ dependencies = [
  "getrandom",
  "hex",
  "ibig",
+ "lazy_static",
  "num-bigint",
  "once_cell",
  "pbjson-types",
