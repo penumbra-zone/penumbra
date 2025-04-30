@@ -4,27 +4,58 @@ use cometindex::{
     index::{EventBatch, EventBatchContext, Version},
     sqlx, AppView, ContextualizedEvent, PgTransaction,
 };
-use penumbra_sdk_app::genesis::Content;
+use penumbra_sdk_app::{event::EventAppParametersChange, genesis::Content, params::AppParameters};
 use penumbra_sdk_asset::asset;
 use penumbra_sdk_dex::event::EventLqtPositionVolume;
 use penumbra_sdk_dex::lp::position;
-use penumbra_sdk_distributions::event::EventLqtPoolSizeIncrease;
-use penumbra_sdk_funding::event::{EventLqtDelegatorReward, EventLqtPositionReward, EventLqtVote};
+use penumbra_sdk_distributions::{event::EventLqtPoolSizeIncrease, DistributionsParameters};
+use penumbra_sdk_funding::{
+    event::{EventLqtDelegatorReward, EventLqtPositionReward, EventLqtVote},
+    FundingParameters,
+};
 use penumbra_sdk_keys::Address;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::event::EventDomainType;
-use penumbra_sdk_sct::event::EventEpochRoot;
+use penumbra_sdk_sct::{event::EventEpochRoot, params::SctParameters};
 use sqlx::types::BigDecimal;
 
 use crate::parsing::parse_content;
 
-mod _params {
+struct Parameters {
+    funding: FundingParameters,
+    sct: SctParameters,
+    distribution: DistributionsParameters,
+}
 
+impl From<Content> for Parameters {
+    fn from(value: Content) -> Self {
+        Self {
+            funding: value.funding_content.funding_params,
+            sct: value.sct_content.sct_params,
+            distribution: value.distributions_content.distributions_params,
+        }
+    }
+}
+
+impl From<AppParameters> for Parameters {
+    fn from(value: AppParameters) -> Self {
+        Self {
+            funding: value.funding_params,
+            sct: value.sct_params,
+            distribution: value.distributions_params,
+        }
+    }
+}
+
+mod _params {
     use super::*;
 
     /// Set the params post genesis.
-    pub async fn set_initial(dbtx: &mut PgTransaction<'_>, content: Content) -> anyhow::Result<()> {
-        set_epoch(dbtx, 0, content).await
+    pub async fn set_initial(
+        dbtx: &mut PgTransaction<'_>,
+        params: Parameters,
+    ) -> anyhow::Result<()> {
+        set_epoch(dbtx, 0, params).await
     }
 
     // This will be used once we integrate the event for parameter changes.
@@ -33,23 +64,12 @@ mod _params {
     pub async fn set_epoch(
         dbtx: &mut PgTransaction<'_>,
         epoch: u64,
-        content: Content,
+        params: Parameters,
     ) -> anyhow::Result<()> {
-        let gauge_threshold = content
-            .funding_content
-            .funding_params
-            .liquidity_tournament
-            .gauge_threshold;
-        let delegator_share = content
-            .funding_content
-            .funding_params
-            .liquidity_tournament
-            .delegator_share;
-        let epoch_duration = content.sct_content.sct_params.epoch_duration;
-        let rewards_per_block = content
-            .distributions_content
-            .distributions_params
-            .liquidity_tournament_incentive_per_block;
+        let gauge_threshold = params.funding.liquidity_tournament.gauge_threshold;
+        let delegator_share = params.funding.liquidity_tournament.delegator_share;
+        let epoch_duration = params.sct.epoch_duration;
+        let rewards_per_block = params.distribution.liquidity_tournament_incentive_per_block;
         sqlx::query(
             "
             INSERT INTO lqt._params
@@ -159,6 +179,14 @@ mod _epoch_info {
             .execute(dbtx.as_mut())
             .await?;
         Ok(())
+    }
+
+    pub async fn current(dbtx: &mut PgTransaction<'_>) -> anyhow::Result<u64> {
+        let out: i64 =
+            sqlx::query_scalar("SELECT epoch FROM lqt._epoch_info ORDER BY epoch DESC LIMIT 1")
+                .fetch_one(dbtx.as_mut())
+                .await?;
+        Ok(u64::try_from(out)?)
     }
 }
 
@@ -341,6 +369,9 @@ impl Lqt {
             _epoch_info::start_epoch(dbtx, e.index + 1, event.block_height + 1).await?;
         } else if let Ok(e) = EventLqtPoolSizeIncrease::try_from_event(&event.event) {
             _epoch_info::set_rewards_for_epoch(dbtx, e.epoch_index, e.new_total).await?;
+        } else if let Ok(e) = EventAppParametersChange::try_from_event(&event.event) {
+            let current = _epoch_info::current(dbtx).await?;
+            _params::set_epoch(dbtx, current, e.new_parameters.into()).await?;
         }
         Ok(())
     }
@@ -354,7 +385,7 @@ impl AppView for Lqt {
         app_state: &serde_json::Value,
     ) -> Result<(), anyhow::Error> {
         let content = parse_content(app_state.clone())?;
-        _params::set_initial(dbtx, content).await?;
+        _params::set_initial(dbtx, content.into()).await?;
         Ok(())
     }
 
