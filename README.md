@@ -1,6 +1,8 @@
 ![Penumbra logo](docs/images/penumbra-dark.svg#gh-dark-mode-only)
 ![Penumbra logo](docs/images/penumbra-light-bw.svg#gh-light-mode-only)
 
+foo
+
 [Penumbra] is a fully shielded zone for the Cosmos ecosystem, allowing anyone to securely transact,
 stake, swap, or marketmake without broadcasting their personal information to the world.
 
