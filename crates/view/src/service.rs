@@ -1918,6 +1918,7 @@ impl ViewService for ViewServer {
             Result::<_, tonic::Status>::Ok(pb::LqtVotingNotesResponse {
                 note_record: Some(note.into()),
                 already_voted: false,
+                incentivized_asset: None,
             })
         }));
         Ok(tonic::Response::new(stream.boxed()))
