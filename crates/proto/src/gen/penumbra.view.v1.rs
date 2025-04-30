@@ -28,6 +28,11 @@ pub struct LqtVotingNotesResponse {
     /// Flag indicating whether each note was already used for voting in the current epoch.
     #[prost(bool, tag = "2")]
     pub already_voted: bool,
+    /// The assed used for voting
+    #[prost(message, optional, tag = "3")]
+    pub incentivized_asset: ::core::option::Option<
+        super::super::core::asset::v1::Metadata,
+    >,
 }
 impl ::prost::Name for LqtVotingNotesResponse {
     const NAME: &'static str = "LqtVotingNotesResponse";

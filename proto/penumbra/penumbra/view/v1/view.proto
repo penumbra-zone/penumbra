@@ -172,6 +172,8 @@ message LqtVotingNotesResponse {
   SpendableNoteRecord note_record = 1;
   // Flag indicating whether each note was already used for voting in the current epoch.
   bool already_voted = 2;
+  // The assed used for voting
+  core.asset.v1.Metadata incentivized_asset = 3;
 }
 
 // Note: implementations must not accept messages with both `epoch_index`
