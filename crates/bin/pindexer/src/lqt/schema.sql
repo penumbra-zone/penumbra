@@ -252,7 +252,9 @@ $$Contains voting and reward history for a given delegator$$;
 
 DROP VIEW IF EXISTS lqt.lps;
 CREATE VIEW lqt.lps AS
-SELECT
+WITH non_zero_points AS (
+  SELECT * FROM lqt._lp_rewards WHERE points > 0  
+) SELECT
     epoch,
     position_id,
     asset_id,
@@ -263,7 +265,7 @@ SELECT
     asset_fees,
     points,
     points / SUM(points) OVER (PARTITION BY epoch) AS point_share
-FROM lqt._lp_rewards;
+FROM non_zero_points;
 COMMENT ON VIEW lqt.lps IS
 $$A view of each relevant LP, organized by epoch, and asset.
 
