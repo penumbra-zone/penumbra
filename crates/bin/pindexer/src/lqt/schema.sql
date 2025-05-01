@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS lqt._params (
     epoch INTEGER PRIMARY KEY,  
     delegator_share NUMERIC(3, 2) NOT NULL,
     gauge_threshold NUMERIC(3, 2) NOT NULL,
-    epoch_duration BIGINT NOT NULL,
+    epoch_duration INTEGER NOT NULL,
     rewards_per_block NUMERIC NOT NULL
 );
 
@@ -138,7 +138,7 @@ SELECT
   -- t + d >= (T + d) * p
   -- (1 - p) d >= p T - t
   -- d >= (p T - t) / (1 - p)
-  CEIL((gauge_threshold * total_tally - tally) / (1 - gauge_threshold))::BIGINT AS missing_votes
+  CEIL((gauge_threshold * total_tally - tally) / (1 - gauge_threshold))::NUMERIC AS missing_votes
 FROM tallies
 JOIN total USING (epoch)
 CROSS JOIN LATERAL (
