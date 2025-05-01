@@ -394,7 +394,7 @@ impl AppView for Lqt {
     }
 
     fn version(&self) -> Version {
-        Version::with_major(2)
+        Version::with_major(3)
     }
 
     async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
