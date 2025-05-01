@@ -1,18 +1,28 @@
 CREATE SCHEMA IF NOT EXISTS lqt;
 
 CREATE TABLE IF NOT EXISTS lqt._params (
-  epoch INTEGER PRIMARY KEY,  
-  delegator_share NUMERIC(3, 2) NOT NULL,
-  gauge_threshold NUMERIC(3, 2) NOT NULL
+    epoch INTEGER PRIMARY KEY,  
+    delegator_share NUMERIC(3, 2) NOT NULL,
+    gauge_threshold NUMERIC(3, 2) NOT NULL,
+    epoch_duration BIGINT NOT NULL,
+    rewards_per_block NUMERIC NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS lqt._meta (
+    rowid INTEGER PRIMARY KEY,
+    current_height INTEGER NOT NULL,
+    block_time_s FLOAT8 NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS lqt._epoch_info (
+    epoch INTEGER PRIMARY KEY,  
+    start_block INTEGER NOT NULL,
+    end_block INTEGER,
+    available_rewards NUMERIC NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS lqt._finished_epochs (
     epoch INTEGER PRIMARY KEY
-);
-
-CREATE TABLE IF NOT EXISTS lqt._available_rewards (
-  epoch INTEGER PRIMARY KEY,  
-  amount NUMERIC NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS lqt._delegator_rewards (
@@ -55,51 +65,49 @@ DROP VIEW IF EXISTS lqt.summary;
 CREATE VIEW lqt.summary AS
 WITH vote_summary AS (
     SELECT epoch, SUM(power) AS total_voting_power FROM lqt._votes GROUP BY epoch
-), rewards0 AS (
+), epoch_info AS (
     SELECT
-        epoch,
-        SUM(lqt._available_rewards.amount) AS epoch_rewards,
-        SUM(COALESCE(lqt._delegator_rewards.amount, 0)) AS delegator_rewards,
-        SUM(COALESCE(lqt._lp_rewards.amount, 0)) AS lp_rewards
-    FROM lqt._available_rewards
-    LEFT JOIN lqt._delegator_rewards USING (epoch)
-    LEFT JOIN lqt._lp_rewards USING (epoch)
-    GROUP BY epoch
-), rewards1 AS (
-    SELECT
-        epoch,
-        delegator_rewards,
-        lp_rewards,
-        lp_rewards + delegator_rewards AS total_rewards,
-        epoch_rewards - lp_rewards - delegator_rewards AS available_rewards
-    FROM rewards0
-)
-SELECT
+        lqt._epoch_info.epoch,
+        start_block,
+        COALESCE(end_block, start_block + epoch_duration) AS end_block,
+        CASE
+            WHEN end_block IS NULL THEN block_time_s * (start_block + epoch_duration - current_height)
+            ELSE 0.0::FLOAT8
+        END AS ends_in_s,
+        CASE
+            WHEN end_block IS NULL THEN rewards_per_block * epoch_duration
+            ELSE available_rewards
+        END AS rewards,
+        delegator_share
+    FROM lqt._epoch_info
+    CROSS JOIN LATERAL (
+        SELECT * FROM lqt._params
+        WHERE lqt._epoch_info.epoch >= lqt._params.epoch
+        ORDER BY lqt._params.epoch DESC
+        LIMIT 1
+    ) params
+    CROSS JOIN LATERAL (
+        SELECT current_height, block_time_s FROM lqt._meta LIMIT 1
+    ) meta
+) SELECT
     epoch,
-    COALESCE(total_voting_power, 0) AS total_voting_power,
-    delegator_rewards,
-    lp_rewards,
-    total_rewards,
-    available_rewards,
-    delegator_share * available_rewards AS available_delegator_rewards,
-    (1 - delegator_share) * available_rewards AS available_lp_rewards
-FROM rewards1
-LEFT JOIN vote_summary USING (epoch)
-CROSS JOIN LATERAL (
-    SELECT delegator_share
-    FROM lqt._params
-    WHERE lqt._params.epoch <= rewards1.epoch
-    ORDER BY lqt._params.epoch DESC
-    LIMIT 1
-) params;
+    start_block,
+    end_block,
+    ends_in_s,
+    rewards AS total_rewards,
+    (1 - delegator_share) * rewards AS lp_rewards,
+    delegator_share * rewards AS delegator_rewards,
+    COALESCE(total_voting_power, 0) AS total_voting_power
+FROM epoch_info
+LEFT JOIN vote_summary USING (epoch);
 COMMENT ON VIEW lqt.summary IS
-$$For each epoch / round, this contains a summary of the tournament results.
-
-This will be updated continuously, with the values for the current
-epoch / round changing until the round is over.
-$$;
+$$For each epoch / round, this contains a summary of the tournament results.$$;
 COMMENT ON COLUMN lqt.summary.epoch IS
 $$The epoch / round of the tournament.$$;
+COMMENT ON COLUMN lqt.summary.start_block IS
+$$The epoch / round of the tournament.$$;
+COMMENT ON COLUMN lqt.summary.end_block IS
+$$The block this epoch has ended or is expected to end.$$;
 COMMENT ON COLUMN lqt.summary.total_voting_power IS
 $$The total amount of voting power used in this round.
 
@@ -107,19 +115,11 @@ Assets get selected for rewards based on their share of this power.
 
 Delegators get rewarded using (among other factors) their share of this power.$$;
 COMMENT ON COLUMN lqt.summary.delegator_rewards IS
-$$The rewards *issued* to delegators so far.$$;
+$$The rewards given (or projected to be) to delegators$$;
 COMMENT ON COLUMN lqt.summary.lp_rewards IS
-$$The rewards *issued* to Liquidity Positions so far.$$;
+$$The rewards given (or projected to be) to liquidity providers$$;
 COMMENT ON COLUMN lqt.summary.total_rewards IS
-$$The rewards *issued* to either delegators or LPs.$$;
-COMMENT ON COLUMN lqt.summary.available_rewards IS
-$$If the round were to end now, how many rewards could be issued?
-
-For an ongoing round, we expect this to increase slowly over the round.$$;
-COMMENT ON COLUMN lqt.summary.available_delegator_rewards IS
-$$How many of the available rewards could go to delegators.$$;
-COMMENT ON COLUMN lqt.summary.available_lp_rewards IS
-$$How many of the available rewards could go to LPs.$$;
+$$The rewards given (or projected to be)$$;
 
 DROP VIEW IF EXISTS lqt.gauge;
 CREATE VIEW lqt.gauge AS
