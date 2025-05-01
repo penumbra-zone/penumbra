@@ -1319,7 +1319,7 @@ dependencies = [
 
 [[package]]
 name = "cnidarium-component"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1357,7 +1357,7 @@ dependencies = [
 
 [[package]]
 name = "cometindex"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1733,7 +1733,7 @@ dependencies = [
 
 [[package]]
 name = "decaf377-fmd"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "ark-ff",
  "ark-serialize",
@@ -1748,7 +1748,7 @@ dependencies = [
 
 [[package]]
 name = "decaf377-frost"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -1763,7 +1763,7 @@ dependencies = [
 
 [[package]]
 name = "decaf377-ka"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "ark-ff",
  "decaf377",
@@ -4375,7 +4375,7 @@ dependencies = [
 
 [[package]]
 name = "pcli"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4459,7 +4459,7 @@ dependencies = [
 
 [[package]]
 name = "pclientd"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -4512,7 +4512,7 @@ dependencies = [
 
 [[package]]
 name = "pd"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4668,7 +4668,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-app"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4749,7 +4749,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-app-tests"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4839,7 +4839,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-asset"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4879,7 +4879,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-auction"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4934,7 +4934,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-auto-https"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "axum-server",
@@ -4946,7 +4946,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-bench"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-bls12-377",
@@ -4990,7 +4990,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-community-pool"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5022,7 +5022,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-compact-block"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5057,7 +5057,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-custody"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "argon2",
@@ -5093,7 +5093,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-dex"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5155,7 +5155,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-distributions"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5173,7 +5173,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-eddy"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5191,7 +5191,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-fee"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5218,7 +5218,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-funding"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5241,7 +5241,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-governance"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5295,7 +5295,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-ibc"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5332,7 +5332,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-keys"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "aes",
  "anyhow",
@@ -5379,7 +5379,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-measure"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -5401,7 +5401,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-mock-client"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "cnidarium",
@@ -5418,7 +5418,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-mock-consensus"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "bytes",
@@ -5438,7 +5438,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-mock-tendermint-proxy"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "hex",
  "pbjson-types",
@@ -5453,7 +5453,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-num"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5490,7 +5490,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-parameter-setup"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "ark-groth16",
  "ark-serialize",
@@ -5507,7 +5507,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-proof-params"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ec",
@@ -5535,7 +5535,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-proof-setup"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ec",
@@ -5562,7 +5562,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-proto"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5597,7 +5597,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-sct"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5633,7 +5633,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-shielded-pool"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5687,7 +5687,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-stake"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5740,7 +5740,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-tct"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",
@@ -5772,7 +5772,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-tct-property-test"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "futures",
@@ -5784,7 +5784,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-tct-visualize"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "axum",
@@ -5815,7 +5815,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-tendermint-proxy"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -5847,7 +5847,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-test-subscriber"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
@@ -5855,7 +5855,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-tower-trace"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "futures",
  "hex",
@@ -5876,7 +5876,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-transaction"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5931,7 +5931,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-txhash"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "blake2b_simd 1.0.2",
@@ -5944,7 +5944,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-view"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-std",
@@ -6003,7 +6003,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-wallet"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-std",
@@ -6089,7 +6089,7 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pindexer"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -6194,7 +6194,7 @@ dependencies = [
 
 [[package]]
 name = "pmonitor"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -8212,7 +8212,7 @@ checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
 
 [[package]]
 name = "summonerd"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anyhow",
  "ark-groth16",
