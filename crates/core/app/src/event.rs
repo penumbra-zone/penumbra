@@ -5,8 +5,8 @@ use prost::Name as _;
 use crate::params::AppParameters;
 
 #[derive(Clone, Debug)]
-struct EventAppParametersChange {
-    new_parameters: AppParameters,
+pub struct EventAppParametersChange {
+    pub new_parameters: AppParameters,
 }
 
 impl TryFrom<pb::EventAppParametersChange> for EventAppParametersChange {
