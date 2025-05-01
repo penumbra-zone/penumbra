@@ -182,7 +182,7 @@ mod _epoch_info {
     }
 
     pub async fn current(dbtx: &mut PgTransaction<'_>) -> anyhow::Result<u64> {
-        let out: i64 =
+        let out: i32 =
             sqlx::query_scalar("SELECT epoch FROM lqt._epoch_info ORDER BY epoch DESC LIMIT 1")
                 .fetch_one(dbtx.as_mut())
                 .await?;
