@@ -5,7 +5,7 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
-use cnidarium_component::Component;
+use cnidarium_component::Component as _;
 use ibc_types::core::connection::ChainId;
 use jmt::RootHash;
 use penumbra_auction::component::{Auction, StateReadExt as _, StateWriteExt as _};
@@ -22,7 +22,7 @@ use penumbra_governance::component::{Governance, StateReadExt as _, StateWriteEx
 use penumbra_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1::TransactionsByHeightResponse;
-use penumbra_proto::DomainType;
+use penumbra_proto::{DomainType, StateWriteProto as _};
 use penumbra_sct::component::clock::EpochRead;
 use penumbra_sct::component::sct::Sct;
 use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
@@ -41,6 +41,7 @@ use tokio::time::sleep;
 use tracing::{instrument, Instrument};
 
 use crate::action_handler::AppActionHandler;
+use crate::event::EventAppParametersChange;
 use crate::genesis::AppState;
 use crate::params::change::ParameterChangeExt as _;
 use crate::params::AppParameters;
@@ -320,7 +321,13 @@ impl App {
             match change.apply_changes(old_params) {
                 Ok(new_params) => {
                     tracing::info!(?change, "applied app parameter change");
-                    state_tx.put_app_params(new_params);
+                    state_tx.put_app_params(new_params.clone());
+                    state_tx.record_proto(
+                        EventAppParametersChange {
+                            new_parameters: new_params,
+                        }
+                        .to_proto(),
+                    )
                 }
                 Err(e) => {
                     // N.B. this is an "info" rather than "warn" because it does not report
