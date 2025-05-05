@@ -243,9 +243,19 @@ $$;
 
 DROP VIEW IF EXISTS lqt.delegator_history;
 CREATE VIEW lqt.delegator_history AS
-SELECT address, epoch, power, asset_id, COALESCE(amount, 0) AS reward
-FROM lqt._votes
-LEFT JOIN lqt._delegator_rewards USING (address, epoch);
+WITH rewards AS (
+    SELECT address, epoch, SUM(COALESCE(amount, 0)) AS reward
+    FROM lqt._delegator_rewards
+    GROUP BY address, epoch
+), votes AS (
+    SELECT DISTINCT ON (address, epoch)
+        address,
+        epoch,
+        SUM(power) OVER (PARTITION BY address, epoch) AS power,
+        asset_id
+    FROM lqt._votes
+)
+SELECT * FROM votes JOIN rewards USING (address, epoch);
 COMMENT ON VIEW lqt.delegator_history IS
 $$Contains voting and reward history for a given delegator$$;
 
