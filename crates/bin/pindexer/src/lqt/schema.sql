@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS lqt._meta (
 CREATE TABLE IF NOT EXISTS lqt._epoch_info (
     epoch INTEGER PRIMARY KEY,  
     start_block INTEGER NOT NULL,
+    updated_block INTEGER NOT NULL,
     end_block INTEGER,
     available_rewards NUMERIC NOT NULL
 );
@@ -75,7 +76,9 @@ WITH vote_summary AS (
             ELSE 0.0::FLOAT8
         END AS ends_in_s,
         CASE
-            WHEN end_block IS NULL THEN rewards_per_block * epoch_duration
+            WHEN end_block IS NULL THEN
+                available_rewards +
+                rewards_per_block * (epoch_duration + start_block - updated_block - 1)
             ELSE available_rewards
         END AS rewards,
         delegator_share
