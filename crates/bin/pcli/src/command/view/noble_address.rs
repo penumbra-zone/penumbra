@@ -1,6 +1,6 @@
 use anyhow::Result;
 use futures::future::{BoxFuture, FutureExt};
-use penumbra_proto::{
+use penumbra_sdk_proto::{
     cosmos::tx::v1beta1::{
         mode_info::{Single, Sum},
         service_client::ServiceClient as CosmosServiceClient,
@@ -13,7 +13,9 @@ use penumbra_proto::{
 };
 use std::time::Duration;
 
-use penumbra_sd_keys::{address::NobleForwardingAddress, keys::AddressIndex, Address, FullViewingKey};
+use penumbra_sdk_keys::{
+    address::NobleForwardingAddress, keys::AddressIndex, Address, FullViewingKey,
+};
 use tonic::transport::{Channel, ClientTlsConfig};
 use url::Url;
 
@@ -72,11 +74,11 @@ async fn get_next_noble_sequence(
     let mid = (left + right) / 2u16;
 
     // attempt to register midpoint
-    _get_next_noble_sequence(left, right, mid, noble_node, channel, fvk, account).await
+    inner_get_next_noble_sequence(left, right, mid, noble_node, channel, fvk, account).await
 }
 
 // Helper function to perform recursive binary search
-fn _get_next_noble_sequence<'a>(
+fn inner_get_next_noble_sequence<'a>(
     left: u16,
     right: u16,
     mid: u16,
@@ -101,7 +103,7 @@ fn _get_next_noble_sequence<'a>(
 
                 // This means the midpoint has not been registered yet. Search the left-hand
                 // side.
-                _get_next_noble_sequence(
+                inner_get_next_noble_sequence(
                     left,
                     mid,
                     (left + mid) / 2,
@@ -125,7 +127,7 @@ fn _get_next_noble_sequence<'a>(
                 }
 
                 // This means the midpoint has been registered already. Search the right-hand side.
-                _get_next_noble_sequence(
+                inner_get_next_noble_sequence(
                     mid,
                     right,
                     (right + mid) / 2,
