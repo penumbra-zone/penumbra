@@ -22,6 +22,7 @@ use ibc_types::core::{
     client::Height as IbcHeight,
 };
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use prost::{Message, Name};
 use rand_core::OsRng;
 use regex::Regex;
 
@@ -34,8 +35,19 @@ use penumbra_sdk_governance::{
 };
 use penumbra_sdk_keys::{keys::AddressIndex, Address};
 use penumbra_sdk_num::Amount;
-use penumbra_sdk_proto::core::app::v1::{
-    query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
+use penumbra_sdk_proto::noble::forwarding::v1::ForwardingPubKey;
+use penumbra_sdk_proto::{
+    core::app::v1::{
+        query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
+    },
+    cosmos::tx::v1beta1::{
+        mode_info::{Single, Sum},
+        service_client::ServiceClient as CosmosServiceClient,
+        AuthInfo as CosmosAuthInfo, BroadcastTxRequest as CosmosBroadcastTxRequest,
+        Fee as CosmosFee, ModeInfo, SignerInfo as CosmosSignerInfo, Tx as CosmosTx,
+        TxBody as CosmosTxBody,
+    },
+    noble::forwarding::v1::MsgRegisterAccount,
 };
 use penumbra_sdk_proto::{
     core::component::{
@@ -70,6 +82,8 @@ use penumbra_sdk_transaction::{gas::swap_claim_gas_cost, Transaction};
 use penumbra_sdk_view::{SpendableNoteRecord, ViewClient};
 use penumbra_sdk_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
+use tonic::transport::{Channel, ClientTlsConfig};
+use url::Url;
 
 use crate::command::tx::auction::AuctionCmd;
 use crate::App;
@@ -287,6 +301,22 @@ pub enum TxCmd {
         #[clap(long)]
         use_transparent_address: bool,
     },
+    #[clap(display_order = 970)]
+    /// Register a Noble forwarding account.
+    RegisterForwardingAccount {
+        /// The Noble node to submit the registration transaction to.
+        #[clap(long)]
+        noble_node: Url,
+        /// The Noble IBC channel to use for forwarding.
+        #[clap(long)]
+        channel: String,
+        /// The Penumbra address or address index to receive forwarded funds.
+        #[clap(long)]
+        address_or_index: String,
+        /// Whether or not to use an ephemeral address.
+        #[clap(long)]
+        ephemeral: bool,
+    },
     /// Broadcast a saved transaction to the network
     #[clap(display_order = 1000)]
     Broadcast {
@@ -349,6 +379,7 @@ impl TxCmd {
             TxCmd::Withdraw { .. } => false,
             TxCmd::Auction(_) => false,
             TxCmd::Broadcast { .. } => false,
+            TxCmd::RegisterForwardingAccount { .. } => false,
         }
     }
 

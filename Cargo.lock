@@ -4851,6 +4851,7 @@ dependencies = [
  "penumbra-sdk-wallet",
  "pin-project",
  "predicates 2.1.5",
+ "prost 0.13.4",
  "rand",
  "rand_chacha",
  "rand_core",
