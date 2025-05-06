@@ -147,11 +147,13 @@ mod _epoch_info {
         epoch: u64,
         height: u64,
     ) -> anyhow::Result<()> {
-        sqlx::query("INSERT INTO lqt._epoch_info VALUES ($1, $2, NULL, 0) ON CONFLICT DO NOTHING")
-            .bind(i64::try_from(epoch)?)
-            .bind(i64::try_from(height)?)
-            .execute(dbtx.as_mut())
-            .await?;
+        sqlx::query(
+            "INSERT INTO lqt._epoch_info VALUES ($1, $2, $2, NULL, 0) ON CONFLICT DO NOTHING",
+        )
+        .bind(i64::try_from(epoch)?)
+        .bind(i64::try_from(height)?)
+        .execute(dbtx.as_mut())
+        .await?;
         Ok(())
     }
 
@@ -160,22 +162,26 @@ mod _epoch_info {
         epoch: u64,
         height: u64,
     ) -> anyhow::Result<()> {
-        sqlx::query("UPDATE lqt._epoch_info SET end_block = $2 WHERE epoch = $1")
-            .bind(i64::try_from(epoch)?)
-            .bind(i64::try_from(height)?)
-            .execute(dbtx.as_mut())
-            .await?;
+        sqlx::query(
+            "UPDATE lqt._epoch_info SET end_block = $2, updated_block = $2 WHERE epoch = $1",
+        )
+        .bind(i64::try_from(epoch)?)
+        .bind(i64::try_from(height)?)
+        .execute(dbtx.as_mut())
+        .await?;
         Ok(())
     }
 
     pub async fn set_rewards_for_epoch(
         dbtx: &mut PgTransaction<'_>,
         epoch: u64,
+        height: u64,
         amount: Amount,
     ) -> anyhow::Result<()> {
-        sqlx::query("UPDATE lqt._epoch_info SET available_rewards = $2::NUMERIC WHERE epoch = $1")
+        sqlx::query("UPDATE lqt._epoch_info SET available_rewards = $2::NUMERIC, updated_block = $3 WHERE epoch = $1")
             .bind(i64::try_from(epoch)?)
             .bind(BigDecimal::from(amount.value()))
+            .bind(i64::try_from(height)?)
             .execute(dbtx.as_mut())
             .await?;
         Ok(())
@@ -368,7 +374,13 @@ impl Lqt {
             _epoch_info::end_epoch(dbtx, e.index, event.block_height).await?;
             _epoch_info::start_epoch(dbtx, e.index + 1, event.block_height + 1).await?;
         } else if let Ok(e) = EventLqtPoolSizeIncrease::try_from_event(&event.event) {
-            _epoch_info::set_rewards_for_epoch(dbtx, e.epoch_index, e.new_total).await?;
+            _epoch_info::set_rewards_for_epoch(
+                dbtx,
+                e.epoch_index,
+                event.block_height,
+                e.new_total,
+            )
+            .await?;
         } else if let Ok(e) = EventAppParametersChange::try_from_event(&event.event) {
             let current = _epoch_info::current(dbtx).await?;
             _params::set_epoch(dbtx, current, e.new_parameters.into()).await?;
@@ -394,7 +406,7 @@ impl AppView for Lqt {
     }
 
     fn version(&self) -> Version {
-        Version::with_major(3)
+        Version::with_major(4)
     }
 
     async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
