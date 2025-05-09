@@ -25,14 +25,15 @@ use penumbra_sdk_auction::auction::{
 };
 use penumbra_sdk_community_pool::CommunityPoolDeposit;
 use penumbra_sdk_dex::{
-    lp::action::{PositionClose, PositionOpen},
-    lp::plan::PositionWithdrawPlan,
-    lp::position::{self, Position},
-    lp::Reserves,
-    swap::SwapPlaintext,
-    swap::SwapPlan,
+    lp::{
+        action::{PositionClose, PositionMetadata},
+        plan::PositionWithdrawPlan,
+        position::{self, Position},
+        Reserves,
+    },
+    swap::{SwapPlaintext, SwapPlan},
     swap_claim::SwapClaimPlan,
-    TradingPair,
+    PositionOpenPlan, TradingPair,
 };
 use penumbra_sdk_fee::{Fee, FeeTier, GasPrices};
 use penumbra_sdk_governance::{
@@ -178,8 +179,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Open a liquidity position in the order book.
     #[instrument(skip(self))]
-    pub fn position_open(&mut self, position: Position) -> &mut Self {
-        self.action_list.push(PositionOpen { position });
+    pub fn position_open(
+        &mut self,
+        position: Position,
+        metadata: Option<PositionMetadata>,
+    ) -> &mut Self {
+        let metadata = metadata.unwrap_or_default();
+
+        self.action_list
+            .push(PositionOpenPlan { position, metadata });
         self
     }
 

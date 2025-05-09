@@ -1143,7 +1143,7 @@ impl TxCmd {
                     .set_fee_tier(order.fee_tier().into());
 
                 for position in positions {
-                    planner.position_open(position);
+                    planner.position_open(position, None);
                 }
 
                 let plan = planner

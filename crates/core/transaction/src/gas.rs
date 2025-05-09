@@ -2,7 +2,10 @@ use penumbra_sdk_auction::auction::dutch::actions::{
     ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
 };
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_sdk_dex::{PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim};
+use penumbra_sdk_dex::{
+    lp::{action::ENCRYPTED_POSMETA_LEN, position::Position},
+    PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim,
+};
 use penumbra_sdk_fee::Gas;
 use penumbra_sdk_funding::liquidity_tournament::{
     ActionLiquidityTournamentVote, LIQUIDITY_TOURNAMENT_VOTE_DENOM_MAX_BYTES,
@@ -320,6 +323,23 @@ fn liquidity_tournament_vote_gas_cost() -> Gas {
     }
 }
 
+fn position_open_gas_cost(position: &Position) -> Gas {
+    Gas {
+        // The block space measured as the byte length of the encoded action.
+        block_space: position.encode_to_vec().len() as u64 + ENCRYPTED_POSMETA_LEN as u64,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For a PositionOpen the compact block is not modified.
+        compact_block_space: 0,
+        // There are some small validations performed so a token amount of gas is charged.
+        verification: 50,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        // Reminder: Any change to this execution gas vector must also be reflected
+        // in updates to the dutch auction gas vectors.
+        execution: 10,
+    }
+}
+
 impl GasCost for Transaction {
     fn gas_cost(&self) -> Gas {
         self.actions().map(GasCost::gas_cost).sum()
@@ -365,7 +385,7 @@ impl GasCost for ActionPlan {
             ActionPlan::ProposalWithdraw(pw) => pw.gas_cost(),
             ActionPlan::ValidatorVote(v) => v.gas_cost(),
             ActionPlan::ProposalDepositClaim(pdc) => pdc.gas_cost(),
-            ActionPlan::PositionOpen(po) => po.gas_cost(),
+            ActionPlan::PositionOpen(p) => position_open_gas_cost(&p.position),
             ActionPlan::PositionClose(pc) => pc.gas_cost(),
             ActionPlan::CommunityPoolSpend(ds) => ds.gas_cost(),
             ActionPlan::CommunityPoolOutput(d) => d.gas_cost(),
@@ -537,7 +557,7 @@ impl GasCost for PositionOpen {
     fn gas_cost(&self) -> Gas {
         Gas {
             // The block space measured as the byte length of the encoded action.
-            block_space: self.encode_to_vec().len() as u64,
+            block_space: self.position.encode_to_vec().len() as u64 + ENCRYPTED_POSMETA_LEN as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a PositionOpen the compact block is not modified.

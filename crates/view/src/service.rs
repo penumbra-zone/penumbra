@@ -709,7 +709,7 @@ impl ViewService for ViewServer {
                     tonic::Status::invalid_argument(format!("Could not parse position: {e:#}"))
                 })?;
 
-            planner.position_open(position);
+            planner.position_open(position, None);
         }
 
         for position_close in prq.position_closes {

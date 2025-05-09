@@ -1,15 +1,81 @@
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_sdk_asset::{balance, Balance, Value};
+use penumbra_sdk_keys::{keys::OutgoingViewingKey, PositionMetadataKey};
 use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     lp::{position, LpNft, Reserves},
-    TradingPair,
+    PositionOpen, TradingPair,
 };
 
-use super::action::PositionWithdraw;
+use super::{
+    action::{PositionMetadata, PositionWithdraw},
+    position::Position,
+};
+
+#[derive(Clone, Debug)]
+pub struct PositionOpenPlan {
+    pub position: Position,
+    pub metadata: PositionMetadata,
+}
+
+impl PositionOpenPlan {
+    pub fn position_open(&self, ovk: &OutgoingViewingKey) -> PositionOpen {
+        let pmk = PositionMetadataKey::derive(ovk);
+        let nonce = self.position.id().0[8..]
+            .try_into()
+            .expect("position id is 32 bytes");
+        let encrypted_metadata = self.metadata.clone().encrypt_with_nonce(&pmk, nonce);
+        PositionOpen {
+            position: self.position.clone(),
+            encrypted_metadata,
+        }
+    }
+
+    /// Compute a commitment to the value this action contributes to its transaction.
+    pub fn balance(&self) -> Balance {
+        let opened_position_nft = Value {
+            amount: 1u64.into(),
+            asset_id: LpNft::new(self.position.id(), position::State::Opened).asset_id(),
+        };
+
+        let reserves = self.position.reserves.balance(&self.position.phi.pair);
+
+        // The action consumes the reserves and produces an LP NFT
+        Balance::from(opened_position_nft) - reserves
+    }
+}
+
+impl DomainType for PositionOpenPlan {
+    type Proto = pb::PositionOpenPlan;
+}
+
+impl From<PositionOpenPlan> for pb::PositionOpenPlan {
+    fn from(msg: PositionOpenPlan) -> Self {
+        Self {
+            position: Some(msg.position.into()),
+            metadata: Some(msg.metadata.into()),
+        }
+    }
+}
+
+impl TryFrom<pb::PositionOpenPlan> for PositionOpenPlan {
+    type Error = anyhow::Error;
+    fn try_from(msg: pb::PositionOpenPlan) -> Result<Self, Self::Error> {
+        Ok(Self {
+            position: msg
+                .position
+                .ok_or_else(|| anyhow::anyhow!("missing position"))?
+                .try_into()?,
+            metadata: msg
+                .metadata
+                .ok_or_else(|| anyhow::anyhow!("missing metadata"))?
+                .try_into()?,
+        })
+    }
+}
 
 /// A planned [`PositionWithdraw`](PositionWithdraw).
 #[derive(Clone, Debug, Deserialize, Serialize)]

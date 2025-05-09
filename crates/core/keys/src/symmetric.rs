@@ -360,3 +360,20 @@ impl BackreferenceKey {
         Self(*Key::from_slice(key.as_bytes()))
     }
 }
+
+/// Represents a symmetric `ChaCha20Poly1305` key used for Position metatadata.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct PositionMetadataKey(pub Key);
+
+impl PositionMetadataKey {
+    pub fn derive(ovk: &OutgoingViewingKey) -> Self {
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.personal(b"Penumbra_PosMeta");
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&ovk.to_bytes());
+
+        let key = kdf.finalize();
+        Self(*Key::from_slice(key.as_bytes()))
+    }
+}

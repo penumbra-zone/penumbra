@@ -24,5 +24,6 @@ pub mod swap;
 pub mod swap_claim;
 
 pub use lp::action::{PositionClose, PositionOpen, PositionWithdraw};
+pub use lp::plan::PositionOpenPlan;
 pub use swap::Swap;
 pub use swap_claim::SwapClaim;

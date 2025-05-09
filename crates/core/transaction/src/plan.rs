@@ -5,10 +5,10 @@ use anyhow::Result;
 use decaf377_fmd::Precision;
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_sdk_dex::{
-    lp::action::{PositionClose, PositionOpen},
-    lp::plan::PositionWithdrawPlan,
+    lp::{action::PositionClose, plan::PositionWithdrawPlan},
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
+    PositionOpenPlan,
 };
 use penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVotePlan;
 use penumbra_sdk_governance::{
@@ -294,7 +294,7 @@ impl TransactionPlan {
         })
     }
 
-    pub fn position_openings(&self) -> impl Iterator<Item = &PositionOpen> {
+    pub fn position_openings(&self) -> impl Iterator<Item = &PositionOpenPlan> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::PositionOpen(v) = action {
                 Some(v)
