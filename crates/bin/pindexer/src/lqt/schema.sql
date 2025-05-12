@@ -275,6 +275,7 @@ WITH non_zero_points AS (
     executions,
     um_volume,
     asset_volume,
+    um_fees,
     asset_fees,
     points,
     points / SUM(points) OVER (PARTITION BY epoch) AS point_share
