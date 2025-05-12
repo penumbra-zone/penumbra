@@ -189,12 +189,12 @@ WITH delegator_streaks AS (
             epoch AS gap_start,
             next_epoch AS gap_end
         FROM epochs
-        ORDER BY address, next_epoch - epoch > 1 DESC, next_epoch DESC
+        ORDER BY address, next_epoch IS NOT NULL AND next_epoch - epoch > 1 DESC, next_epoch DESC
     ) SELECT
         address,
         CASE
             WHEN max_epoch < (SELECT MAX(epoch) FROM lqt._finished_epochs) THEN 0
-            WHEN gap_end - gap_start > 1 THEN max_epoch - gap_end + 1
+            WHEN gap_end IS NOT NULL AND gap_end - gap_start > 1 THEN max_epoch - gap_end + 1
             ELSE max_epoch - min_epoch + 1
         END AS streak
         FROM gaps
