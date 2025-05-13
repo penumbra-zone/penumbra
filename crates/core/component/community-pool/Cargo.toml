@@ -11,8 +11,11 @@ edition = {workspace = true}
 component = [
     "cnidarium-component",
     "cnidarium",
+    "tonic",
     "penumbra-sdk-proto/cnidarium",
     "penumbra-sdk-shielded-pool/component",
+
+    "async-stream",
 ]
 default = ["component"]
 docsrs = []
@@ -21,6 +24,7 @@ docsrs = []
 anyhow = {workspace = true}
 ark-ff = {workspace = true, default-features = false}
 async-trait = {workspace = true}
+async-stream = {workspace = true, optional = true}
 base64 = {workspace = true}
 blake2b_simd = {workspace = true}
 cnidarium = {workspace = true, optional = true, default-features = true}
@@ -42,6 +46,7 @@ serde = {workspace = true, features = ["derive"]}
 sha2 = {workspace = true}
 tendermint = {workspace = true}
 tendermint-light-client-verifier = {workspace = true}
+tonic = {workspace = true, optional = true}
 tracing = {workspace = true}
 
 [dev-dependencies]
