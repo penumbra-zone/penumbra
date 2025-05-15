@@ -24,6 +24,7 @@ use {
         },
     },
     penumbra_sdk_auction::component::rpc::Server as AuctionServer,
+    penumbra_sdk_community_pool::component::rpc::Server as CommunityPoolServer,
     penumbra_sdk_compact_block::component::rpc::Server as CompactBlockServer,
     penumbra_sdk_dex::component::rpc::Server as DexServer,
     penumbra_sdk_fee::component::rpc::Server as FeeServer,
@@ -33,6 +34,7 @@ use {
             app::v1::query_service_server::QueryServiceServer as AppQueryServiceServer,
             component::{
                 auction::v1::query_service_server::QueryServiceServer as AuctionQueryServiceServer,
+                community_pool::v1::query_service_server::QueryServiceServer as CommunityPoolQueryServiceServer,
                 compact_block::v1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
                 dex::v1::{
                     query_service_server::QueryServiceServer as DexQueryServiceServer,
@@ -106,6 +108,9 @@ pub fn routes(
         .add_service(we(BankQueryServer::new(ShieldedPoolServer::new(
             storage.clone(),
         ))))
+        .add_service(we(CommunityPoolQueryServiceServer::new(
+            CommunityPoolServer::new(storage.clone()),
+        )))
         .add_service(we(StakeQueryServiceServer::new(StakeServer::new(
             storage.clone(),
         ))))
