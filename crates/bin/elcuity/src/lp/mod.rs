@@ -273,7 +273,7 @@ async fn create_position_at_current_spread(
     let position = make_position(&balance_limits, pair, liquidity_target, price, fee_bps);
     tracing::info!(?position, "creating position");
     let tx = build_and_submit(clients, Default::default(), |mut planner| async {
-        planner.position_open(position);
+        planner.position_open(position, None);
         Ok(planner)
     })
     .await?;

@@ -679,7 +679,7 @@ impl ::prost::Name for DetectionDataPlan {
 pub struct ActionPlan {
     #[prost(
         oneof = "action_plan::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 29, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70, 200"
     )]
     pub action: ::core::option::Option<action_plan::Action>,
 }
@@ -718,8 +718,9 @@ pub mod action_plan {
         ProposalDepositClaim(
             super::super::super::component::governance::v1::ProposalDepositClaim,
         ),
-        #[prost(message, tag = "200")]
-        Ics20Withdrawal(super::super::super::component::ibc::v1::Ics20Withdrawal),
+        /// NEW: plan
+        #[prost(message, tag = "29")]
+        PositionOpen2(super::super::super::component::dex::v1::PositionOpenPlan),
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::component::dex::v1::PositionOpen),
         #[prost(message, tag = "31")]
@@ -772,6 +773,9 @@ pub mod action_plan {
         ActionLiquidityTournamentVote(
             super::super::super::component::funding::v1::ActionLiquidityTournamentVotePlan,
         ),
+        /// IBC
+        #[prost(message, tag = "200")]
+        Ics20Withdrawal(super::super::super::component::ibc::v1::Ics20Withdrawal),
     }
 }
 impl ::prost::Name for ActionPlan {

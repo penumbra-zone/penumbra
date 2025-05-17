@@ -89,6 +89,7 @@ mod tests {
     use crate::component::position_manager::price_index::PositionByPriceIndex;
     use crate::component::router::HandleBatchSwaps as _;
     use crate::component::{InternalDexWrite, StateReadExt as _, SwapDataRead, SwapDataWrite};
+    use crate::lp::action::EncryptedPositionMetadata;
     use crate::lp::plan::PositionWithdrawPlan;
     use crate::{
         component::{router::create_buy, tests::TempStorageExt},
@@ -176,6 +177,7 @@ mod tests {
         // Create the PositionOpen action
         let pos_open = PositionOpen {
             position: buy_1.clone(),
+            encrypted_metadata: EncryptedPositionMetadata::empty(),
         };
 
         // Execute the PositionOpen action.

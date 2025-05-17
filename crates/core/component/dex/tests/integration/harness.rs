@@ -12,6 +12,7 @@ use penumbra_sdk_asset::asset;
 use penumbra_sdk_dex::{
     component::{Dex, PositionRead, StateReadExt},
     lp::{
+        action::EncryptedPositionMetadata,
         position::{self, Position},
         Reserves,
     },
@@ -232,7 +233,10 @@ impl TestingStrategy {
         let mut position_ids = Vec::new();
         for position in self.positions {
             position_ids.push(position.id());
-            let tx = PositionOpen { position };
+            let tx = PositionOpen {
+                position,
+                encrypted_metadata: EncryptedPositionMetadata::empty(),
+            };
             dex.position_open(tx).await?;
         }
         dex.end_block().await?;

@@ -9,7 +9,7 @@ use penumbra_sdk_num::Amount;
 use rand_core::OsRng;
 
 use crate::component::{SwapDataRead, SwapDataWrite};
-use crate::lp::action::PositionOpen;
+use crate::lp::action::{EncryptedPositionMetadata, PositionOpen};
 use crate::lp::{position, SellOrder};
 use crate::DexParameters;
 use crate::{
@@ -516,6 +516,7 @@ async fn empty_order_fails() -> anyhow::Result<()> {
 
     let position_action = PositionOpen {
         position: position_1,
+        encrypted_metadata: EncryptedPositionMetadata::empty(),
     };
 
     assert!(position_action.check_stateless(()).await.is_err());

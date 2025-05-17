@@ -6,8 +6,8 @@ import "penumbra/core/asset/v1/asset.proto";
 import "penumbra/core/component/auction/v1/auction.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
-import "penumbra/core/component/governance/v1/governance.proto";
 import "penumbra/core/component/funding/v1/funding.proto";
+import "penumbra/core/component/governance/v1/governance.proto";
 import "penumbra/core/component/ibc/v1/ibc.proto";
 import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
@@ -247,7 +247,7 @@ message ActionView {
     component.stake.v1.UndelegateClaim undelegate_claim = 43;
 
     component.funding.v1.ActionLiquidityTournamentVoteView action_liquidity_tournament_vote = 70;
-    
+
     component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
   }
 }
@@ -317,9 +317,9 @@ message ActionPlan {
     component.governance.v1.DelegatorVotePlan delegator_vote = 21;
     component.governance.v1.ProposalDepositClaim proposal_deposit_claim = 22;
 
-    component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
-
-    component.dex.v1.PositionOpen position_open = 30;
+    // NEW: plan
+    component.dex.v1.PositionOpenPlan position_open2 = 29;
+    component.dex.v1.PositionOpen position_open = 30 [deprecated = true];
     component.dex.v1.PositionClose position_close = 31;
 
     // The position withdraw/reward claim actions require balance information so they have Plan types.
@@ -346,6 +346,8 @@ message ActionPlan {
 
     // Funding
     component.funding.v1.ActionLiquidityTournamentVotePlan action_liquidity_tournament_vote = 70;
+    // IBC
+    component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
   }
 }
 

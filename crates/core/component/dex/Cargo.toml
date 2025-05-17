@@ -48,6 +48,7 @@ async-trait = {workspace = true}
 base64 = {workspace = true}
 bincode = {workspace = true}
 blake2b_simd = {workspace = true}
+chacha20poly1305.workspace = true
 cnidarium = {workspace = true, optional = true, default-features = true}
 cnidarium-component = {workspace = true, optional = true, default-features = true}
 decaf377 = {workspace = true, features = ["r1cs"], default-features = true}

@@ -154,7 +154,7 @@ impl Linear {
         let mut planner = Planner::new(OsRng);
         planner.set_gas_prices(gas_prices);
         positions.iter().for_each(|position| {
-            planner.position_open(position.clone());
+            planner.position_open(position.clone(), None);
         });
 
         let plan = planner
