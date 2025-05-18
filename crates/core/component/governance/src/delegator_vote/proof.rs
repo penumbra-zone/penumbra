@@ -143,8 +143,14 @@ fn check_circuit_satisfaction(
 /// Groth16 proof for delegator voting.
 #[derive(Clone, Debug)]
 pub struct DelegatorVoteCircuit {
-    public: DelegatorVoteProofPublic,
-    private: DelegatorVoteProofPrivate,
+    pub public: DelegatorVoteProofPublic,
+    pub private: DelegatorVoteProofPrivate,
+}
+
+impl DelegatorVoteCircuit {
+    fn new(public: DelegatorVoteProofPublic, private: DelegatorVoteProofPrivate) -> Self {
+        Self { public, private }
+    }
 }
 
 impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
@@ -325,7 +331,7 @@ impl DelegatorVoteProof {
         public: DelegatorVoteProofPublic,
         private: DelegatorVoteProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = DelegatorVoteCircuit { public, private };
+        let circuit = DelegatorVoteCircuit::new(public, private);
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
         )

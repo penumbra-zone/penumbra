@@ -182,8 +182,14 @@ fn check_circuit_satisfaction(
 /// SwapClaim consumes an existing Swap so they are most similar to Spend operations.
 #[derive(Clone, Debug)]
 pub struct SwapClaimCircuit {
-    public: SwapClaimProofPublic,
-    private: SwapClaimProofPrivate,
+    pub public: SwapClaimProofPublic,
+    pub private: SwapClaimProofPrivate,
+}
+
+impl SwapClaimCircuit {
+    fn new(public: SwapClaimProofPublic, private: SwapClaimProofPrivate) -> Self {
+        Self { public, private }
+    }
 }
 
 impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
@@ -426,7 +432,7 @@ impl SwapClaimProof {
         public: SwapClaimProofPublic,
         private: SwapClaimProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = SwapClaimCircuit { public, private };
+        let circuit = SwapClaimCircuit::new(public, private);
 
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,

@@ -74,7 +74,7 @@ fn check_circuit_satisfaction(
     use ark_relations::r1cs::{self, ConstraintSystem};
 
     let cs = ConstraintSystem::new_ref();
-    let circuit = OutputCircuit { public, private };
+    let circuit = OutputCircuit::new(public, private);
     cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
     circuit
         .generate_constraints(cs.clone())
@@ -98,12 +98,12 @@ fn check_circuit_satisfaction(
 /// * nblind (Fq)
 #[derive(Clone, Debug)]
 pub struct OutputCircuit {
-    public: OutputProofPublic,
-    private: OutputProofPrivate,
+    pub public: OutputProofPublic,
+    pub private: OutputProofPrivate,
 }
 
 impl OutputCircuit {
-    fn new(public: OutputProofPublic, private: OutputProofPrivate) -> Self {
+    pub fn new(public: OutputProofPublic, private: OutputProofPrivate) -> Self {
         Self { public, private }
     }
 }
