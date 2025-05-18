@@ -103,7 +103,7 @@ pub struct SwapCircuit {
 }
 
 impl SwapCircuit {
-    fn new(public: SwapProofPublic, private: SwapProofPrivate) -> Self {
+    pub fn new(public: SwapProofPublic, private: SwapProofPrivate) -> Self {
         Self { public, private }
     }
 }

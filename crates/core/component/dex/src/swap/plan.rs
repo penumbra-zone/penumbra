@@ -8,10 +8,12 @@ use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
+use super::{
+    action as swap,
+    proof::{SwapCircuit, SwapProof},
+    Swap, SwapPlaintext,
+};
 use crate::swap::proof::{SwapProofPrivate, SwapProofPublic};
-
-// TODO: rename action::Body to SwapBody
-use super::{action as swap, proof::SwapProof, Swap, SwapPlaintext};
 
 /// A planned [`Swap`](Swap).
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -36,11 +38,28 @@ impl SwapPlan {
         }
     }
 
+    /// Convenience method to construct the [`SwapCircuit`] for this [`SwapProof`].
+    pub fn circuit_inputs(&self) -> SwapCircuit {
+        let public = SwapProofPublic {
+            balance_commitment: self.transparent_balance().commit(Fr::zero())
+                + self.fee_commitment(),
+            swap_commitment: self.swap_plaintext.swap_commitment(),
+            fee_commitment: self.fee_commitment(),
+        };
+
+        let private = SwapProofPrivate {
+            fee_blinding: self.fee_blinding,
+            swap_plaintext: self.swap_plaintext.clone(),
+        };
+
+        SwapCircuit::new(public, private)
+    }
+
     /// Convenience method to construct the [`Swap`] described by this [`SwapPlan`].
-    pub fn swap(&self, fvk: &FullViewingKey) -> Swap {
+    pub fn swap(&self, fvk: &FullViewingKey, action_circuit: SwapCircuit) -> Swap {
         Swap {
             body: self.swap_body(fvk),
-            proof: self.swap_proof(),
+            proof: self.swap_proof(action_circuit.public, action_circuit.private),
         }
     }
 
@@ -56,24 +75,13 @@ impl SwapPlan {
     }
 
     /// Construct the [`SwapProof`] required by the [`swap::Body`] described by this [`SwapPlan`].
-    pub fn swap_proof(&self) -> SwapProof {
-        use penumbra_sdk_proof_params::SWAP_PROOF_PROVING_KEY;
-
-        let balance_commitment =
-            self.transparent_balance().commit(Fr::zero()) + self.fee_commitment();
+    pub fn swap_proof(&self, public: SwapProofPublic, private: SwapProofPrivate) -> SwapProof {
         SwapProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
-            &SWAP_PROOF_PROVING_KEY,
-            SwapProofPublic {
-                balance_commitment,
-                swap_commitment: self.swap_plaintext.swap_commitment(),
-                fee_commitment: self.fee_commitment(),
-            },
-            SwapProofPrivate {
-                fee_blinding: self.fee_blinding,
-                swap_plaintext: self.swap_plaintext.clone(),
-            },
+            &penumbra_sdk_proof_params::SWAP_PROOF_PROVING_KEY,
+            public,
+            private,
         )
         .expect("can generate ZKSwapProof")
     }

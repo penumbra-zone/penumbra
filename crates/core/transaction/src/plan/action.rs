@@ -112,9 +112,9 @@ impl ActionPlan {
                 )))
             }
             Output(output_plan) => Ok(ActionCircuit::Output(output_plan.circuit_inputs())),
+            Swap(swap_plan) => Ok(ActionCircuit::Swap(swap_plan.circuit_inputs())),
             Delegate(_delegate) => todo!(),
             UndelegateClaim(_undelegate_claim_plan) => todo!(),
-            Swap(_swap_plan) => todo!(),
             SwapClaim(_swap_claim_plan) => todo!(),
             DelegatorVote(_delegator_vote_plan) => todo!(),
             _ => Err(anyhow::anyhow!(
@@ -163,7 +163,14 @@ impl ActionPlan {
                     output_circuit,
                 ))
             }
-            Swap(swap_plan) => Action::Swap(swap_plan.swap(fvk)),
+            Swap(swap_plan) => {
+                let swap_circuit = match circuit_inputs {
+                    Some(ActionCircuit::Swap(circuit)) => circuit,
+                    _ => return Err(anyhow::anyhow!("error")),
+                };
+
+                Action::Swap(swap_plan.swap(fvk, swap_circuit))
+            }
             SwapClaim(swap_claim_plan) => {
                 let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
                 let auth_path = witness_data
