@@ -89,7 +89,7 @@ pub enum ActionPlan {
 }
 
 impl ActionPlan {
-    pub fn build_unauth_inputs(
+    pub fn circuit_inputs(
         action_plan: ActionPlan,
         fvk: &FullViewingKey,
         witness_data: &WitnessData,
@@ -111,7 +111,7 @@ impl ActionPlan {
                     witness_data.anchor,
                 )))
             }
-            Output(_output_plan) => todo!(),
+            Output(output_plan) => Ok(ActionCircuit::Output(output_plan.circuit_inputs())),
             Delegate(_delegate) => todo!(),
             UndelegateClaim(_undelegate_claim_plan) => todo!(),
             Swap(_swap_plan) => todo!(),
@@ -145,9 +145,7 @@ impl ActionPlan {
                 // Extract the spend circuit inputs
                 let spend_circuit = match circuit_inputs {
                     Some(ActionCircuit::Spend(circuit)) => circuit,
-                    _ => {
-                        return Err(anyhow::anyhow!("error"))
-                    }
+                    _ => return Err(anyhow::anyhow!("error")),
                 };
 
                 Action::Spend(spend_plan.spend(fvk, [0; 64].into(), spend_circuit))
@@ -155,9 +153,7 @@ impl ActionPlan {
             Output(output_plan) => {
                 let output_circuit = match circuit_inputs {
                     Some(ActionCircuit::Output(circuit)) => circuit,
-                    _ => {
-                        return Err(anyhow::anyhow!("error"))
-                    }
+                    _ => return Err(anyhow::anyhow!("error")),
                 };
 
                 let dummy_payload_key: PayloadKey = [0u8; 32].into();
