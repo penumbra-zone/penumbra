@@ -10,7 +10,7 @@ use penumbra_sdk_proto::{core::component::shielded_pool::v1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use super::{Body, Output, OutputProof, OutputProofPrivate, OutputProofPublic};
+use super::{Body, Output, OutputCircuit, OutputProof, OutputProofPrivate, OutputProofPublic};
 use crate::{Note, Rseed};
 
 /// A planned [`Output`](Output).
@@ -57,12 +57,31 @@ impl OutputPlan {
         )
     }
 
+    /// Convenience method to construct the [`OutputCircuit`] for this [`OutputProof`].
+    pub fn circuit_inputs(&self) -> OutputCircuit {
+        let public = OutputProofPublic {
+            balance_commitment: self.balance().commit(self.value_blinding),
+            note_commitment: self.output_note().commit(),
+        };
+        let private = OutputProofPrivate {
+            note: self.output_note(),
+            balance_blinding: self.value_blinding,
+        };
+
+        OutputCircuit::new(public, private)
+    }
+
     /// Convenience method to construct the [`Output`] described by this
     /// [`OutputPlan`].
-    pub fn output(&self, ovk: &OutgoingViewingKey, memo_key: &PayloadKey) -> Output {
+    pub fn output(
+        &self,
+        ovk: &OutgoingViewingKey,
+        memo_key: &PayloadKey,
+        action_circuit: OutputCircuit,
+    ) -> Output {
         Output {
             body: self.output_body(ovk, memo_key),
-            proof: self.output_proof(),
+            proof: self.output_proof(action_circuit.public, action_circuit.private),
         }
     }
 
@@ -73,22 +92,17 @@ impl OutputPlan {
 
     /// Construct the [`OutputProof`] required by the [`output::Body`] described
     /// by this plan.
-    pub fn output_proof(&self) -> OutputProof {
-        let note = self.output_note();
-        let balance_commitment = self.balance().commit(self.value_blinding);
-        let note_commitment = note.commit();
+    pub fn output_proof(
+        &self,
+        public: OutputProofPublic,
+        private: OutputProofPrivate,
+    ) -> OutputProof {
         OutputProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
             &penumbra_sdk_proof_params::OUTPUT_PROOF_PROVING_KEY,
-            OutputProofPublic {
-                balance_commitment,
-                note_commitment,
-            },
-            OutputProofPrivate {
-                note,
-                balance_blinding: self.value_blinding,
-            },
+            public,
+            private,
         )
         .expect("can generate ZKOutputProof")
     }
@@ -171,7 +185,7 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
 
 #[cfg(test)]
 mod test {
-    use crate::output::OutputProofPublic;
+    use crate::output::{OutputProofPrivate, OutputProofPublic};
 
     use super::OutputPlan;
     use penumbra_sdk_asset::Value;
@@ -203,7 +217,17 @@ mod test {
 
         let balance_commitment = output_plan.balance().commit(blinding_factor);
         let note_commitment = output_plan.output_note().commit();
-        let output_proof = output_plan.output_proof();
+
+        let public = OutputProofPublic {
+            balance_commitment,
+            note_commitment,
+        };
+        let private = OutputProofPrivate {
+            note: output_plan.output_note(),
+            balance_blinding: blinding_factor,
+        };
+
+        let output_proof = output_plan.output_proof(public, private);
 
         output_proof
             .verify(
