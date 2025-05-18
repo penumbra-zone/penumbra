@@ -89,6 +89,7 @@ pub enum ActionPlan {
 }
 
 impl ActionPlan {
+    /// Builds the public and private circuit inputs associated with the plan.
     pub fn circuit_inputs(
         action_plan: ActionPlan,
         fvk: &FullViewingKey,
