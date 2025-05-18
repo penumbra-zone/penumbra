@@ -8,6 +8,8 @@ use penumbra_sdk_txhash::AuthorizingData;
 use super::TransactionPlan;
 use crate::ActionPlan;
 use crate::{action::Action, AuthorizationData, Transaction, TransactionBody, WitnessData};
+use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef, ConstraintSystem, OptimizationGoal};
+use decaf377::Fq;
 
 impl TransactionPlan {
     /// Builds a [`TransactionPlan`] by slotting in the
@@ -225,5 +227,28 @@ impl TransactionPlan {
             anchor,
             state_commitment_proofs,
         })
+    }
+
+    /// Convenience method for constraint synthesis.
+    pub fn constraint_synthesis(circuit: impl ConstraintSynthesizer<Fq>) -> Result<(Vec<Fq>, Vec<Fq>)> {
+        let cs: ConstraintSystemRef<Fq> = ConstraintSystem::new_ref();
+
+        // Set the optimization goal
+        cs.set_optimization_goal(OptimizationGoal::Constraints);
+
+        // Synthesize the circuit.
+        circuit.generate_constraints(cs.clone())?;
+
+        cs.finalize();
+
+        let witness_values = &cs.borrow().expect("can borrow").witness_assignment;
+        let public_values = &cs.borrow().expect("can borrow").instance_assignment;
+
+        Ok((witness_values.to_vec(), public_values.to_vec()))
+    }
+
+    /// Convenience method for serializing witness and R1CS matrices.
+    pub fn serialize_witness_and_matrices(_witness: Vec<Fq>, _public_inputs: Vec<Fq>) -> Result<()> {
+        todo!()
     }
 }
