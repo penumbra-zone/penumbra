@@ -93,7 +93,6 @@ impl ActionPlan {
         action_plan: ActionPlan,
         fvk: &FullViewingKey,
         witness_data: &WitnessData,
-        memo_key: Option<PayloadKey>,
     ) -> Result<ActionCircuit> {
         use ActionPlan::*;
 
@@ -113,9 +112,19 @@ impl ActionPlan {
             }
             Output(output_plan) => Ok(ActionCircuit::Output(output_plan.circuit_inputs())),
             Swap(swap_plan) => Ok(ActionCircuit::Swap(swap_plan.circuit_inputs())),
+            SwapClaim(swap_claim_plan) => {
+                let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+
+                Ok(ActionCircuit::SwapClaim(
+                    swap_claim_plan.circuit_inputs(auth_path, fvk),
+                ))
+            }
             Delegate(_delegate) => todo!(),
             UndelegateClaim(_undelegate_claim_plan) => todo!(),
-            SwapClaim(_swap_claim_plan) => todo!(),
             DelegatorVote(_delegator_vote_plan) => todo!(),
             _ => Err(anyhow::anyhow!(
                 "This action type does not require a circuit"
@@ -172,13 +181,12 @@ impl ActionPlan {
                 Action::Swap(swap_plan.swap(fvk, swap_circuit))
             }
             SwapClaim(swap_claim_plan) => {
-                let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
-                let auth_path = witness_data
-                    .state_commitment_proofs
-                    .get(&note_commitment)
-                    .context(format!("could not get proof for {note_commitment:?}"))?;
+                let swap_claim_circuit = match circuit_inputs {
+                    Some(ActionCircuit::SwapClaim(circuit)) => circuit,
+                    _ => return Err(anyhow::anyhow!("error")),
+                };
 
-                Action::SwapClaim(swap_claim_plan.swap_claim(fvk, auth_path))
+                Action::SwapClaim(swap_claim_plan.swap_claim(fvk, swap_claim_circuit))
             }
             Delegate(plan) => Action::Delegate(plan.clone()),
             Undelegate(plan) => Action::Undelegate(plan.clone()),
