@@ -8,7 +8,7 @@ use penumbra_sdk_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use super::{Body, Spend, SpendProof};
+use super::{Body, Spend, SpendCircuit, SpendProof};
 use crate::{Backref, Note, Rseed, SpendProofPrivate, SpendProofPublic};
 
 /// A planned [`Spend`](Spend).
@@ -58,18 +58,42 @@ impl SpendPlan {
         Self::new(rng, dummy_note, 0u64.into())
     }
 
+    /// Convenience method to construct the [`SpendCircuit`] for this [`SpendProof`].
+    pub fn circuit_inputs(
+        &self,
+        fvk: &FullViewingKey,
+        auth_path: tct::Proof,
+        anchor: tct::Root,
+    ) -> SpendCircuit {
+        let public = SpendProofPublic {
+            anchor,
+            balance_commitment: self.balance().commit(self.value_blinding),
+            nullifier: self.nullifier(fvk),
+            rk: self.rk(fvk),
+        };
+        let private = SpendProofPrivate {
+            state_commitment_proof: auth_path,
+            note: self.note.clone(),
+            v_blinding: self.value_blinding,
+            spend_auth_randomizer: self.randomizer,
+            ak: *fvk.spend_verification_key(),
+            nk: *fvk.nullifier_key(),
+        };
+
+        SpendCircuit::new(public, private)
+    }
+
     /// Convenience method to construct the [`Spend`] described by this [`SpendPlan`].
     pub fn spend(
         &self,
         fvk: &FullViewingKey,
         auth_sig: Signature<SpendAuth>,
-        auth_path: tct::Proof,
-        anchor: tct::Root,
+        action_circuit: SpendCircuit,
     ) -> Spend {
         Spend {
             body: self.spend_body(fvk),
             auth_sig,
-            proof: self.spend_proof(fvk, auth_path, anchor),
+            proof: self.spend_proof(action_circuit.public, action_circuit.private),
         }
     }
 
@@ -98,26 +122,7 @@ impl SpendPlan {
     }
 
     /// Construct the [`SpendProof`] required by the [`spend::Body`] described by this [`SpendPlan`].
-    pub fn spend_proof(
-        &self,
-        fvk: &FullViewingKey,
-        state_commitment_proof: tct::Proof,
-        anchor: tct::Root,
-    ) -> SpendProof {
-        let public = SpendProofPublic {
-            anchor,
-            balance_commitment: self.balance().commit(self.value_blinding),
-            nullifier: self.nullifier(fvk),
-            rk: self.rk(fvk),
-        };
-        let private = SpendProofPrivate {
-            state_commitment_proof,
-            note: self.note.clone(),
-            v_blinding: self.value_blinding,
-            spend_auth_randomizer: self.randomizer,
-            ak: *fvk.spend_verification_key(),
-            nk: *fvk.nullifier_key(),
-        };
+    pub fn spend_proof(&self, public: SpendProofPublic, private: SpendProofPrivate) -> SpendProof {
         SpendProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,

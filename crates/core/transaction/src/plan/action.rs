@@ -1,3 +1,4 @@
+use crate::action::ActionCircuit;
 use crate::Action;
 use crate::WitnessData;
 use anyhow::{anyhow, Context, Result};
@@ -88,6 +89,40 @@ pub enum ActionPlan {
 }
 
 impl ActionPlan {
+    pub fn build_unauth_inputs(
+        action_plan: ActionPlan,
+        fvk: &FullViewingKey,
+        witness_data: &WitnessData,
+        memo_key: Option<PayloadKey>,
+    ) -> Result<ActionCircuit> {
+        use ActionPlan::*;
+
+        match action_plan {
+            Spend(spend_plan) => {
+                let note_commitment = spend_plan.note.commit();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+
+                Ok(ActionCircuit::Spend(spend_plan.circuit_inputs(
+                    fvk,
+                    auth_path.clone(),
+                    witness_data.anchor,
+                )))
+            }
+            Output(_output_plan) => todo!(),
+            Delegate(_delegate) => todo!(),
+            UndelegateClaim(_undelegate_claim_plan) => todo!(),
+            Swap(_swap_plan) => todo!(),
+            SwapClaim(_swap_claim_plan) => todo!(),
+            DelegatorVote(_delegator_vote_plan) => todo!(),
+            _ => Err(anyhow::anyhow!(
+                "This action type does not require a circuit"
+            )),
+        }
+    }
+
     /// Builds a planned [`Action`] specified by this [`ActionPlan`].
     ///
     /// The resulting action is `unauth` in the sense that this method does not
@@ -101,25 +136,23 @@ impl ActionPlan {
         fvk: &FullViewingKey,
         witness_data: &WitnessData,
         memo_key: Option<PayloadKey>,
+        circuit_inputs: Option<ActionCircuit>,
     ) -> Result<Action> {
         use ActionPlan::*;
 
         Ok(match action_plan {
             Spend(spend_plan) => {
-                let note_commitment = spend_plan.note.commit();
-                let auth_path = witness_data
-                    .state_commitment_proofs
-                    .get(&note_commitment)
-                    .context(format!("could not get proof for {note_commitment:?}"))?;
+                // Extract the spend circuit inputs
+                let spend_circuit = match circuit_inputs {
+                    Some(ActionCircuit::Spend(circuit)) => circuit,
+                    _ => {
+                        return Err(anyhow::anyhow!(
+                            "Missing or incorrect circuit for Spend action"
+                        ))
+                    }
+                };
 
-                Action::Spend(spend_plan.spend(
-                    fvk,
-                    [0; 64].into(),
-                    auth_path.clone(),
-                    // FIXME: why does this need the anchor? isn't that implied by the auth_path?
-                    // cf. delegator_vote
-                    witness_data.anchor,
-                ))
+                Action::Spend(spend_plan.spend(fvk, [0; 64].into(), spend_circuit))
             }
             Output(output_plan) => {
                 let dummy_payload_key: PayloadKey = [0u8; 32].into();
