@@ -137,8 +137,14 @@ fn check_circuit_satisfaction(public: SpendProofPublic, private: SpendProofPriva
 /// Groth16 proof for spending existing notes.
 #[derive(Clone, Debug)]
 pub struct SpendCircuit {
-    public: SpendProofPublic,
-    private: SpendProofPrivate,
+    pub public: SpendProofPublic,
+    pub private: SpendProofPrivate,
+}
+
+impl SpendCircuit {
+    pub fn new(public: SpendProofPublic, private: SpendProofPrivate) -> Self {
+        Self { public, private }
+    }
 }
 
 impl ConstraintSynthesizer<Fq> for SpendCircuit {
@@ -300,7 +306,7 @@ impl SpendProof {
         public: SpendProofPublic,
         private: SpendProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = SpendCircuit { public, private };
+        let circuit = SpendCircuit::new(public, private);
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
         )
