@@ -142,11 +142,18 @@ impl TransactionPlan {
             .actions
             .iter()
             .map(|action_plan| {
+                let circuit_inputs = ActionPlan::circuit_inputs(
+                    action_plan.clone(),
+                    &full_viewing_key,
+                    &*witness_data,
+                ).ok();
+
                 ActionPlan::build_unauth(
                     action_plan.clone(),
                     full_viewing_key,
                     witness_data,
                     self.memo_key(),
+                    circuit_inputs
                 )
             })
             .collect::<Result<Vec<_>>>()?;
@@ -182,10 +189,16 @@ impl TransactionPlan {
             .cloned()
             .map(|action_plan| {
                 let fvk2 = full_viewing_key.clone();
-                let witness_data2 = witness_data.clone(); // Arc
+                let witness_data2 = witness_data.clone();
                 let memo_key2 = self.memo_key();
                 tokio::task::spawn_blocking(move || {
-                    ActionPlan::build_unauth(action_plan, &fvk2, &*witness_data2, memo_key2)
+                    let circuit_inputs = ActionPlan::circuit_inputs(
+                        action_plan.clone(),
+                        &fvk2,
+                        &*witness_data2,
+                    ).ok();
+
+                    ActionPlan::build_unauth(action_plan, &fvk2, &*witness_data2, memo_key2, circuit_inputs)
                 })
             })
             .collect::<Vec<_>>();
