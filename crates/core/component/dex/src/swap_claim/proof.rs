@@ -187,7 +187,7 @@ pub struct SwapClaimCircuit {
 }
 
 impl SwapClaimCircuit {
-    fn new(public: SwapClaimProofPublic, private: SwapClaimProofPrivate) -> Self {
+    pub fn new(public: SwapClaimProofPublic, private: SwapClaimProofPrivate) -> Self {
         Self { public, private }
     }
 }
