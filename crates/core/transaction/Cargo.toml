@@ -34,6 +34,7 @@ decaf377 = {workspace = true}
 decaf377-fmd = {workspace = true}
 decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
+ark-relations = {workspace = true}
 derivative = {workspace = true}
 hex = {workspace = true}
 ibc-proto = {workspace = true, default-features = false}

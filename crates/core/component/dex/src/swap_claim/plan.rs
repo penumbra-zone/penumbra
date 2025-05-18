@@ -14,7 +14,7 @@ use crate::{swap::SwapPlaintext, BatchSwapOutputData};
 use super::{
     action as swap_claim,
     proof::{SwapClaimProof, SwapClaimProofPrivate, SwapClaimProofPublic},
-    SwapClaim,
+    SwapClaim, SwapClaimCircuit,
 };
 
 /// A planned [`SwapClaim`](SwapClaim).
@@ -32,27 +32,12 @@ pub struct SwapClaimPlan {
 }
 
 impl SwapClaimPlan {
-    /// Convenience method to construct the [`SwapClaim`] described by this
-    /// [`SwapClaimPlan`].
-    pub fn swap_claim(
-        &self,
-        fvk: &FullViewingKey,
-        state_commitment_proof: &tct::Proof,
-    ) -> SwapClaim {
-        SwapClaim {
-            body: self.swap_claim_body(fvk),
-            proof: self.swap_claim_proof(state_commitment_proof, fvk),
-            epoch_duration: self.epoch_duration,
-        }
-    }
-
-    /// Construct the [`SwapClaimProof`] required by the [`swap_claim::Body`] described
-    /// by this plan.
-    pub fn swap_claim_proof(
+    /// Convenience method to construct the [`SwapClaimCircuit`] for this [`SwapClaimProof`].
+    pub fn circuit_inputs(
         &self,
         state_commitment_proof: &tct::Proof,
         fvk: &FullViewingKey,
-    ) -> SwapClaimProof {
+    ) -> SwapClaimCircuit {
         let (lambda_1, lambda_2) = self
             .output_data
             .pro_rata_outputs((self.swap_plaintext.delta_1_i, self.swap_plaintext.delta_2_i));
@@ -68,28 +53,53 @@ impl SwapClaimPlan {
             self.position,
             &self.swap_plaintext.swap_commitment(),
         );
+
+        let public = SwapClaimProofPublic {
+            anchor: state_commitment_proof.root(),
+            nullifier,
+            claim_fee: self.swap_plaintext.claim_fee.clone(),
+            output_data: self.output_data,
+            note_commitment_1,
+            note_commitment_2,
+        };
+
+        let private = SwapClaimProofPrivate {
+            swap_plaintext: self.swap_plaintext.clone(),
+            state_commitment_proof: state_commitment_proof.clone(),
+            nk: *fvk.nullifier_key(),
+            ak: *fvk.spend_verification_key(),
+            lambda_1,
+            lambda_2,
+            note_blinding_1,
+            note_blinding_2,
+        };
+
+        SwapClaimCircuit::new(public, private)
+    }
+
+    /// Convenience method to construct the [`SwapClaim`] described by this
+    /// [`SwapClaimPlan`].
+    pub fn swap_claim(&self, fvk: &FullViewingKey, action_circuit: SwapClaimCircuit) -> SwapClaim {
+        SwapClaim {
+            body: self.swap_claim_body(fvk),
+            proof: self.swap_claim_proof(action_circuit.public, action_circuit.private),
+            epoch_duration: self.epoch_duration,
+        }
+    }
+
+    /// Construct the [`SwapClaimProof`] required by the [`swap_claim::Body`] described
+    /// by this plan.
+    pub fn swap_claim_proof(
+        &self,
+        public: SwapClaimProofPublic,
+        private: SwapClaimProofPrivate,
+    ) -> SwapClaimProof {
         SwapClaimProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
             &SWAPCLAIM_PROOF_PROVING_KEY,
-            SwapClaimProofPublic {
-                anchor: state_commitment_proof.root(),
-                nullifier,
-                claim_fee: self.swap_plaintext.claim_fee.clone(),
-                output_data: self.output_data,
-                note_commitment_1,
-                note_commitment_2,
-            },
-            SwapClaimProofPrivate {
-                swap_plaintext: self.swap_plaintext.clone(),
-                state_commitment_proof: state_commitment_proof.clone(),
-                nk: *fvk.nullifier_key(),
-                ak: *fvk.spend_verification_key(),
-                lambda_1,
-                lambda_2,
-                note_blinding_1,
-                note_blinding_2,
-            },
+            public,
+            private,
         )
         .expect("can generate ZKSwapClaimProof")
     }
