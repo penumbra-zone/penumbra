@@ -133,7 +133,6 @@ impl ActionPlan {
                     delegate_vote.circuit_inputs(fvk, auth_path.clone()),
                 ))
             }
-            UndelegateClaim(_undelegate_claim_plan) => todo!(),
             _ => Err(anyhow::anyhow!(
                 "This action type does not require a circuit"
             )),
