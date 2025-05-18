@@ -146,19 +146,25 @@ impl ActionPlan {
                 let spend_circuit = match circuit_inputs {
                     Some(ActionCircuit::Spend(circuit)) => circuit,
                     _ => {
-                        return Err(anyhow::anyhow!(
-                            "Missing or incorrect circuit for Spend action"
-                        ))
+                        return Err(anyhow::anyhow!("error"))
                     }
                 };
 
                 Action::Spend(spend_plan.spend(fvk, [0; 64].into(), spend_circuit))
             }
             Output(output_plan) => {
+                let output_circuit = match circuit_inputs {
+                    Some(ActionCircuit::Output(circuit)) => circuit,
+                    _ => {
+                        return Err(anyhow::anyhow!("error"))
+                    }
+                };
+
                 let dummy_payload_key: PayloadKey = [0u8; 32].into();
                 Action::Output(output_plan.output(
                     fvk.outgoing(),
                     memo_key.as_ref().unwrap_or(&dummy_payload_key),
+                    output_circuit,
                 ))
             }
             Swap(swap_plan) => Action::Swap(swap_plan.swap(fvk)),
