@@ -123,9 +123,17 @@ impl ActionPlan {
                     swap_claim_plan.circuit_inputs(auth_path, fvk),
                 ))
             }
-            Delegate(_delegate) => todo!(),
+            DelegatorVote(delegate_vote) => {
+                let note_commitment = delegate_vote.staked_note.commit();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+                Ok(ActionCircuit::DelegatorVote(
+                    delegate_vote.circuit_inputs(fvk, auth_path.clone()),
+                ))
+            }
             UndelegateClaim(_undelegate_claim_plan) => todo!(),
-            DelegatorVote(_delegator_vote_plan) => todo!(),
             _ => Err(anyhow::anyhow!(
                 "This action type does not require a circuit"
             )),
@@ -197,12 +205,16 @@ impl ActionPlan {
             ProposalSubmit(plan) => Action::ProposalSubmit(plan.clone()),
             ProposalWithdraw(plan) => Action::ProposalWithdraw(plan.clone()),
             DelegatorVote(plan) => {
-                let note_commitment = plan.staked_note.commit();
-                let auth_path = witness_data
-                    .state_commitment_proofs
-                    .get(&note_commitment)
-                    .context(format!("could not get proof for {note_commitment:?}"))?;
-                Action::DelegatorVote(plan.delegator_vote(fvk, [0; 64].into(), auth_path.clone()))
+                let delegator_vote_circuit = match circuit_inputs {
+                    Some(ActionCircuit::DelegatorVote(circuit)) => circuit,
+                    _ => return Err(anyhow::anyhow!("error")),
+                };
+
+                Action::DelegatorVote(plan.delegator_vote(
+                    fvk,
+                    [0; 64].into(),
+                    delegator_vote_circuit,
+                ))
             }
             ValidatorVote(plan) => Action::ValidatorVote(plan.clone()),
             ProposalDepositClaim(plan) => Action::ProposalDepositClaim(plan.clone()),

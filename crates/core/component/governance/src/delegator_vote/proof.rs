@@ -148,7 +148,7 @@ pub struct DelegatorVoteCircuit {
 }
 
 impl DelegatorVoteCircuit {
-    fn new(public: DelegatorVoteProofPublic, private: DelegatorVoteProofPrivate) -> Self {
+    pub fn new(public: DelegatorVoteProofPublic, private: DelegatorVoteProofPrivate) -> Self {
         Self { public, private }
     }
 }
