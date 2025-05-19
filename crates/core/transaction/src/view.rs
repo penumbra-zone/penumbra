@@ -154,7 +154,7 @@ impl TransactionView {
                     SwapView::Visible {
                         swap: _,
                         swap_plaintext,
-                        output_1,
+                        output_1: _,
                         output_2: _,
                         claim_tx: _,
                         asset_1_metadata: _,
@@ -162,7 +162,7 @@ impl TransactionView {
                         batch_swap_output_data: _,
                     } => {
                         let address = AddressView::Opaque {
-                            address: output_1.clone().expect("sender address").address(),
+                            address: swap_plaintext.claim_address.clone(),
                         };
 
                         let value_fee = Value {
