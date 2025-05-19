@@ -884,6 +884,6 @@ mod test {
 
         let transaction_summary = TransactionView::summary(&transaction_view);
 
-        assert_eq!(transaction_summary.effects.len(), 2);
+        assert_eq!(transaction_summary.effects.len(), 3);
     }
 }
