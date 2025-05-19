@@ -231,6 +231,7 @@ pub enum TxCmd {
     #[clap(display_order = 600)]
     CommunityPoolDeposit {
         /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
+        #[clap(min_values = 1, required = true)]
         values: Vec<String>,
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
