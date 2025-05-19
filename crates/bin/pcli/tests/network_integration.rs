@@ -1260,3 +1260,24 @@ fn delegate_submit_proposal_and_vote() {
         .assert()
         .success();
 }
+
+#[ignore]
+#[test]
+/// Ensure that the view service can successfully parse all historical
+/// transactions submitted above.
+fn view_tx_hashes() {
+    let tmpdir = load_wallet_into_tmpdir();
+    let mut view_cmd = Command::cargo_bin("pcli").unwrap();
+    view_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "list-tx-hashes",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    let _view_result = view_cmd
+        .assert()
+        .try_success()
+        .expect("pcli command failed: 'view list-tx-hashes'");
+}
