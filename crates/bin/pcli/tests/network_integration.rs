@@ -1263,6 +1263,59 @@ fn delegate_submit_proposal_and_vote() {
 
 #[ignore]
 #[test]
+/// Poll the CommunityPool RPC and confirm it returns correct info.
+/// Then make a deposit, and query again, confirming the deposit worked.
+fn community_pool_() {
+    let tmpdir = load_wallet_into_tmpdir();
+    // The default devnet config doesn't contain any CommunityPool allocations,
+    // so we expect the balance to be `0penumbra`.
+    let initial_balance = String::from("0penumbra");
+    // We can deposit any amount here; we'll check that the CommunityPool
+    // balance has increased by precisely this amount.
+    let deposit_amount = String::from("5penumbra");
+    let mut balance_check_1 = Command::cargo_bin("pcli").unwrap();
+    balance_check_1
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "query",
+            "community-pool",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    balance_check_1
+        .assert()
+        .stdout(predicate::str::is_match(format!("^{initial_balance}")).unwrap());
+
+    let mut deposit_cmd = Command::cargo_bin("pcli").unwrap();
+    deposit_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "community-pool-deposit",
+            &deposit_amount,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    deposit_cmd.assert().success();
+
+    let mut balance_check_2 = Command::cargo_bin("pcli").unwrap();
+    balance_check_2
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "query",
+            "community-pool",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    balance_check_2
+        .assert()
+        .stdout(predicate::str::is_match(format!("^{deposit_amount}")).unwrap());
+}
+
+#[ignore]
+#[test]
 /// Ensure that the view service can successfully parse all historical
 /// transactions submitted above.
 fn view_tx_hashes() {
