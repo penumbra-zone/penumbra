@@ -1,5 +1,6 @@
+use penumbra_sdk_asset::{asset, Value};
 use penumbra_sdk_proto::core::{
-    asset::v1::{AssetId, Value},
+    asset::v1 as pb,
     component::community_pool::v1::{
         query_service_server::QueryService, CommunityPoolAssetBalancesRequest,
         CommunityPoolAssetBalancesResponse,
@@ -46,7 +47,12 @@ impl QueryService for Server {
         let request = request.into_inner();
 
         // Asset IDs are optional in the req; if none set, return all balances.
-        let asset_ids: Vec<AssetId> = request.asset_ids;
+        let asset_ids = request
+            .asset_ids
+            .into_iter()
+            .map(asset::Id::try_from)
+            .collect::<anyhow::Result<Vec<_>>>()
+            .map_err(|_| tonic::Status::invalid_argument("failed to parse asset filter"))?;
 
         // Get all balances; we can filter later.
         let asset_balances = state.community_pool_balance().await.or_else(|_| {
@@ -56,23 +62,16 @@ impl QueryService for Server {
         })?;
 
         let s = try_stream! {
-            for asset_balance in asset_balances {
-                let v = Value {
-                    asset_id: Some(asset_balance.0.into()),
-                    amount: Some(asset_balance.1.into())
-                };
+            for (asset_id, amount) in asset_balances {
+                let v = Value { asset_id, amount };
                 // Check whether a filter was requested
-                if !asset_ids.is_empty() {
-                    if asset_ids.contains(&v.asset_id.clone().unwrap()) {
-                        yield v;
-                    }
-                } else {
-                    yield v;
+                if asset_ids.is_empty() || asset_ids.contains(&asset_id){
+                    yield pb::Value::from(v);
                 }
             }
         };
         Ok(tonic::Response::new(
-            s.map_ok(|value: Value| CommunityPoolAssetBalancesResponse {
+            s.map_ok(|value| CommunityPoolAssetBalancesResponse {
                 balance: Some(value),
             })
             .map_err(|e: anyhow::Error| {
