@@ -3,6 +3,8 @@
 /// [`CommunityPoolSpend`] and [`CommunityPoolDeposit`] actions.
 pub mod state_key;
 
+pub mod rpc;
+
 mod action_handler;
 mod view;
 
