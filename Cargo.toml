@@ -56,6 +56,7 @@ members = [
   "crates/util/cometindex",
   "crates/view",
   "crates/wallet",
+  "crates/wayang",
   "tools/summonerd",
   "tools/parameter-setup",
   "tools/picturesque",
@@ -189,6 +190,7 @@ penumbra-sdk-transaction             = { default-features = false, version = "2.
 penumbra-sdk-txhash                  = { default-features = false, version = "2.0.4", path = "crates/core/txhash" }
 penumbra-sdk-view                    = { version = "2.0.4", path = "crates/view" }
 penumbra-sdk-wallet                  = { version = "2.0.4", path = "crates/wallet" }
+penumbra-sdk-wayang                  = { version = "2.0.4", path = "crates/wayang" }
 pin-project                      = { version = "1.0.12" }
 pin-project-lite                 = { version = "0.2.9" }
 poseidon377                      = { version = "1.2.0" }
