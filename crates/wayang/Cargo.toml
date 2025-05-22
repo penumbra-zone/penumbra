@@ -1,0 +1,11 @@
+[package]
+name = "penumbra_sdk_wayang"
+author.workspace = true
+edition.workspace = true
+version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+
+[dependencies]
+# Add dependencies here as needed

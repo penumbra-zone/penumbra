@@ -6525,6 +6525,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra_sdk_wayang"
+version = "2.0.4"
+
+[[package]]
 name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
