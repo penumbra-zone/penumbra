@@ -8,4 +8,5 @@ homepage.workspace = true
 license.workspace = true
 
 [dependencies]
-# Add dependencies here as needed
+anyhow = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
