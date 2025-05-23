@@ -6527,6 +6527,11 @@ dependencies = [
 [[package]]
 name = "penumbra_sdk_wayang"
 version = "2.0.4"
+dependencies = [
+ "anyhow",
+ "clap",
+ "tokio",
+]
 
 [[package]]
 name = "percent-encoding"
