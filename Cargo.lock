@@ -1913,7 +1913,7 @@ checksum = "f400d0750c0c069e8493f2256cb4da6f604b6d2eeb69a0ca8863acde352f8400"
 [[package]]
 name = "decaf377"
 version = "0.10.1"
-source = "git+https://github.com/hu55a1n1/decaf377.git#0945efd1eaf5e2d45441eb99c6f3a0cb3b928512"
+source = "git+https://github.com/informalsystems/decaf377.git#0945efd1eaf5e2d45441eb99c6f3a0cb3b928512"
 dependencies = [
  "ark-bls12-377",
  "ark-crypto-primitives",
@@ -1983,7 +1983,7 @@ dependencies = [
 [[package]]
 name = "decaf377-rdsa"
 version = "0.11.0"
-source = "git+https://github.com/dangush/decaf377-rdsa.git#d5b4d57ad8080315064878fcaa6954d6536c6d9b"
+source = "git+https://github.com/informalsystems/decaf377-rdsa.git#06b9b353675ba4b8152cfb01b7972763e5eed5bb"
 dependencies = [
  "ark-ff",
  "ark-serialize",
@@ -6766,7 +6766,7 @@ checksum = "7170ef9988bc169ba16dd36a7fa041e5c4cbeb6a35b76d4c03daded371eae7c0"
 [[package]]
 name = "poseidon-parameters"
 version = "1.1.0"
-source = "git+https://github.com/dangush/poseidon377.git#61dc418b5f8296da4ca342f138c81b688e5808cb"
+source = "git+https://github.com/informalsystems/poseidon377.git#a0c3e64341d104f1c7f7127a959a28f4585f127f"
 dependencies = [
  "decaf377",
 ]
@@ -6774,7 +6774,7 @@ dependencies = [
 [[package]]
 name = "poseidon-permutation"
 version = "1.1.0"
-source = "git+https://github.com/dangush/poseidon377.git#61dc418b5f8296da4ca342f138c81b688e5808cb"
+source = "git+https://github.com/informalsystems/poseidon377.git#a0c3e64341d104f1c7f7127a959a28f4585f127f"
 dependencies = [
  "ark-ff",
  "ark-r1cs-std",
@@ -6787,7 +6787,7 @@ dependencies = [
 [[package]]
 name = "poseidon377"
 version = "1.2.0"
-source = "git+https://github.com/dangush/poseidon377.git#61dc418b5f8296da4ca342f138c81b688e5808cb"
+source = "git+https://github.com/informalsystems/poseidon377.git#a0c3e64341d104f1c7f7127a959a28f4585f127f"
 dependencies = [
  "ark-ec",
  "ark-ff",
