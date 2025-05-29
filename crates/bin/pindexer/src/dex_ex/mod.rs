@@ -832,16 +832,18 @@ impl Events {
                 out.positions.insert(e.position_id, e.position.clone());
                 out.position_opens.push(e);
             } else if let Ok(e) = EventPositionWithdraw::try_from_event(&event.event) {
-                // TODO: use close positions to track liquidity more precisely, in practic I (ck) expect few
-                // positions to close with being withdrawn.
+                // When a position is withdrawn, the reserves go from the withdrawn amount to zero
                 out.with_reserve_change(
                     &e.trading_pair,
-                    None,
-                    Reserves {
+                    Some(Reserves {
                         r1: e.reserves_1,
                         r2: e.reserves_2,
+                    }),
+                    Reserves {
+                        r1: Amount::zero(),
+                        r2: Amount::zero(),
                     },
-                    true,
+                    false,
                 );
                 if let Some(tx_hash) = event.tx_hash() {
                     out.position_withdrawal_txs.insert(e.position_id, tx_hash);
