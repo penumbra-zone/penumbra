@@ -5,7 +5,7 @@ use cometindex::{
     index::{BlockEvents, EventBatch, EventBatchContext},
     AppView, PgTransaction,
 };
-use penumbra_sdk_asset::asset;
+use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_dex::{
     event::{
         EventBatchSwap, EventCandlestickData, EventPositionClose, EventPositionExecution,
@@ -18,6 +18,7 @@ use penumbra_sdk_dex::{
     event::{EventSwap, EventSwapClaim},
     lp::position::{Id as PositionId, Position},
 };
+use penumbra_sdk_funding::event::EventLqtPositionReward;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::event::EventDomainType;
 use penumbra_sdk_proto::DomainType;
@@ -894,6 +895,12 @@ impl Events {
                     .entry(e.trading_pair)
                     .or_insert_with(Vec::new)
                     .push(e);
+            } else if let Ok(e) = EventLqtPositionReward::try_from_event(&event.event) {
+                let pair = DirectedTradingPair {
+                    start: e.incentivized_asset_id,
+                    end: *STAKING_TOKEN_ASSET_ID,
+                };
+                out.metric(&pair).liquidity_change += e.reward_amount.value() as f64;
             }
         }
         Ok(out)
