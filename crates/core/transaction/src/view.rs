@@ -125,9 +125,7 @@ impl TransactionView {
                         // Provided imbalance (+)
                         let balance = Balance::from(note.value.value());
 
-                        let address = AddressView::Opaque {
-                            address: note.address(),
-                        };
+                        let address = note.address.clone();
 
                         effects.push(TransactionEffect { address, balance });
                     }
@@ -142,9 +140,7 @@ impl TransactionView {
                         // Required imbalance (-)
                         let balance = -Balance::from(note.value.value());
 
-                        let address = AddressView::Opaque {
-                            address: note.address(),
-                        };
+                        let address = note.address.clone();
 
                         effects.push(TransactionEffect { address, balance });
                     }
