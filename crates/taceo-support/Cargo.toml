@@ -1,0 +1,104 @@
+[package]
+name = "taceo-support"
+authors = {workspace = true}
+repository = {workspace = true}
+description = "CoSNARKs Support using Taceo for Delegated Proving"
+version = {workspace = true}
+license = {workspace = true}
+edition = {workspace = true}
+
+[features]
+component = [
+    "cnidarium-component",
+    "cnidarium",
+    "penumbra-sdk-proto/cnidarium",
+    "penumbra-sdk-ibc/component",
+    "penumbra-sdk-sct/component",
+    "tonic",
+    "ibc-proto/server",
+    "ibc-proto/transport",
+]
+# proving-keys = ["penumbra-sdk-proof-params/proving-keys"]
+default = ["std", "component"]
+std = ["ark-ff/std"]
+parallel = [
+    "penumbra-sdk-tct/parallel",
+    "ark-ff/parallel",
+    "poseidon377/parallel",
+    "decaf377-rdsa/parallel",
+    "ark-groth16/parallel",
+    "ark-r1cs-std/parallel",
+    "decaf377/parallel",
+    "tonic",
+]
+docsrs = []
+
+[dependencies]
+taceo-proof-api-client = {workspace = true}
+ark-groth16 = "0.5.0"
+ark-serialize = "0.5.0"
+ark-ec = "0.5.0"
+bincode = "1.3.3"
+crypto_box = { version = "0.9.1", features = ["std", "seal"] }
+co-circom-types = { git = "https://github.com/TaceoLabs/co-snarks", rev = "36d73df" }
+co-groth16 = { git = "https://github.com/TaceoLabs/co-snarks", rev = "36d73df", features = ["verifier"] }
+circom-types = { git = "https://github.com/TaceoLabs/co-snarks", rev = "36d73df", features = ["ark-bls12-377", "ark-bls12-381"] }
+base64ct = { version = "1.7.3", features = ["alloc"] }
+eyre = "0.6.12"
+uuid = "1.16.0"
+anyhow = {workspace = true}
+ark-ff = {workspace = true, default-features = false}
+ark-r1cs-std = {workspace = true, default-features = false}
+ark-relations = {workspace = true}
+ark-snark = {workspace = true}
+async-stream = {workspace = true}
+async-trait = {workspace = true}
+base64 = {workspace = true}
+blake2b_simd = {workspace = true}
+bytes = {workspace = true}
+chacha20poly1305 = {workspace = true}
+cnidarium = {workspace = true, optional = true, default-features = true}
+cnidarium-component = {workspace = true, optional = true, default-features = true}
+decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377-fmd = {workspace = true}
+decaf377-ka = {workspace = true}
+decaf377-rdsa = {workspace = true}
+futures = {workspace = true}
+hex = {workspace = true}
+ibc-proto = {workspace = true, default-features = false}
+ibc-types = {workspace = true, features = ["with_serde"], default-features = false}
+im = {workspace = true}
+metrics = {workspace = true}
+once_cell = {workspace = true}
+penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-ibc = {workspace = true, default-features = false}
+penumbra-sdk-keys = {workspace = true, default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
+penumbra-sdk-proof-params = {workspace = true, default-features = false}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-sct = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true, default-features = true}
+penumbra-sdk-txhash = {workspace = true, default-features = false}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = true}
+poseidon377 = {workspace = true, features = ["r1cs"]}
+prost = {workspace = true}
+rand = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+regex = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+serde_json = {workspace = true}
+tap = {workspace = true}
+tendermint = {workspace = true}
+thiserror = {workspace = true}
+tonic = {workspace = true, optional = true}
+tracing = {workspace = true}
+
+[dev-dependencies]
+ark-bn254 = "0.5.0"
+ark-bls12-381 = "0.5.0"
+ark-bls12-377 = "0.5.0"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tokio = { version = "1.44.2", features = ["full"] }
+clap = { version = "4.5.37", features = ["derive", "env"] }
+serde_json = "1.0.140"
+

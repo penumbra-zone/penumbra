@@ -57,7 +57,7 @@ members = [
   "crates/view",
   "crates/wallet",
   "tools/summonerd",
-  "tools/parameter-setup",
+  "tools/parameter-setup", "crates/taceo-support",
 ]
 
 # The profile that 'cargo dist' will build with
@@ -235,6 +235,7 @@ tracing                          = { version = "0.1" }
 tracing-subscriber               = { version = "0.3.17", features = ["env-filter"] }
 url                              = { version = "2.2" }
 getrandom                        = { version = "0.2", default-features = false }
+taceo-proof-api-client = { path = "../proof-client/rust/taceo-proof-api-client" }
 
 [patch.crates-io]
 # Without this, the git dependency for ledger-lib will depend on the crates.io v0.1 version,
