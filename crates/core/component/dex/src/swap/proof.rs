@@ -97,6 +97,7 @@ fn check_circuit_satisfaction(public: SwapProofPublic, private: SwapProofPrivate
     Ok(())
 }
 
+#[derive(Clone, Debug)]
 pub struct SwapCircuit {
     pub public: SwapProofPublic,
     pub private: SwapProofPrivate,
