@@ -31,6 +31,7 @@ fn generate_circuit_constraints<C: ConstraintSynthesizer<Fq> + Clone + std::fmt:
         .expect("can generate constraints");
 }
 
+/// Convenience method for constraint synthesis.
 pub fn build_constraint_system(circuit: ActionCircuit) -> Result<ConstraintSystemRef<Fq>> {
     let cs: ConstraintSystemRef<_> = ConstraintSystem::new_ref();
 
@@ -60,6 +61,7 @@ pub fn build_constraint_system(circuit: ActionCircuit) -> Result<ConstraintSyste
     Ok(cs)
 }
 
+/// Convenience method for serializing witness and R1CS matrices.
 pub fn serialize_witness_and_matrices(cs: &ConstraintSystemRef<Fq>) -> Result<(Vec<u8>, Vec<u8>)> {
     let witness_values = &cs.borrow().expect("can borrow").witness_assignment;
     let public_values = &cs.borrow().expect("can borrow").instance_assignment;
