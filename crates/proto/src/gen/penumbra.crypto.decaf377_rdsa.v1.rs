@@ -44,3 +44,33 @@ impl ::prost::Name for SpendVerificationKey {
         "/penumbra.crypto.decaf377_rdsa.v1.SpendVerificationKey".into()
     }
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SpendAuthorizationKey {
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for SpendAuthorizationKey {
+    const NAME: &'static str = "SpendAuthorizationKey";
+    const PACKAGE: &'static str = "penumbra.crypto.decaf377_rdsa.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.crypto.decaf377_rdsa.v1.SpendAuthorizationKey".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.crypto.decaf377_rdsa.v1.SpendAuthorizationKey".into()
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NullifierDerivingKey {
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for NullifierDerivingKey {
+    const NAME: &'static str = "NullifierDerivingKey";
+    const PACKAGE: &'static str = "penumbra.crypto.decaf377_rdsa.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.crypto.decaf377_rdsa.v1.NullifierDerivingKey".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.crypto.decaf377_rdsa.v1.NullifierDerivingKey".into()
+    }
+}

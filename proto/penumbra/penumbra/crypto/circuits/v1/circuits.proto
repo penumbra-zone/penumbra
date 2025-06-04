@@ -1,0 +1,134 @@
+syntax = "proto3";
+package penumbra.crypto.circuits.v1;
+
+import "google/protobuf/any.proto";
+import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/auction/v1/auction.proto";
+import "penumbra/core/component/dex/v1/dex.proto";
+import "penumbra/core/component/fee/v1/fee.proto";
+import "penumbra/core/component/governance/v1/governance.proto";
+import "penumbra/core/component/funding/v1/funding.proto";
+import "penumbra/core/component/ibc/v1/ibc.proto";
+import "penumbra/core/component/sct/v1/sct.proto";
+import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
+import "penumbra/core/component/stake/v1/stake.proto";
+import "penumbra/core/keys/v1/keys.proto";
+import "penumbra/core/txhash/v1/txhash.proto";
+import "penumbra/crypto/decaf377_fmd/v1/decaf377_fmd.proto";
+import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
+import "penumbra/crypto/tct/v1/tct.proto";
+import "penumbra/core/num/v1/num.proto";
+
+// Circuit for spend actions
+message SpendCircuit {
+  SpendProofPublic public = 1;
+  SpendProofPrivate private = 2;
+}
+
+// Public inputs for spend proof
+message SpendProofPublic {
+  crypto.tct.v1.MerkleRoot anchor = 1;  
+  core.asset.v1.BalanceCommitment balance_commitment = 2;  
+  core.component.sct.v1.Nullifier nullifier = 3; 
+  crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 4;  
+}
+
+// Private inputs for spend proof
+message SpendProofPrivate {
+  crypto.tct.v1.StateCommitmentProof state_commitment_proof = 1;  
+  penumbra.core.component.shielded_pool.v1.Note note = 2;  
+  bytes v_blinding = 3;  
+  bytes spend_auth_randomizer = 4;  
+  crypto.decaf377_rdsa.v1.SpendAuthorizationKey ak = 5;  
+  crypto.decaf377_rdsa.v1.NullifierDerivingKey nk = 6; 
+}
+
+// Circuit for output actions
+message OutputCircuit {
+  OutputProofPublic public = 1;
+  OutputProofPrivate private = 2;
+}
+
+// Public inputs for output proof
+message OutputProofPublic {
+  core.asset.v1.BalanceCommitment balance_commitment = 1;
+  crypto.tct.v1.StateCommitment note_commitment = 2;
+}
+
+// Private inputs for output proof
+message OutputProofPrivate {
+  penumbra.core.component.shielded_pool.v1.Note note = 1;
+  bytes balance_blinding = 2;  // Fr serialized
+}
+
+// Circuit for swap actions
+message SwapCircuit {
+  SwapProofPublic public = 1;
+  SwapProofPrivate private = 2;
+}
+
+// Public inputs for swap proof
+message SwapProofPublic {
+  core.asset.v1.BalanceCommitment balance_commitment = 1;
+  crypto.tct.v1.StateCommitment swap_commitment = 2;
+  core.asset.v1.BalanceCommitment fee_commitment = 3;
+}
+
+// Private inputs for swap proof
+message SwapProofPrivate {
+  bytes fee_blinding = 1;  // Fr serialized
+  core.component.dex.v1.SwapPlaintext swap_plaintext = 2;
+}
+
+// Circuit for swap claim actions
+message SwapClaimCircuit {
+  SwapClaimProofPublic public = 1;
+  SwapClaimProofPrivate private = 2;
+}
+
+// Public inputs for swap claim proof
+message SwapClaimProofPublic {
+  crypto.tct.v1.MerkleRoot anchor = 1;
+  core.component.sct.v1.Nullifier nullifier = 2;
+  core.component.fee.v1.Fee claim_fee = 3;
+  core.component.dex.v1.BatchSwapOutputData output_data = 4;
+  crypto.tct.v1.StateCommitment note_commitment_1 = 5;
+  crypto.tct.v1.StateCommitment note_commitment_2 = 6;
+}
+
+// Private inputs for swap claim proof
+message SwapClaimProofPrivate {
+  core.component.dex.v1.SwapPlaintext swap_plaintext = 1;
+  crypto.tct.v1.StateCommitmentProof state_commitment_proof = 2;
+  crypto.decaf377_rdsa.v1.SpendAuthorizationKey ak = 3;
+  crypto.decaf377_rdsa.v1.NullifierDerivingKey nk = 4;
+  core.num.v1.Amount lambda_1 = 5;
+  core.num.v1.Amount lambda_2 = 6;
+  bytes note_blinding_1 = 7;  // Fq serialized
+  bytes note_blinding_2 = 8;  // Fq serialized
+}
+
+// Circuit for delegator vote actions
+message DelegatorVoteCircuit {
+  DelegatorVoteProofPublic public = 1;
+  DelegatorVoteProofPrivate private = 2;
+}
+
+// Public inputs for delegator vote proof
+message DelegatorVoteProofPublic {
+  crypto.tct.v1.MerkleRoot anchor = 1;
+  core.asset.v1.BalanceCommitment balance_commitment = 2;
+  core.component.sct.v1.Nullifier nullifier = 3;
+  crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 4;
+  uint64 start_position = 5;  // tct::Position serialized as uint64
+}
+
+// Private inputs for delegator vote proof
+message DelegatorVoteProofPrivate {
+  crypto.tct.v1.StateCommitmentProof state_commitment_proof = 1;
+  penumbra.core.component.shielded_pool.v1.Note note = 2;
+  bytes v_blinding = 3;  // Fr serialized
+  bytes spend_auth_randomizer = 4;  // Fr serialized
+  crypto.decaf377_rdsa.v1.SpendAuthorizationKey ak = 5;
+  crypto.decaf377_rdsa.v1.NullifierDerivingKey nk = 6;
+}

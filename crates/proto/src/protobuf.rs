@@ -1,3 +1,4 @@
+use crate::crypto::decaf377_rdsa::v1::SpendAuthorizationKey;
 use crate::Name;
 use std::convert::{From, TryFrom};
 
@@ -98,6 +99,21 @@ impl TryFrom<BindingSignature> for Signature<Binding> {
 impl TryFrom<SpendVerificationKey> for VerificationKey<SpendAuth> {
     type Error = anyhow::Error;
     fn try_from(value: SpendVerificationKey) -> Result<Self, Self::Error> {
+        Ok(value.inner.as_slice().try_into()?)
+    }
+}
+
+impl From<VerificationKey<SpendAuth>> for SpendAuthorizationKey {
+    fn from(key: VerificationKey<SpendAuth>) -> Self {
+        Self {
+            inner: key.to_bytes().to_vec(),
+        }
+    }
+}
+
+impl TryFrom<SpendAuthorizationKey> for VerificationKey<SpendAuth> {
+    type Error = anyhow::Error;
+    fn try_from(value: SpendAuthorizationKey) -> Result<Self, Self::Error> {
         Ok(value.inner.as_slice().try_into()?)
     }
 }

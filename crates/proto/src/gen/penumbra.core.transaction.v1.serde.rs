@@ -444,6 +444,160 @@ impl<'de> serde::Deserialize<'de> for Action {
         deserializer.deserialize_struct("penumbra.core.transaction.v1.Action", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for ActionCircuit {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.action_circuit.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.ActionCircuit", len)?;
+        if let Some(v) = self.action_circuit.as_ref() {
+            match v {
+                action_circuit::ActionCircuit::Spend(v) => {
+                    struct_ser.serialize_field("spend", v)?;
+                }
+                action_circuit::ActionCircuit::Output(v) => {
+                    struct_ser.serialize_field("output", v)?;
+                }
+                action_circuit::ActionCircuit::Swap(v) => {
+                    struct_ser.serialize_field("swap", v)?;
+                }
+                action_circuit::ActionCircuit::SwapClaim(v) => {
+                    struct_ser.serialize_field("swapClaim", v)?;
+                }
+                action_circuit::ActionCircuit::DelegatorVote(v) => {
+                    struct_ser.serialize_field("delegatorVote", v)?;
+                }
+            }
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for ActionCircuit {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "spend",
+            "output",
+            "swap",
+            "swap_claim",
+            "swapClaim",
+            "delegator_vote",
+            "delegatorVote",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Spend,
+            Output,
+            Swap,
+            SwapClaim,
+            DelegatorVote,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "spend" => Ok(GeneratedField::Spend),
+                            "output" => Ok(GeneratedField::Output),
+                            "swap" => Ok(GeneratedField::Swap),
+                            "swapClaim" | "swap_claim" => Ok(GeneratedField::SwapClaim),
+                            "delegatorVote" | "delegator_vote" => Ok(GeneratedField::DelegatorVote),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = ActionCircuit;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1.ActionCircuit")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ActionCircuit, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut action_circuit__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Spend => {
+                            if action_circuit__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("spend"));
+                            }
+                            action_circuit__ = map_.next_value::<::std::option::Option<_>>()?.map(action_circuit::ActionCircuit::Spend)
+;
+                        }
+                        GeneratedField::Output => {
+                            if action_circuit__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("output"));
+                            }
+                            action_circuit__ = map_.next_value::<::std::option::Option<_>>()?.map(action_circuit::ActionCircuit::Output)
+;
+                        }
+                        GeneratedField::Swap => {
+                            if action_circuit__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swap"));
+                            }
+                            action_circuit__ = map_.next_value::<::std::option::Option<_>>()?.map(action_circuit::ActionCircuit::Swap)
+;
+                        }
+                        GeneratedField::SwapClaim => {
+                            if action_circuit__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapClaim"));
+                            }
+                            action_circuit__ = map_.next_value::<::std::option::Option<_>>()?.map(action_circuit::ActionCircuit::SwapClaim)
+;
+                        }
+                        GeneratedField::DelegatorVote => {
+                            if action_circuit__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("delegatorVote"));
+                            }
+                            action_circuit__ = map_.next_value::<::std::option::Option<_>>()?.map(action_circuit::ActionCircuit::DelegatorVote)
+;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(ActionCircuit {
+                    action_circuit: action_circuit__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1.ActionCircuit", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for ActionPlan {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
