@@ -1,6 +1,3 @@
-use base64::prelude::*;
-use std::str::FromStr;
-use tct::Root;
 use anyhow::{anyhow, Result};
 use ark_r1cs_std::{
     prelude::{EqGadget, FieldVar},
@@ -8,7 +5,10 @@ use ark_r1cs_std::{
     ToBitsGadget,
 };
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use base64::prelude::*;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
+use std::str::FromStr;
+use tct::Root;
 
 use ark_ff::ToConstraintField;
 use ark_groth16::{
@@ -211,10 +211,7 @@ impl TryFrom<pb_circuits::SpendProofPublic> for SpendProofPublic {
                 .nullifier
                 .ok_or_else(|| anyhow!("missing nullifier"))?
                 .try_into()?,
-            rk: proto
-                .rk
-                .ok_or_else(|| anyhow!("missing rk"))?
-                .try_into()?,
+            rk: proto.rk.ok_or_else(|| anyhow!("missing rk"))?.try_into()?,
         })
     }
 }
@@ -233,21 +230,23 @@ impl TryFrom<pb_circuits::SpendProofPrivate> for SpendProofPrivate {
                 .ok_or_else(|| anyhow!("missing note"))?
                 .try_into()?, // ✅ Works!
             v_blinding: Fr::from_bytes_checked(
-                proto.v_blinding.as_slice().try_into()
-                    .map_err(|_| anyhow!("v_blinding wrong length"))?
-            ).map_err(|_| anyhow!("v_blinding malformed"))?,
+                proto
+                    .v_blinding
+                    .as_slice()
+                    .try_into()
+                    .map_err(|_| anyhow!("v_blinding wrong length"))?,
+            )
+            .map_err(|_| anyhow!("v_blinding malformed"))?,
             spend_auth_randomizer: Fr::from_bytes_checked(
-                proto.spend_auth_randomizer.as_slice().try_into()
-                    .map_err(|_| anyhow!("spend_auth_randomizer wrong length"))?
-            ).map_err(|_| anyhow!("spend_auth_randomizer malformed"))?,
-            ak: proto
-                .ak
-                .ok_or_else(|| anyhow!("missing ak"))?
-                .try_into()?,
-            nk: proto
-                .nk
-                .ok_or_else(|| anyhow!("missing nk"))?
-                .try_into()?,
+                proto
+                    .spend_auth_randomizer
+                    .as_slice()
+                    .try_into()
+                    .map_err(|_| anyhow!("spend_auth_randomizer wrong length"))?,
+            )
+            .map_err(|_| anyhow!("spend_auth_randomizer malformed"))?,
+            ak: proto.ak.ok_or_else(|| anyhow!("missing ak"))?.try_into()?,
+            nk: proto.nk.ok_or_else(|| anyhow!("missing nk"))?.try_into()?,
         })
     }
 }

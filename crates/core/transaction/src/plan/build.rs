@@ -8,7 +8,9 @@ use penumbra_sdk_txhash::AuthorizingData;
 use super::TransactionPlan;
 use crate::ActionPlan;
 use crate::{action::Action, AuthorizationData, Transaction, TransactionBody, WitnessData};
-use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef, ConstraintSystem, OptimizationGoal};
+use ark_relations::r1cs::{
+    ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef, OptimizationGoal,
+};
 use decaf377::Fq;
 
 impl TransactionPlan {
@@ -146,14 +148,15 @@ impl TransactionPlan {
                     action_plan.clone(),
                     &full_viewing_key,
                     &*witness_data,
-                ).ok();
+                )
+                .ok();
 
                 ActionPlan::build_unauth(
                     action_plan.clone(),
                     full_viewing_key,
                     witness_data,
                     self.memo_key(),
-                    circuit_inputs
+                    circuit_inputs,
                 )
             })
             .collect::<Result<Vec<_>>>()?;
@@ -192,13 +195,17 @@ impl TransactionPlan {
                 let witness_data2 = witness_data.clone();
                 let memo_key2 = self.memo_key();
                 tokio::task::spawn_blocking(move || {
-                    let circuit_inputs = ActionPlan::circuit_inputs(
-                        action_plan.clone(),
+                    let circuit_inputs =
+                        ActionPlan::circuit_inputs(action_plan.clone(), &fvk2, &*witness_data2)
+                            .ok();
+
+                    ActionPlan::build_unauth(
+                        action_plan,
                         &fvk2,
                         &*witness_data2,
-                    ).ok();
-
-                    ActionPlan::build_unauth(action_plan, &fvk2, &*witness_data2, memo_key2, circuit_inputs)
+                        memo_key2,
+                        circuit_inputs,
+                    )
                 })
             })
             .collect::<Vec<_>>();
@@ -243,7 +250,9 @@ impl TransactionPlan {
     }
 
     /// Convenience method for constraint synthesis.
-    pub fn constraint_synthesis(circuit: impl ConstraintSynthesizer<Fq>) -> Result<(Vec<Fq>, Vec<Fq>)> {
+    pub fn constraint_synthesis(
+        circuit: impl ConstraintSynthesizer<Fq>,
+    ) -> Result<(Vec<Fq>, Vec<Fq>)> {
         let cs: ConstraintSystemRef<Fq> = ConstraintSystem::new_ref();
 
         // Set the optimization goal
@@ -261,7 +270,10 @@ impl TransactionPlan {
     }
 
     /// Convenience method for serializing witness and R1CS matrices.
-    pub fn serialize_witness_and_matrices(_witness: Vec<Fq>, _public_inputs: Vec<Fq>) -> Result<()> {
+    pub fn serialize_witness_and_matrices(
+        _witness: Vec<Fq>,
+        _public_inputs: Vec<Fq>,
+    ) -> Result<()> {
         todo!()
     }
 }

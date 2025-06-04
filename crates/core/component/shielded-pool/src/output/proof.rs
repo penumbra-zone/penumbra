@@ -180,9 +180,13 @@ impl TryFrom<pb_circuits::OutputProofPrivate> for OutputProofPrivate {
                 .ok_or_else(|| anyhow!("missing note"))?
                 .try_into()?,
             balance_blinding: Fr::from_bytes_checked(
-                proto.balance_blinding.as_slice().try_into()
-                    .map_err(|_| anyhow!("balance_blinding wrong length"))?
-            ).map_err(|_| anyhow!("balance_blinding malformed"))?,
+                proto
+                    .balance_blinding
+                    .as_slice()
+                    .try_into()
+                    .map_err(|_| anyhow!("balance_blinding wrong length"))?,
+            )
+            .map_err(|_| anyhow!("balance_blinding malformed"))?,
         })
     }
 }

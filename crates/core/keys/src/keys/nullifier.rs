@@ -46,9 +46,12 @@ impl TryFrom<&[u8]> for NullifierKey {
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 32 {
-            return Err(anyhow::anyhow!("NullifierKey must be exactly 32 bytes, got {}", bytes.len()));
+            return Err(anyhow::anyhow!(
+                "NullifierKey must be exactly 32 bytes, got {}",
+                bytes.len()
+            ));
         }
-        
+
         let mut array = [0u8; 32];
         array.copy_from_slice(bytes);
         array.try_into()
@@ -74,7 +77,7 @@ impl TryFrom<Vec<u8>> for NullifierKey {
 
 // impl TryFrom<penumbra_sdk_proto::crypto::decaf377_rdsa::v1::NullifierDerivingKey> for NullifierKey {
 //     type Error = anyhow::Error;
-    
+
 //     fn try_from(value: penumbra_sdk_proto::crypto::decaf377_rdsa::v1::NullifierDerivingKey) -> Result<Self, Self::Error> {
 //         value.inner.as_slice().try_into()
 //     }
@@ -90,12 +93,11 @@ impl From<NullifierKey> for NullifierDerivingKey {
 
 impl TryFrom<NullifierDerivingKey> for NullifierKey {
     type Error = anyhow::Error;
-    
+
     fn try_from(value: NullifierDerivingKey) -> Result<Self, Self::Error> {
         value.inner.as_slice().try_into()
     }
 }
-
 
 /// Represents the `NullifierKey` as a variable in an R1CS constraint system.
 pub struct NullifierKeyVar {
