@@ -208,6 +208,13 @@ pub mod penumbra {
                 include!("gen/penumbra.crypto.tct.v1.serde.rs");
             }
         }
+
+        pub mod circuits {
+            pub mod v1 {
+                include!("gen/penumbra.crypto.circuits.v1.rs");
+                include!("gen/penumbra.crypto.circuits.v1.serde.rs");
+            }
+        }
     }
 
     /// Custody protocol structures.

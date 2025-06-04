@@ -134,6 +134,40 @@ impl ::prost::Name for DetectionData {
         "/penumbra.core.transaction.v1.DetectionData".into()
     }
 }
+/// Circuit assoicated with the action.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionCircuit {
+    #[prost(oneof = "action_circuit::ActionCircuit", tags = "1, 2, 3, 4, 21")]
+    pub action_circuit: ::core::option::Option<action_circuit::ActionCircuit>,
+}
+/// Nested message and enum types in `ActionCircuit`.
+pub mod action_circuit {
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum ActionCircuit {
+        #[prost(message, tag = "1")]
+        Spend(super::super::super::super::crypto::circuits::v1::SpendCircuit),
+        #[prost(message, tag = "2")]
+        Output(super::super::super::super::crypto::circuits::v1::OutputCircuit),
+        #[prost(message, tag = "3")]
+        Swap(super::super::super::super::crypto::circuits::v1::SwapCircuit),
+        #[prost(message, tag = "4")]
+        SwapClaim(super::super::super::super::crypto::circuits::v1::SwapClaimCircuit),
+        #[prost(message, tag = "21")]
+        DelegatorVote(
+            super::super::super::super::crypto::circuits::v1::DelegatorVoteCircuit,
+        ),
+    }
+}
+impl ::prost::Name for ActionCircuit {
+    const NAME: &'static str = "ActionCircuit";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.transaction.v1.ActionCircuit".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.transaction.v1.ActionCircuit".into()
+    }
+}
 /// A state change performed by a transaction.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Action {

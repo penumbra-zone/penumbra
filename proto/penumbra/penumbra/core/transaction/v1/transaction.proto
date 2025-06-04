@@ -17,6 +17,7 @@ import "penumbra/core/txhash/v1/txhash.proto";
 import "penumbra/crypto/decaf377_fmd/v1/decaf377_fmd.proto";
 import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
 import "penumbra/crypto/tct/v1/tct.proto";
+import "penumbra/crypto/circuits/v1/circuits.proto";
 
 // A Penumbra transaction.
 message Transaction {
@@ -69,6 +70,17 @@ message TransactionSummary {
 message DetectionData {
   // A list of clues for use with Fuzzy Message Detection.
   repeated crypto.decaf377_fmd.v1.Clue fmd_clues = 4;
+}
+
+// Circuit assoicated with the action.
+message ActionCircuit {
+  oneof action_circuit {
+    penumbra.crypto.circuits.v1.SpendCircuit spend = 1;
+    penumbra.crypto.circuits.v1.OutputCircuit output = 2;
+    penumbra.crypto.circuits.v1.SwapCircuit swap = 3;
+    penumbra.crypto.circuits.v1.SwapClaimCircuit swap_claim = 4;
+    penumbra.crypto.circuits.v1.DelegatorVoteCircuit delegator_vote = 21;
+  }
 }
 
 // A state change performed by a transaction.

@@ -4,12 +4,11 @@ use penumbra_sdk_auction::auction::dutch::actions::{
 };
 use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
-
 use penumbra_sdk_asset::balance;
 use penumbra_sdk_proto::{core::transaction::v1 as pb, DomainType};
-
 use crate::{ActionView, IsAction, TransactionPerspective};
 use serde::{Deserialize, Serialize};
+
 
 /// An action performed by a Penumbra transaction.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -49,6 +48,10 @@ pub enum Action {
         penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVote,
     ),
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "pb::ActionCircuit", into = "pb::ActionCircuit")]
+#[allow(clippy::large_enum_variant)]
 pub enum ActionCircuit {
     Spend(penumbra_sdk_shielded_pool::SpendCircuit),
     Output(penumbra_sdk_shielded_pool::OutputCircuit),
@@ -398,6 +401,60 @@ impl TryFrom<pb::Action> for Action {
             }
             pb::action::Action::ActionLiquidityTournamentVote(inner) => {
                 Ok(Action::ActionLiquidityTournamentVote(inner.try_into()?))
+            }
+        }
+    }
+}
+
+impl DomainType for ActionCircuit {
+    type Proto = pb::ActionCircuit;
+}
+
+#[allow(unreachable_code)]
+impl From<ActionCircuit> for pb::ActionCircuit {
+    fn from(msg: ActionCircuit) -> Self {
+        match msg {
+            ActionCircuit::Spend(inner) => pb::ActionCircuit {
+                action_circuit: Some(pb::action_circuit::ActionCircuit::Spend(inner.into())),
+            },
+            ActionCircuit::Output(inner) => pb::ActionCircuit {
+                action_circuit: Some(pb::action_circuit::ActionCircuit::Output(inner.into())),
+            },
+            ActionCircuit::Swap(_inner) => pb::ActionCircuit {
+                action_circuit: todo!(),
+            },
+            ActionCircuit::SwapClaim(_inner) => pb::ActionCircuit {
+                action_circuit: todo!(),
+            },
+            ActionCircuit::DelegatorVote(_inner) => pb::ActionCircuit {
+                action_circuit: todo!(),
+            },
+        }
+    }
+}
+
+impl TryFrom<pb::ActionCircuit> for ActionCircuit {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb::ActionCircuit) -> anyhow::Result<Self, Self::Error> {
+        match proto
+            .action_circuit
+            .ok_or_else(|| anyhow::anyhow!("missing action_circuit in ActionCircuit proto"))?
+        {
+            pb::action_circuit::ActionCircuit::Spend(inner) => {
+                Ok(ActionCircuit::Spend(inner.try_into()?))
+            }
+            pb::action_circuit::ActionCircuit::Output(inner) => {
+                Ok(ActionCircuit::Output(inner.try_into()?))
+            }
+            pb::action_circuit::ActionCircuit::Swap(_inner) => {
+                todo!()
+            }
+            pb::action_circuit::ActionCircuit::SwapClaim(_inner) => {
+                todo!()
+            }
+            pb::action_circuit::ActionCircuit::DelegatorVote(_inner) => {
+                todo!()
             }
         }
     }

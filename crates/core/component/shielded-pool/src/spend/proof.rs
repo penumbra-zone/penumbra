@@ -1,8 +1,7 @@
 use base64::prelude::*;
 use std::str::FromStr;
 use tct::Root;
-
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use ark_r1cs_std::{
     prelude::{EqGadget, FieldVar},
     uint8::UInt8,
@@ -139,6 +138,118 @@ fn check_circuit_satisfaction(public: SpendProofPublic, private: SpendProofPriva
 pub struct SpendCircuit {
     pub public: SpendProofPublic,
     pub private: SpendProofPrivate,
+}
+
+use penumbra_sdk_proto::crypto::circuits::v1 as pb_circuits;
+
+// Main SpendCircuit conversion
+impl From<SpendCircuit> for pb_circuits::SpendCircuit {
+    fn from(circuit: SpendCircuit) -> Self {
+        pb_circuits::SpendCircuit {
+            public: Some(circuit.public.into()),
+            private: Some(circuit.private.into()),
+        }
+    }
+}
+
+// SpendProofPublic conversion
+impl From<SpendProofPublic> for pb_circuits::SpendProofPublic {
+    fn from(public: SpendProofPublic) -> Self {
+        pb_circuits::SpendProofPublic {
+            anchor: Some(public.anchor.into()),
+            balance_commitment: Some(public.balance_commitment.into()),
+            nullifier: Some(public.nullifier.into()),
+            rk: Some(public.rk.into()),
+        }
+    }
+}
+
+impl From<SpendProofPrivate> for pb_circuits::SpendProofPrivate {
+    fn from(private: SpendProofPrivate) -> Self {
+        pb_circuits::SpendProofPrivate {
+            state_commitment_proof: Some(private.state_commitment_proof.into()),
+            note: Some(private.note.into()),
+            v_blinding: private.v_blinding.to_bytes().to_vec(),
+            spend_auth_randomizer: private.spend_auth_randomizer.to_bytes().to_vec(),
+            ak: Some(private.ak.into()),
+            nk: Some(private.nk.into()),
+        }
+    }
+}
+
+impl TryFrom<pb_circuits::SpendCircuit> for SpendCircuit {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb_circuits::SpendCircuit) -> Result<Self> {
+        Ok(SpendCircuit {
+            public: proto
+                .public
+                .ok_or_else(|| anyhow!("missing public in SpendCircuit"))?
+                .try_into()?,
+            private: proto
+                .private
+                .ok_or_else(|| anyhow!("missing private in SpendCircuit"))?
+                .try_into()?,
+        })
+    }
+}
+
+impl TryFrom<pb_circuits::SpendProofPublic> for SpendProofPublic {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb_circuits::SpendProofPublic) -> Result<Self> {
+        Ok(SpendProofPublic {
+            anchor: proto
+                .anchor
+                .ok_or_else(|| anyhow!("missing anchor"))?
+                .try_into()?,
+            balance_commitment: proto
+                .balance_commitment
+                .ok_or_else(|| anyhow!("missing balance_commitment"))?
+                .try_into()?,
+            nullifier: proto
+                .nullifier
+                .ok_or_else(|| anyhow!("missing nullifier"))?
+                .try_into()?,
+            rk: proto
+                .rk
+                .ok_or_else(|| anyhow!("missing rk"))?
+                .try_into()?,
+        })
+    }
+}
+
+impl TryFrom<pb_circuits::SpendProofPrivate> for SpendProofPrivate {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb_circuits::SpendProofPrivate) -> Result<Self> {
+        Ok(SpendProofPrivate {
+            state_commitment_proof: proto
+                .state_commitment_proof
+                .ok_or_else(|| anyhow!("missing state_commitment_proof"))?
+                .try_into()?,
+            note: proto
+                .note
+                .ok_or_else(|| anyhow!("missing note"))?
+                .try_into()?, // ✅ Works!
+            v_blinding: Fr::from_bytes_checked(
+                proto.v_blinding.as_slice().try_into()
+                    .map_err(|_| anyhow!("v_blinding wrong length"))?
+            ).map_err(|_| anyhow!("v_blinding malformed"))?,
+            spend_auth_randomizer: Fr::from_bytes_checked(
+                proto.spend_auth_randomizer.as_slice().try_into()
+                    .map_err(|_| anyhow!("spend_auth_randomizer wrong length"))?
+            ).map_err(|_| anyhow!("spend_auth_randomizer malformed"))?,
+            ak: proto
+                .ak
+                .ok_or_else(|| anyhow!("missing ak"))?
+                .try_into()?,
+            nk: proto
+                .nk
+                .ok_or_else(|| anyhow!("missing nk"))?
+                .try_into()?,
+        })
+    }
 }
 
 impl SpendCircuit {

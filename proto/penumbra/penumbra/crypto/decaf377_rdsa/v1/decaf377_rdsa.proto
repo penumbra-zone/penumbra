@@ -12,3 +12,11 @@ message BindingSignature {
 message SpendVerificationKey {
   bytes inner = 1;
 }
+
+message SpendAuthorizationKey {
+  bytes inner = 1;
+}
+
+message NullifierDerivingKey {
+  bytes inner = 1;
+}

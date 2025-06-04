@@ -1,7 +1,7 @@
 use base64::prelude::*;
 use std::str::FromStr;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::uint8::UInt8;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -100,6 +100,91 @@ fn check_circuit_satisfaction(
 pub struct OutputCircuit {
     pub public: OutputProofPublic,
     pub private: OutputProofPrivate,
+}
+
+use penumbra_sdk_proto::crypto::circuits::v1 as pb_circuits;
+
+// Main OutputCircuit conversion
+impl From<OutputCircuit> for pb_circuits::OutputCircuit {
+    fn from(circuit: OutputCircuit) -> Self {
+        pb_circuits::OutputCircuit {
+            public: Some(circuit.public.into()),
+            private: Some(circuit.private.into()),
+        }
+    }
+}
+
+// OutputProofPublic conversion
+impl From<OutputProofPublic> for pb_circuits::OutputProofPublic {
+    fn from(public: OutputProofPublic) -> Self {
+        pb_circuits::OutputProofPublic {
+            balance_commitment: Some(public.balance_commitment.into()),
+            note_commitment: Some(public.note_commitment.into()),
+        }
+    }
+}
+
+// OutputProofPrivate conversion
+impl From<OutputProofPrivate> for pb_circuits::OutputProofPrivate {
+    fn from(private: OutputProofPrivate) -> Self {
+        pb_circuits::OutputProofPrivate {
+            note: Some(private.note.into()),
+            balance_blinding: private.balance_blinding.to_bytes().to_vec(),
+        }
+    }
+}
+
+// Reverse conversions (protobuf -> Rust)
+
+impl TryFrom<pb_circuits::OutputCircuit> for OutputCircuit {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb_circuits::OutputCircuit) -> Result<Self> {
+        Ok(OutputCircuit {
+            public: proto
+                .public
+                .ok_or_else(|| anyhow!("missing public in OutputCircuit"))?
+                .try_into()?,
+            private: proto
+                .private
+                .ok_or_else(|| anyhow!("missing private in OutputCircuit"))?
+                .try_into()?,
+        })
+    }
+}
+
+impl TryFrom<pb_circuits::OutputProofPublic> for OutputProofPublic {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb_circuits::OutputProofPublic) -> Result<Self> {
+        Ok(OutputProofPublic {
+            balance_commitment: proto
+                .balance_commitment
+                .ok_or_else(|| anyhow!("missing balance_commitment"))?
+                .try_into()?,
+            note_commitment: proto
+                .note_commitment
+                .ok_or_else(|| anyhow!("missing note_commitment"))?
+                .try_into()?,
+        })
+    }
+}
+
+impl TryFrom<pb_circuits::OutputProofPrivate> for OutputProofPrivate {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb_circuits::OutputProofPrivate) -> Result<Self> {
+        Ok(OutputProofPrivate {
+            note: proto
+                .note
+                .ok_or_else(|| anyhow!("missing note"))?
+                .try_into()?,
+            balance_blinding: Fr::from_bytes_checked(
+                proto.balance_blinding.as_slice().try_into()
+                    .map_err(|_| anyhow!("balance_blinding wrong length"))?
+            ).map_err(|_| anyhow!("balance_blinding malformed"))?,
+        })
+    }
 }
 
 impl OutputCircuit {
