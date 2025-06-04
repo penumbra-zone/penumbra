@@ -67,7 +67,9 @@ async fn modify_validator_supply(
     .bind(i64::try_from(new_supply.rate_bps2)?)
     .execute(dbtx.as_mut())
     .await?;
-    Ok(i64::try_from(new_supply.um)? - i64::try_from(supply.um)?)
+    Ok(i64::try_from(
+        i128::try_from(new_supply.um)? - i128::try_from(supply.um)?,
+    )?)
 }
 
 #[derive(Default, Debug, Clone, Copy)]
@@ -304,7 +306,7 @@ impl Component {
                 e.identity_key,
                 Box::new(move |supply| {
                     Ok(ValidatorSupply {
-                        um: supply.um + u64::try_from(e.amount.value()).expect(""),
+                        um: supply.um - u64::try_from(e.amount.value()).expect(""),
                         ..supply
                     })
                 }),
