@@ -57,7 +57,7 @@ members = [
   "crates/view",
   "crates/wallet",
   "tools/summonerd",
-  "tools/parameter-setup", "crates/taceo-support",
+  "tools/parameter-setup",
 ]
 
 # The profile that 'cargo dist' will build with
