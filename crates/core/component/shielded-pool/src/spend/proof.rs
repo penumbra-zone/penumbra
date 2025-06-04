@@ -228,7 +228,7 @@ impl TryFrom<pb_circuits::SpendProofPrivate> for SpendProofPrivate {
             note: proto
                 .note
                 .ok_or_else(|| anyhow!("missing note"))?
-                .try_into()?, // ✅ Works!
+                .try_into()?,
             v_blinding: Fr::from_bytes_checked(
                 proto
                     .v_blinding

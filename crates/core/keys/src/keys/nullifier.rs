@@ -66,23 +66,6 @@ impl TryFrom<Vec<u8>> for NullifierKey {
     }
 }
 
-// // Protobuf conversions
-// impl From<NullifierKey> for penumbra_sdk_proto::crypto::decaf377_rdsa::v1::NullifierDerivingKey {
-//     fn from(key: NullifierKey) -> Self {
-//         Self {
-//             inner: key.to_bytes().to_vec(),
-//         }
-//     }
-// }
-
-// impl TryFrom<penumbra_sdk_proto::crypto::decaf377_rdsa::v1::NullifierDerivingKey> for NullifierKey {
-//     type Error = anyhow::Error;
-
-//     fn try_from(value: penumbra_sdk_proto::crypto::decaf377_rdsa::v1::NullifierDerivingKey) -> Result<Self, Self::Error> {
-//         value.inner.as_slice().try_into()
-//     }
-// }
-
 impl From<NullifierKey> for NullifierDerivingKey {
     fn from(key: NullifierKey) -> Self {
         Self {

@@ -235,13 +235,6 @@ tracing                          = { version = "0.1" }
 tracing-subscriber               = { version = "0.3.17", features = ["env-filter"] }
 url                              = { version = "2.2" }
 getrandom                        = { version = "0.2", default-features = false }
-taceo-proof-api-client = { path = "../proof-client/rust/taceo-proof-api-client" }
-wasm-bindgen                     = { version = "0.2.93" }
-web-sys                          = { version = "0.3.70" }
-wasm-bindgen-test                = { version = "0.3.43" }
-console_error_panic_hook         = { version = "0.1.7" }
-js-sys                           = { version = "0.3.70" }
-wasm-bindgen-futures             = { version = "0.4.43" }
 
 [patch.crates-io]
 # Without this, the git dependency for ledger-lib will depend on the crates.io v0.1 version,
