@@ -49,6 +49,13 @@ pub enum Action {
         penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVote,
     ),
 }
+pub enum ActionCircuit {
+    Spend(penumbra_sdk_shielded_pool::SpendCircuit),
+    Output(penumbra_sdk_shielded_pool::OutputCircuit),
+    Swap(penumbra_sdk_dex::swap::proof::SwapCircuit),
+    SwapClaim(penumbra_sdk_dex::swap_claim::SwapClaimCircuit),
+    DelegatorVote(penumbra_sdk_governance::DelegatorVoteCircuit),
+}
 
 impl EffectingData for Action {
     fn effect_hash(&self) -> EffectHash {
