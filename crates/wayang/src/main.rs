@@ -1,10 +1,12 @@
 use anyhow::Result;
-use penumbra_sdk_wayang::{rhythm_and_feeler, Move};
+use clap::Parser;
+use penumbra_sdk_wayang::{options::Options, rhythm_and_feeler, Move};
 use tokio::task::JoinHandle;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let (mut rhythm, feeler) = rhythm_and_feeler();
+    let options = Options::parse();
+    let (mut rhythm, feeler) = rhythm_and_feeler(options);
     let rhythm_task: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
         loop {
             let status = rhythm.sense().await?;

@@ -1,11 +1,16 @@
-use std::time::Duration;
+mod environment;
+pub mod options;
 
+use environment::Environment;
+use options::SymbolPair;
+use std::time::Duration;
 use tokio::sync::watch;
 
 #[derive(Debug, Clone)]
 pub struct Status {
     pub height: u64,
     pub price: f64,
+    pub pair: SymbolPair,
 }
 
 #[derive(Clone)]
@@ -14,6 +19,7 @@ pub struct Move {
 }
 
 pub struct Feeler {
+    environment: Environment,
     moves: watch::Receiver<Option<Move>>,
     status: watch::Sender<Option<Status>>,
 }
@@ -32,6 +38,7 @@ impl Feeler {
             let status = Status {
                 height,
                 price: moove.price,
+                pair: self.environment.pair().clone(),
             };
             self.status.send(Some(status))?;
             tokio::time::sleep(Duration::from_secs(1)).await;
@@ -57,7 +64,7 @@ impl Rhythm {
     }
 }
 
-pub fn rhythm_and_feeler() -> (Rhythm, Feeler) {
+pub fn rhythm_and_feeler(options: options::Options) -> (Rhythm, Feeler) {
     let (moves_in, moves_out) = watch::channel(None);
     let (status_in, mut status_out) = watch::channel(None);
     // So that we can immediately get a status.
@@ -70,6 +77,7 @@ pub fn rhythm_and_feeler() -> (Rhythm, Feeler) {
         Feeler {
             moves: moves_out,
             status: status_in,
+            environment: Environment::new(options),
         },
     )
 }
