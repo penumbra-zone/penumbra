@@ -40,9 +40,9 @@ use anyhow::{anyhow, Result};
 pub struct ExtraTransitionInformation {
     /// The u polynomials evaluated at [x].
     u_1: Vec<G1>,
-    /// The v polynomials evaluted at [x].
+    /// The v polynomials evaluated at [x].
     v_1: Vec<G1>,
-    /// The v polynomials evaluted at [x]_2.
+    /// The v polynomials evaluated at [x]_2.
     v_2: Vec<G2>,
     /// The p polynomials evaluated at [x]
     p_1: Vec<G1>,
