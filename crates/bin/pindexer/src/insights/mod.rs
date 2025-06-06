@@ -1,5 +1,6 @@
+use anyhow::{anyhow, Context};
 use ethnum::I256;
-use std::{collections::BTreeMap, iter};
+use std::{collections::BTreeMap, iter, ops::Div as _};
 
 use cometindex::{
     async_trait,
@@ -28,48 +29,58 @@ use penumbra_sdk_stake::{
 
 use crate::parsing::parse_content;
 
+fn convert_floor(amount: u64, inv_rate_bps2: u64) -> anyhow::Result<u64> {
+    Ok(u64::try_from(
+        (u128::from(amount) * 1_0000_0000).div(u128::from(inv_rate_bps2)),
+    )?)
+}
+
+fn convert_ceil(amount: u64, inv_rate_bps2: u64) -> anyhow::Result<u64> {
+    Ok(u64::try_from(
+        (u128::from(amount) * 1_0000_0000).div_ceil(u128::from(inv_rate_bps2)),
+    )?)
+}
+
 #[derive(Debug, Clone, Copy)]
 struct ValidatorSupply {
-    um: u64,
+    del_um: u64,
     rate_bps2: u64,
 }
 
-async fn modify_validator_supply(
+async fn modify_validator_supply<T>(
     dbtx: &mut PgTransaction<'_>,
     height: u64,
     ik: IdentityKey,
-    f: Box<dyn FnOnce(ValidatorSupply) -> anyhow::Result<ValidatorSupply> + Send + 'static>,
-) -> anyhow::Result<i64> {
+    f: impl FnOnce(ValidatorSupply) -> anyhow::Result<(T, ValidatorSupply)>,
+) -> anyhow::Result<T> {
     let ik_text = ik.to_string();
     let supply = {
         let row: Option<(i64, i64)> = sqlx::query_as("
-            SELECT um, rate_bps2 FROM _insights_validators WHERE validator_id = $1 ORDER BY height DESC LIMIT 1
+            SELECT del_um, rate_bps2 FROM _insights_validators WHERE validator_id = $1 ORDER BY height DESC LIMIT 1
         ").bind(&ik_text).fetch_optional(dbtx.as_mut()).await?;
         let row = row.unwrap_or((0i64, 1_0000_0000i64));
         ValidatorSupply {
-            um: u64::try_from(row.0)?,
+            del_um: u64::try_from(row.0)?,
             rate_bps2: u64::try_from(row.1)?,
         }
     };
-    let new_supply = f(supply)?;
+    let (out, new_supply) = f(supply)?;
     sqlx::query(
         r#"
         INSERT INTO _insights_validators 
         VALUES ($1, $2, $3, $4)
         ON CONFLICT (validator_id, height) DO UPDATE SET
-            um = excluded.um,
+            del_um = excluded.del_um,
             rate_bps2 = excluded.rate_bps2
     "#,
     )
     .bind(&ik_text)
     .bind(i64::try_from(height)?)
-    .bind(i64::try_from(new_supply.um)?)
+    .bind(i64::try_from(new_supply.del_um)?)
     .bind(i64::try_from(new_supply.rate_bps2)?)
     .execute(dbtx.as_mut())
     .await?;
-    Ok(i64::try_from(
-        i128::try_from(new_supply.um)? - i128::try_from(supply.um)?,
-    )?)
+    Ok(out)
 }
 
 #[derive(Default, Debug, Clone, Copy)]
@@ -261,17 +272,15 @@ async fn add_genesis_native_token_allocation_supply<'a>(
             .value()
             .try_into()?;
         staked += delegation_amount;
-        modify_validator_supply(
-            dbtx,
-            0,
-            val.identity_key,
-            Box::new(move |_| {
-                Ok(ValidatorSupply {
-                    um: delegation_amount,
+        modify_validator_supply(dbtx, 0, val.identity_key, move |_| {
+            Ok((
+                (),
+                ValidatorSupply {
+                    del_um: delegation_amount,
                     rate_bps2: 1_0000_0000,
-                })
-            }),
-        )
+                },
+            ))
+        })
         .await?;
     }
 
@@ -300,17 +309,19 @@ impl Component {
     ) -> Result<(), anyhow::Error> {
         let height = event.block_height;
         if let Ok(e) = EventUndelegate::try_from_event(&event.event) {
-            let delta = modify_validator_supply(
-                dbtx,
-                height,
-                e.identity_key,
-                Box::new(move |supply| {
-                    Ok(ValidatorSupply {
-                        um: supply.um - u64::try_from(e.amount.value()).expect(""),
+            let amount = u64::try_from(e.amount.value())
+                .context("I-000-002: undelegation amount not u64")?;
+            // When the delegated um was undelegated, conversion was applied to round down,
+            // so when converting back, we round up.
+            modify_validator_supply(dbtx, height, e.identity_key, move |supply| {
+                Ok((
+                    (),
+                    ValidatorSupply {
+                        del_um: convert_ceil(amount, supply.rate_bps2)?,
                         ..supply
-                    })
-                }),
-            )
+                    },
+                ))
+            })
             .await?;
             modify_supply(
                 dbtx,
@@ -319,23 +330,32 @@ impl Component {
                 Box::new(move |supply| {
                     // The amount staked has changed, but no inflation has happened.
                     Ok(Supply {
-                        staked: u64::try_from(i64::try_from(supply.staked)? + delta)?,
+                        staked: supply
+                            .staked
+                            .checked_sub(amount)
+                            .ok_or(anyhow!("I-000-001: underflow of staked supply"))?,
                         ..supply
                     })
                 }),
             )
             .await?;
         } else if let Ok(e) = EventDelegate::try_from_event(&event.event) {
-            let delta = modify_validator_supply(
+            let amount = u64::try_from(e.amount.value())
+                .context("I-000-003: undelegation amount not u64")?;
+            modify_validator_supply(
                 dbtx,
                 height,
                 e.identity_key,
-                Box::new(move |supply| {
-                    Ok(ValidatorSupply {
-                        um: supply.um + u64::try_from(e.amount.value()).expect(""),
-                        ..supply
-                    })
-                }),
+                // When converting, we round down so that the user gets *less*.
+                move |supply| {
+                    Ok((
+                        (),
+                        ValidatorSupply {
+                            del_um: convert_floor(amount, supply.rate_bps2)?,
+                            ..supply
+                        },
+                    ))
+                },
             )
             .await?;
             modify_supply(
@@ -344,33 +364,29 @@ impl Component {
                 self.price_numeraire,
                 Box::new(move |supply| {
                     Ok(Supply {
-                        staked: u64::try_from(i64::try_from(supply.staked)? + delta)?,
+                        staked: supply
+                            .staked
+                            .checked_add(amount)
+                            .ok_or(anyhow!("I-000-004: overflow of staked supply"))?,
                         ..supply
                     })
                 }),
             )
             .await?;
         } else if let Ok(e) = EventRateDataChange::try_from_event(&event.event) {
-            let delta = modify_validator_supply(
-                dbtx,
-                height,
-                e.identity_key,
-                Box::new(move |supply| {
-                    // del_um <- um / old_exchange_rate
-                    // um <- del_um * new_exchange_rate
-                    // so
-                    // um <- um * (new_exchange_rate / old_exchange_rate)
-                    // and the bps cancel out.
-                    let um = (u128::from(supply.um) * e.rate_data.validator_exchange_rate.value())
-                        .checked_div(supply.rate_bps2.into())
-                        .unwrap_or(0u128)
-                        .try_into()?;
-                    Ok(ValidatorSupply {
-                        um,
-                        rate_bps2: u64::try_from(e.rate_data.validator_exchange_rate.value())?,
-                    })
-                }),
-            )
+            let delta = modify_validator_supply(dbtx, height, e.identity_key, move |supply| {
+                let rate_bps2 = u64::try_from(e.rate_data.validator_exchange_rate.value())?;
+                let old_um =
+                    (i128::from(supply.del_um) * i128::from(supply.rate_bps2)).div(1_0000_0000);
+                let new_um = (i128::from(supply.del_um) * i128::from(rate_bps2)).div(1_0000_0000);
+                Ok((
+                    i64::try_from(new_um - old_um)?,
+                    ValidatorSupply {
+                        rate_bps2,
+                        del_um: supply.del_um,
+                    },
+                ))
+            })
             .await?;
             modify_supply(
                 dbtx,
