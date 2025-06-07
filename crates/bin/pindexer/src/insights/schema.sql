@@ -22,8 +22,8 @@ CREATE TABLE IF NOT EXISTS _insights_validators (
     validator_id TEXT NOT NULL,
     -- The height for the supply update.
     height BIGINT NOT NULL,
-    -- The total amount staked with them, in terms of the native token.
-    um BIGINT NOT NULL,   
+    -- The total amount staked with them, in terms of their staking token
+    del_um BIGINT NOT NULL,   
     -- How much native um we get per unit of the delegation token.
     rate_bps2 BIGINT NOT NULL,
     PRIMARY KEY (validator_id, height)
