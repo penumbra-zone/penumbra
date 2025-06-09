@@ -29,12 +29,6 @@ use penumbra_sdk_stake::{
 
 use crate::parsing::parse_content;
 
-fn convert_floor(amount: u64, inv_rate_bps2: u64) -> anyhow::Result<u64> {
-    Ok(u64::try_from(
-        (u128::from(amount) * 1_0000_0000).div(u128::from(inv_rate_bps2)),
-    )?)
-}
-
 fn convert_ceil(amount: u64, inv_rate_bps2: u64) -> anyhow::Result<u64> {
     Ok(u64::try_from(
         (u128::from(amount) * 1_0000_0000).div_ceil(u128::from(inv_rate_bps2)),
