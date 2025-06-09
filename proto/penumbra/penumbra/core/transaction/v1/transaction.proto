@@ -169,6 +169,8 @@ message TransactionPerspective {
   //
   // This can be used to fill in information about swap outputs.
   repeated component.dex.v1.BatchSwapOutputData batch_swap_output_data = 60;
+
+  keys.v1.PositionMetadataKey position_metadata_key = 70;
 }
 
 message PayloadKeyWithCommitment {
@@ -214,6 +216,7 @@ message ActionView {
     component.dex.v1.SwapView swap = 3;
     component.dex.v1.SwapClaimView swap_claim = 4;
     component.governance.v1.DelegatorVoteView delegator_vote = 21;
+    component.dex.v1.PositionOpenView position_open_view = 35;
 
     // Action types without visible/opaque variants
     component.stake.v1.ValidatorDefinition validator_definition = 16;
@@ -225,7 +228,8 @@ message ActionView {
     component.governance.v1.ValidatorVote validator_vote = 20;
     component.governance.v1.ProposalDepositClaim proposal_deposit_claim = 22;
 
-    component.dex.v1.PositionOpen position_open = 30;
+    // Deprecated: UIP-9 requires us to have an actual view here.
+    component.dex.v1.PositionOpen position_open = 30 [deprecated = true];
     component.dex.v1.PositionClose position_close = 31;
     component.dex.v1.PositionWithdraw position_withdraw = 32;
     component.dex.v1.PositionRewardClaim position_reward_claim = 34 [deprecated = true];
@@ -319,7 +323,8 @@ message ActionPlan {
 
     component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
 
-    component.dex.v1.PositionOpen position_open = 30;
+    component.dex.v1.PositionOpen position_open = 30 [deprecated = true];
+    component.dex.v1.PositionOpenPlan position_open_plan = 35;
     component.dex.v1.PositionClose position_close = 31;
 
     // The position withdraw/reward claim actions require balance information so they have Plan types.

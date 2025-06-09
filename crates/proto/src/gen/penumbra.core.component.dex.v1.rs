@@ -789,6 +789,32 @@ impl ::prost::Name for LpNft {
         "/penumbra.core.component.dex.v1.LpNft".into()
     }
 }
+/// Metadata about a position, or bundle of positions.
+/// See UIP-9 for more details.
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PositionMetadata {
+    /// A strategy tag for the bundle, convention:
+    /// 0x1 - Skip
+    /// 0x2 - Arbitrary
+    /// 0x3 - Linear
+    /// 0x4 - Stable
+    /// ... every other tags are unreserved.
+    #[prost(fixed32, tag = "1")]
+    pub strategy: u32,
+    /// A unique identifier for the bundle this position belongs to.
+    #[prost(fixed32, tag = "2")]
+    pub identifier: u32,
+}
+impl ::prost::Name for PositionMetadata {
+    const NAME: &'static str = "PositionMetadata";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.dex.v1.PositionMetadata".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.dex.v1.PositionMetadata".into()
+    }
+}
 /// A transaction action that opens a new position.
 ///
 /// This action's contribution to the transaction's value balance is to consume
@@ -801,6 +827,9 @@ pub struct PositionOpen {
     /// are unchanged over the entire lifetime of the position.
     #[prost(message, optional, tag = "1")]
     pub position: ::core::option::Option<Position>,
+    /// Either absent, or a 50 byte ciphertext encoding position metadata.
+    #[prost(bytes = "vec", tag = "2")]
+    pub encrypted_metadata: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for PositionOpen {
     const NAME: &'static str = "PositionOpen";
@@ -810,6 +839,81 @@ impl ::prost::Name for PositionOpen {
     }
     fn type_url() -> ::prost::alloc::string::String {
         "/penumbra.core.component.dex.v1.PositionOpen".into()
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PositionOpenPlan {
+    #[prost(message, optional, tag = "1")]
+    pub position: ::core::option::Option<Position>,
+    #[prost(message, optional, tag = "2")]
+    pub metadata: ::core::option::Option<PositionMetadata>,
+}
+impl ::prost::Name for PositionOpenPlan {
+    const NAME: &'static str = "PositionOpenPlan";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.dex.v1.PositionOpenPlan".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.dex.v1.PositionOpenPlan".into()
+    }
+}
+/// A view of the position open action.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PositionOpenView {
+    #[prost(oneof = "position_open_view::PositionOpenView", tags = "1, 2")]
+    pub position_open_view: ::core::option::Option<position_open_view::PositionOpenView>,
+}
+/// Nested message and enum types in `PositionOpenView`.
+pub mod position_open_view {
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Visible {
+        #[prost(message, optional, tag = "1")]
+        pub action: ::core::option::Option<super::PositionOpen>,
+        #[prost(message, optional, tag = "2")]
+        pub metadata: ::core::option::Option<super::PositionMetadata>,
+    }
+    impl ::prost::Name for Visible {
+        const NAME: &'static str = "Visible";
+        const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            "penumbra.core.component.dex.v1.PositionOpenView.Visible".into()
+        }
+        fn type_url() -> ::prost::alloc::string::String {
+            "/penumbra.core.component.dex.v1.PositionOpenView.Visible".into()
+        }
+    }
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Opaque {
+        #[prost(message, optional, tag = "1")]
+        pub action: ::core::option::Option<super::PositionOpen>,
+    }
+    impl ::prost::Name for Opaque {
+        const NAME: &'static str = "Opaque";
+        const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            "penumbra.core.component.dex.v1.PositionOpenView.Opaque".into()
+        }
+        fn type_url() -> ::prost::alloc::string::String {
+            "/penumbra.core.component.dex.v1.PositionOpenView.Opaque".into()
+        }
+    }
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum PositionOpenView {
+        #[prost(message, tag = "1")]
+        Visible(Visible),
+        #[prost(message, tag = "2")]
+        Opaque(Opaque),
+    }
+}
+impl ::prost::Name for PositionOpenView {
+    const NAME: &'static str = "PositionOpenView";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.dex.v1.PositionOpenView".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.dex.v1.PositionOpenView".into()
     }
 }
 /// A transaction action that closes a position.

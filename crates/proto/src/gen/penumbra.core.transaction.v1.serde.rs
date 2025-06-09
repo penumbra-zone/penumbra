@@ -497,6 +497,9 @@ impl serde::Serialize for ActionPlan {
                 action_plan::Action::PositionOpen(v) => {
                     struct_ser.serialize_field("positionOpen", v)?;
                 }
+                action_plan::Action::PositionOpenPlan(v) => {
+                    struct_ser.serialize_field("positionOpenPlan", v)?;
+                }
                 action_plan::Action::PositionClose(v) => {
                     struct_ser.serialize_field("positionClose", v)?;
                 }
@@ -571,6 +574,8 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             "ics20Withdrawal",
             "position_open",
             "positionOpen",
+            "position_open_plan",
+            "positionOpenPlan",
             "position_close",
             "positionClose",
             "position_withdraw",
@@ -612,6 +617,7 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             ProposalDepositClaim,
             Ics20Withdrawal,
             PositionOpen,
+            PositionOpenPlan,
             PositionClose,
             PositionWithdraw,
             PositionRewardClaim,
@@ -660,6 +666,7 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             "proposalDepositClaim" | "proposal_deposit_claim" => Ok(GeneratedField::ProposalDepositClaim),
                             "ics20Withdrawal" | "ics20_withdrawal" => Ok(GeneratedField::Ics20Withdrawal),
                             "positionOpen" | "position_open" => Ok(GeneratedField::PositionOpen),
+                            "positionOpenPlan" | "position_open_plan" => Ok(GeneratedField::PositionOpenPlan),
                             "positionClose" | "position_close" => Ok(GeneratedField::PositionClose),
                             "positionWithdraw" | "position_withdraw" => Ok(GeneratedField::PositionWithdraw),
                             "positionRewardClaim" | "position_reward_claim" => Ok(GeneratedField::PositionRewardClaim),
@@ -784,6 +791,13 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                                 return Err(serde::de::Error::duplicate_field("positionOpen"));
                             }
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::PositionOpen)
+;
+                        }
+                        GeneratedField::PositionOpenPlan => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionOpenPlan"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::PositionOpenPlan)
 ;
                         }
                         GeneratedField::PositionClose => {
@@ -919,6 +933,9 @@ impl serde::Serialize for ActionView {
                 action_view::ActionView::DelegatorVote(v) => {
                     struct_ser.serialize_field("delegatorVote", v)?;
                 }
+                action_view::ActionView::PositionOpenView(v) => {
+                    struct_ser.serialize_field("positionOpenView", v)?;
+                }
                 action_view::ActionView::ValidatorDefinition(v) => {
                     struct_ser.serialize_field("validatorDefinition", v)?;
                 }
@@ -1001,6 +1018,8 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             "swapClaim",
             "delegator_vote",
             "delegatorVote",
+            "position_open_view",
+            "positionOpenView",
             "validator_definition",
             "validatorDefinition",
             "ibc_relay_action",
@@ -1050,6 +1069,7 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             Swap,
             SwapClaim,
             DelegatorVote,
+            PositionOpenView,
             ValidatorDefinition,
             IbcRelayAction,
             ProposalSubmit,
@@ -1098,6 +1118,7 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             "swap" => Ok(GeneratedField::Swap),
                             "swapClaim" | "swap_claim" => Ok(GeneratedField::SwapClaim),
                             "delegatorVote" | "delegator_vote" => Ok(GeneratedField::DelegatorVote),
+                            "positionOpenView" | "position_open_view" => Ok(GeneratedField::PositionOpenView),
                             "validatorDefinition" | "validator_definition" => Ok(GeneratedField::ValidatorDefinition),
                             "ibcRelayAction" | "ibc_relay_action" => Ok(GeneratedField::IbcRelayAction),
                             "proposalSubmit" | "proposal_submit" => Ok(GeneratedField::ProposalSubmit),
@@ -1174,6 +1195,13 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                                 return Err(serde::de::Error::duplicate_field("delegatorVote"));
                             }
                             action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::DelegatorVote)
+;
+                        }
+                        GeneratedField::PositionOpenView => {
+                            if action_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionOpenView"));
+                            }
+                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::PositionOpenView)
 ;
                         }
                         GeneratedField::ValidatorDefinition => {
@@ -3406,6 +3434,9 @@ impl serde::Serialize for TransactionPerspective {
         if !self.batch_swap_output_data.is_empty() {
             len += 1;
         }
+        if self.position_metadata_key.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.TransactionPerspective", len)?;
         if !self.payload_keys.is_empty() {
             struct_ser.serialize_field("payloadKeys", &self.payload_keys)?;
@@ -3440,6 +3471,9 @@ impl serde::Serialize for TransactionPerspective {
         if !self.batch_swap_output_data.is_empty() {
             struct_ser.serialize_field("batchSwapOutputData", &self.batch_swap_output_data)?;
         }
+        if let Some(v) = self.position_metadata_key.as_ref() {
+            struct_ser.serialize_field("positionMetadataKey", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -3470,6 +3504,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             "nullificationTransactionIdsByCommitment",
             "batch_swap_output_data",
             "batchSwapOutputData",
+            "position_metadata_key",
+            "positionMetadataKey",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3485,6 +3521,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             CreationTransactionIdsByNullifier,
             NullificationTransactionIdsByCommitment,
             BatchSwapOutputData,
+            PositionMetadataKey,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3518,6 +3555,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             "creationTransactionIdsByNullifier" | "creation_transaction_ids_by_nullifier" => Ok(GeneratedField::CreationTransactionIdsByNullifier),
                             "nullificationTransactionIdsByCommitment" | "nullification_transaction_ids_by_commitment" => Ok(GeneratedField::NullificationTransactionIdsByCommitment),
                             "batchSwapOutputData" | "batch_swap_output_data" => Ok(GeneratedField::BatchSwapOutputData),
+                            "positionMetadataKey" | "position_metadata_key" => Ok(GeneratedField::PositionMetadataKey),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3548,6 +3586,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                 let mut creation_transaction_ids_by_nullifier__ = None;
                 let mut nullification_transaction_ids_by_commitment__ = None;
                 let mut batch_swap_output_data__ = None;
+                let mut position_metadata_key__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PayloadKeys => {
@@ -3616,6 +3655,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             }
                             batch_swap_output_data__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::PositionMetadataKey => {
+                            if position_metadata_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionMetadataKey"));
+                            }
+                            position_metadata_key__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3633,6 +3678,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                     creation_transaction_ids_by_nullifier: creation_transaction_ids_by_nullifier__.unwrap_or_default(),
                     nullification_transaction_ids_by_commitment: nullification_transaction_ids_by_commitment__.unwrap_or_default(),
                     batch_swap_output_data: batch_swap_output_data__.unwrap_or_default(),
+                    position_metadata_key: position_metadata_key__,
                 })
             }
         }
