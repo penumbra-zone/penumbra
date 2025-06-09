@@ -317,7 +317,13 @@ impl Component {
                 Ok((
                     (),
                     ValidatorSupply {
-                        del_um: convert_ceil(amount, supply.rate_bps2)?,
+                        del_um: supply
+                            .del_um
+                            .checked_sub(convert_ceil(amount, supply.rate_bps2)?)
+                            .ok_or(anyhow!(
+                                "I-000-005: underflow of validator supply for {}",
+                                e.identity_key
+                            ))?,
                         ..supply
                     },
                 ))
@@ -351,7 +357,13 @@ impl Component {
                     Ok((
                         (),
                         ValidatorSupply {
-                            del_um: convert_floor(amount, supply.rate_bps2)?,
+                            del_um: supply
+                                .del_um
+                                .checked_add(convert_ceil(amount, supply.rate_bps2)?)
+                                .ok_or(anyhow!(
+                                    "I-000-006: overflow of validator supply for {}",
+                                    e.identity_key
+                                ))?,
                             ..supply
                         },
                     ))
