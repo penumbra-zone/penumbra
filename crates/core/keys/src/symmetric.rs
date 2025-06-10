@@ -361,6 +361,8 @@ impl BackreferenceKey {
     }
 }
 
+pub const POSITION_METADATA_NONCE_SIZE: usize = 24;
+
 /// Represents a symmetric `XChaCha20Poly1305` key used for Position metadata encryption.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PositionMetadataKey(Key);
@@ -380,7 +382,7 @@ impl PositionMetadataKey {
         Self(*Key::from_slice(key.as_bytes()))
     }
 
-    pub fn encrypt(&self, plaintext: &[u8], nonce: &[u8; 24]) -> Vec<u8> {
+    pub fn encrypt(&self, plaintext: &[u8], nonce: &[u8; POSITION_METADATA_NONCE_SIZE]) -> Vec<u8> {
         let cipher = XChaCha20Poly1305::new(&self.0);
         let nonce = XNonce::from_slice(nonce);
 
@@ -390,7 +392,7 @@ impl PositionMetadataKey {
             .expect("encryption succeeded");
 
         // Prepend the nonce to the ciphertext
-        let mut result = Vec::with_capacity(24 + ciphertext.len());
+        let mut result = Vec::with_capacity(POSITION_METADATA_NONCE_SIZE + ciphertext.len());
         result.extend_from_slice(nonce.as_slice());
         result.append(&mut ciphertext);
 
@@ -398,15 +400,15 @@ impl PositionMetadataKey {
     }
 
     pub fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        if ciphertext.len() < 24 {
+        if ciphertext.len() < POSITION_METADATA_NONCE_SIZE {
             return Err(anyhow!("ciphertext too short"));
         }
 
         // Extract the nonce (first 24 bytes)
-        let nonce = XNonce::from_slice(&ciphertext[..24]);
+        let nonce = XNonce::from_slice(&ciphertext[..POSITION_METADATA_NONCE_SIZE]);
 
         // Extract the ciphertext (everything after the nonce)
-        let encrypted_data = &ciphertext[24..];
+        let encrypted_data = &ciphertext[POSITION_METADATA_NONCE_SIZE..];
 
         // Create cipher with our key
         let cipher = XChaCha20Poly1305::new(&self.0);
