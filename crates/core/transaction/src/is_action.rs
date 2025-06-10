@@ -9,7 +9,9 @@ use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, Com
 use penumbra_sdk_dex::{
     lp::{
         action::{PositionClose, PositionOpen, PositionWithdraw},
-        position, LpNft,
+        position,
+        view::PositionOpenView,
+        LpNft, PositionMetadata,
     },
     swap::{Swap, SwapCiphertext, SwapView},
     swap_claim::{SwapClaim, SwapClaimView},
@@ -22,6 +24,7 @@ use penumbra_sdk_governance::{
     ValidatorVote, VotingReceiptToken,
 };
 use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Note, Output, OutputView, Spend, SpendView};
 use penumbra_sdk_stake::{Delegate, Undelegate, UndelegateClaim};
 
@@ -258,8 +261,22 @@ impl IsAction for PositionOpen {
         self.balance().commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::PositionOpen(self.to_owned())
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
+        let view = match txp
+            .position_metadata_key
+            .and_then(|key| self.encrypted_metadata.as_ref().map(|m| (key, m)))
+            .and_then(|(key, m)| key.decrypt(m).ok())
+            .and_then(|metadata_bytes| PositionMetadata::decode(&*metadata_bytes).ok())
+        {
+            None => PositionOpenView::Opaque {
+                action: self.clone(),
+            },
+            Some(metadata) => PositionOpenView::Visible {
+                action: self.clone(),
+                metadata,
+            },
+        };
+        ActionView::PositionOpen(view)
     }
 }
 

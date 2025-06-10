@@ -25,12 +25,13 @@ use penumbra_sdk_auction::auction::{
 };
 use penumbra_sdk_community_pool::CommunityPoolDeposit;
 use penumbra_sdk_dex::{
-    lp::action::{PositionClose, PositionOpen},
-    lp::plan::PositionWithdrawPlan,
-    lp::position::{self, Position},
-    lp::Reserves,
-    swap::SwapPlaintext,
-    swap::SwapPlan,
+    lp::{
+        action::PositionClose,
+        plan::{PositionOpenPlan, PositionWithdrawPlan},
+        position::{self, Position},
+        Reserves,
+    },
+    swap::{SwapPlaintext, SwapPlan},
     swap_claim::SwapClaimPlan,
     TradingPair,
 };
@@ -179,7 +180,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Open a liquidity position in the order book.
     #[instrument(skip(self))]
     pub fn position_open(&mut self, position: Position) -> &mut Self {
-        self.action_list.push(PositionOpen { position });
+        self.action_list.push(PositionOpenPlan {
+            position,
+            metadata: None,
+        });
         self
     }
 

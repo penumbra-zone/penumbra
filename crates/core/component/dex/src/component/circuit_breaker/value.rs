@@ -176,6 +176,7 @@ mod tests {
         // Create the PositionOpen action
         let pos_open = PositionOpen {
             position: buy_1.clone(),
+            encrypted_metadata: None,
         };
 
         // Execute the PositionOpen action.

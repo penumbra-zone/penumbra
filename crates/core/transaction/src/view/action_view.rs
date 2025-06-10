@@ -4,7 +4,10 @@ use penumbra_sdk_auction::auction::dutch::{
 };
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_sdk_dex::{
-    lp::action::{PositionClose, PositionOpen, PositionWithdraw},
+    lp::{
+        action::{PositionClose, PositionWithdraw},
+        view::PositionOpenView,
+    },
     swap::SwapView,
     swap_claim::SwapClaimView,
 };
@@ -41,7 +44,7 @@ pub enum ActionView {
     ProposalWithdraw(ProposalWithdraw),
     ValidatorVote(ValidatorVote),
     ProposalDepositClaim(ProposalDepositClaim),
-    PositionOpen(PositionOpen),
+    PositionOpen(PositionOpenView),
     PositionClose(PositionClose),
     PositionWithdraw(PositionWithdraw),
     Delegate(Delegate),
@@ -85,7 +88,9 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::ProposalDepositClaim(x) => ActionView::ProposalDepositClaim(x.try_into()?),
                 AV::ValidatorVote(x) => ActionView::ValidatorVote(x.try_into()?),
                 AV::DelegatorVote(x) => ActionView::DelegatorVote(x.try_into()?),
-                AV::PositionOpen(x) => ActionView::PositionOpen(x.try_into()?),
+                AV::PositionOpen(x) => ActionView::PositionOpen(PositionOpenView::Opaque {
+                    action: x.try_into()?,
+                }),
                 AV::PositionClose(x) => ActionView::PositionClose(x.try_into()?),
                 AV::PositionWithdraw(x) => ActionView::PositionWithdraw(x.try_into()?),
                 AV::PositionRewardClaim(_) => {
@@ -107,6 +112,7 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::ActionLiquidityTournamentVote(x) => {
                     ActionView::ActionLiquidityTournamentVote(x.try_into()?)
                 }
+                AV::PositionOpenView(x) => ActionView::PositionOpen(x.try_into()?),
             },
         )
     }
@@ -131,7 +137,7 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::ValidatorVote(x) => AV::ValidatorVote(x.into()),
                 ActionView::DelegatorVote(x) => AV::DelegatorVote(x.into()),
                 ActionView::ProposalDepositClaim(x) => AV::ProposalDepositClaim(x.into()),
-                ActionView::PositionOpen(x) => AV::PositionOpen(x.into()),
+                ActionView::PositionOpen(x) => AV::PositionOpenView(x.into()),
                 ActionView::PositionClose(x) => AV::PositionClose(x.into()),
                 ActionView::PositionWithdraw(x) => AV::PositionWithdraw(x.into()),
                 ActionView::Ics20Withdrawal(x) => AV::Ics20Withdrawal(x.into()),
@@ -170,7 +176,7 @@ impl From<ActionView> for Action {
             ActionView::ValidatorVote(x) => Action::ValidatorVote(x),
             ActionView::DelegatorVote(x) => Action::DelegatorVote(x.into()),
             ActionView::ProposalDepositClaim(x) => Action::ProposalDepositClaim(x),
-            ActionView::PositionOpen(x) => Action::PositionOpen(x),
+            ActionView::PositionOpen(x) => Action::PositionOpen(x.into()),
             ActionView::PositionClose(x) => Action::PositionClose(x),
             ActionView::PositionWithdraw(x) => Action::PositionWithdraw(x),
             ActionView::Ics20Withdrawal(x) => Action::Ics20Withdrawal(x),

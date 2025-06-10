@@ -516,6 +516,7 @@ async fn empty_order_fails() -> anyhow::Result<()> {
 
     let position_action = PositionOpen {
         position: position_1,
+        encrypted_metadata: None,
     };
 
     assert!(position_action.check_stateless(()).await.is_err());

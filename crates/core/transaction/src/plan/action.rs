@@ -8,13 +8,12 @@ use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionEnd;
 use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionSchedule;
 use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_dex::PositionOpen;
 use penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVotePlan;
-use penumbra_sdk_txhash::{EffectHash, EffectingData};
-
 use penumbra_sdk_dex::{
     lp::{
-        action::{PositionClose, PositionOpen},
-        plan::PositionWithdrawPlan,
+        action::PositionClose,
+        plan::{PositionOpenPlan, PositionWithdrawPlan},
     },
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
@@ -23,6 +22,7 @@ use penumbra_sdk_governance::{
     delegator_vote::DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
     ValidatorVote,
 };
+use penumbra_sdk_txhash::{EffectHash, EffectingData};
 
 use penumbra_sdk_ibc::IbcRelay;
 use penumbra_sdk_keys::{symmetric::PayloadKey, FullViewingKey};
@@ -67,8 +67,8 @@ pub enum ActionPlan {
     ValidatorVote(ValidatorVote),
     /// Claim the deposit for a finished proposal.
     ProposalDepositClaim(ProposalDepositClaim),
-
-    PositionOpen(PositionOpen),
+    /// We need a full plan here, because the metadata will be encrypted.
+    PositionOpen(PositionOpenPlan),
     PositionClose(PositionClose),
     // PositionWithdrawPlan requires the balance of the funds to be withdrawn, so
     // a plan must be used.
@@ -156,7 +156,7 @@ impl ActionPlan {
             }
             ValidatorVote(plan) => Action::ValidatorVote(plan.clone()),
             ProposalDepositClaim(plan) => Action::ProposalDepositClaim(plan.clone()),
-            PositionOpen(plan) => Action::PositionOpen(plan.clone()),
+            PositionOpen(plan) => Action::PositionOpen(plan.position_open(fvk, None)),
             PositionClose(plan) => Action::PositionClose(plan.clone()),
             PositionWithdraw(plan) => Action::PositionWithdraw(plan.position_withdraw()),
             CommunityPoolSpend(plan) => Action::CommunityPoolSpend(plan.clone()),
@@ -299,7 +299,7 @@ impl ActionPlan {
             DelegatorVote(plan) => plan.delegator_vote_body(fvk).effect_hash(),
             ValidatorVote(plan) => plan.effect_hash(),
             ProposalDepositClaim(plan) => plan.effect_hash(),
-            PositionOpen(plan) => plan.effect_hash(),
+            PositionOpen(plan) => plan.position_open(fvk, None).effect_hash(),
             PositionClose(plan) => plan.effect_hash(),
             PositionWithdraw(plan) => plan.position_withdraw().effect_hash(),
             CommunityPoolSpend(plan) => plan.effect_hash(),
@@ -388,8 +388,8 @@ impl From<ValidatorVote> for ActionPlan {
     }
 }
 
-impl From<PositionOpen> for ActionPlan {
-    fn from(inner: PositionOpen) -> ActionPlan {
+impl From<PositionOpenPlan> for ActionPlan {
+    fn from(inner: PositionOpenPlan) -> ActionPlan {
         ActionPlan::PositionOpen(inner)
     }
 }
@@ -518,7 +518,7 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                 )),
             },
             ActionPlan::PositionOpen(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::PositionOpen(inner.into())),
+                action: Some(pb_t::action_plan::Action::PositionOpenPlan(inner.into())),
             },
             ActionPlan::PositionClose(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionClose(inner.into())),
@@ -616,7 +616,15 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             pb_t::action_plan::Action::ProposalDepositClaim(inner) => {
                 Ok(ActionPlan::ProposalDepositClaim(inner.try_into()?))
             }
+            // Deprecated, but we gracefully handle it anyways.
             pb_t::action_plan::Action::PositionOpen(inner) => {
+                let position_open = PositionOpen::try_from(inner)?;
+                Ok(ActionPlan::PositionOpen(PositionOpenPlan {
+                    position: position_open.position,
+                    metadata: None,
+                }))
+            }
+            pb_t::action_plan::Action::PositionOpenPlan(inner) => {
                 Ok(ActionPlan::PositionOpen(inner.try_into()?))
             }
             pb_t::action_plan::Action::PositionClose(inner) => {
