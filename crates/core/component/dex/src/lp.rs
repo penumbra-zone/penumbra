@@ -4,9 +4,12 @@ mod reserves;
 mod trading_function;
 
 pub mod action;
+pub mod metadata;
 pub mod plan;
 pub mod position;
+pub mod view;
 
+pub use metadata::{PositionMetadata, PositionStrategy};
 pub use nft::LpNft;
 pub use order::{BuyOrder, SellOrder};
 pub use reserves::Reserves;

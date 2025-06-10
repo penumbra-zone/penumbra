@@ -2,7 +2,7 @@ use crate::keys::{IncomingViewingKey, OutgoingViewingKey};
 use anyhow::{anyhow, Result};
 use chacha20poly1305::{
     aead::{Aead, NewAead},
-    ChaCha20Poly1305, Key, Nonce,
+    ChaCha20Poly1305, Key, Nonce, XChaCha20Poly1305, XNonce,
 };
 use decaf377_ka as ka;
 use penumbra_sdk_asset::balance;
@@ -358,5 +358,81 @@ impl BackreferenceKey {
 
         let key = kdf.finalize();
         Self(*Key::from_slice(key.as_bytes()))
+    }
+}
+
+/// Represents a symmetric `XChaCha20Poly1305` key used for Position metadata encryption.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct PositionMetadataKey(Key);
+
+impl PositionMetadataKey {
+    /// Derives a PositionMetadataKey from an OutgoingViewingKey.
+    ///
+    /// See [UIP-9](https://uips.penumbra.zone/uip-9.html) for more details.
+    pub fn derive(ovk: &OutgoingViewingKey) -> Self {
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.personal(b"Penumbra_PosMeta");
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&ovk.to_bytes());
+
+        let key = kdf.finalize();
+        Self(*Key::from_slice(key.as_bytes()))
+    }
+
+    pub fn encrypt(&self, plaintext: &[u8], nonce: &[u8; 24]) -> Vec<u8> {
+        let cipher = XChaCha20Poly1305::new(&self.0);
+        let nonce = XNonce::from_slice(nonce);
+
+        // Get the encrypted data with authentication tag
+        let mut ciphertext = cipher
+            .encrypt(nonce, plaintext)
+            .expect("encryption succeeded");
+
+        // Prepend the nonce to the ciphertext
+        let mut result = Vec::with_capacity(24 + ciphertext.len());
+        result.extend_from_slice(nonce.as_slice());
+        result.append(&mut ciphertext);
+
+        result
+    }
+
+    pub fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>> {
+        if ciphertext.len() < 24 {
+            return Err(anyhow!("ciphertext too short"));
+        }
+
+        // Extract the nonce (first 24 bytes)
+        let nonce = XNonce::from_slice(&ciphertext[..24]);
+
+        // Extract the ciphertext (everything after the nonce)
+        let encrypted_data = &ciphertext[24..];
+
+        // Create cipher with our key
+        let cipher = XChaCha20Poly1305::new(&self.0);
+
+        // Decrypt the data
+        cipher
+            .decrypt(nonce, encrypted_data)
+            .map_err(|_| anyhow!("decryption error"))
+    }
+}
+
+impl TryFrom<pb::PositionMetadataKey> for PositionMetadataKey {
+    type Error = anyhow::Error;
+    fn try_from(msg: pb::PositionMetadataKey) -> Result<Self, Self::Error> {
+        let key_bytes: [u8; 32] = msg
+            .inner
+            .try_into()
+            .map_err(|_| anyhow!("position metadata key must be 32 bytes"))?;
+        Ok(Self(*Key::from_slice(&key_bytes)))
+    }
+}
+
+impl From<PositionMetadataKey> for pb::PositionMetadataKey {
+    fn from(msg: PositionMetadataKey) -> Self {
+        pb::PositionMetadataKey {
+            inner: msg.0.to_vec(),
+        }
     }
 }

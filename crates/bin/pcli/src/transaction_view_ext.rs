@@ -6,6 +6,7 @@ use penumbra_sdk_asset::Value;
 use penumbra_sdk_asset::ValueView;
 use penumbra_sdk_dex::swap::SwapView;
 use penumbra_sdk_dex::swap_claim::SwapClaimView;
+use penumbra_sdk_dex::PositionOpen;
 use penumbra_sdk_fee::Fee;
 use penumbra_sdk_keys::AddressView;
 use penumbra_sdk_num::Amount;
@@ -352,7 +353,7 @@ impl TransactionViewExt for TransactionView {
                     ["Ics20 Withdrawal", &action]
                 }
                 penumbra_sdk_transaction::ActionView::PositionOpen(position_open) => {
-                    let position = &position_open.position;
+                    let position = PositionOpen::from(position_open.clone()).position;
                     /* TODO: leaving this around since we may want it to render prices
                     let _unit_pair = DirectedUnitPair {
                         start: unit_1.clone(),
