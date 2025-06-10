@@ -1,7 +1,9 @@
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_sdk_asset::{balance, Balance, Value};
-use penumbra_sdk_keys::{keys::FullViewingKey, PositionMetadataKey};
+use penumbra_sdk_keys::{
+    keys::FullViewingKey, symmetric::POSITION_METADATA_NONCE_SIZE, PositionMetadataKey,
+};
 use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -24,10 +26,15 @@ impl PositionOpenPlan {
     /// Convenience method to construct the [`PositionOpen`] described by this [`PositionOpenPlan`].
     ///
     /// If the nonce is not provided, it will be derived from the position id.
-    pub fn position_open(&self, fvk: &FullViewingKey, nonce: Option<&[u8; 24]>) -> PositionOpen {
+    pub fn position_open(
+        &self,
+        fvk: &FullViewingKey,
+        nonce: Option<&[u8; POSITION_METADATA_NONCE_SIZE]>,
+    ) -> PositionOpen {
         let pmk = PositionMetadataKey::derive(fvk.outgoing());
         let nonce = nonce.copied().unwrap_or_else(|| {
-            let out: [u8; 24] = self.position.id().0[..24]
+            let out: [u8; POSITION_METADATA_NONCE_SIZE] = self.position.id().0
+                [..POSITION_METADATA_NONCE_SIZE]
                 .try_into()
                 .expect("position id is 32 bytes");
             out
