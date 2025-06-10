@@ -24,7 +24,6 @@ use penumbra_sdk_governance::{
     ValidatorVote, VotingReceiptToken,
 };
 use penumbra_sdk_ibc::IbcRelay;
-use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Note, Output, OutputView, Spend, SpendView};
 use penumbra_sdk_stake::{Delegate, Undelegate, UndelegateClaim};
 
@@ -262,12 +261,11 @@ impl IsAction for PositionOpen {
     }
 
     fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
-        let view = match txp
-            .position_metadata_key
-            .and_then(|key| self.encrypted_metadata.as_ref().map(|m| (key, m)))
-            .and_then(|(key, m)| key.decrypt(m).ok())
-            .and_then(|metadata_bytes| PositionMetadata::decode(&*metadata_bytes).ok())
-        {
+        let view = match txp.position_metadata_key.and_then(|key| {
+            PositionMetadata::decrypt(&key, self.encrypted_metadata.as_ref().map(|x| x.as_slice()))
+                .ok()
+                .flatten()
+        }) {
             None => PositionOpenView::Opaque {
                 action: self.clone(),
             },

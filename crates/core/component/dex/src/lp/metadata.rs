@@ -1,3 +1,4 @@
+use penumbra_sdk_keys::PositionMetadataKey;
 use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -50,6 +51,22 @@ pub struct PositionMetadata {
 
     /// A unique identifier for the bundle this position belongs to.
     pub identifier: u32,
+}
+
+impl PositionMetadata {
+    pub fn decrypt(
+        pmk: &PositionMetadataKey,
+        ciphertext: Option<&[u8]>,
+    ) -> anyhow::Result<Option<Self>> {
+        let Some(ciphertext) = ciphertext else {
+            return Ok(None);
+        };
+        if ciphertext.is_empty() {
+            return Ok(None);
+        }
+        let bytes = pmk.decrypt(ciphertext)?;
+        Ok(Some(Self::decode(bytes.as_slice())?))
+    }
 }
 
 impl DomainType for PositionMetadata {
