@@ -794,11 +794,8 @@ impl ::prost::Name for LpNft {
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct PositionMetadata {
     /// A strategy tag for the bundle, convention:
-    /// 0x1 - Skip
-    /// 0x2 - Arbitrary
-    /// 0x3 - Linear
-    /// 0x4 - Stable
-    /// ... every other tags are unreserved.
+    /// 0x0 - Skip
+    /// 0x01 >= _ \< 0x40 - Reserved
     #[prost(fixed32, tag = "1")]
     pub strategy: u32,
     /// A unique identifier for the bundle this position belongs to.

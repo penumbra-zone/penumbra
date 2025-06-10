@@ -367,11 +367,8 @@ message LpNft {
 // See UIP-9 for more details.
 message PositionMetadata {
   // A strategy tag for the bundle, convention:
-  // 0x1 - Skip
-  // 0x2 - Arbitrary
-  // 0x3 - Linear
-  // 0x4 - Stable
-  // ... every other tags are unreserved.
+  // 0x0 - Skip
+  // 0x01 >= _ < 0x40 - Reserved
   fixed32 strategy = 1;
   // A unique identifier for the bundle this position belongs to.
   fixed32 identifier = 2;

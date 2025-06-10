@@ -82,7 +82,7 @@ impl TryFrom<pb::PositionOpenPlan> for PositionOpenPlan {
                 .position
                 .ok_or_else(|| anyhow::anyhow!("missing position"))?
                 .try_into()?,
-            metadata: msg.metadata.map(|x| x.into()),
+            metadata: msg.metadata.map(|x| x.try_into()).transpose()?,
         })
     }
 }

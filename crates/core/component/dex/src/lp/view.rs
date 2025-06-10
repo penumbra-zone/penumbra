@@ -58,7 +58,7 @@ impl TryFrom<pb::PositionOpenView> for PositionOpenView {
                 let metadata = visible
                     .metadata
                     .ok_or_else(|| anyhow::anyhow!("missing metadata in Visible PositionOpenView"))?
-                    .into();
+                    .try_into()?;
 
                 Ok(PositionOpenView::Visible { action, metadata })
             }
