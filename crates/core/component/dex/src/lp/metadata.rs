@@ -1,30 +1,24 @@
+use std::num::NonZeroU32;
+
+use anyhow::Context;
 use penumbra_sdk_keys::PositionMetadataKey;
 use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// Strategy types for position bundles.
+#[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PositionStrategy {
     /// Skip metadata tracking for this position.
     Skip,
-    /// Arbitrary trading function.
-    Arbitrary,
-    /// Linear trading function.
-    Linear,
-    /// Stable trading function.
-    Stable,
-    /// Reserved for future or custom strategy types.
-    Unknown,
+    Custom(NonZeroU32),
 }
 
 impl From<u32> for PositionStrategy {
     fn from(value: u32) -> Self {
-        match value {
-            1 => PositionStrategy::Skip,
-            2 => PositionStrategy::Arbitrary,
-            3 => PositionStrategy::Linear,
-            4 => PositionStrategy::Stable,
-            _ => PositionStrategy::Unknown,
+        match NonZeroU32::new(value) {
+            None => Self::Skip,
+            Some(x) => Self::Custom(x),
         }
     }
 }
@@ -32,11 +26,8 @@ impl From<u32> for PositionStrategy {
 impl From<PositionStrategy> for u32 {
     fn from(strategy: PositionStrategy) -> Self {
         match strategy {
-            PositionStrategy::Skip => 1,
-            PositionStrategy::Arbitrary => 2,
-            PositionStrategy::Linear => 3,
-            PositionStrategy::Stable => 4,
-            PositionStrategy::Unknown => u32::MAX, // Use u32::MAX for unknown strategies
+            PositionStrategy::Skip => 0,
+            PositionStrategy::Custom(x) => x.into(),
         }
     }
 }
@@ -50,7 +41,7 @@ pub struct PositionMetadata {
     pub strategy: PositionStrategy,
 
     /// A unique identifier for the bundle this position belongs to.
-    pub identifier: u32,
+    pub identifier: NonZeroU32,
 }
 
 impl PositionMetadata {
@@ -77,16 +68,21 @@ impl From<PositionMetadata> for pb::PositionMetadata {
     fn from(value: PositionMetadata) -> Self {
         Self {
             strategy: value.strategy.into(),
-            identifier: value.identifier,
+            identifier: value.identifier.into(),
         }
     }
 }
 
-impl From<pb::PositionMetadata> for PositionMetadata {
-    fn from(value: pb::PositionMetadata) -> Self {
-        Self {
+impl TryFrom<pb::PositionMetadata> for PositionMetadata {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::PositionMetadata) -> Result<Self, Self::Error> {
+        Ok(Self {
             strategy: value.strategy.into(),
-            identifier: value.identifier,
-        }
+            identifier: value
+                .identifier
+                .try_into()
+                .context("identifier should be non zero")?,
+        })
     }
 }

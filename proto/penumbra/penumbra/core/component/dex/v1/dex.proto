@@ -363,6 +363,17 @@ message LpNft {
   PositionState state = 2;
 }
 
+// Metadata about a position, or bundle of positions.
+// See UIP-9 for more details.
+message PositionMetadata {
+  // A strategy tag for the bundle, convention:
+  // 0x0 - Skip
+  // 0x01 >= _ < 0x40 - Reserved
+  fixed32 strategy = 1;
+  // A unique identifier for the bundle this position belongs to.
+  fixed32 identifier = 2;
+}
+
 // A transaction action that opens a new position.
 //
 // This action's contribution to the transaction's value balance is to consume

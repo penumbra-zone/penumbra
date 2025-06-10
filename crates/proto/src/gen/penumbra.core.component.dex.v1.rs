@@ -789,6 +789,29 @@ impl ::prost::Name for LpNft {
         "/penumbra.core.component.dex.v1.LpNft".into()
     }
 }
+/// Metadata about a position, or bundle of positions.
+/// See UIP-9 for more details.
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct PositionMetadata {
+    /// A strategy tag for the bundle, convention:
+    /// 0x0 - Skip
+    /// 0x01 >= _ \< 0x40 - Reserved
+    #[prost(fixed32, tag = "1")]
+    pub strategy: u32,
+    /// A unique identifier for the bundle this position belongs to.
+    #[prost(fixed32, tag = "2")]
+    pub identifier: u32,
+}
+impl ::prost::Name for PositionMetadata {
+    const NAME: &'static str = "PositionMetadata";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.dex.v1.PositionMetadata".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.dex.v1.PositionMetadata".into()
+    }
+}
 /// A transaction action that opens a new position.
 ///
 /// This action's contribution to the transaction's value balance is to consume
