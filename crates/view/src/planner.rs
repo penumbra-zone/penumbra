@@ -29,7 +29,7 @@ use penumbra_sdk_dex::{
         action::PositionClose,
         plan::{PositionOpenPlan, PositionWithdrawPlan},
         position::{self, Position},
-        Reserves,
+        PositionMetadata, Reserves,
     },
     swap::{SwapPlaintext, SwapPlan},
     swap_claim::SwapClaimPlan,
@@ -182,7 +182,21 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub fn position_open(&mut self, position: Position) -> &mut Self {
         self.action_list.push(PositionOpenPlan {
             position,
-            metadata: None,
+            metadata: Some(PositionMetadata::default()),
+        });
+        self
+    }
+
+    /// Open a liquidity position in the order book.
+    #[instrument(skip(self))]
+    pub fn position_open_with_metadata(
+        &mut self,
+        position: Position,
+        metadata: PositionMetadata,
+    ) -> &mut Self {
+        self.action_list.push(PositionOpenPlan {
+            position,
+            metadata: Some(metadata),
         });
         self
     }
