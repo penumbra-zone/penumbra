@@ -3,42 +3,14 @@ use std::num::NonZeroU32;
 use anyhow::Context;
 use penumbra_sdk_keys::PositionMetadataKey;
 use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
-use serde::{Deserialize, Serialize};
-
-/// Strategy types for position bundles.
-#[repr(u32)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum PositionStrategy {
-    /// Skip metadata tracking for this position.
-    Skip,
-    Custom(NonZeroU32),
-}
-
-impl From<u32> for PositionStrategy {
-    fn from(value: u32) -> Self {
-        match NonZeroU32::new(value) {
-            None => Self::Skip,
-            Some(x) => Self::Custom(x),
-        }
-    }
-}
-
-impl From<PositionStrategy> for u32 {
-    fn from(strategy: PositionStrategy) -> Self {
-        match strategy {
-            PositionStrategy::Skip => 0,
-            PositionStrategy::Custom(x) => x.into(),
-        }
-    }
-}
 
 /// Metadata about a position, or bundle of positions.
 ///
 /// See [UIP-9](https://uips.penumbra.zone/uip-9.html) for more details.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub struct PositionMetadata {
     /// A strategy tag for the bundle.
-    pub strategy: PositionStrategy,
+    pub strategy: NonZeroU32,
 
     /// A unique identifier for the bundle this position belongs to.
     pub identifier: NonZeroU32,
@@ -78,11 +50,23 @@ impl TryFrom<pb::PositionMetadata> for PositionMetadata {
 
     fn try_from(value: pb::PositionMetadata) -> Result<Self, Self::Error> {
         Ok(Self {
-            strategy: value.strategy.into(),
+            strategy: value
+                .strategy
+                .try_into()
+                .context("strategy should be non zero")?,
             identifier: value
                 .identifier
                 .try_into()
                 .context("identifier should be non zero")?,
         })
+    }
+}
+
+impl Default for PositionMetadata {
+    fn default() -> Self {
+        Self {
+            strategy: NonZeroU32::new(1).expect("1 is non-zero"),
+            identifier: NonZeroU32::new(1).expect("1 is non-zero"),
+        }
     }
 }
