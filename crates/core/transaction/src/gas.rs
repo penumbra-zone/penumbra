@@ -10,6 +10,9 @@ use penumbra_sdk_funding::liquidity_tournament::{
     ActionLiquidityTournamentVote, LIQUIDITY_TOURNAMENT_VOTE_DENOM_MAX_BYTES,
 };
 use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_keys::symmetric::{
+    ENCRYPTED_POSITION_METADATA_SIZE_BYTES, POSITION_METADATA_SIZE_BYTES,
+};
 use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Output, Spend};
 use penumbra_sdk_stake::{
     validator::Definition as ValidatorDefinition, Delegate, Undelegate, UndelegateClaim,
@@ -539,9 +542,8 @@ impl GasCost for PositionOpenPlan {
     fn gas_cost(&self) -> Gas {
         Gas {
             // The block space measured as the byte length of the encoded action.
-            //
-            // Note: after UIP-9, this code is still correct.
-            block_space: self.encode_to_vec().len() as u64,
+            block_space: self.position.encode_to_vec().len() as u64
+                + ENCRYPTED_POSITION_METADATA_SIZE_BYTES as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a PositionOpen the compact block is not modified.
