@@ -2,7 +2,7 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_sdk_asset::{balance, Balance, Value};
 use penumbra_sdk_keys::{
-    keys::FullViewingKey, symmetric::POSITION_METADATA_NONCE_SIZE, PositionMetadataKey,
+    keys::FullViewingKey, symmetric::POSITION_METADATA_NONCE_SIZE_BYTES, PositionMetadataKey,
 };
 use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
@@ -29,19 +29,17 @@ impl PositionOpenPlan {
     pub fn position_open(
         &self,
         fvk: &FullViewingKey,
-        nonce: Option<&[u8; POSITION_METADATA_NONCE_SIZE]>,
+        nonce: Option<&[u8; POSITION_METADATA_NONCE_SIZE_BYTES]>,
     ) -> PositionOpen {
         let pmk = PositionMetadataKey::derive(fvk.outgoing());
         let nonce = nonce.copied().unwrap_or_else(|| {
-            let out: [u8; POSITION_METADATA_NONCE_SIZE] = self.position.id().0
-                [..POSITION_METADATA_NONCE_SIZE]
+            let out: [u8; POSITION_METADATA_NONCE_SIZE_BYTES] = self.position.id().0
+                [..POSITION_METADATA_NONCE_SIZE_BYTES]
                 .try_into()
                 .expect("position id is 32 bytes");
             out
         });
-        let encrypted_metadata = self
-            .metadata
-            .map(|m| pmk.encrypt(m.encode_to_vec().as_slice(), &nonce));
+        let encrypted_metadata = self.metadata.map(|m| m.encrypt(&pmk, &nonce));
         PositionOpen {
             position: self.position.clone(),
             encrypted_metadata,
