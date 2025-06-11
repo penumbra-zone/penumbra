@@ -8,7 +8,6 @@ use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionEnd;
 use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionSchedule;
 use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVotePlan;
 use penumbra_sdk_dex::PositionOpen;
 use penumbra_sdk_dex::{
     lp::{
@@ -18,6 +17,7 @@ use penumbra_sdk_dex::{
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
 };
+use penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVotePlan;
 use penumbra_sdk_governance::{
     delegator_vote::DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
     ValidatorVote,
