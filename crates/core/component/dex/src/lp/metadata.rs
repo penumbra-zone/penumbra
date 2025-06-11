@@ -91,6 +91,11 @@ impl Default for PositionMetadata {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::lp::PositionMetadata;
+
     use super::pb;
     use penumbra_sdk_keys::keys::Bip44Path;
     use penumbra_sdk_keys::keys::SeedPhrase;
@@ -101,3 +106,184 @@ impl Default for PositionMetadata {
     use prost::Message;
     use rand_core::OsRng;
     use std::num::NonZeroU32;
+
+    #[test]
+    fn encrypted_metadata_len() {
+        let posmet = PositionMetadata {
+            strategy: NonZeroU32::new(1337u32).unwrap(),
+            identifier: NonZeroU32::new(1337u32).unwrap(),
+        };
+
+        let seed_phrase = SeedPhrase::generate(OsRng);
+        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk_sender = sk_sender.full_viewing_key();
+
+        let proto: pb::PositionMetadata = posmet.clone().into();
+        let size = proto.encode_to_vec().len();
+        assert_eq!(size, POSITION_METADATA_SIZE_BYTES);
+
+        let pmk = PositionMetadataKey::derive(fvk_sender.outgoing());
+        let encrypted_posmet = posmet.encrypt(&pmk, &[0u8; 24]);
+        let size = encrypted_posmet.len();
+        assert_eq!(size, ENCRYPTED_POSITION_METADATA_SIZE_BYTES);
+    }
+    #[test]
+    fn encrypted_format_check() {
+        let posmet = PositionMetadata {
+            strategy: NonZeroU32::new(1337u32).unwrap(),
+            identifier: NonZeroU32::new(1337u32).unwrap(),
+        };
+
+        let seed_phrase = SeedPhrase::generate(OsRng);
+        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk_sender = sk_sender.full_viewing_key();
+
+        let pmk = fvk_sender.position_metadata_key();
+        let raw_nonce = [0u8; 24];
+        let encrypted_posmet = posmet.encrypt(&pmk, &raw_nonce.clone());
+        assert_eq!(
+            encrypted_posmet.len(),
+            ENCRYPTED_POSITION_METADATA_SIZE_BYTES
+        );
+
+        let nonce = encrypted_posmet[..24].to_vec();
+        assert_eq!(nonce, raw_nonce);
+    }
+
+    #[test]
+    fn encrypted_metadata_roundtrip() {
+        let posmet = PositionMetadata {
+            strategy: NonZeroU32::new(55u32).unwrap(),
+            identifier: NonZeroU32::new(1337u32).unwrap(),
+        };
+
+        let seed_phrase = SeedPhrase::generate(OsRng);
+        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk_sender = sk_sender.full_viewing_key();
+
+        let proto: pb::PositionMetadata = posmet.clone().into();
+        let raw_metadata = proto.encode_to_vec();
+        let size = raw_metadata.len();
+
+        assert_eq!(size, POSITION_METADATA_SIZE_BYTES);
+
+        let pmk = fvk_sender.position_metadata_key();
+        let encrypted_posmet = posmet.clone().encrypt(&pmk, &[1u8; 24]);
+        let size = encrypted_posmet.len();
+        assert_eq!(size, ENCRYPTED_POSITION_METADATA_SIZE_BYTES);
+
+        let decrypted_posmet = PositionMetadata::decrypt(&pmk, Some(&encrypted_posmet))
+            .expect("decryption should succeed")
+            .expect("decrypted metadata should not be None");
+        assert!(decrypted_posmet == posmet);
+    }
+
+    #[test]
+    fn fixed_wire_size_some_id() {
+        let posmet = PositionMetadata {
+            strategy: NonZeroU32::new(55u32).unwrap(),
+            identifier: NonZeroU32::new(1337u32).unwrap(),
+        };
+        let proto: pb::PositionMetadata = posmet.into();
+        let size = proto.encoded_len();
+        assert_eq!(size, POSITION_METADATA_SIZE_BYTES);
+    }
+
+    #[test]
+    fn fixed_wire_size_max_id() {
+        let posmet = PositionMetadata {
+            strategy: NonZeroU32::new(u32::MAX).unwrap(),
+            identifier: NonZeroU32::new(u32::MAX).unwrap(),
+        };
+        let proto: pb::PositionMetadata = posmet.into();
+        let size = proto.encoded_len();
+        assert_eq!(size, POSITION_METADATA_SIZE_BYTES);
+    }
+
+    #[test]
+    fn fixed_wire_size_max_strat_max_id() {
+        let proto = pb::PositionMetadata {
+            strategy: 127u32,
+            identifier: u32::MAX,
+        };
+        let size = proto.encoded_len();
+        assert_eq!(size, POSITION_METADATA_SIZE_BYTES);
+    }
+
+    #[test]
+    fn fixed_wire_size_small_id() {
+        let posmet = PositionMetadata {
+            strategy: NonZeroU32::new(1u32).unwrap(),
+            identifier: NonZeroU32::new(1u32).unwrap(),
+        };
+        let proto: pb::PositionMetadata = posmet.into();
+        let size = proto.encoded_len();
+        assert_eq!(size, POSITION_METADATA_SIZE_BYTES);
+    }
+
+    #[test]
+    #[should_panic]
+    fn domain_type_invalid_identifier() {
+        let proto = pb::PositionMetadata {
+            strategy: 127,
+            identifier: 0,
+        };
+        let _: PositionMetadata = proto.try_into().unwrap();
+    }
+
+    #[test]
+    /// Tests that metadata passing through the domain type is not lossy
+    /// and that the wire size is correct.
+    fn domain_type_max_strategy() {
+        let original_proto = pb::PositionMetadata {
+            strategy: u32::MAX,
+            identifier: u32::MAX,
+        };
+        let domain: PositionMetadata = original_proto.clone().try_into().unwrap();
+
+        let expected = PositionMetadata {
+            strategy: NonZeroU32::new(u32::MAX).unwrap(),
+            identifier: NonZeroU32::new(u32::MAX).unwrap(),
+        };
+        assert_eq!(domain, expected);
+
+        let new_proto: pb::PositionMetadata = domain.clone().into();
+        assert_eq!(new_proto, original_proto);
+
+        let serialized = new_proto.encode_to_vec();
+        assert_eq!(serialized.len(), POSITION_METADATA_SIZE_BYTES);
+    }
+
+    #[test]
+    #[should_panic]
+    fn domain_type_invalid_zero_strategy() {
+        let proto = pb::PositionMetadata {
+            strategy: 0,
+            identifier: 1,
+        };
+        let _: PositionMetadata = proto.try_into().unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn domain_type_invalid_variant_invalid_id() {
+        let proto = pb::PositionMetadata {
+            strategy: 0,
+            identifier: 0,
+        };
+        let _: PositionMetadata = proto.try_into().unwrap();
+    }
+
+    #[test]
+    fn custom_strategy_lossy() {
+        let metadata = PositionMetadata {
+            strategy: NonZeroU32::new(1).unwrap(),
+            identifier: NonZeroU32::new(1).unwrap(),
+        };
+
+        let proto: pb::PositionMetadata = metadata.clone().into();
+
+        let roundtrip_metadata: PositionMetadata = proto.try_into().unwrap();
+        assert_eq!(roundtrip_metadata, metadata);
+    }
+}
