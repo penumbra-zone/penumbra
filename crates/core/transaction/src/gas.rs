@@ -11,7 +11,7 @@ use penumbra_sdk_funding::liquidity_tournament::{
 };
 use penumbra_sdk_ibc::IbcRelay;
 use penumbra_sdk_keys::symmetric::{
-    ENCRYPTED_POSITION_METADATA_SIZE_BYTES, POSITION_METADATA_SIZE_BYTES,
+    ENCRYPTED_POSITION_METADATA_SIZE_BYTES,
 };
 use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Output, Spend};
 use penumbra_sdk_stake::{
