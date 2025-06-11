@@ -361,11 +361,16 @@ impl BackreferenceKey {
     }
 }
 
-pub const POSITION_METADATA_NONCE_SIZE: usize = 24;
+pub const POSITION_METADATA_SIZE_BYTES: usize = 10;
+pub const POSITION_METADATA_NONCE_SIZE_BYTES: usize = 24;
+pub const POSITION_METADATA_AUTH_TAG_SIZE_BYTES: usize = 16;
+pub const ENCRYPTED_POSITION_METADATA_SIZE_BYTES: usize = POSITION_METADATA_SIZE_BYTES
+    + POSITION_METADATA_NONCE_SIZE_BYTES
+    + POSITION_METADATA_AUTH_TAG_SIZE_BYTES;
 
 /// Represents a symmetric `XChaCha20Poly1305` key used for Position metadata encryption.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct PositionMetadataKey(Key);
+pub struct PositionMetadataKey(pub Key);
 
 impl PositionMetadataKey {
     /// Derives a PositionMetadataKey from an OutgoingViewingKey.
@@ -382,41 +387,45 @@ impl PositionMetadataKey {
         Self(*Key::from_slice(key.as_bytes()))
     }
 
-    pub fn encrypt(&self, plaintext: &[u8], nonce: &[u8; POSITION_METADATA_NONCE_SIZE]) -> Vec<u8> {
+    /// Encrypts position metadata using the PositionMetadataKey.
+    pub fn encrypt(
+        &self,
+        plaintext: &[u8; POSITION_METADATA_SIZE_BYTES],
+        nonce: &[u8; POSITION_METADATA_NONCE_SIZE_BYTES],
+    ) -> Vec<u8> {
         let cipher = XChaCha20Poly1305::new(&self.0);
-        let nonce = XNonce::from_slice(nonce);
+        let nonce = XNonce::from_slice(nonce.as_ref());
 
         // Get the encrypted data with authentication tag
+        // The auth tag adds 16 bytes.
         let mut ciphertext = cipher
-            .encrypt(nonce, plaintext)
+            .encrypt(nonce, plaintext.as_ref())
             .expect("encryption succeeded");
 
         // Prepend the nonce to the ciphertext
-        let mut result = Vec::with_capacity(POSITION_METADATA_NONCE_SIZE + ciphertext.len());
+        let mut result = Vec::with_capacity(ENCRYPTED_POSITION_METADATA_SIZE_BYTES);
         result.extend_from_slice(nonce.as_slice());
         result.append(&mut ciphertext);
 
         result
     }
 
-    pub fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        if ciphertext.len() < POSITION_METADATA_NONCE_SIZE {
-            return Err(anyhow!("ciphertext too short"));
+    pub fn decrypt(&self, ciphertext: &[u8]) -> Option<Vec<u8>> {
+        if ciphertext.len() != ENCRYPTED_POSITION_METADATA_SIZE_BYTES {
+            return None;
         }
 
         // Extract the nonce (first 24 bytes)
-        let nonce = XNonce::from_slice(&ciphertext[..POSITION_METADATA_NONCE_SIZE]);
+        let nonce = XNonce::from_slice(&ciphertext[..POSITION_METADATA_NONCE_SIZE_BYTES]);
 
         // Extract the ciphertext (everything after the nonce)
-        let encrypted_data = &ciphertext[POSITION_METADATA_NONCE_SIZE..];
+        let encrypted_data = &ciphertext[POSITION_METADATA_NONCE_SIZE_BYTES..];
 
         // Create cipher with our key
         let cipher = XChaCha20Poly1305::new(&self.0);
 
-        // Decrypt the data
-        cipher
-            .decrypt(nonce, encrypted_data)
-            .map_err(|_| anyhow!("decryption error"))
+        // Decrypt the data returning none if decryption fails
+        cipher.decrypt(nonce, encrypted_data).ok()
     }
 }
 
