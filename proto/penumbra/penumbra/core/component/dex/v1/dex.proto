@@ -363,6 +363,16 @@ message LpNft {
   PositionState state = 2;
 }
 
+// Metadata about a position, or bundle of positions.
+// See UIP-9 for more details.
+message PositionMetadata {
+  // A strategy tag for the bundle, convention:
+  // 0x01 >= _ < 0x40 - Reserved
+  fixed32 strategy = 1;
+  // A unique identifier for the bundle this position belongs to.
+  fixed32 identifier = 2;
+}
+
 // A transaction action that opens a new position.
 //
 // This action's contribution to the transaction's value balance is to consume
@@ -373,6 +383,28 @@ message PositionOpen {
   // Positions are immutable, so the `PositionData` (and hence the `PositionId`)
   // are unchanged over the entire lifetime of the position.
   Position position = 1;
+  // Either absent, or a 50 byte ciphertext encoding position metadata.
+  bytes encrypted_metadata = 2;
+}
+
+message PositionOpenPlan {
+  Position position = 1;
+  PositionMetadata metadata = 2;
+}
+
+// A view of the position open action.
+message PositionOpenView {
+  message Visible {
+    PositionOpen action = 1;
+    PositionMetadata metadata = 2;
+  }
+  message Opaque {
+    PositionOpen action = 1;
+  }
+  oneof position_open_view {
+    Visible visible = 1;
+    Opaque opaque = 2;
+  }
 }
 
 // A transaction action that closes a position.

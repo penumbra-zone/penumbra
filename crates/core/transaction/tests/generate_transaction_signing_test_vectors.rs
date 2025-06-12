@@ -21,13 +21,13 @@ use penumbra_sdk_auction::auction::{
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_sdk_dex::{
     lp::{
-        plan::PositionWithdrawPlan,
+        plan::{PositionOpenPlan, PositionWithdrawPlan},
         position::{Position, State as PositionState},
         Reserves, TradingFunction,
     },
     swap::{SwapPlaintext, SwapPlan},
     swap_claim::SwapClaimPlan,
-    BatchSwapOutputData, PositionClose, PositionOpen, TradingPair,
+    BatchSwapOutputData, PositionClose, TradingPair,
 };
 use penumbra_sdk_fee::Fee;
 use penumbra_sdk_governance::{
@@ -494,8 +494,11 @@ fn position_strategy() -> impl Strategy<Value = Position> {
         })
 }
 
-fn position_open_strategy() -> impl Strategy<Value = PositionOpen> {
-    (position_strategy()).prop_map(|position| PositionOpen { position })
+fn position_open_strategy() -> impl Strategy<Value = PositionOpenPlan> {
+    (position_strategy()).prop_map(|position| PositionOpenPlan {
+        position,
+        metadata: None,
+    })
 }
 
 fn position_close_strategy() -> impl Strategy<Value = PositionClose> {

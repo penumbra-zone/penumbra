@@ -232,7 +232,10 @@ impl TestingStrategy {
         let mut position_ids = Vec::new();
         for position in self.positions {
             position_ids.push(position.id());
-            let tx = PositionOpen { position };
+            let tx = PositionOpen {
+                position,
+                encrypted_metadata: None,
+            };
             dex.position_open(tx).await?;
         }
         dex.end_block().await?;

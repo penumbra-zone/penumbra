@@ -656,6 +656,11 @@ pub mod transaction_planner_request {
         pub position: ::core::option::Option<
             super::super::super::core::component::dex::v1::Position,
         >,
+        /// Optionally, provide position metadata to encrypt.
+        #[prost(message, optional, tag = "2")]
+        pub position_meta: ::core::option::Option<
+            super::super::super::core::component::dex::v1::PositionMetadata,
+        >,
     }
     impl ::prost::Name for PositionOpen {
         const NAME: &'static str = "PositionOpen";
