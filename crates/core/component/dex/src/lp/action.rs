@@ -18,6 +18,11 @@ pub struct PositionOpen {
     /// Positions are immutable, so the `PositionData` (and hence the `PositionId`)
     /// are unchanged over the entire lifetime of the position.
     pub position: Position,
+    /// Optional encrypted metadata about this position.
+    ///
+    /// If present, this is a 50-byte blob containing a 24-byte nonce and a 26-byte ciphertext
+    /// (a 10-byte serialized `PositionMetadata` plus a 16-byte authentication tag).
+    pub encrypted_metadata: Option<Vec<u8>>,
 }
 
 impl EffectingData for PositionOpen {
@@ -113,6 +118,7 @@ impl From<PositionOpen> for pb::PositionOpen {
     fn from(value: PositionOpen) -> Self {
         Self {
             position: Some(value.position.into()),
+            encrypted_metadata: value.encrypted_metadata.unwrap_or_default(),
         }
     }
 }
@@ -121,11 +127,21 @@ impl TryFrom<pb::PositionOpen> for PositionOpen {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::PositionOpen) -> Result<Self, Self::Error> {
+        // Validate that if encrypted_metadata is present, it's exactly 50 bytes (24-byte nonce + 26-byte ciphertext)
+        if !value.encrypted_metadata.is_empty() && value.encrypted_metadata.len() != 50 {
+            anyhow::bail!("encrypted_metadata must be exactly 50 bytes if present");
+        }
+
         Ok(Self {
             position: value
                 .position
                 .ok_or_else(|| anyhow::anyhow!("missing position"))?
                 .try_into()?,
+            encrypted_metadata: if value.encrypted_metadata.is_empty() {
+                None
+            } else {
+                Some(value.encrypted_metadata)
+            },
         })
     }
 }

@@ -8559,9 +8559,15 @@ impl serde::Serialize for transaction_planner_request::PositionOpen {
         if self.position.is_some() {
             len += 1;
         }
+        if self.position_meta.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest.PositionOpen", len)?;
         if let Some(v) = self.position.as_ref() {
             struct_ser.serialize_field("position", v)?;
+        }
+        if let Some(v) = self.position_meta.as_ref() {
+            struct_ser.serialize_field("positionMeta", v)?;
         }
         struct_ser.end()
     }
@@ -8574,11 +8580,14 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionOpen 
     {
         const FIELDS: &[&str] = &[
             "position",
+            "position_meta",
+            "positionMeta",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Position,
+            PositionMeta,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -8602,6 +8611,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionOpen 
                     {
                         match value {
                             "position" => Ok(GeneratedField::Position),
+                            "positionMeta" | "position_meta" => Ok(GeneratedField::PositionMeta),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -8622,6 +8632,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionOpen 
                     V: serde::de::MapAccess<'de>,
             {
                 let mut position__ = None;
+                let mut position_meta__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Position => {
@@ -8630,6 +8641,12 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionOpen 
                             }
                             position__ = map_.next_value()?;
                         }
+                        GeneratedField::PositionMeta => {
+                            if position_meta__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionMeta"));
+                            }
+                            position_meta__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -8637,6 +8654,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionOpen 
                 }
                 Ok(transaction_planner_request::PositionOpen {
                     position: position__,
+                    position_meta: position_meta__,
                 })
             }
         }

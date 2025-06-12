@@ -2,12 +2,15 @@ use penumbra_sdk_auction::auction::dutch::actions::{
     ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
 };
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_sdk_dex::{PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim};
+use penumbra_sdk_dex::{
+    lp::plan::PositionOpenPlan, PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim,
+};
 use penumbra_sdk_fee::Gas;
 use penumbra_sdk_funding::liquidity_tournament::{
     ActionLiquidityTournamentVote, LIQUIDITY_TOURNAMENT_VOTE_DENOM_MAX_BYTES,
 };
 use penumbra_sdk_ibc::IbcRelay;
+use penumbra_sdk_keys::symmetric::ENCRYPTED_POSITION_METADATA_SIZE_BYTES;
 use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Output, Spend};
 use penumbra_sdk_stake::{
     validator::Definition as ValidatorDefinition, Delegate, Undelegate, UndelegateClaim,
@@ -528,6 +531,31 @@ impl GasCost for ProposalDepositClaim {
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
             // Execution cost is currently hardcoded at 10 for all Action variants.
+            execution: 10,
+        }
+    }
+}
+
+impl GasCost for PositionOpenPlan {
+    fn gas_cost(&self) -> Gas {
+        let padding = if self.metadata.is_none() {
+            ENCRYPTED_POSITION_METADATA_SIZE_BYTES as u64
+        } else {
+            0
+        };
+        Gas {
+            // The block space measured as the byte length of the encoded action.
+            // But, we also add padding to not penalize including a ciphertext.
+            block_space: self.position.encode_to_vec().len() as u64 + padding,
+            // The compact block space cost is based on the byte size of the data the [`Action`] adds
+            // to the compact block.
+            // For a PositionOpen the compact block is not modified.
+            compact_block_space: 0,
+            // There are some small validations performed so a token amount of gas is charged.
+            verification: 50,
+            // Execution cost is currently hardcoded at 10 for all Action variants.
+            // Reminder: Any change to this execution gas vector must also be reflected
+            // in updates to the dutch auction gas vectors.
             execution: 10,
         }
     }

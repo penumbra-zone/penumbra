@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use penumbra_sdk_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str, DomainType};
 
 use crate::keys::wallet_id::WalletId;
+use crate::PositionMetadataKey;
 use crate::{
     fmd, ka, prf,
     rdsa::{SpendAuth, VerificationKey},
@@ -123,6 +124,11 @@ impl FullViewingKey {
     /// Construct the backreference key for this full viewing key.
     pub fn backref_key(&self) -> BackreferenceKey {
         BackreferenceKey::derive(self.outgoing()).clone()
+    }
+
+    /// Construct a position metadata key for this full viewing key.
+    pub fn position_metadata_key(&self) -> PositionMetadataKey {
+        PositionMetadataKey::derive(self.outgoing())
     }
 
     /// Hashes the full viewing key into an [`WalletId`].

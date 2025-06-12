@@ -73,3 +73,7 @@ message GovernanceKey {
 message ConsensusKey {
   bytes inner = 1;
 }
+
+message PositionMetadataKey {
+  bytes inner = 1;
+}
