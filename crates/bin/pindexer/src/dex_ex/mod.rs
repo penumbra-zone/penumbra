@@ -591,16 +591,29 @@ mod summary {
                     SUM(dv) AS direct_volume,
                     SUM(sv) AS swap_volume,
                     SUM(liquidity) AS liquidity,
-                    SUM(trades) AS trades,
-                    (SELECT COUNT(*) FROM converted_pairs_summary WHERE dv > 0 OR sv > 0) AS active_pairs
+                    SUM(trades) AS trades
                 FROM converted_pairs_summary
+            ),
+            undirected_pairs_summary AS (
+              WITH pairs AS (
+                  SELECT asset_start AS a_start, asset_end AS a_end FROM converted_pairs_summary WHERE asset_start < asset_end
+              )
+              SELECT
+                  a_start AS asset_start,
+                  a_end AS asset_end,
+                  (SELECT SUM(sv) FROM converted_pairs_summary WHERE (asset_start = a_start AND asset_end = a_end) OR (asset_start = a_end AND asset_end = a_start)) AS sv,
+                  (SELECT SUM(dv) FROM converted_pairs_summary WHERE (asset_start = a_start AND asset_end = a_end) OR (asset_start = a_end AND asset_end = a_start)) AS dv
+              FROM pairs
+            ),
+            counts AS (
+              SELECT COUNT(*) AS active_pairs FROM undirected_pairs_summary WHERE dv > 0
             ),
             largest_sv AS (
                 SELECT
                     asset_start AS largest_sv_trading_pair_start,
                     asset_end AS largest_sv_trading_pair_end,
                     sv AS largest_sv_trading_pair_volume                    
-                FROM converted_pairs_summary
+                FROM undirected_pairs_summary
                 ORDER BY sv DESC
                 LIMIT 1
             ),
@@ -609,7 +622,7 @@ mod summary {
                     asset_start AS largest_dv_trading_pair_start,
                     asset_end AS largest_dv_trading_pair_end,
                     dv AS largest_dv_trading_pair_volume                    
-                FROM converted_pairs_summary
+                FROM undirected_pairs_summary
                 ORDER BY dv DESC
                 LIMIT 1
             ),
@@ -640,6 +653,7 @@ mod summary {
         JOIN largest_sv ON TRUE
         JOIN largest_dv ON TRUE
         JOIN top_price_mover ON TRUE
+        JOIN counts ON TRUE
         ON CONFLICT (the_window) DO UPDATE SET
             direct_volume = EXCLUDED.direct_volume,
             swap_volume = EXCLUDED.swap_volume,
