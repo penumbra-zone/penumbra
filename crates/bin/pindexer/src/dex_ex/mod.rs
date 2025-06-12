@@ -5,10 +5,10 @@ use cometindex::{
     index::{BlockEvents, EventBatch, EventBatchContext},
     AppView, PgTransaction,
 };
-use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_dex::{
     event::{
-        EventBatchSwap, EventCandlestickData, EventPositionClose, EventPositionExecution,
+        EventArbExecution, EventBatchSwap, EventPositionClose, EventPositionExecution,
         EventPositionOpen, EventPositionWithdraw, EventQueuePositionClose,
     },
     lp::{position::Flows, Reserves},
@@ -66,6 +66,17 @@ mod candle {
                 high: data.high,
                 direct_volume: data.direct_volume,
                 swap_volume: data.swap_volume,
+            }
+        }
+
+        pub fn point(price: f64, direct_volume: f64) -> Self {
+            Self {
+                open: price,
+                close: price,
+                low: price,
+                high: price,
+                direct_volume,
+                swap_volume: 0.0,
             }
         }
 
@@ -737,23 +748,6 @@ impl Events {
         self.time = Some(time)
     }
 
-    fn with_candle(&mut self, pair: DirectedTradingPair, candle: Candle) {
-        // Populate both this pair and the flipped pair, and if the flipped pair
-        // is already populated, we need to mix the two candles together.
-        let flip = pair.flip();
-        let new_candle = match self.candles.get(&flip).cloned() {
-            None => candle,
-            Some(flipped) => {
-                let mut out = candle;
-                out.mix(&flipped);
-                out
-            }
-        };
-
-        self.candles.insert(pair, new_candle);
-        self.candles.insert(flip, new_candle.flip());
-    }
-
     fn metric(&mut self, pair: &DirectedTradingPair) -> &mut PairMetrics {
         if !self.metrics.contains_key(pair) {
             self.metrics.insert(*pair, PairMetrics::default());
@@ -762,8 +756,56 @@ impl Events {
         self.metrics.get_mut(pair).unwrap()
     }
 
-    fn with_trade(&mut self, pair: &DirectedTradingPair) {
-        self.metric(pair).trades += 1.0;
+    fn with_trace(&mut self, input: Value, output: Value) {
+        let pair_1_2 = DirectedTradingPair {
+            start: input.asset_id,
+            end: output.asset_id,
+        };
+        // This shouldn't happen, but to avoid weird stuff later, let's ignore this trace.
+        if pair_1_2.start == pair_1_2.end {
+            tracing::warn!(?input, ?output, "found trace with a loop?");
+            return;
+        }
+        let pair_2_1 = pair_1_2.flip();
+        let input_amount = f64::from(input.amount);
+        let output_amount = f64::from(output.amount);
+        let price_1_2 = output_amount / input_amount;
+        let candle_1_2 = Candle::point(price_1_2, input_amount);
+        let candle_2_1 = Candle::point(1.0 / price_1_2, output_amount);
+        self.metric(&pair_1_2).trades += 1.0;
+        self.candles
+            .entry(pair_1_2)
+            .and_modify(|c| c.merge(&candle_1_2))
+            .or_insert(candle_1_2);
+        self.metric(&pair_2_1).trades += 1.0;
+        self.candles
+            .entry(pair_2_1)
+            .and_modify(|c| c.merge(&candle_2_1))
+            .or_insert(candle_2_1);
+    }
+
+    fn with_swap_execution(&mut self, se: &SwapExecution) {
+        for row in se.traces.iter() {
+            for window in row.windows(2) {
+                self.with_trace(window[0], window[1]);
+            }
+        }
+        let pair_1_2 = DirectedTradingPair {
+            start: se.input.asset_id,
+            end: se.output.asset_id,
+        };
+        // When doing arb, we don't want to report the volume on UM -> UM,
+        // so we need this check.
+        if pair_1_2.start == pair_1_2.end {
+            return;
+        }
+        let pair_2_1 = pair_1_2.flip();
+        self.candles
+            .entry(pair_1_2)
+            .and_modify(|c| c.swap_volume += f64::from(se.input.amount));
+        self.candles
+            .entry(pair_2_1)
+            .and_modify(|c| c.swap_volume += f64::from(se.output.amount));
     }
 
     fn with_reserve_change(
@@ -806,10 +848,7 @@ impl Events {
         out.height = block.height() as i32;
 
         for event in block.events() {
-            if let Ok(e) = EventCandlestickData::try_from_event(&event.event) {
-                let candle = Candle::from_candlestick_data(&e.stick);
-                out.with_candle(e.pair, candle);
-            } else if let Ok(e) = EventBlockRoot::try_from_event(&event.event) {
+            if let Ok(e) = EventBlockRoot::try_from_event(&event.event) {
                 let time = DateTime::from_timestamp(e.timestamp_seconds, 0).ok_or(anyhow!(
                     "creating timestamp should succeed; timestamp: {}",
                     e.timestamp_seconds
@@ -862,18 +901,6 @@ impl Events {
                     },
                     false,
                 );
-                if e.reserves_1 > e.prev_reserves_1 {
-                    // Whatever asset we ended up with more with was traded in.
-                    out.with_trade(&DirectedTradingPair {
-                        start: e.trading_pair.asset_1(),
-                        end: e.trading_pair.asset_2(),
-                    });
-                } else if e.reserves_2 > e.prev_reserves_2 {
-                    out.with_trade(&DirectedTradingPair {
-                        start: e.trading_pair.asset_2(),
-                        end: e.trading_pair.asset_1(),
-                    });
-                }
                 out.position_executions.push(e);
             } else if let Ok(e) = EventPositionClose::try_from_event(&event.event) {
                 out.position_closes.push(e);
@@ -901,6 +928,16 @@ impl Events {
                     end: *STAKING_TOKEN_ASSET_ID,
                 };
                 out.metric(&pair).liquidity_change += e.reward_amount.value() as f64;
+            } else if let Ok(e) = EventBatchSwap::try_from_event(&event.event) {
+                // NOTE: order matters here, 2 for 1 happened after.
+                if let Some(se) = e.swap_execution_1_for_2.as_ref() {
+                    out.with_swap_execution(se);
+                }
+                if let Some(se) = e.swap_execution_2_for_1.as_ref() {
+                    out.with_swap_execution(se);
+                }
+            } else if let Ok(e) = EventArbExecution::try_from_event(&event.event) {
+                out.with_swap_execution(&e.swap_execution);
             }
         }
         Ok(out)
