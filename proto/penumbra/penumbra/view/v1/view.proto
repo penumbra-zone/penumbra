@@ -403,6 +403,8 @@ message TransactionPlannerRequest {
     // Positions are immutable, so the `PositionData` (and hence the `PositionId`)
     // are unchanged over the entire lifetime of the position.
     core.component.dex.v1.Position position = 1;
+    // Optionally, provide position metadata to encrypt.
+    core.component.dex.v1.PositionMetadata position_meta = 2;
   }
   message PositionClose {
     // The position to close.

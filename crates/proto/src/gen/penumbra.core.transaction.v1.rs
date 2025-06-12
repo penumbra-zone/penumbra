@@ -286,6 +286,10 @@ pub struct TransactionPerspective {
     pub batch_swap_output_data: ::prost::alloc::vec::Vec<
         super::super::component::dex::v1::BatchSwapOutputData,
     >,
+    #[prost(message, optional, tag = "70")]
+    pub position_metadata_key: ::core::option::Option<
+        super::super::keys::v1::PositionMetadataKey,
+    >,
 }
 /// Nested message and enum types in `TransactionPerspective`.
 pub mod transaction_perspective {
@@ -467,7 +471,7 @@ impl ::prost::Name for TransactionBodyView {
 pub struct ActionView {
     #[prost(
         oneof = "action_view::ActionView",
-        tags = "1, 2, 3, 4, 21, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 70, 200"
+        tags = "1, 2, 3, 4, 21, 35, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 70, 200"
     )]
     pub action_view: ::core::option::Option<action_view::ActionView>,
 }
@@ -486,6 +490,8 @@ pub mod action_view {
         SwapClaim(super::super::super::component::dex::v1::SwapClaimView),
         #[prost(message, tag = "21")]
         DelegatorVote(super::super::super::component::governance::v1::DelegatorVoteView),
+        #[prost(message, tag = "35")]
+        PositionOpenView(super::super::super::component::dex::v1::PositionOpenView),
         /// Action types without visible/opaque variants
         #[prost(message, tag = "16")]
         ValidatorDefinition(
@@ -506,6 +512,7 @@ pub mod action_view {
         ProposalDepositClaim(
             super::super::super::component::governance::v1::ProposalDepositClaim,
         ),
+        /// Deprecated: UIP-9 requires us to have an actual view here.
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::component::dex::v1::PositionOpen),
         #[prost(message, tag = "31")]
@@ -679,7 +686,7 @@ impl ::prost::Name for DetectionDataPlan {
 pub struct ActionPlan {
     #[prost(
         oneof = "action_plan::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 35, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70"
     )]
     pub action: ::core::option::Option<action_plan::Action>,
 }
@@ -722,6 +729,8 @@ pub mod action_plan {
         Ics20Withdrawal(super::super::super::component::ibc::v1::Ics20Withdrawal),
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::component::dex::v1::PositionOpen),
+        #[prost(message, tag = "35")]
+        PositionOpenPlan(super::super::super::component::dex::v1::PositionOpenPlan),
         #[prost(message, tag = "31")]
         PositionClose(super::super::super::component::dex::v1::PositionClose),
         /// The position withdraw/reward claim actions require balance information so they have Plan types.

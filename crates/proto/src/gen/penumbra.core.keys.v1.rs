@@ -227,3 +227,18 @@ impl ::prost::Name for ConsensusKey {
         "/penumbra.core.keys.v1.ConsensusKey".into()
     }
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PositionMetadataKey {
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for PositionMetadataKey {
+    const NAME: &'static str = "PositionMetadataKey";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.keys.v1.PositionMetadataKey".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.keys.v1.PositionMetadataKey".into()
+    }
+}

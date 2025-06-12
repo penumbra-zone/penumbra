@@ -9,7 +9,9 @@ use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, Com
 use penumbra_sdk_dex::{
     lp::{
         action::{PositionClose, PositionOpen, PositionWithdraw},
-        position, LpNft,
+        position,
+        view::PositionOpenView,
+        LpNft, PositionMetadata,
     },
     swap::{Swap, SwapCiphertext, SwapView},
     swap_claim::{SwapClaim, SwapClaimView},
@@ -258,8 +260,21 @@ impl IsAction for PositionOpen {
         self.balance().commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::PositionOpen(self.to_owned())
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
+        let view = match txp.position_metadata_key.and_then(|key| {
+            PositionMetadata::decrypt(&key, self.encrypted_metadata.as_ref().map(|x| x.as_slice()))
+                .ok()
+                .flatten()
+        }) {
+            None => PositionOpenView::Opaque {
+                action: self.clone(),
+            },
+            Some(metadata) => PositionOpenView::Visible {
+                action: self.clone(),
+                metadata,
+            },
+        };
+        ActionView::PositionOpen(view)
     }
 }
 

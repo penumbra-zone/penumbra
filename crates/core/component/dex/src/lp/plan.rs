@@ -1,15 +1,89 @@
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_sdk_asset::{balance, Balance, Value};
+use penumbra_sdk_keys::{
+    keys::FullViewingKey, symmetric::POSITION_METADATA_NONCE_SIZE_BYTES, PositionMetadataKey,
+};
 use penumbra_sdk_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    lp::{position, LpNft, Reserves},
+    lp::{metadata::PositionMetadata, position, position::Position, LpNft, Reserves},
     TradingPair,
 };
 
-use super::action::PositionWithdraw;
+use super::action::{PositionOpen, PositionWithdraw};
+
+/// A planned [`PositionOpen`](PositionOpen).
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "pb::PositionOpenPlan", into = "pb::PositionOpenPlan")]
+pub struct PositionOpenPlan {
+    pub position: Position,
+    pub metadata: Option<PositionMetadata>,
+}
+
+impl PositionOpenPlan {
+    /// Convenience method to construct the [`PositionOpen`] described by this [`PositionOpenPlan`].
+    ///
+    /// If the nonce is not provided, it will be derived from the position id.
+    pub fn position_open(
+        &self,
+        fvk: &FullViewingKey,
+        nonce: Option<&[u8; POSITION_METADATA_NONCE_SIZE_BYTES]>,
+    ) -> PositionOpen {
+        let pmk = PositionMetadataKey::derive(fvk.outgoing());
+        let nonce = nonce.copied().unwrap_or_else(|| {
+            let out: [u8; POSITION_METADATA_NONCE_SIZE_BYTES] = self.position.id().0
+                [..POSITION_METADATA_NONCE_SIZE_BYTES]
+                .try_into()
+                .expect("position id is 32 bytes");
+            out
+        });
+        let encrypted_metadata = self.metadata.map(|m| m.encrypt(&pmk, &nonce));
+        PositionOpen {
+            position: self.position.clone(),
+            encrypted_metadata,
+        }
+    }
+
+    pub fn balance(&self) -> Balance {
+        let opened_position_nft = Value {
+            amount: 1u64.into(),
+            asset_id: LpNft::new(self.position.id(), position::State::Opened).asset_id(),
+        };
+
+        let reserves = self.position.reserves.balance(&self.position.phi.pair);
+
+        // The action consumes the reserves and produces an LP NFT
+        Balance::from(opened_position_nft) - reserves
+    }
+}
+
+impl DomainType for PositionOpenPlan {
+    type Proto = pb::PositionOpenPlan;
+}
+
+impl From<PositionOpenPlan> for pb::PositionOpenPlan {
+    fn from(msg: PositionOpenPlan) -> Self {
+        Self {
+            position: Some(msg.position.into()),
+            metadata: msg.metadata.map(|x| x.into()),
+        }
+    }
+}
+
+impl TryFrom<pb::PositionOpenPlan> for PositionOpenPlan {
+    type Error = anyhow::Error;
+    fn try_from(msg: pb::PositionOpenPlan) -> Result<Self, Self::Error> {
+        Ok(Self {
+            position: msg
+                .position
+                .ok_or_else(|| anyhow::anyhow!("missing position"))?
+                .try_into()?,
+            metadata: msg.metadata.map(|x| x.try_into()).transpose()?,
+        })
+    }
+}
 
 /// A planned [`PositionWithdraw`](PositionWithdraw).
 #[derive(Clone, Debug, Deserialize, Serialize)]

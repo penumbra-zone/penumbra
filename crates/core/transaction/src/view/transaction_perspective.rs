@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use pbjson_types::Any;
 use penumbra_sdk_asset::{asset, EstimatedPrice, Value, ValueView};
 use penumbra_sdk_dex::BatchSwapOutputData;
-use penumbra_sdk_keys::{Address, AddressView, PayloadKey};
+use penumbra_sdk_keys::{Address, AddressView, PayloadKey, PositionMetadataKey};
 use penumbra_sdk_proto::core::transaction::v1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
@@ -57,6 +57,10 @@ pub struct TransactionPerspective {
     ///
     /// This can be used to fill in information about swap outputs.
     pub batch_swap_output_data: Vec<BatchSwapOutputData>,
+    /// The key used to decrypt position metadata.
+    ///
+    /// We leave this as optional for maximal backwards compatability.
+    pub position_metadata_key: Option<PositionMetadataKey>,
 }
 
 impl TransactionPerspective {
@@ -164,6 +168,7 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
+            position_metadata_key: msg.position_metadata_key.map(|x| x.into()),
         }
     }
 }
@@ -291,6 +296,10 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
+            position_metadata_key: msg
+                .position_metadata_key
+                .map(|x| x.try_into())
+                .transpose()?,
         })
     }
 }
