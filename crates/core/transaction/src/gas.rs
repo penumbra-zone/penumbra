@@ -538,10 +538,15 @@ impl GasCost for ProposalDepositClaim {
 
 impl GasCost for PositionOpenPlan {
     fn gas_cost(&self) -> Gas {
+        let padding = if self.metadata.is_none() {
+            ENCRYPTED_POSITION_METADATA_SIZE_BYTES as u64
+        } else {
+            0
+        };
         Gas {
             // The block space measured as the byte length of the encoded action.
-            block_space: self.position.encode_to_vec().len() as u64
-                + ENCRYPTED_POSITION_METADATA_SIZE_BYTES as u64,
+            // But, we also add padding to not penalize including a ciphertext.
+            block_space: self.position.encode_to_vec().len() as u64 + padding,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a PositionOpen the compact block is not modified.
