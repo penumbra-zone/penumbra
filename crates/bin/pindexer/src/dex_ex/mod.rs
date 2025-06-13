@@ -1579,6 +1579,20 @@ impl AppView for Component {
             }
 
             for (pair, candle) in &events.candles {
+                sqlx::query(
+                    "INSERT INTO dex.candles VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                )
+                .bind(time)
+                .bind(pair.start.to_bytes())
+                .bind(pair.end.to_bytes())
+                .bind(candle.open)
+                .bind(candle.close)
+                .bind(candle.low)
+                .bind(candle.high)
+                .bind(candle.direct_volume)
+                .bind(candle.swap_volume)
+                .execute(dbtx.as_mut())
+                .await?;
                 for window in Window::all() {
                     let key = (pair.start, pair.end, window);
                     if !charts.contains_key(&key) {
