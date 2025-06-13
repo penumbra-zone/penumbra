@@ -158,6 +158,12 @@ service ViewService {
 
   // Gets the spendable note records that are eligible for voting in the current epoch.
   rpc LqtVotingNotes(LqtVotingNotesRequest) returns (stream LqtVotingNotesResponse);
+
+  // Request position IDs for strategies owned by a subaccount for a given trading pair.
+  rpc LpStrategyListByTradingPair(LpStrategyListByTradingPairRequest) returns (stream LpStrategyListByTradingPairResponse);
+
+  // Request all strategies owned by a subaccount for a given trading pair.
+  rpc LpStrategyBySubaccount(LpStrategyBySubaccountRequest) returns (stream LpStrategyBySubaccountResponse);
 }
 
 message LqtVotingNotesRequest {
@@ -883,4 +889,36 @@ message LatestSwapsResponse {
   uint64 block_height = 4;
   // The hash of the transaction that was broadcast.
   core.txhash.v1.TransactionId id = 5;
+}
+
+// Request position IDs for strategies owned by a subaccount for a given trading pair.
+message LpStrategyListByTradingPairRequest {
+    // Account filter to only include the account specified by the `AddressIndex`.
+    core.keys.v1.AddressIndex subaccount = 1;
+    // The trading pair of the position.
+    core.component.dex.v1.TradingPair trading_pair = 2;
+}
+
+// Returns the list of position IDs.
+message LpStrategyListByTradingPairResponse {
+    repeated core.component.dex.v1.PositionId lp_ids = 1;
+}
+
+// Request all strategies owned by a subaccount for a given trading pair.
+message LpStrategyBySubaccountRequest {
+    // Account filter to only include the account specified by the `AddressIndex`.
+    core.keys.v1.AddressIndex subaccount = 1;
+    // The trading pair of the position.
+    core.component.dex.v1.TradingPair trading_pair = 2;
+}
+
+// Returns structured position metadata for each strategy. 
+message LpStrategyBySubaccountResponse {
+    message LpStrategy {
+        fixed32 strategy = 1;
+        fixed32 identifier = 2;
+        core.keys.v1.AddressIndex subaccount = 3;
+        core.component.dex.v1.TradingPair trading_pair = 4;
+    }
+    repeated LpStrategy strategies = 1;
 }
