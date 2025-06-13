@@ -425,11 +425,13 @@ impl ViewService for ViewServer {
     type TournamentVotesStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::TournamentVotesResponse, tonic::Status>> + Send>,
     >;
-    type LpStrategyListByTradingPairStream = Pin<
-        Box<dyn futures::Stream<Item = Result<pb::LpStrategyListByTradingPairResponse, tonic::Status>> + Send>,
+    type LpPositionBundleStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::LpPositionBundleResponse, tonic::Status>> + Send>,
     >;
-    type LpStrategyBySubaccountStream = Pin<
-        Box<dyn futures::Stream<Item = Result<pb::LpStrategyBySubaccountResponse, tonic::Status>> + Send>,
+    type LpStrategyCatalogStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<pb::LpStrategyCatalogResponse, tonic::Status>> + Send,
+        >,
     >;
 
     #[instrument(skip_all, level = "trace")]
@@ -1930,19 +1932,19 @@ impl ViewService for ViewServer {
     }
 
     #[instrument(skip_all, level = "trace")]
-    async fn lp_strategy_list_by_trading_pair(
+    async fn lp_position_bundle(
         &self,
-        _request: tonic::Request<pb::LpStrategyListByTradingPairRequest>,
-    ) -> Result<tonic::Response<Self::LpStrategyListByTradingPairStream>, tonic::Status> {
-        unimplemented!("lp_strategy_list_by_trading_pair currently only implemented on web")
+        _request: tonic::Request<pb::LpPositionBundleRequest>,
+    ) -> Result<tonic::Response<Self::LpPositionBundleStream>, tonic::Status> {
+        unimplemented!("lp_position_bundle currently only implemented on web")
     }
 
     #[instrument(skip_all, level = "trace")]
-    async fn lp_strategy_by_subaccount(
+    async fn lp_strategy_catalog(
         &self,
-        _request: tonic::Request<pb::LpStrategyBySubaccountRequest>,
-    ) -> Result<tonic::Response<Self::LpStrategyBySubaccountStream>, tonic::Status> {
-        unimplemented!("lp_strategy_by_subaccount currently only implemented on web")
+        _request: tonic::Request<pb::LpStrategyCatalogRequest>,
+    ) -> Result<tonic::Response<Self::LpStrategyCatalogStream>, tonic::Status> {
+        unimplemented!("lp_strategy_catalog currently only implemented on web")
     }
 }
 
