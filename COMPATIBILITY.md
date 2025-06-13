@@ -10,5 +10,5 @@
 | 7 (Mainnet)               | v0.79.x                | v0.37.x  |   v1     |
 | 8 (Mainnet)               | v0.80.x                | v0.37.x  |   v1     |
 | 9 (Mainnet)               | v0.81.x -> v1.3.x      | v0.37.x  |   v1     |
-| 10 (Mainnet)              | v1.4.x                 | v0.37.x  |   v1     |
+| 10 (Mainnet)              | v1.4.x  -> v1.5.x      | v0.37.x  |   v1     |
 | 11 (Mainnet)              | v2.0.x                 | v0.37.x  |   v1     |
