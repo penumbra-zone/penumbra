@@ -425,6 +425,12 @@ impl ViewService for ViewServer {
     type TournamentVotesStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::TournamentVotesResponse, tonic::Status>> + Send>,
     >;
+    type LpStrategyListByTradingPairStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::LpStrategyListByTradingPairResponse, tonic::Status>> + Send>,
+    >;
+    type LpStrategyBySubaccountStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::LpStrategyBySubaccountResponse, tonic::Status>> + Send>,
+    >;
 
     #[instrument(skip_all, level = "trace")]
     async fn auctions(
@@ -1921,6 +1927,22 @@ impl ViewService for ViewServer {
             })
         }));
         Ok(tonic::Response::new(stream.boxed()))
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn lp_strategy_list_by_trading_pair(
+        &self,
+        _request: tonic::Request<pb::LpStrategyListByTradingPairRequest>,
+    ) -> Result<tonic::Response<Self::LpStrategyListByTradingPairStream>, tonic::Status> {
+        unimplemented!("lp_strategy_list_by_trading_pair currently only implemented on web")
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn lp_strategy_by_subaccount(
+        &self,
+        _request: tonic::Request<pb::LpStrategyBySubaccountRequest>,
+    ) -> Result<tonic::Response<Self::LpStrategyBySubaccountStream>, tonic::Status> {
+        unimplemented!("lp_strategy_by_subaccount currently only implemented on web")
     }
 }
 
