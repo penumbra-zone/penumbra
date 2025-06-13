@@ -1,3 +1,20 @@
+CREATE SCHEMA IF NOT EXISTS dex;
+
+CREATE TABLE IF NOT EXISTS dex.candles (
+  id SERIAL PRIMARY KEY,
+  time TIMESTAMPTZ NOT NULL,
+  asset_start BYTEA NOT NULL,
+  asset_end BYTEA NOT NULL,
+  open FLOAT8 NOT NULL,
+  close FLOAT8 NOT NULL,
+  low FLOAT8 NOT NULL,
+  high FLOAT8 NOT NULL,
+  direct_volume FLOAT8 NOT NULL,
+  swap_volume FLOAT8 NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_dex_candles_000 ON dex.candles (asset_start, asset_end, time);
+
 -- Contains, for each directed asset pair and window type, candle sticks for each window.
 CREATE TABLE IF NOT EXISTS dex_ex_price_charts (
   -- We just want a simple primary key to have here.
