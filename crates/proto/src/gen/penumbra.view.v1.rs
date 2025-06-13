@@ -2140,6 +2140,114 @@ impl ::prost::Name for LatestSwapsResponse {
         "/penumbra.view.v1.LatestSwapsResponse".into()
     }
 }
+/// Request position IDs for strategies owned by a subaccount for a given trading pair.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LpStrategyListByTradingPairRequest {
+    /// Account filter to only include the account specified by the `AddressIndex`.
+    #[prost(message, optional, tag = "1")]
+    pub subaccount: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    /// The trading pair of the position.
+    #[prost(message, optional, tag = "2")]
+    pub trading_pair: ::core::option::Option<
+        super::super::core::component::dex::v1::TradingPair,
+    >,
+}
+impl ::prost::Name for LpStrategyListByTradingPairRequest {
+    const NAME: &'static str = "LpStrategyListByTradingPairRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.LpStrategyListByTradingPairRequest".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.LpStrategyListByTradingPairRequest".into()
+    }
+}
+/// Returns the list of position IDs.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LpStrategyListByTradingPairResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub lp_ids: ::prost::alloc::vec::Vec<
+        super::super::core::component::dex::v1::PositionId,
+    >,
+}
+impl ::prost::Name for LpStrategyListByTradingPairResponse {
+    const NAME: &'static str = "LpStrategyListByTradingPairResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.LpStrategyListByTradingPairResponse".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.LpStrategyListByTradingPairResponse".into()
+    }
+}
+/// Request all strategies owned by a subaccount for a given trading pair.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LpStrategyBySubaccountRequest {
+    /// Account filter to only include the account specified by the `AddressIndex`.
+    #[prost(message, optional, tag = "1")]
+    pub subaccount: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    /// The trading pair of the position.
+    #[prost(message, optional, tag = "2")]
+    pub trading_pair: ::core::option::Option<
+        super::super::core::component::dex::v1::TradingPair,
+    >,
+}
+impl ::prost::Name for LpStrategyBySubaccountRequest {
+    const NAME: &'static str = "LpStrategyBySubaccountRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.LpStrategyBySubaccountRequest".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.LpStrategyBySubaccountRequest".into()
+    }
+}
+/// Returns structured position metadata for each strategy.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LpStrategyBySubaccountResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub strategies: ::prost::alloc::vec::Vec<
+        lp_strategy_by_subaccount_response::LpStrategy,
+    >,
+}
+/// Nested message and enum types in `LpStrategyBySubaccountResponse`.
+pub mod lp_strategy_by_subaccount_response {
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct LpStrategy {
+        #[prost(fixed32, tag = "1")]
+        pub strategy: u32,
+        #[prost(fixed32, tag = "2")]
+        pub identifier: u32,
+        #[prost(message, optional, tag = "3")]
+        pub subaccount: ::core::option::Option<
+            super::super::super::core::keys::v1::AddressIndex,
+        >,
+        #[prost(message, optional, tag = "4")]
+        pub trading_pair: ::core::option::Option<
+            super::super::super::core::component::dex::v1::TradingPair,
+        >,
+    }
+    impl ::prost::Name for LpStrategy {
+        const NAME: &'static str = "LpStrategy";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            "penumbra.view.v1.LpStrategyBySubaccountResponse.LpStrategy".into()
+        }
+        fn type_url() -> ::prost::alloc::string::String {
+            "/penumbra.view.v1.LpStrategyBySubaccountResponse.LpStrategy".into()
+        }
+    }
+}
+impl ::prost::Name for LpStrategyBySubaccountResponse {
+    const NAME: &'static str = "LpStrategyBySubaccountResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.LpStrategyBySubaccountResponse".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.LpStrategyBySubaccountResponse".into()
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod view_service_client {
@@ -3158,6 +3266,70 @@ pub mod view_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Request position IDs for strategies owned by a subaccount for a given trading pair.
+        pub async fn lp_strategy_list_by_trading_pair(
+            &mut self,
+            request: impl tonic::IntoRequest<super::LpStrategyListByTradingPairRequest>,
+        ) -> std::result::Result<
+            tonic::Response<
+                tonic::codec::Streaming<super::LpStrategyListByTradingPairResponse>,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/LpStrategyListByTradingPair",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "LpStrategyListByTradingPair",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
+        /// Request all strategies owned by a subaccount for a given trading pair.
+        pub async fn lp_strategy_by_subaccount(
+            &mut self,
+            request: impl tonic::IntoRequest<super::LpStrategyBySubaccountRequest>,
+        ) -> std::result::Result<
+            tonic::Response<
+                tonic::codec::Streaming<super::LpStrategyBySubaccountResponse>,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/LpStrategyBySubaccount",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "LpStrategyBySubaccount",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -3571,6 +3743,40 @@ pub mod view_service_server {
             request: tonic::Request<super::LqtVotingNotesRequest>,
         ) -> std::result::Result<
             tonic::Response<Self::LqtVotingNotesStream>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the LpStrategyListByTradingPair method.
+        type LpStrategyListByTradingPairStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::LpStrategyListByTradingPairResponse,
+                    tonic::Status,
+                >,
+            >
+            + std::marker::Send
+            + 'static;
+        /// Request position IDs for strategies owned by a subaccount for a given trading pair.
+        async fn lp_strategy_list_by_trading_pair(
+            &self,
+            request: tonic::Request<super::LpStrategyListByTradingPairRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::LpStrategyListByTradingPairStream>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the LpStrategyBySubaccount method.
+        type LpStrategyBySubaccountStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::LpStrategyBySubaccountResponse,
+                    tonic::Status,
+                >,
+            >
+            + std::marker::Send
+            + 'static;
+        /// Request all strategies owned by a subaccount for a given trading pair.
+        async fn lp_strategy_by_subaccount(
+            &self,
+            request: tonic::Request<super::LpStrategyBySubaccountRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::LpStrategyBySubaccountStream>,
             tonic::Status,
         >;
     }
@@ -5173,6 +5379,110 @@ pub mod view_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = LqtVotingNotesSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/LpStrategyListByTradingPair" => {
+                    #[allow(non_camel_case_types)]
+                    struct LpStrategyListByTradingPairSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::LpStrategyListByTradingPairRequest,
+                    > for LpStrategyListByTradingPairSvc<T> {
+                        type Response = super::LpStrategyListByTradingPairResponse;
+                        type ResponseStream = T::LpStrategyListByTradingPairStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::LpStrategyListByTradingPairRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::lp_strategy_list_by_trading_pair(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = LpStrategyListByTradingPairSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/LpStrategyBySubaccount" => {
+                    #[allow(non_camel_case_types)]
+                    struct LpStrategyBySubaccountSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::LpStrategyBySubaccountRequest,
+                    > for LpStrategyBySubaccountSvc<T> {
+                        type Response = super::LpStrategyBySubaccountResponse;
+                        type ResponseStream = T::LpStrategyBySubaccountStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::LpStrategyBySubaccountRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::lp_strategy_by_subaccount(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = LpStrategyBySubaccountSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
