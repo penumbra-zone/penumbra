@@ -3614,6 +3614,774 @@ impl<'de> serde::Deserialize<'de> for LatestSwapsResponse {
         deserializer.deserialize_struct("penumbra.view.v1.LatestSwapsResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for LpPositionBundleRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.subaccount.is_some() {
+            len += 1;
+        }
+        if self.trading_pair.is_some() {
+            len += 1;
+        }
+        if self.position_metadata.is_some() {
+            len += 1;
+        }
+        if self.position_state.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LpPositionBundleRequest", len)?;
+        if let Some(v) = self.subaccount.as_ref() {
+            struct_ser.serialize_field("subaccount", v)?;
+        }
+        if let Some(v) = self.trading_pair.as_ref() {
+            struct_ser.serialize_field("tradingPair", v)?;
+        }
+        if let Some(v) = self.position_metadata.as_ref() {
+            struct_ser.serialize_field("positionMetadata", v)?;
+        }
+        if let Some(v) = self.position_state.as_ref() {
+            struct_ser.serialize_field("positionState", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for LpPositionBundleRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "subaccount",
+            "trading_pair",
+            "tradingPair",
+            "position_metadata",
+            "positionMetadata",
+            "position_state",
+            "positionState",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Subaccount,
+            TradingPair,
+            PositionMetadata,
+            PositionState,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "subaccount" => Ok(GeneratedField::Subaccount),
+                            "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
+                            "positionMetadata" | "position_metadata" => Ok(GeneratedField::PositionMetadata),
+                            "positionState" | "position_state" => Ok(GeneratedField::PositionState),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = LpPositionBundleRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.LpPositionBundleRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<LpPositionBundleRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut subaccount__ = None;
+                let mut trading_pair__ = None;
+                let mut position_metadata__ = None;
+                let mut position_state__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Subaccount => {
+                            if subaccount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("subaccount"));
+                            }
+                            subaccount__ = map_.next_value()?;
+                        }
+                        GeneratedField::TradingPair => {
+                            if trading_pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tradingPair"));
+                            }
+                            trading_pair__ = map_.next_value()?;
+                        }
+                        GeneratedField::PositionMetadata => {
+                            if position_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionMetadata"));
+                            }
+                            position_metadata__ = map_.next_value()?;
+                        }
+                        GeneratedField::PositionState => {
+                            if position_state__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionState"));
+                            }
+                            position_state__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(LpPositionBundleRequest {
+                    subaccount: subaccount__,
+                    trading_pair: trading_pair__,
+                    position_metadata: position_metadata__,
+                    position_state: position_state__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.LpPositionBundleRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for LpPositionBundleResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.entries.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LpPositionBundleResponse", len)?;
+        if !self.entries.is_empty() {
+            struct_ser.serialize_field("entries", &self.entries)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for LpPositionBundleResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "entries",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Entries,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "entries" => Ok(GeneratedField::Entries),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = LpPositionBundleResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.LpPositionBundleResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<LpPositionBundleResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut entries__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Entries => {
+                            if entries__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("entries"));
+                            }
+                            entries__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(LpPositionBundleResponse {
+                    entries: entries__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.LpPositionBundleResponse", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for lp_position_bundle_response::Entry {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.trading_pair.is_some() {
+            len += 1;
+        }
+        if self.subaccount.is_some() {
+            len += 1;
+        }
+        if self.position_metadata.is_some() {
+            len += 1;
+        }
+        if self.position_state.is_some() {
+            len += 1;
+        }
+        if !self.position_id.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LpPositionBundleResponse.Entry", len)?;
+        if let Some(v) = self.trading_pair.as_ref() {
+            struct_ser.serialize_field("tradingPair", v)?;
+        }
+        if let Some(v) = self.subaccount.as_ref() {
+            struct_ser.serialize_field("subaccount", v)?;
+        }
+        if let Some(v) = self.position_metadata.as_ref() {
+            struct_ser.serialize_field("positionMetadata", v)?;
+        }
+        if let Some(v) = self.position_state.as_ref() {
+            struct_ser.serialize_field("positionState", v)?;
+        }
+        if !self.position_id.is_empty() {
+            struct_ser.serialize_field("positionId", &self.position_id)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for lp_position_bundle_response::Entry {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "trading_pair",
+            "tradingPair",
+            "subaccount",
+            "position_metadata",
+            "positionMetadata",
+            "position_state",
+            "positionState",
+            "position_id",
+            "positionId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            TradingPair,
+            Subaccount,
+            PositionMetadata,
+            PositionState,
+            PositionId,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
+                            "subaccount" => Ok(GeneratedField::Subaccount),
+                            "positionMetadata" | "position_metadata" => Ok(GeneratedField::PositionMetadata),
+                            "positionState" | "position_state" => Ok(GeneratedField::PositionState),
+                            "positionId" | "position_id" => Ok(GeneratedField::PositionId),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = lp_position_bundle_response::Entry;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.LpPositionBundleResponse.Entry")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<lp_position_bundle_response::Entry, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut trading_pair__ = None;
+                let mut subaccount__ = None;
+                let mut position_metadata__ = None;
+                let mut position_state__ = None;
+                let mut position_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::TradingPair => {
+                            if trading_pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tradingPair"));
+                            }
+                            trading_pair__ = map_.next_value()?;
+                        }
+                        GeneratedField::Subaccount => {
+                            if subaccount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("subaccount"));
+                            }
+                            subaccount__ = map_.next_value()?;
+                        }
+                        GeneratedField::PositionMetadata => {
+                            if position_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionMetadata"));
+                            }
+                            position_metadata__ = map_.next_value()?;
+                        }
+                        GeneratedField::PositionState => {
+                            if position_state__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionState"));
+                            }
+                            position_state__ = map_.next_value()?;
+                        }
+                        GeneratedField::PositionId => {
+                            if position_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionId"));
+                            }
+                            position_id__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(lp_position_bundle_response::Entry {
+                    trading_pair: trading_pair__,
+                    subaccount: subaccount__,
+                    position_metadata: position_metadata__,
+                    position_state: position_state__,
+                    position_id: position_id__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.LpPositionBundleResponse.Entry", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for LpStrategyCatalogRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.subaccount.is_some() {
+            len += 1;
+        }
+        if self.trading_pair.is_some() {
+            len += 1;
+        }
+        if self.position_metadata.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LpStrategyCatalogRequest", len)?;
+        if let Some(v) = self.subaccount.as_ref() {
+            struct_ser.serialize_field("subaccount", v)?;
+        }
+        if let Some(v) = self.trading_pair.as_ref() {
+            struct_ser.serialize_field("tradingPair", v)?;
+        }
+        if let Some(v) = self.position_metadata.as_ref() {
+            struct_ser.serialize_field("positionMetadata", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for LpStrategyCatalogRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "subaccount",
+            "trading_pair",
+            "tradingPair",
+            "position_metadata",
+            "positionMetadata",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Subaccount,
+            TradingPair,
+            PositionMetadata,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "subaccount" => Ok(GeneratedField::Subaccount),
+                            "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
+                            "positionMetadata" | "position_metadata" => Ok(GeneratedField::PositionMetadata),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = LpStrategyCatalogRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.LpStrategyCatalogRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<LpStrategyCatalogRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut subaccount__ = None;
+                let mut trading_pair__ = None;
+                let mut position_metadata__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Subaccount => {
+                            if subaccount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("subaccount"));
+                            }
+                            subaccount__ = map_.next_value()?;
+                        }
+                        GeneratedField::TradingPair => {
+                            if trading_pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tradingPair"));
+                            }
+                            trading_pair__ = map_.next_value()?;
+                        }
+                        GeneratedField::PositionMetadata => {
+                            if position_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionMetadata"));
+                            }
+                            position_metadata__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(LpStrategyCatalogRequest {
+                    subaccount: subaccount__,
+                    trading_pair: trading_pair__,
+                    position_metadata: position_metadata__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.LpStrategyCatalogRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for LpStrategyCatalogResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.strategies.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LpStrategyCatalogResponse", len)?;
+        if !self.strategies.is_empty() {
+            struct_ser.serialize_field("strategies", &self.strategies)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for LpStrategyCatalogResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "strategies",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Strategies,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "strategies" => Ok(GeneratedField::Strategies),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = LpStrategyCatalogResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.LpStrategyCatalogResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<LpStrategyCatalogResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut strategies__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Strategies => {
+                            if strategies__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("strategies"));
+                            }
+                            strategies__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(LpStrategyCatalogResponse {
+                    strategies: strategies__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.LpStrategyCatalogResponse", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for lp_strategy_catalog_response::StrategyEntry {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.trading_pair.is_some() {
+            len += 1;
+        }
+        if self.subaccount.is_some() {
+            len += 1;
+        }
+        if self.position_metadata.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.LpStrategyCatalogResponse.StrategyEntry", len)?;
+        if let Some(v) = self.trading_pair.as_ref() {
+            struct_ser.serialize_field("tradingPair", v)?;
+        }
+        if let Some(v) = self.subaccount.as_ref() {
+            struct_ser.serialize_field("subaccount", v)?;
+        }
+        if let Some(v) = self.position_metadata.as_ref() {
+            struct_ser.serialize_field("positionMetadata", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for lp_strategy_catalog_response::StrategyEntry {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "trading_pair",
+            "tradingPair",
+            "subaccount",
+            "position_metadata",
+            "positionMetadata",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            TradingPair,
+            Subaccount,
+            PositionMetadata,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
+                            "subaccount" => Ok(GeneratedField::Subaccount),
+                            "positionMetadata" | "position_metadata" => Ok(GeneratedField::PositionMetadata),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = lp_strategy_catalog_response::StrategyEntry;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.LpStrategyCatalogResponse.StrategyEntry")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<lp_strategy_catalog_response::StrategyEntry, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut trading_pair__ = None;
+                let mut subaccount__ = None;
+                let mut position_metadata__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::TradingPair => {
+                            if trading_pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tradingPair"));
+                            }
+                            trading_pair__ = map_.next_value()?;
+                        }
+                        GeneratedField::Subaccount => {
+                            if subaccount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("subaccount"));
+                            }
+                            subaccount__ = map_.next_value()?;
+                        }
+                        GeneratedField::PositionMetadata => {
+                            if position_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionMetadata"));
+                            }
+                            position_metadata__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(lp_strategy_catalog_response::StrategyEntry {
+                    trading_pair: trading_pair__,
+                    subaccount: subaccount__,
+                    position_metadata: position_metadata__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.LpStrategyCatalogResponse.StrategyEntry", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for LqtVotingNotesRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

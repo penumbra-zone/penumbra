@@ -425,6 +425,14 @@ impl ViewService for ViewServer {
     type TournamentVotesStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::TournamentVotesResponse, tonic::Status>> + Send>,
     >;
+    type LpPositionBundleStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::LpPositionBundleResponse, tonic::Status>> + Send>,
+    >;
+    type LpStrategyCatalogStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<pb::LpStrategyCatalogResponse, tonic::Status>> + Send,
+        >,
+    >;
 
     #[instrument(skip_all, level = "trace")]
     async fn auctions(
@@ -1921,6 +1929,22 @@ impl ViewService for ViewServer {
             })
         }));
         Ok(tonic::Response::new(stream.boxed()))
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn lp_position_bundle(
+        &self,
+        _request: tonic::Request<pb::LpPositionBundleRequest>,
+    ) -> Result<tonic::Response<Self::LpPositionBundleStream>, tonic::Status> {
+        unimplemented!("lp_position_bundle currently only implemented on web")
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn lp_strategy_catalog(
+        &self,
+        _request: tonic::Request<pb::LpStrategyCatalogRequest>,
+    ) -> Result<tonic::Response<Self::LpStrategyCatalogStream>, tonic::Status> {
+        unimplemented!("lp_strategy_catalog currently only implemented on web")
     }
 }
 

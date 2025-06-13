@@ -158,6 +158,12 @@ service ViewService {
 
   // Gets the spendable note records that are eligible for voting in the current epoch.
   rpc LqtVotingNotes(LqtVotingNotesRequest) returns (stream LqtVotingNotesResponse);
+
+  // Request bundles of liquidity positions by trading pair / subaccount / strategy.
+  rpc LpPositionBundle(LpPositionBundleRequest) returns (stream LpPositionBundleResponse);
+
+  // Request a list of LP strategies (e.g, for a UI to display a catalogue of strategies).
+  rpc LpStrategyCatalog(LpStrategyCatalogRequest) returns (stream LpStrategyCatalogResponse);
 }
 
 message LqtVotingNotesRequest {
@@ -883,4 +889,54 @@ message LatestSwapsResponse {
   uint64 block_height = 4;
   // The hash of the transaction that was broadcast.
   core.txhash.v1.TransactionId id = 5;
+}
+
+// Request bundles of liquidity positions by trading pair / subaccount / strategy.
+message LpPositionBundleRequest {
+  // Filter by subaccount index.
+  core.keys.v1.AddressIndex subaccount = 1;
+  // Filter by trading pair.
+  core.component.dex.v1.TradingPair trading_pair = 2;
+  // Filter by strategy, and also identifier if present.
+  core.component.dex.v1.PositionMetadata position_metadata = 3;
+  // Filter by strategy state.
+  core.component.dex.v1.PositionState position_state = 4;
+}
+
+message LpPositionBundleResponse {
+  message Entry {
+    // The trading pair for which this strategy is defined.
+    core.component.dex.v1.TradingPair trading_pair = 1;
+    // The subaccount index for which this strategy is defined.
+    core.keys.v1.AddressIndex subaccount = 2;
+    // The LP strategy metadata.
+    core.component.dex.v1.PositionMetadata position_metadata = 3;
+    // The strategy state (e.g., open, closed, etc.).
+    core.component.dex.v1.PositionState position_state = 4;
+    // The position id for the LP strategy.
+    repeated core.component.dex.v1.PositionId position_id = 5;
+  }
+  repeated Entry entries = 1;
+}
+
+// Request a list of LP strategies (e.g, for a UI to display a catalogue of strategies).
+message LpStrategyCatalogRequest {
+  // Filter by subaccount index.
+  core.keys.v1.AddressIndex subaccount = 1;
+  // Filter by trading pair.
+  core.component.dex.v1.TradingPair trading_pair = 2;
+  // Filter by strategy.
+  core.component.dex.v1.PositionMetadata position_metadata = 3;
+}
+
+message LpStrategyCatalogResponse {
+  message StrategyEntry {
+    // The trading pair for which this strategy is defined.
+    core.component.dex.v1.TradingPair trading_pair = 1;
+    // The subaccount index for which this strategy is defined.
+    core.keys.v1.AddressIndex subaccount = 2;
+    // The LP strategy metadata.
+    core.component.dex.v1.PositionMetadata position_metadata = 3;
+  }
+  repeated StrategyEntry strategies = 1;
 }
