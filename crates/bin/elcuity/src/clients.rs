@@ -53,7 +53,7 @@ impl Clients {
     }
 
     // Choosing Box<dyn> over impl because dynamic dispatch is more
-    // than fine for performance, and minding commpile times.
+    // than fine for performance, and minding compile times.
     // I doubt that it makes much of a difference either way though.
     /// Get a view client.
     pub fn view(&self) -> Box<DynViewClient> {

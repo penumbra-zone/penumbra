@@ -175,7 +175,7 @@ impl Opt {
         }
     }
 
-    // Reusable function for prmopting for sensitive info on the CLI.
+    // Reusable function for prompting for sensitive info on the CLI.
     fn prompt_for_password(&self, msg: &str) -> Result<String> {
         let mut password = String::new();
         // The `rpassword` crate doesn't support reading from stdin, so we check
