@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use clap::Result;
 use cometindex::{
     async_trait,
-    index::{BlockEvents, EventBatch, EventBatchContext},
+    index::{BlockEvents, EventBatch, EventBatchContext, Version},
     AppView, PgTransaction,
 };
 use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
@@ -1503,17 +1503,32 @@ impl Component {
 impl AppView for Component {
     async fn init_chain(
         &self,
-        dbtx: &mut PgTransaction,
+        _dbtx: &mut PgTransaction,
         _: &serde_json::Value,
     ) -> Result<(), anyhow::Error> {
-        for statement in include_str!("schema.sql").split(";") {
-            sqlx::query(statement).execute(dbtx.as_mut()).await?;
-        }
         Ok(())
     }
 
     fn name(&self) -> String {
         "dex_ex".to_string()
+    }
+
+    fn version(&self) -> Version {
+        Version::with_major(1)
+    }
+
+    async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        for statement in include_str!("reset.sql").split(";") {
+            sqlx::query(statement).execute(dbtx.as_mut()).await?;
+        }
+        Ok(())
+    }
+
+    async fn on_startup(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        for statement in include_str!("schema.sql").split(";") {
+            sqlx::query(statement).execute(dbtx.as_mut()).await?;
+        }
+        Ok(())
     }
 
     async fn index_batch(

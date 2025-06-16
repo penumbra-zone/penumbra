@@ -1,7 +1,8 @@
-CREATE SCHEMA IF NOT EXISTS dex;
+CREATE SCHEMA IF NOT EXISTS dex_ex;
 
-CREATE TABLE IF NOT EXISTS dex.candles (
+CREATE TABLE IF NOT EXISTS dex_ex.candles (
   id SERIAL PRIMARY KEY,
+  height BIGINT NOT NULL,
   time TIMESTAMPTZ NOT NULL,
   asset_start BYTEA NOT NULL,
   asset_end BYTEA NOT NULL,
@@ -13,7 +14,7 @@ CREATE TABLE IF NOT EXISTS dex.candles (
   swap_volume FLOAT8 NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_dex_candles_000 ON dex.candles (asset_start, asset_end, time);
+CREATE INDEX IF NOT EXISTS idx_dex_candles_000 ON dex_ex.candles (asset_start, asset_end, time);
 
 -- Contains, for each directed asset pair and window type, candle sticks for each window.
 CREATE TABLE IF NOT EXISTS dex_ex_price_charts (
@@ -43,7 +44,8 @@ CREATE TABLE IF NOT EXISTS dex_ex_price_charts (
   swap_volume FLOAT8 NOT NULL
 );
 
-CREATE UNIQUE INDEX ON dex_ex_price_charts (asset_start, asset_end, the_window, start_time);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_dex_ex_price_charts_000 ON
+  dex_ex_price_charts (asset_start, asset_end, the_window, start_time);
 
 CREATE TABLE IF NOT EXISTS dex_ex_pairs_block_snapshot (
   id SERIAL PRIMARY KEY,
@@ -59,8 +61,10 @@ CREATE TABLE IF NOT EXISTS dex_ex_pairs_block_snapshot (
   trades FLOAT8 NOT NULL
 );
 
-CREATE UNIQUE INDEX ON dex_ex_pairs_block_snapshot (time, asset_start, asset_end);
-CREATE INDEX ON dex_ex_pairs_block_snapshot (asset_start, asset_end);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_dex_ex_pairs_block_snapshot_000
+  ON dex_ex_pairs_block_snapshot (time, asset_start, asset_end);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_pairs_block_snapshot_001
+  ON dex_ex_pairs_block_snapshot (asset_start, asset_end);
 
 CREATE TABLE IF NOT EXISTS dex_ex_pairs_summary (
   asset_start BYTEA NOT NULL,
@@ -129,8 +133,8 @@ CREATE TABLE IF NOT EXISTS dex_ex_position_state (
   closing_tx BYTEA
 );
 
-CREATE INDEX ON dex_ex_position_state (position_id);
-CREATE INDEX ON dex_ex_position_state (opening_tx);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_position_state_000 ON dex_ex_position_state (position_id);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_position_state_001 ON dex_ex_position_state (opening_tx);
 
 CREATE TABLE IF NOT EXISTS dex_ex_position_reserves (
   rowid SERIAL PRIMARY KEY,
@@ -141,7 +145,8 @@ CREATE TABLE IF NOT EXISTS dex_ex_position_reserves (
   reserves_2 NUMERIC(39) NOT NULL
 );
 
-CREATE INDEX ON dex_ex_position_reserves (position_id, height, rowid);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_position_reserves_000
+  ON dex_ex_position_reserves (position_id, height, rowid);
 
 CREATE TABLE IF NOT EXISTS dex_ex_position_executions (
   rowid SERIAL PRIMARY KEY,
@@ -166,8 +171,10 @@ CREATE TABLE IF NOT EXISTS dex_ex_position_executions (
   context_asset_end BYTEA NOT NULL
 );
 
-CREATE INDEX ON dex_ex_position_executions (height);
-CREATE INDEX ON dex_ex_position_executions (position_id, height, rowid);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_position_executions_000
+  ON dex_ex_position_executions (height);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_position_executions_001
+  ON dex_ex_position_executions (position_id, height, rowid);
 
 CREATE TABLE IF NOT EXISTS dex_ex_position_withdrawals (
   rowid SERIAL PRIMARY KEY,
@@ -183,8 +190,10 @@ CREATE TABLE IF NOT EXISTS dex_ex_position_withdrawals (
   reserves_2 NUMERIC(39) NOT NULL
 );
 
-CREATE INDEX ON dex_ex_position_withdrawals (height);
-CREATE INDEX ON dex_ex_position_withdrawals (position_id, height);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_position_withdrawals_000
+  ON dex_ex_position_withdrawals (height);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_position_withdrawals_001
+  ON dex_ex_position_withdrawals (position_id, height);
 
 -- This table tracks individual execution traces for a directed batch swap.
 CREATE TABLE IF NOT EXISTS dex_ex_batch_swap_traces (
@@ -222,8 +231,10 @@ CREATE TABLE IF NOT EXISTS dex_ex_batch_swap_traces (
   position_id_hops BYTEA[] NOT NULL
 );
 
-CREATE INDEX ON dex_ex_batch_swap_traces (time, height);
-CREATE INDEX ON dex_ex_batch_swap_traces (asset_start, asset_end);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_batch_swap_traces_000
+  ON dex_ex_batch_swap_traces (time, height);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_batch_swap_traces_001
+  ON dex_ex_batch_swap_traces (asset_start, asset_end);
 -- TODO(erwan): We can add a GIN index on the position id later.
 
 -- A summary of block data with a bias for DEX data.
@@ -250,7 +261,7 @@ CREATE TABLE IF NOT EXISTS dex_ex_block_summary (
     num_txs          INTEGER NOT NULL
 );
 
-CREATE INDEX ON dex_ex_block_summary (time, height);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_block_summary_000 ON dex_ex_block_summary (time, height);
 
 CREATE TABLE IF NOT EXISTS dex_ex_transactions (
   -- The unique identifier of the transaction
@@ -263,24 +274,4 @@ CREATE TABLE IF NOT EXISTS dex_ex_transactions (
   time TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX ON dex_ex_transactions (time, height);
-
-ALTER TABLE dex_ex_position_executions
-  ADD CONSTRAINT fk_position_executions
-  FOREIGN KEY (position_id) REFERENCES dex_ex_position_state(position_id);
-
-ALTER TABLE dex_ex_position_withdrawals
-  ADD CONSTRAINT fk_position_withdrawals
-  FOREIGN KEY (position_id) REFERENCES dex_ex_position_state(position_id);
-
-ALTER TABLE dex_ex_position_executions
-  ADD CONSTRAINT fk_position_executions_reserves
-  FOREIGN KEY (reserves_rowid) REFERENCES dex_ex_position_reserves(rowid);
-
-ALTER TABLE dex_ex_position_state
-  ADD CONSTRAINT fk_position_state_reserves
-  FOREIGN KEY (opening_reserves_rowid) REFERENCES dex_ex_position_reserves(rowid);
-
-ALTER TABLE dex_ex_position_withdrawals
-  ADD CONSTRAINT fk_position_withdrawals_reserves
-  FOREIGN KEY (reserves_rowid) REFERENCES dex_ex_position_reserves(rowid);
+CREATE INDEX IF NOT EXISTS idx_dex_ex_transactions_000 ON dex_ex_transactions (time, height);
