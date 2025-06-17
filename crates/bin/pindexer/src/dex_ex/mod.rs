@@ -36,10 +36,6 @@ mod candle {
     use penumbra_sdk_dex::CandlestickData;
     use std::fmt::Display;
 
-    fn geo_mean(a: f64, b: f64) -> f64 {
-        (a * b).sqrt()
-    }
-
     /// Candlestick data, unmoored from the prison of a particular block height.
     ///
     /// In other words, this can represent candlesticks which span arbitrary windows,
@@ -86,43 +82,6 @@ mod candle {
             self.high = self.high.max(that.high);
             self.direct_volume += that.direct_volume;
             self.swap_volume += that.swap_volume;
-        }
-
-        /// Mix this candle with a candle going in the opposite direction of the pair.
-        pub fn mix(&mut self, op: &Self) {
-            // We use the geometric mean, resulting in all the prices in a.mix(b) being
-            // the inverse of the prices in b.mix(a), and the volumes being equal.
-            self.close /= geo_mean(self.close, op.close);
-            self.open /= geo_mean(self.open, op.open);
-            self.low = self.low.min(1.0 / op.low);
-            self.high = self.high.min(1.0 / op.high);
-            // Using the closing price to look backwards at volume.
-            self.direct_volume += op.direct_volume / self.close;
-            self.swap_volume += op.swap_volume / self.close;
-        }
-
-        /// Flip this candle to get the equivalent in the other direction.
-        pub fn flip(&self) -> Self {
-            Self {
-                open: 1.0 / self.open,
-                close: 1.0 / self.close,
-                low: 1.0 / self.low,
-                high: 1.0 / self.high,
-                direct_volume: self.direct_volume * self.close,
-                swap_volume: self.swap_volume * self.close,
-            }
-        }
-    }
-
-    impl From<CandlestickData> for Candle {
-        fn from(value: CandlestickData) -> Self {
-            Self::from(&value)
-        }
-    }
-
-    impl From<&CandlestickData> for Candle {
-        fn from(value: &CandlestickData) -> Self {
-            Self::from_candlestick_data(value)
         }
     }
 
