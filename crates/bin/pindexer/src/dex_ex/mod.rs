@@ -590,8 +590,12 @@ mod summary {
                 SELECT
                     SUM(dv) AS direct_volume,
                     SUM(sv) AS swap_volume,
-                    SUM(liquidity) AS liquidity,
                     SUM(trades) AS trades
+                FROM converted_pairs_summary WHERE asset_start < asset_end
+            ),
+            total_liquidity AS (
+                SELECT
+                    SUM(liquidity) AS liquidity
                 FROM converted_pairs_summary
             ),
             undirected_pairs_summary AS (
@@ -653,6 +657,7 @@ mod summary {
         JOIN largest_sv ON TRUE
         JOIN largest_dv ON TRUE
         JOIN top_price_mover ON TRUE
+        JOIN total_liquidity ON TRUE
         JOIN counts ON TRUE
         ON CONFLICT (the_window) DO UPDATE SET
             direct_volume = EXCLUDED.direct_volume,
