@@ -2,13 +2,13 @@ use anyhow::anyhow;
 use clap::Result;
 use cometindex::{
     async_trait,
-    index::{BlockEvents, EventBatch, EventBatchContext},
+    index::{BlockEvents, EventBatch, EventBatchContext, Version},
     AppView, PgTransaction,
 };
-use penumbra_sdk_asset::{asset, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_dex::{
     event::{
-        EventBatchSwap, EventCandlestickData, EventPositionClose, EventPositionExecution,
+        EventArbExecution, EventBatchSwap, EventPositionClose, EventPositionExecution,
         EventPositionOpen, EventPositionWithdraw, EventQueuePositionClose,
     },
     lp::{position::Flows, Reserves},
@@ -35,10 +35,6 @@ mod candle {
     use chrono::{Datelike as _, Days, TimeDelta, TimeZone as _, Timelike as _, Utc};
     use penumbra_sdk_dex::CandlestickData;
     use std::fmt::Display;
-
-    fn geo_mean(a: f64, b: f64) -> f64 {
-        (a * b).sqrt()
-    }
 
     /// Candlestick data, unmoored from the prison of a particular block height.
     ///
@@ -69,49 +65,23 @@ mod candle {
             }
         }
 
+        pub fn point(price: f64, direct_volume: f64) -> Self {
+            Self {
+                open: price,
+                close: price,
+                low: price,
+                high: price,
+                direct_volume,
+                swap_volume: 0.0,
+            }
+        }
+
         pub fn merge(&mut self, that: &Self) {
             self.close = that.close;
             self.low = self.low.min(that.low);
             self.high = self.high.max(that.high);
             self.direct_volume += that.direct_volume;
             self.swap_volume += that.swap_volume;
-        }
-
-        /// Mix this candle with a candle going in the opposite direction of the pair.
-        pub fn mix(&mut self, op: &Self) {
-            // We use the geometric mean, resulting in all the prices in a.mix(b) being
-            // the inverse of the prices in b.mix(a), and the volumes being equal.
-            self.close /= geo_mean(self.close, op.close);
-            self.open /= geo_mean(self.open, op.open);
-            self.low = self.low.min(1.0 / op.low);
-            self.high = self.high.min(1.0 / op.high);
-            // Using the closing price to look backwards at volume.
-            self.direct_volume += op.direct_volume / self.close;
-            self.swap_volume += op.swap_volume / self.close;
-        }
-
-        /// Flip this candle to get the equivalent in the other direction.
-        pub fn flip(&self) -> Self {
-            Self {
-                open: 1.0 / self.open,
-                close: 1.0 / self.close,
-                low: 1.0 / self.low,
-                high: 1.0 / self.high,
-                direct_volume: self.direct_volume * self.close,
-                swap_volume: self.swap_volume * self.close,
-            }
-        }
-    }
-
-    impl From<CandlestickData> for Candle {
-        fn from(value: CandlestickData) -> Self {
-            Self::from(&value)
-        }
-    }
-
-    impl From<&CandlestickData> for Candle {
-        fn from(value: &CandlestickData) -> Self {
-            Self::from_candlestick_data(value)
         }
     }
 
@@ -281,7 +251,7 @@ mod price_chart {
             .fetch_optional(dbtx.as_mut())
             .await?;
             let state = row.map(
-                |(open, close, low, high, direct_volume, swap_volume, start)| {
+                |(open, close, high, low, direct_volume, swap_volume, start)| {
                     let candle = Candle {
                         open,
                         close,
@@ -579,17 +549,34 @@ mod summary {
                 SELECT
                     SUM(dv) AS direct_volume,
                     SUM(sv) AS swap_volume,
-                    SUM(liquidity) AS liquidity,
-                    SUM(trades) AS trades,
-                    (SELECT COUNT(*) FROM converted_pairs_summary WHERE dv > 0 OR sv > 0) AS active_pairs
+                    SUM(trades) AS trades
+                FROM converted_pairs_summary WHERE asset_start < asset_end
+            ),
+            total_liquidity AS (
+                SELECT
+                    SUM(liquidity) AS liquidity
                 FROM converted_pairs_summary
+            ),
+            undirected_pairs_summary AS (
+              WITH pairs AS (
+                  SELECT asset_start AS a_start, asset_end AS a_end FROM converted_pairs_summary WHERE asset_start < asset_end
+              )
+              SELECT
+                  a_start AS asset_start,
+                  a_end AS asset_end,
+                  (SELECT SUM(sv) FROM converted_pairs_summary WHERE (asset_start = a_start AND asset_end = a_end) OR (asset_start = a_end AND asset_end = a_start)) AS sv,
+                  (SELECT SUM(dv) FROM converted_pairs_summary WHERE (asset_start = a_start AND asset_end = a_end) OR (asset_start = a_end AND asset_end = a_start)) AS dv
+              FROM pairs
+            ),
+            counts AS (
+              SELECT COUNT(*) AS active_pairs FROM undirected_pairs_summary WHERE dv > 0
             ),
             largest_sv AS (
                 SELECT
                     asset_start AS largest_sv_trading_pair_start,
                     asset_end AS largest_sv_trading_pair_end,
                     sv AS largest_sv_trading_pair_volume                    
-                FROM converted_pairs_summary
+                FROM undirected_pairs_summary
                 ORDER BY sv DESC
                 LIMIT 1
             ),
@@ -598,7 +585,7 @@ mod summary {
                     asset_start AS largest_dv_trading_pair_start,
                     asset_end AS largest_dv_trading_pair_end,
                     dv AS largest_dv_trading_pair_volume                    
-                FROM converted_pairs_summary
+                FROM undirected_pairs_summary
                 ORDER BY dv DESC
                 LIMIT 1
             ),
@@ -629,6 +616,8 @@ mod summary {
         JOIN largest_sv ON TRUE
         JOIN largest_dv ON TRUE
         JOIN top_price_mover ON TRUE
+        JOIN total_liquidity ON TRUE
+        JOIN counts ON TRUE
         ON CONFLICT (the_window) DO UPDATE SET
             direct_volume = EXCLUDED.direct_volume,
             swap_volume = EXCLUDED.swap_volume,
@@ -737,23 +726,6 @@ impl Events {
         self.time = Some(time)
     }
 
-    fn with_candle(&mut self, pair: DirectedTradingPair, candle: Candle) {
-        // Populate both this pair and the flipped pair, and if the flipped pair
-        // is already populated, we need to mix the two candles together.
-        let flip = pair.flip();
-        let new_candle = match self.candles.get(&flip).cloned() {
-            None => candle,
-            Some(flipped) => {
-                let mut out = candle;
-                out.mix(&flipped);
-                out
-            }
-        };
-
-        self.candles.insert(pair, new_candle);
-        self.candles.insert(flip, new_candle.flip());
-    }
-
     fn metric(&mut self, pair: &DirectedTradingPair) -> &mut PairMetrics {
         if !self.metrics.contains_key(pair) {
             self.metrics.insert(*pair, PairMetrics::default());
@@ -762,8 +734,56 @@ impl Events {
         self.metrics.get_mut(pair).unwrap()
     }
 
-    fn with_trade(&mut self, pair: &DirectedTradingPair) {
-        self.metric(pair).trades += 1.0;
+    fn with_trace(&mut self, input: Value, output: Value) {
+        let pair_1_2 = DirectedTradingPair {
+            start: input.asset_id,
+            end: output.asset_id,
+        };
+        // This shouldn't happen, but to avoid weird stuff later, let's ignore this trace.
+        if pair_1_2.start == pair_1_2.end {
+            tracing::warn!(?input, ?output, "found trace with a loop?");
+            return;
+        }
+        let pair_2_1 = pair_1_2.flip();
+        let input_amount = f64::from(input.amount);
+        let output_amount = f64::from(output.amount);
+        let price_1_2 = output_amount / input_amount;
+        let candle_1_2 = Candle::point(price_1_2, input_amount);
+        let candle_2_1 = Candle::point(1.0 / price_1_2, output_amount);
+        self.metric(&pair_1_2).trades += 1.0;
+        self.candles
+            .entry(pair_1_2)
+            .and_modify(|c| c.merge(&candle_1_2))
+            .or_insert(candle_1_2);
+        self.metric(&pair_2_1).trades += 1.0;
+        self.candles
+            .entry(pair_2_1)
+            .and_modify(|c| c.merge(&candle_2_1))
+            .or_insert(candle_2_1);
+    }
+
+    fn with_swap_execution(&mut self, se: &SwapExecution) {
+        for row in se.traces.iter() {
+            for window in row.windows(2) {
+                self.with_trace(window[0], window[1]);
+            }
+        }
+        let pair_1_2 = DirectedTradingPair {
+            start: se.input.asset_id,
+            end: se.output.asset_id,
+        };
+        // When doing arb, we don't want to report the volume on UM -> UM,
+        // so we need this check.
+        if pair_1_2.start == pair_1_2.end {
+            return;
+        }
+        let pair_2_1 = pair_1_2.flip();
+        self.candles
+            .entry(pair_1_2)
+            .and_modify(|c| c.swap_volume += f64::from(se.input.amount));
+        self.candles
+            .entry(pair_2_1)
+            .and_modify(|c| c.swap_volume += f64::from(se.output.amount));
     }
 
     fn with_reserve_change(
@@ -806,10 +826,7 @@ impl Events {
         out.height = block.height() as i32;
 
         for event in block.events() {
-            if let Ok(e) = EventCandlestickData::try_from_event(&event.event) {
-                let candle = Candle::from_candlestick_data(&e.stick);
-                out.with_candle(e.pair, candle);
-            } else if let Ok(e) = EventBlockRoot::try_from_event(&event.event) {
+            if let Ok(e) = EventBlockRoot::try_from_event(&event.event) {
                 let time = DateTime::from_timestamp(e.timestamp_seconds, 0).ok_or(anyhow!(
                     "creating timestamp should succeed; timestamp: {}",
                     e.timestamp_seconds
@@ -862,18 +879,6 @@ impl Events {
                     },
                     false,
                 );
-                if e.reserves_1 > e.prev_reserves_1 {
-                    // Whatever asset we ended up with more with was traded in.
-                    out.with_trade(&DirectedTradingPair {
-                        start: e.trading_pair.asset_1(),
-                        end: e.trading_pair.asset_2(),
-                    });
-                } else if e.reserves_2 > e.prev_reserves_2 {
-                    out.with_trade(&DirectedTradingPair {
-                        start: e.trading_pair.asset_2(),
-                        end: e.trading_pair.asset_1(),
-                    });
-                }
                 out.position_executions.push(e);
             } else if let Ok(e) = EventPositionClose::try_from_event(&event.event) {
                 out.position_closes.push(e);
@@ -883,8 +888,6 @@ impl Events {
                 if let Some(tx_hash) = event.tx_hash() {
                     out.position_close_txs.insert(e.position_id, tx_hash);
                 }
-            } else if let Ok(e) = EventBatchSwap::try_from_event(&event.event) {
-                out.batch_swaps.push(e);
             } else if let Ok(e) = EventSwap::try_from_event(&event.event) {
                 out.swaps
                     .entry(e.trading_pair)
@@ -901,6 +904,17 @@ impl Events {
                     end: *STAKING_TOKEN_ASSET_ID,
                 };
                 out.metric(&pair).liquidity_change += e.reward_amount.value() as f64;
+            } else if let Ok(e) = EventBatchSwap::try_from_event(&event.event) {
+                // NOTE: order matters here, 2 for 1 happened after.
+                if let Some(se) = e.swap_execution_1_for_2.as_ref() {
+                    out.with_swap_execution(se);
+                }
+                if let Some(se) = e.swap_execution_2_for_1.as_ref() {
+                    out.with_swap_execution(se);
+                }
+                out.batch_swaps.push(e);
+            } else if let Ok(e) = EventArbExecution::try_from_event(&event.event) {
+                out.with_swap_execution(&e.swap_execution);
             }
         }
         Ok(out)
@@ -1452,17 +1466,32 @@ impl Component {
 impl AppView for Component {
     async fn init_chain(
         &self,
-        dbtx: &mut PgTransaction,
+        _dbtx: &mut PgTransaction,
         _: &serde_json::Value,
     ) -> Result<(), anyhow::Error> {
-        for statement in include_str!("schema.sql").split(";") {
-            sqlx::query(statement).execute(dbtx.as_mut()).await?;
-        }
         Ok(())
     }
 
     fn name(&self) -> String {
         "dex_ex".to_string()
+    }
+
+    fn version(&self) -> Version {
+        Version::with_major(1)
+    }
+
+    async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        for statement in include_str!("reset.sql").split(";") {
+            sqlx::query(statement).execute(dbtx.as_mut()).await?;
+        }
+        Ok(())
+    }
+
+    async fn on_startup(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        for statement in include_str!("schema.sql").split(";") {
+            sqlx::query(statement).execute(dbtx.as_mut()).await?;
+        }
+        Ok(())
     }
 
     async fn index_batch(
@@ -1528,6 +1557,21 @@ impl AppView for Component {
             }
 
             for (pair, candle) in &events.candles {
+                sqlx::query(
+                    "INSERT INTO dex_ex.candles VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+                )
+                .bind(i64::try_from(block.height())?)
+                .bind(time)
+                .bind(pair.start.to_bytes())
+                .bind(pair.end.to_bytes())
+                .bind(candle.open)
+                .bind(candle.close)
+                .bind(candle.low)
+                .bind(candle.high)
+                .bind(candle.direct_volume)
+                .bind(candle.swap_volume)
+                .execute(dbtx.as_mut())
+                .await?;
                 for window in Window::all() {
                     let key = (pair.start, pair.end, window);
                     if !charts.contains_key(&key) {
