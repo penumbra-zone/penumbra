@@ -924,8 +924,6 @@ impl Events {
                 if let Some(tx_hash) = event.tx_hash() {
                     out.position_close_txs.insert(e.position_id, tx_hash);
                 }
-            } else if let Ok(e) = EventBatchSwap::try_from_event(&event.event) {
-                out.batch_swaps.push(e);
             } else if let Ok(e) = EventSwap::try_from_event(&event.event) {
                 out.swaps
                     .entry(e.trading_pair)
@@ -950,6 +948,7 @@ impl Events {
                 if let Some(se) = e.swap_execution_2_for_1.as_ref() {
                     out.with_swap_execution(se);
                 }
+                out.batch_swaps.push(e);
             } else if let Ok(e) = EventArbExecution::try_from_event(&event.event) {
                 out.with_swap_execution(&e.swap_execution);
             }
@@ -1595,8 +1594,9 @@ impl AppView for Component {
 
             for (pair, candle) in &events.candles {
                 sqlx::query(
-                    "INSERT INTO dex.candles VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                    "INSERT INTO dex_ex.candles VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
                 )
+                .bind(i64::try_from(block.height())?)
                 .bind(time)
                 .bind(pair.start.to_bytes())
                 .bind(pair.end.to_bytes())
