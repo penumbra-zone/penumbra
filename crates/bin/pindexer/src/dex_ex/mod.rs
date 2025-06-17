@@ -292,7 +292,7 @@ mod price_chart {
             .fetch_optional(dbtx.as_mut())
             .await?;
             let state = row.map(
-                |(open, close, low, high, direct_volume, swap_volume, start)| {
+                |(open, close, high, low, direct_volume, swap_volume, start)| {
                     let candle = Candle {
                         open,
                         close,
