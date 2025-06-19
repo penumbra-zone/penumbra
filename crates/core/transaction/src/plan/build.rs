@@ -8,10 +8,6 @@ use penumbra_sdk_txhash::AuthorizingData;
 use super::TransactionPlan;
 use crate::ActionPlan;
 use crate::{action::Action, AuthorizationData, Transaction, TransactionBody, WitnessData};
-use ark_relations::r1cs::{
-    ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef, OptimizationGoal,
-};
-use decaf377::Fq;
 
 impl TransactionPlan {
     /// Builds a [`TransactionPlan`] by slotting in the

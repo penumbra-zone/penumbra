@@ -66,7 +66,8 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
 
     let swap_plan = SwapPlan::new(&mut rng, plaintext.clone());
-    let swap = swap_plan.swap(&test_keys::FULL_VIEWING_KEY);
+    let action_circuit = swap_plan.circuit_inputs();
+    let swap = swap_plan.swap(&test_keys::FULL_VIEWING_KEY, action_circuit);
 
     // 3. Simulate execution of the Swap action
 
@@ -117,7 +118,9 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
         proof_blinding_r: Fq::rand(&mut rng),
         proof_blinding_s: Fq::rand(&mut rng),
     };
-    let claim = claim_plan.swap_claim(&test_keys::FULL_VIEWING_KEY, &swap_auth_path);
+    
+    let action_circuit = claim_plan.circuit_inputs(&swap_auth_path, &test_keys::FULL_VIEWING_KEY);
+    let claim = claim_plan.swap_claim(&test_keys::FULL_VIEWING_KEY, action_circuit);
 
     // 7. Execute the SwapClaim action
 
@@ -306,7 +309,8 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
 
     let swap_plan = SwapPlan::new(&mut rng, plaintext.clone());
-    let swap = swap_plan.swap(&test_keys::FULL_VIEWING_KEY);
+    let action_circuit = swap_plan.circuit_inputs();
+    let swap = swap_plan.swap(&test_keys::FULL_VIEWING_KEY, action_circuit);
 
     // 3. Simulate execution of the Swap action
 

@@ -44,7 +44,8 @@ async fn dex_vcb_tracks_multiswap() -> anyhow::Result<()> {
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
 
     let swap_plan = SwapPlan::new(&mut rng, plaintext.clone());
-    let swap_one = swap_plan.swap(&test_keys::FULL_VIEWING_KEY);
+    let action_circuit = swap_plan.circuit_inputs();
+    let swap_one = swap_plan.swap(&test_keys::FULL_VIEWING_KEY, action_circuit);
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_mock_source(1u8);
