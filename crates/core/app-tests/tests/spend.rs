@@ -64,7 +64,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
 
     let action_circuit = spend_plan.circuit_inputs(&test_keys::FULL_VIEWING_KEY, proof, root);
     let spend = spend_plan.spend(&test_keys::FULL_VIEWING_KEY, auth_sig, action_circuit);
-    
+
     let transaction_context = TransactionContext {
         anchor: root,
         effect_hash: EffectHash(dummy_effect_hash),
@@ -146,8 +146,9 @@ async fn invalid_dummy_spend() {
     let dummy_effect_hash = [0u8; 64];
     let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
     let auth_sig = rsk.sign(&mut rng, dummy_effect_hash.as_ref());
-    
-    let action_circuit = spend_plan.circuit_inputs(&test_keys::FULL_VIEWING_KEY, proof.clone(), root);
+
+    let action_circuit =
+        spend_plan.circuit_inputs(&test_keys::FULL_VIEWING_KEY, proof.clone(), root);
     let mut spend = spend_plan.spend(&test_keys::FULL_VIEWING_KEY, auth_sig, action_circuit);
 
     let note_zero_value = Note::from_parts(

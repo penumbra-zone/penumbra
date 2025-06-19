@@ -118,7 +118,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
         proof_blinding_r: Fq::rand(&mut rng),
         proof_blinding_s: Fq::rand(&mut rng),
     };
-    
+
     let action_circuit = claim_plan.circuit_inputs(&swap_auth_path, &test_keys::FULL_VIEWING_KEY);
     let claim = claim_plan.swap_claim(&test_keys::FULL_VIEWING_KEY, action_circuit);
 
