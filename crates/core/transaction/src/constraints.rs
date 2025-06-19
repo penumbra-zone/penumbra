@@ -11,14 +11,14 @@ use std::io::Write;
 
 use crate::action::ActionCircuit;
 
-pub fn generate_and_serialize_circuit(circuit: ActionCircuit) -> Result<(Vec<u8>, Vec<u8>, usize)> {
+pub fn generate_and_serialize_circuit(circuit: ActionCircuit) -> Result<(Vec<u8>, usize)> {
     //  Generate constraints only
     let cs = build_constraint_system(circuit)?;
 
     // Serialize existing constraint system
-    let (witness_bytes, matrices_bytes, public_inputs) = serialize_witness_and_matrices(&cs)?;
+    let (witness_bytes, public_inputs) = serialize_witness(&cs)?;
 
-    Ok((witness_bytes, matrices_bytes, public_inputs))
+    Ok((witness_bytes, public_inputs))
 }
 
 fn generate_circuit_constraints<C: ConstraintSynthesizer<Fq> + Clone + std::fmt::Debug>(
@@ -62,9 +62,7 @@ pub fn build_constraint_system(circuit: ActionCircuit) -> Result<ConstraintSyste
 }
 
 /// Convenience method for serializing witness and R1CS matrices.
-pub fn serialize_witness_and_matrices(
-    cs: &ConstraintSystemRef<Fq>,
-) -> Result<(Vec<u8>, Vec<u8>, usize)> {
+pub fn serialize_witness(cs: &ConstraintSystemRef<Fq>) -> Result<(Vec<u8>, usize)> {
     let witness_values = &cs.borrow().expect("can borrow").witness_assignment;
     let public_values = &cs.borrow().expect("can borrow").instance_assignment;
 
@@ -92,12 +90,6 @@ pub fn serialize_witness_and_matrices(
         v.serialize_with_mode(&mut witness_cursor, Compress::Yes)?;
     }
 
-    let mut matrices_bytes = Vec::new();
-    let mut matrices_cursor = std::io::Cursor::new(&mut matrices_bytes);
-
-    let matrices = cs.to_matrices().expect("can gen matrices");
-    (matrices.a, matrices.b, matrices.c).serialize_uncompressed(&mut matrices_cursor)?;
-
-    // return serialized data as byte vectors.
-    Ok((witness_bytes, matrices_bytes, public_values.len()))
+    // serialized witness data as byte vector
+    Ok((witness_bytes, public_values.len()))
 }
