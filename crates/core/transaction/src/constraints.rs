@@ -12,10 +12,12 @@ use std::io::Write;
 use crate::action::ActionCircuit;
 
 pub fn generate_and_serialize_circuit(circuit: ActionCircuit) -> Result<(Vec<u8>, usize)> {
-    //  Generate constraints only
+    //  Synthesizes the R1CS constraints for the given `ActionCircuit`, which builds
+    // the constraint system in memory but does not serialize the constraint matrices (A, B, C).
     let cs = build_constraint_system(circuit)?;
 
-    // Serialize existing constraint system
+    // Extracts the full witness assignment and public input values from the constraint system,
+    // and serializes the witness.
     let (witness_bytes, public_inputs) = serialize_witness(&cs)?;
 
     Ok((witness_bytes, public_inputs))
@@ -61,7 +63,7 @@ pub fn build_constraint_system(circuit: ActionCircuit) -> Result<ConstraintSyste
     Ok(cs)
 }
 
-/// Convenience method for serializing witness and R1CS matrices.
+/// Convenience method for serializing witness data.
 pub fn serialize_witness(cs: &ConstraintSystemRef<Fq>) -> Result<(Vec<u8>, usize)> {
     let witness_values = &cs.borrow().expect("can borrow").witness_assignment;
     let public_values = &cs.borrow().expect("can borrow").instance_assignment;
@@ -90,6 +92,6 @@ pub fn serialize_witness(cs: &ConstraintSystemRef<Fq>) -> Result<(Vec<u8>, usize
         v.serialize_with_mode(&mut witness_cursor, Compress::Yes)?;
     }
 
-    // serialized witness data as byte vector
+    // serialized witness as byte vector
     Ok((witness_bytes, public_values.len()))
 }
