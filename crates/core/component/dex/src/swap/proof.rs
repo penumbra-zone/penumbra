@@ -97,9 +97,16 @@ fn check_circuit_satisfaction(public: SwapProofPublic, private: SwapProofPrivate
     Ok(())
 }
 
+#[derive(Clone, Debug)]
 pub struct SwapCircuit {
-    public: SwapProofPublic,
-    private: SwapProofPrivate,
+    pub public: SwapProofPublic,
+    pub private: SwapProofPrivate,
+}
+
+impl SwapCircuit {
+    pub fn new(public: SwapProofPublic, private: SwapProofPrivate) -> Self {
+        Self { public, private }
+    }
 }
 
 impl ConstraintSynthesizer<Fq> for SwapCircuit {
@@ -203,7 +210,7 @@ impl SwapProof {
         public: SwapProofPublic,
         private: SwapProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = SwapCircuit { public, private };
+        let circuit = SwapCircuit::new(public, private);
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
         )
