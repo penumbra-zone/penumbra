@@ -522,7 +522,7 @@ impl NetworkValidator {
     pub fn from_reader(input: impl Read) -> Result<Vec<NetworkValidator>> {
         Ok(serde_json::from_reader(input)?)
     }
-    /// Generate iniital delegation allocation for inclusion in genesis.
+    /// Generate initial delegation allocation for inclusion in genesis.
     pub fn delegation_allocation(&self) -> Result<Allocation> {
         let spend_key = SpendKey::from(self.keys.validator_spend_key.clone());
         let fvk = spend_key.full_viewing_key();
