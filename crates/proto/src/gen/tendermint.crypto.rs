@@ -59,7 +59,7 @@ impl ::prost::Name for DominoOp {
     }
 }
 /// ProofOp defines an operation used for calculating Merkle root
-/// The data could be arbitrary format, providing nessecary data
+/// The data could be arbitrary format, providing necessary data
 /// for example neighbouring node hash
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProofOp {
