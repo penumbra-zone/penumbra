@@ -384,6 +384,13 @@ impl Metadata {
         let base_denom = self.base_denom().denom;
         parse::ibc_transfer_path(&base_denom)
     }
+    pub fn symbol(&self) -> &str {
+        &self.inner.symbol
+    }
+
+    pub fn name(&self) -> &str {
+        &self.inner.name
+    }
 }
 
 impl From<Metadata> for Id {
