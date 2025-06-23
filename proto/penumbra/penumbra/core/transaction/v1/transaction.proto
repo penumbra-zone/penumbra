@@ -93,7 +93,8 @@ message Action {
     component.governance.v1.ProposalDepositClaim proposal_deposit_claim = 22;
 
     // Positions
-    component.dex.v1.PositionOpen position_open = 30;
+    component.dex.v1.PositionOpen position_open = 30 [deprecated = true];
+    component.dex.v1.PositionOpenPlan position_open_plan = 35;
     component.dex.v1.PositionClose position_close = 31;
     component.dex.v1.PositionWithdraw position_withdraw = 32;
     component.dex.v1.PositionRewardClaim position_reward_claim = 34 [deprecated = true];

@@ -139,7 +139,7 @@ impl ::prost::Name for DetectionData {
 pub struct Action {
     #[prost(
         oneof = "action::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70, 200"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 35, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70, 200"
     )]
     pub action: ::core::option::Option<action::Action>,
 }
@@ -180,6 +180,8 @@ pub mod action {
         /// Positions
         #[prost(message, tag = "30")]
         PositionOpen(super::super::super::component::dex::v1::PositionOpen),
+        #[prost(message, tag = "35")]
+        PositionOpenPlan(super::super::super::component::dex::v1::PositionOpenPlan),
         #[prost(message, tag = "31")]
         PositionClose(super::super::super::component::dex::v1::PositionClose),
         #[prost(message, tag = "32")]
