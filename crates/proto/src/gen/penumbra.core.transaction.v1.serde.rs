@@ -48,9 +48,6 @@ impl serde::Serialize for Action {
                 action::Action::PositionOpen(v) => {
                     struct_ser.serialize_field("positionOpen", v)?;
                 }
-                action::Action::PositionOpenPlan(v) => {
-                    struct_ser.serialize_field("positionOpenPlan", v)?;
-                }
                 action::Action::PositionClose(v) => {
                     struct_ser.serialize_field("positionClose", v)?;
                 }
@@ -59,6 +56,9 @@ impl serde::Serialize for Action {
                 }
                 action::Action::PositionRewardClaim(v) => {
                     struct_ser.serialize_field("positionRewardClaim", v)?;
+                }
+                action::Action::PositionOpenPlan(v) => {
+                    struct_ser.serialize_field("positionOpenPlan", v)?;
                 }
                 action::Action::Delegate(v) => {
                     struct_ser.serialize_field("delegate", v)?;
@@ -126,14 +126,14 @@ impl<'de> serde::Deserialize<'de> for Action {
             "proposalDepositClaim",
             "position_open",
             "positionOpen",
-            "position_open_plan",
-            "positionOpenPlan",
             "position_close",
             "positionClose",
             "position_withdraw",
             "positionWithdraw",
             "position_reward_claim",
             "positionRewardClaim",
+            "position_open_plan",
+            "positionOpenPlan",
             "delegate",
             "undelegate",
             "undelegate_claim",
@@ -170,10 +170,10 @@ impl<'de> serde::Deserialize<'de> for Action {
             DelegatorVote,
             ProposalDepositClaim,
             PositionOpen,
-            PositionOpenPlan,
             PositionClose,
             PositionWithdraw,
             PositionRewardClaim,
+            PositionOpenPlan,
             Delegate,
             Undelegate,
             UndelegateClaim,
@@ -219,10 +219,10 @@ impl<'de> serde::Deserialize<'de> for Action {
                             "delegatorVote" | "delegator_vote" => Ok(GeneratedField::DelegatorVote),
                             "proposalDepositClaim" | "proposal_deposit_claim" => Ok(GeneratedField::ProposalDepositClaim),
                             "positionOpen" | "position_open" => Ok(GeneratedField::PositionOpen),
-                            "positionOpenPlan" | "position_open_plan" => Ok(GeneratedField::PositionOpenPlan),
                             "positionClose" | "position_close" => Ok(GeneratedField::PositionClose),
                             "positionWithdraw" | "position_withdraw" => Ok(GeneratedField::PositionWithdraw),
                             "positionRewardClaim" | "position_reward_claim" => Ok(GeneratedField::PositionRewardClaim),
+                            "positionOpenPlan" | "position_open_plan" => Ok(GeneratedField::PositionOpenPlan),
                             "delegate" => Ok(GeneratedField::Delegate),
                             "undelegate" => Ok(GeneratedField::Undelegate),
                             "undelegateClaim" | "undelegate_claim" => Ok(GeneratedField::UndelegateClaim),
@@ -340,13 +340,6 @@ impl<'de> serde::Deserialize<'de> for Action {
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::PositionOpen)
 ;
                         }
-                        GeneratedField::PositionOpenPlan => {
-                            if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("positionOpenPlan"));
-                            }
-                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::PositionOpenPlan)
-;
-                        }
                         GeneratedField::PositionClose => {
                             if action__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionClose"));
@@ -366,6 +359,13 @@ impl<'de> serde::Deserialize<'de> for Action {
                                 return Err(serde::de::Error::duplicate_field("positionRewardClaim"));
                             }
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::PositionRewardClaim)
+;
+                        }
+                        GeneratedField::PositionOpenPlan => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionOpenPlan"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::PositionOpenPlan)
 ;
                         }
                         GeneratedField::Delegate => {
