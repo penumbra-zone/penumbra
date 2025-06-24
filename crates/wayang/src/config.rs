@@ -1,10 +1,13 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::Path;
 use std::str::FromStr;
 
 /// The "symbol" providing a short name for a given asset.
 ///
 /// For example: "USDC", "UM", etc.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct Symbol(String);
 
@@ -16,11 +19,11 @@ impl FromStr for Symbol {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct SymbolPair {
-    base: Symbol,
-    quote: Symbol,
+    pub base: Symbol,
+    pub quote: Symbol,
 }
 
 impl FromStr for SymbolPair {
@@ -36,12 +39,16 @@ impl FromStr for SymbolPair {
     }
 }
 
-#[derive(clap::Parser)]
-pub struct Options {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Config {
     /// The pair on which to provide liquidity.
-    ///
-    /// This should be provided as a string such as 'UM/USDC', with the first part
-    /// the symbol of the base asset, and the second being the symbol of the quote asset.
-    #[clap(long)]
     pub pair: SymbolPair,
+}
+
+impl Config {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let content = fs::read_to_string(path)?;
+        let config: Config = toml::from_str(&content)?;
+        Ok(config)
+    }
 }
