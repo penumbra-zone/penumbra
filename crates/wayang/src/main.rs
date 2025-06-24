@@ -1,12 +1,22 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::Parser;
-use penumbra_sdk_wayang::{options::Options, rhythm_and_feeler, Move};
+use penumbra_sdk_wayang::{config::Config, rhythm_and_feeler, Move};
 use tokio::task::JoinHandle;
+
+#[derive(Parser)]
+struct Args {
+    /// Path to the TOML configuration file
+    #[clap(short, long)]
+    config: PathBuf,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let options = Options::parse();
-    let (mut rhythm, feeler) = rhythm_and_feeler(options);
+    let args = Args::parse();
+    let config = Config::from_file(&args.config)?;
+    let (mut rhythm, feeler) = rhythm_and_feeler(&config)?;
     let rhythm_task: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
         loop {
             let status = rhythm.sense().await?;

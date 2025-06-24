@@ -1,8 +1,8 @@
+pub mod config;
 mod environment;
-pub mod options;
 
+use config::SymbolPair;
 use environment::Environment;
-use options::SymbolPair;
 use std::time::Duration;
 use tokio::sync::watch;
 
@@ -64,12 +64,12 @@ impl Rhythm {
     }
 }
 
-pub fn rhythm_and_feeler(options: options::Options) -> (Rhythm, Feeler) {
+pub fn rhythm_and_feeler(config: &config::Config) -> anyhow::Result<(Rhythm, Feeler)> {
     let (moves_in, moves_out) = watch::channel(None);
     let (status_in, mut status_out) = watch::channel(None);
     // So that we can immediately get a status.
     status_out.mark_changed();
-    (
+    Ok((
         Rhythm {
             moves: moves_in,
             status: status_out,
@@ -77,7 +77,7 @@ pub fn rhythm_and_feeler(options: options::Options) -> (Rhythm, Feeler) {
         Feeler {
             moves: moves_out,
             status: status_in,
-            environment: Environment::new(options),
+            environment: Environment::new(config)?,
         },
-    )
+    ))
 }
