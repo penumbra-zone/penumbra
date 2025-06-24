@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt;
 use std::fs;
 use std::path::Path;
 use std::str::FromStr;
@@ -19,7 +20,7 @@ impl FromStr for Symbol {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 #[allow(dead_code)]
 pub struct SymbolPair {
     pub base: Symbol,
@@ -36,6 +37,31 @@ impl FromStr for SymbolPair {
         let base = Symbol::from_str(base_str)?;
         let quote = Symbol::from_str(quote_str)?;
         Ok(SymbolPair { base, quote })
+    }
+}
+
+impl fmt::Display for SymbolPair {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/{}", self.base.0, self.quote.0)
+    }
+}
+
+impl Serialize for SymbolPair {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for SymbolPair {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        SymbolPair::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
 
@@ -68,5 +94,24 @@ impl Config {
         let content = fs::read_to_string(path)?;
         let config: Config = toml::from_str(&content)?;
         Ok(config)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_config_example_parsing() {
+        let example_config = include_str!("../config_example.toml");
+        
+        let config: Config = toml::from_str(example_config).expect("Failed to parse example config");
+        
+        assert_eq!(config.pair.base.0, "UM");
+        assert_eq!(config.pair.quote.0, "USDC");
+        assert_eq!(config.account, 1);
+        assert_eq!(config.liquidity_ratio, 0.8);
+        assert_eq!(config.grpc_url, "https://grpc.testnet.penumbra.zone");
+        assert_eq!(config.view_service, "http://localhost:8080");
     }
 }
