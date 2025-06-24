@@ -4,7 +4,6 @@ use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_sdk_asset::{Balance, Value};
 use penumbra_sdk_keys::FullViewingKey;
 use penumbra_sdk_num::Amount;
-use penumbra_sdk_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_sdk_proto::{core::component::governance::v1 as pb, DomainType};
 use penumbra_sdk_sct::Nullifier;
 use penumbra_sdk_shielded_pool::Note;
@@ -17,6 +16,8 @@ use crate::delegator_vote::proof::DelegatorVoteProof;
 use crate::DelegatorVoteProofPrivate;
 use crate::DelegatorVoteProofPublic;
 use crate::{vote::Vote, VotingReceiptToken};
+
+use super::DelegatorVoteCircuit;
 
 /// A plan to vote as a delegator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -67,17 +68,43 @@ impl DelegatorVotePlan {
         }
     }
 
+    /// Convenience method to construct the [`DelegatorVoteCircuit`] for this [`DelegatorVoteProof`].
+    pub fn circuit_inputs(
+        &self,
+        fvk: &FullViewingKey,
+        state_commitment_proof: tct::Proof,
+    ) -> DelegatorVoteCircuit {
+        let public = DelegatorVoteProofPublic {
+            anchor: state_commitment_proof.root(),
+            balance_commitment: self.staked_note.value().commit(Fr::zero()),
+            nullifier: self.nullifier(fvk),
+            rk: self.rk(fvk),
+            start_position: self.start_position,
+        };
+
+        let private = DelegatorVoteProofPrivate {
+            state_commitment_proof,
+            note: self.staked_note.clone(),
+            v_blinding: Fr::from(0u64),
+            spend_auth_randomizer: self.randomizer,
+            ak: *fvk.spend_verification_key(),
+            nk: *fvk.nullifier_key(),
+        };
+
+        DelegatorVoteCircuit::new(public, private)
+    }
+
     /// Convenience method to construct the [`DelegatorVote`] described by this [`DelegatorVotePlan`].
     pub fn delegator_vote(
         &self,
         fvk: &FullViewingKey,
         auth_sig: Signature<SpendAuth>,
-        auth_path: tct::Proof,
+        action_circuit: DelegatorVoteCircuit,
     ) -> DelegatorVote {
         DelegatorVote {
             body: self.delegator_vote_body(fvk),
             auth_sig,
-            proof: self.delegator_vote_proof(fvk, auth_path),
+            proof: self.delegator_vote_proof(action_circuit.public, action_circuit.private),
         }
     }
 
@@ -101,28 +128,13 @@ impl DelegatorVotePlan {
     /// Construct the [`DelegatorVoteProof`] required by the [`DelegatorVoteBody`] described by this [`DelegatorVotePlan`].
     pub fn delegator_vote_proof(
         &self,
-        fvk: &FullViewingKey,
-        state_commitment_proof: tct::Proof,
+        public: DelegatorVoteProofPublic,
+        private: DelegatorVoteProofPrivate,
     ) -> DelegatorVoteProof {
-        let public = DelegatorVoteProofPublic {
-            anchor: state_commitment_proof.root(),
-            balance_commitment: self.staked_note.value().commit(Fr::zero()),
-            nullifier: self.nullifier(fvk),
-            rk: self.rk(fvk),
-            start_position: self.start_position,
-        };
-        let private = DelegatorVoteProofPrivate {
-            state_commitment_proof,
-            note: self.staked_note.clone(),
-            v_blinding: Fr::from(0u64),
-            spend_auth_randomizer: self.randomizer,
-            ak: *fvk.spend_verification_key(),
-            nk: *fvk.nullifier_key(),
-        };
         DelegatorVoteProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
-            &DELEGATOR_VOTE_PROOF_PROVING_KEY,
+            &penumbra_sdk_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY,
             public,
             private,
         )

@@ -1,3 +1,4 @@
+use crate::action::ActionCircuit;
 use crate::Action;
 use crate::WitnessData;
 use anyhow::{anyhow, Context, Result};
@@ -88,6 +89,57 @@ pub enum ActionPlan {
 }
 
 impl ActionPlan {
+    /// Builds the public and private circuit inputs associated with the plan.
+    pub fn circuit_inputs(
+        action_plan: ActionPlan,
+        fvk: &FullViewingKey,
+        witness_data: &WitnessData,
+    ) -> Result<ActionCircuit> {
+        use ActionPlan::*;
+
+        match action_plan {
+            Spend(spend_plan) => {
+                let note_commitment = spend_plan.note.commit();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+
+                Ok(ActionCircuit::Spend(spend_plan.circuit_inputs(
+                    fvk,
+                    auth_path.clone(),
+                    witness_data.anchor,
+                )))
+            }
+            Output(output_plan) => Ok(ActionCircuit::Output(output_plan.circuit_inputs())),
+            Swap(swap_plan) => Ok(ActionCircuit::Swap(swap_plan.circuit_inputs())),
+            SwapClaim(swap_claim_plan) => {
+                let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+
+                Ok(ActionCircuit::SwapClaim(
+                    swap_claim_plan.circuit_inputs(auth_path, fvk),
+                ))
+            }
+            DelegatorVote(delegate_vote) => {
+                let note_commitment = delegate_vote.staked_note.commit();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+                Ok(ActionCircuit::DelegatorVote(
+                    delegate_vote.circuit_inputs(fvk, auth_path.clone()),
+                ))
+            }
+            _ => Err(anyhow::anyhow!(
+                "This action type does not require a circuit"
+            )),
+        }
+    }
+
     /// Builds a planned [`Action`] specified by this [`ActionPlan`].
     ///
     /// The resulting action is `unauth` in the sense that this method does not
@@ -101,42 +153,48 @@ impl ActionPlan {
         fvk: &FullViewingKey,
         witness_data: &WitnessData,
         memo_key: Option<PayloadKey>,
+        circuit_inputs: Option<ActionCircuit>,
     ) -> Result<Action> {
         use ActionPlan::*;
 
         Ok(match action_plan {
             Spend(spend_plan) => {
-                let note_commitment = spend_plan.note.commit();
-                let auth_path = witness_data
-                    .state_commitment_proofs
-                    .get(&note_commitment)
-                    .context(format!("could not get proof for {note_commitment:?}"))?;
+                // Extract the spend circuit inputs
+                let spend_circuit = match circuit_inputs {
+                    Some(ActionCircuit::Spend(circuit)) => circuit,
+                    _ => return Err(anyhow::anyhow!("error")),
+                };
 
-                Action::Spend(spend_plan.spend(
-                    fvk,
-                    [0; 64].into(),
-                    auth_path.clone(),
-                    // FIXME: why does this need the anchor? isn't that implied by the auth_path?
-                    // cf. delegator_vote
-                    witness_data.anchor,
-                ))
+                Action::Spend(spend_plan.spend(fvk, [0; 64].into(), spend_circuit))
             }
             Output(output_plan) => {
+                let output_circuit = match circuit_inputs {
+                    Some(ActionCircuit::Output(circuit)) => circuit,
+                    _ => return Err(anyhow::anyhow!("error")),
+                };
+
                 let dummy_payload_key: PayloadKey = [0u8; 32].into();
                 Action::Output(output_plan.output(
                     fvk.outgoing(),
                     memo_key.as_ref().unwrap_or(&dummy_payload_key),
+                    output_circuit,
                 ))
             }
-            Swap(swap_plan) => Action::Swap(swap_plan.swap(fvk)),
-            SwapClaim(swap_claim_plan) => {
-                let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
-                let auth_path = witness_data
-                    .state_commitment_proofs
-                    .get(&note_commitment)
-                    .context(format!("could not get proof for {note_commitment:?}"))?;
+            Swap(swap_plan) => {
+                let swap_circuit = match circuit_inputs {
+                    Some(ActionCircuit::Swap(circuit)) => circuit,
+                    _ => return Err(anyhow::anyhow!("error")),
+                };
 
-                Action::SwapClaim(swap_claim_plan.swap_claim(fvk, auth_path))
+                Action::Swap(swap_plan.swap(fvk, swap_circuit))
+            }
+            SwapClaim(swap_claim_plan) => {
+                let swap_claim_circuit = match circuit_inputs {
+                    Some(ActionCircuit::SwapClaim(circuit)) => circuit,
+                    _ => return Err(anyhow::anyhow!("error")),
+                };
+
+                Action::SwapClaim(swap_claim_plan.swap_claim(fvk, swap_claim_circuit))
             }
             Delegate(plan) => Action::Delegate(plan.clone()),
             Undelegate(plan) => Action::Undelegate(plan.clone()),
@@ -147,12 +205,16 @@ impl ActionPlan {
             ProposalSubmit(plan) => Action::ProposalSubmit(plan.clone()),
             ProposalWithdraw(plan) => Action::ProposalWithdraw(plan.clone()),
             DelegatorVote(plan) => {
-                let note_commitment = plan.staked_note.commit();
-                let auth_path = witness_data
-                    .state_commitment_proofs
-                    .get(&note_commitment)
-                    .context(format!("could not get proof for {note_commitment:?}"))?;
-                Action::DelegatorVote(plan.delegator_vote(fvk, [0; 64].into(), auth_path.clone()))
+                let delegator_vote_circuit = match circuit_inputs {
+                    Some(ActionCircuit::DelegatorVote(circuit)) => circuit,
+                    _ => return Err(anyhow::anyhow!("error")),
+                };
+
+                Action::DelegatorVote(plan.delegator_vote(
+                    fvk,
+                    [0; 64].into(),
+                    delegator_vote_circuit,
+                ))
             }
             ValidatorVote(plan) => Action::ValidatorVote(plan.clone()),
             ProposalDepositClaim(plan) => Action::ProposalDepositClaim(plan.clone()),

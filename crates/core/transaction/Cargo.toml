@@ -34,6 +34,7 @@ decaf377 = {workspace = true}
 decaf377-fmd = {workspace = true}
 decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
+ark-relations = {workspace = true}
 derivative = {workspace = true}
 hex = {workspace = true}
 ibc-proto = {workspace = true, default-features = false}
@@ -68,6 +69,7 @@ sha2 = {workspace = true}
 thiserror = {workspace = true}
 tokio = {workspace = true, features = ["full"], optional = true}
 tracing = {workspace = true}
+byteorder = "1.5.0"
 
 [dev-dependencies]
 proptest = {workspace = true}
