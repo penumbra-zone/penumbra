@@ -43,6 +43,13 @@ impl FromStr for SymbolPair {
 pub struct Config {
     /// The pair on which to provide liquidity.
     pub pair: SymbolPair,
+    /// The account to use for funds.
+    ///
+    /// This should be a separate account from the main account (so, > 0), so
+    /// that it requires intention to place funds in here. Ideally, the only activity
+    /// on this account should be a particular active strategy, which avoids issues
+    /// with concurrency, and makes tracking profit easier.
+    pub account: u32,
 }
 
 impl Config {
