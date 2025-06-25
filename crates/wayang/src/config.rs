@@ -74,13 +74,6 @@ pub struct Config {
     /// on this account should be a particular active strategy, which avoids issues
     /// with concurrency, and makes tracking profit easier.
     pub account: u32,
-    /// The ratio of funds that can be used to provide liquidity on this pair. In [0, 1].
-    ///
-    /// For example, if providing UM / USDC liquidity, and this value is set to 20%, then
-    /// up to 20% of the UM or 20% of the USDC may be used.
-    /// This is also a ceiling, and not a floor, so less may be in use at any point
-    /// in time.
-    pub liquidity_ratio: f64,
     /// The URL we'll use to contact an RPC provider (e.g. a full node).
     pub grpc_url: String,
     /// The URL we'll use to contact a view service (e.g. `pclientd`).
@@ -119,7 +112,6 @@ mod tests {
         assert_eq!(config.pair.base.0, "UM");
         assert_eq!(config.pair.quote.0, "USDC");
         assert_eq!(config.account, 1);
-        assert_eq!(config.liquidity_ratio, 0.8);
         assert_eq!(config.grpc_url, "https://grpc.testnet.penumbra.zone");
         assert_eq!(config.view_service, "http://localhost:8080");
     }
