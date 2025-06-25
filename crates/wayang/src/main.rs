@@ -1,9 +1,12 @@
-use std::path::PathBuf;
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use anyhow::Result;
 use clap::Parser;
 use penumbra_sdk_wayang::{config::Config, rhythm_and_feeler, Move};
-use tokio::task::JoinHandle;
+use tokio::{fs, task::JoinHandle};
 
 #[derive(Parser)]
 struct Args {
@@ -12,10 +15,15 @@ struct Args {
     config: PathBuf,
 }
 
+async fn read_config(path: &Path) -> anyhow::Result<Config> {
+    let data = fs::read_to_string(path).await?;
+    Config::from_str(&data)
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
-    let config = Config::from_file(&args.config)?;
+    let config = read_config(&args.config).await?;
     let (mut rhythm, feeler) = rhythm_and_feeler(&config)?;
     let rhythm_task: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
         loop {
