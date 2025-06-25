@@ -6,9 +6,6 @@ pair = "UM/USDC"
 # Account index to use (should be > 0 for safety)
 account = 1
 
-# Ratio of funds to use for liquidity provision (0.0 to 1.0)
-# 0.8 means up to 80% of available funds can be used
-liquidity_ratio = 0.8
 
 # RPC endpoint URL
 grpc_url = "https://grpc.testnet.penumbra.zone"
