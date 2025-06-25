@@ -95,6 +95,17 @@ impl Config {
         let config: Config = toml::from_str(&content)?;
         Ok(config)
     }
+
+    /// A full example config file.
+    ///
+    /// This is a string, so that it can include comments.
+    pub const EXAMPLE_STR: &'static str = include_str!("../config_example.toml");
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        toml::from_str(Self::EXAMPLE_STR).expect("Failed to parse example Config.")
+    }
 }
 
 #[cfg(test)]
@@ -103,10 +114,8 @@ mod tests {
 
     #[test]
     fn test_config_example_parsing() {
-        let example_config = include_str!("../config_example.toml");
-        
-        let config: Config = toml::from_str(example_config).expect("Failed to parse example config");
-        
+        let config = Config::default();
+
         assert_eq!(config.pair.base.0, "UM");
         assert_eq!(config.pair.quote.0, "USDC");
         assert_eq!(config.account, 1);
