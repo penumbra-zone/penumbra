@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use penumbra_sdk_wayang::{config::Config, rhythm_and_feeler, Move};
+use penumbra_sdk_wayang::{config::Config, rhythm_and_feeler, Move, PositionShape};
 use std::{
     path::{Path, PathBuf},
     str::FromStr,
@@ -45,9 +45,22 @@ async fn main() -> Result<()> {
         loop {
             let status = rhythm.sense().await?;
             dbg!(&status);
+            let price = status
+                .and_then(|x| {
+                    x.positions
+                        .get(0)
+                        .map(|x| (x.shape.upper_price + x.shape.lower_price) / 2.0)
+                })
+                .unwrap_or_default()
+                + 0.0001;
             rhythm
                 .do_move(Move {
-                    price: status.map(|x| x.price).unwrap_or_default() + 0.0001,
+                    shape: PositionShape {
+                        upper_price: 1.01 * price,
+                        lower_price: 0.99 * price,
+                        base_liquidity: 1.0,
+                        quote_liquidity: 1.0,
+                    },
                 })
                 .await?;
         }
