@@ -7,15 +7,28 @@ use std::time::Duration;
 use tokio::sync::watch;
 
 #[derive(Debug, Clone)]
+pub struct PositionShape {
+    pub upper_price: f64,
+    pub lower_price: f64,
+    pub base_liquidity: f64,
+    pub quote_liquidity: f64,
+}
+
+#[derive(Debug, Clone)]
+pub struct Position {
+    pub pair: SymbolPair,
+    pub shape: PositionShape,
+}
+
+#[derive(Debug, Clone)]
 pub struct Status {
     pub height: u64,
-    pub price: f64,
-    pub pair: SymbolPair,
+    pub positions: Vec<Position>,
 }
 
 #[derive(Clone)]
 pub struct Move {
-    pub price: f64,
+    pub shape: PositionShape,
 }
 
 pub struct Feeler {
@@ -37,8 +50,10 @@ impl Feeler {
             height += 1;
             let status = Status {
                 height,
-                price: moove.price,
-                pair: self.environment.pair().clone(),
+                positions: vec![Position {
+                    pair: self.environment.pair().clone(),
+                    shape: moove.shape,
+                }],
             };
             self.status.send(Some(status))?;
             tokio::time::sleep(Duration::from_secs(1)).await;
