@@ -1,8 +1,6 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
-use std::fs;
-use std::path::Path;
 use std::str::FromStr;
 
 /// The "symbol" providing a short name for a given asset.
@@ -90,21 +88,23 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let content = fs::read_to_string(path)?;
-        let config: Config = toml::from_str(&content)?;
-        Ok(config)
-    }
-
     /// A full example config file.
     ///
     /// This is a string, so that it can include comments.
     pub const EXAMPLE_STR: &'static str = include_str!("../config_example.toml");
 }
 
+impl FromStr for Config {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        toml::from_str(s).map_err(|e| anyhow!("failed to parse config: {}", e))
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
-        toml::from_str(Self::EXAMPLE_STR).expect("Failed to parse example Config.")
+        Self::from_str(Self::EXAMPLE_STR).expect("Failed to parse example Config.")
     }
 }
 
