@@ -87,7 +87,7 @@ rand                             = { workspace = true }
 rand_chacha                      = { workspace = true }
 rand_core                        = { workspace = true, features = ["getrandom"] }
 regex                            = { workspace = true }
-reqwest                          = { version = "0.12.9", features = ["json", "stream"] }
+reqwest                          = { workspace = true }
 rocksdb                          = { workspace = true }
 rustls                           = { workspace = true }
 serde                            = { workspace = true, features = ["derive"] }

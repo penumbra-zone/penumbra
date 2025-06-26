@@ -46,12 +46,14 @@ penumbra-sdk-view = {workspace = true}
 prost = {workspace = true}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
+reqwest = {workspace = true}
 rpassword = {workspace = true}
 rustls = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
 serde_with = {workspace = true, features = ["hex"]}
 sha2 = {workspace = true}
+tempfile = {workspace = true}
 tendermint = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 tokio-stream = {workspace = true, features = ["sync"]}
@@ -73,4 +75,3 @@ penumbra-sdk-proof-params = {workspace = true, features = [
     "bundled-proving-keys",
     "download-proving-keys",
 ], default-features = true}
-tempfile = {workspace = true}
