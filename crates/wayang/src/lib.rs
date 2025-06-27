@@ -3,8 +3,9 @@ mod environment;
 
 use config::SymbolPair;
 use environment::Environment;
-use std::time::Duration;
+use std::{io::IsTerminal, time::Duration};
 use tokio::sync::watch;
+use tracing_subscriber::{prelude::*, EnvFilter};
 
 #[derive(Debug, Clone)]
 pub struct PositionShape {
@@ -95,4 +96,18 @@ pub fn rhythm_and_feeler(config: &config::Config) -> anyhow::Result<(Rhythm, Fee
             environment: Environment::new(config)?,
         },
     ))
+}
+
+pub fn init_tracing() -> anyhow::Result<()> {
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_ansi(std::io::stdout().is_terminal())
+        .with_writer(std::io::stderr)
+        .with_target(true);
+    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
+
+    let registry = tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer);
+    registry.init();
+    Ok(())
 }
