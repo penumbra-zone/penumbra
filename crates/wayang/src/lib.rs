@@ -1,7 +1,10 @@
+mod client;
 pub mod config;
 mod environment;
+mod registry;
 
-use config::SymbolPair;
+use client::Client;
+use config::{Symbol, SymbolPair};
 use regex::Regex;
 use std::{fmt::Display, io::IsTerminal, str::FromStr, time::Duration};
 use tokio::sync::watch;
@@ -103,6 +106,7 @@ pub struct Move {
 pub struct Feeler {
     moves: watch::Receiver<Option<Move>>,
     status: watch::Sender<Option<Status>>,
+    client: Client,
 }
 
 impl Feeler {
@@ -112,6 +116,9 @@ impl Feeler {
     }
 
     pub async fn run(mut self) -> anyhow::Result<()> {
+        let registry = self.client.registry().await?;
+        dbg!(&registry.lookup(&Symbol::from_str("UM").unwrap()));
+        dbg!(&registry.lookup(&Symbol::from_str("USDC").unwrap()));
         let mut height = 0u64;
         loop {
             let moove = self.next_move().await?;
@@ -144,7 +151,8 @@ impl Rhythm {
     }
 }
 
-pub fn rhythm_and_feeler(_config: &config::Config) -> anyhow::Result<(Rhythm, Feeler)> {
+pub async fn rhythm_and_feeler(config: &config::Config) -> anyhow::Result<(Rhythm, Feeler)> {
+    let client = Client::init(config.view_service.as_str()).await?;
     let (moves_in, moves_out) = watch::channel(None);
     let (status_in, mut status_out) = watch::channel(None);
     // So that we can immediately get a status.
@@ -157,6 +165,7 @@ pub fn rhythm_and_feeler(_config: &config::Config) -> anyhow::Result<(Rhythm, Fe
         Feeler {
             moves: moves_out,
             status: status_in,
+            client,
         },
     ))
 }

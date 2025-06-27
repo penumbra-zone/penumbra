@@ -8,6 +8,8 @@ use tokio::fs;
 /// The "symbol" providing a short name for a given asset.
 ///
 /// For example: "USDC", "UM", etc.
+///
+/// You can use `as_ref` to treat a symbol as a string.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct Symbol(String);
@@ -17,6 +19,12 @@ impl FromStr for Symbol {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(s.to_string()))
+    }
+}
+
+impl AsRef<str> for Symbol {
+    fn as_ref(&self) -> &str {
+        &self.0
     }
 }
 
