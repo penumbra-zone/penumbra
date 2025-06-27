@@ -1,7 +1,9 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
+use std::path::Path;
 use std::str::FromStr;
+use tokio::fs;
 
 /// The "symbol" providing a short name for a given asset.
 ///
@@ -85,6 +87,16 @@ impl Config {
     ///
     /// This is a string, so that it can include comments.
     pub const EXAMPLE_STR: &'static str = include_str!("../config_example.toml");
+
+    pub async fn fetch(path: &Path) -> anyhow::Result<Self> {
+        if !fs::try_exists(path).await? {
+            tracing::info!("Config file not found, creating default.");
+            fs::write(path, Self::EXAMPLE_STR.as_bytes()).await?;
+        }
+        tracing::info!("Loading config.");
+        let data = fs::read_to_string(path).await?;
+        Self::from_str(&data)
+    }
 }
 
 impl FromStr for Config {
