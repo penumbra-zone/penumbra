@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
 
     let args = Args::parse();
     let config = Config::fetch(&args.config).await?;
-    let (mut rhythm, feeler) = rhythm_and_feeler(&config)?;
+    let (mut rhythm, feeler) = rhythm_and_feeler(&config).await?;
     let rhythm_task: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
         let stdin = tokio::io::stdin();
         let mut reader = BufReader::new(stdin);
