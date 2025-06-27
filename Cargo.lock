@@ -6533,6 +6533,8 @@ dependencies = [
  "serde",
  "tokio",
  "toml 0.7.8",
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
