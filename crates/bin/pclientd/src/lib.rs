@@ -22,9 +22,11 @@ use penumbra_sdk_proto::{
     view::v1::view_service_server::ViewServiceServer,
 };
 use penumbra_sdk_view::{Storage, ViewServer};
+use reqwest;
 use rpassword::prompt_password;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use tempfile::NamedTempFile;
 
 use std::fs;
 use std::fs::File;
@@ -118,6 +120,25 @@ pub enum Command {
     Start {},
     /// Delete `pclientd` storage to reset local state.
     Reset {},
+    /// Load assets from a registry into the pclientd instance.
+    ///
+    /// This enables smarter handling of metadata.
+    LoadRegistry {
+        /// If present, where to fetch the assets from.
+        ///
+        /// If this is not present, this will use the Prax wallet registry, with the chain
+        /// ID pclientd has previously been initialize with to source the correct registry.
+        ///
+        /// If this is present, it will be assumed to be an HTTP URL. If the URL ends in ".json",
+        /// it's assumed to be a specific registry file, which will be fetched. If the URL
+        /// does not end in ".json", it will be concatened with the chain id pclientd has,
+        /// in the assumption that this points to a folder of registry files.
+        ///
+        /// If the URL starts with "file://" instead of "https://" or "http://", then
+        /// the local filesystem will be used, with all the same rules.
+        #[clap(long)]
+        source: Option<String>,
+    },
 }
 
 impl Opt {
@@ -356,6 +377,102 @@ impl Opt {
 
                 Ok(())
             }
+            Command::LoadRegistry { source } => {
+                let config = PclientdConfig::load(opt.config_path()).context(
+                    "Failed to load pclientd config file. Have you run `pclientd init` with a FVK?",
+                )?;
+
+                // Load existing storage
+                let storage = opt
+                    .load_or_init_sqlite(&config.full_viewing_key, &config.grpc_url)
+                    .await?;
+
+                // Use provided source or default to Prax wallet registry
+                let source_url = source.clone().unwrap_or_else(|| {
+                    "https://raw.githubusercontent.com/prax-wallet/registry/refs/heads/main/registry/chains/".to_string()
+                });
+
+                // Determine the final registry URL
+                let registry_url = determine_registry_url(&source_url, &storage).await?;
+
+                tracing::info!(?registry_url, "Loading assets from registry");
+
+                // Download the registry file to a temporary file
+                let temp_file = download_registry_to_temp_file(&registry_url).await?;
+
+                // Load asset metadata into the storage
+                let temp_path = camino::Utf8Path::from_path(temp_file.path())
+                    .ok_or_else(|| anyhow::anyhow!("Temporary file path is not valid UTF-8"))?;
+                storage.load_asset_metadata(temp_path).await?;
+
+                println!("Successfully loaded assets from registry: {}", registry_url);
+                Ok(())
+            }
         }
+    }
+}
+
+/// Determines the final registry URL based on the provided source and storage chain ID.
+async fn determine_registry_url(source: &str, storage: &Storage) -> Result<String> {
+    if source.ends_with(".json") {
+        // Direct registry file URL
+        Ok(source.to_string())
+    } else {
+        // Directory URL - need to append chain ID
+        let app_params = storage.app_params().await?;
+        let chain_id = app_params.chain_id;
+        let mut url = source.to_string();
+        if !url.ends_with('/') {
+            url.push('/');
+        }
+        url.push_str(&format!("{}.json", chain_id));
+        Ok(url)
+    }
+}
+
+/// Downloads a registry file from the given URL to a temporary file.
+async fn download_registry_to_temp_file(url: &str) -> Result<NamedTempFile> {
+    if url.starts_with("file://") {
+        // Local file - copy to temp file
+        let local_path = &url[7..]; // Remove "file://" prefix
+        let content = std::fs::read_to_string(local_path)
+            .with_context(|| format!("Failed to read local registry file: {}", local_path))?;
+
+        let mut temp_file = NamedTempFile::new().context("Failed to create temporary file")?;
+        temp_file
+            .write_all(content.as_bytes())
+            .context("Failed to write to temporary file")?;
+        temp_file
+            .flush()
+            .context("Failed to flush temporary file")?;
+
+        Ok(temp_file)
+    } else {
+        // HTTP/HTTPS URL - download with reqwest
+        let response = reqwest::get(url)
+            .await
+            .with_context(|| format!("Failed to download registry from: {}", url))?;
+
+        if !response.status().is_success() {
+            return Err(anyhow::anyhow!(
+                "Failed to download registry: HTTP {}",
+                response.status()
+            ));
+        }
+
+        let content = response
+            .text()
+            .await
+            .context("Failed to read response body")?;
+
+        let mut temp_file = NamedTempFile::new().context("Failed to create temporary file")?;
+        temp_file
+            .write_all(content.as_bytes())
+            .context("Failed to write to temporary file")?;
+        temp_file
+            .flush()
+            .context("Failed to flush temporary file")?;
+
+        Ok(temp_file)
     }
 }

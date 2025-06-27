@@ -202,6 +202,7 @@ rand                             = { version = "0.8.5" }
 rand_chacha                      = { version = "0.3.1" }
 rand_core                        = { version = "0.6.4" }
 regex                            = { version = "1.8.1" }
+reqwest                          = { version = "0.12.9", features = ["json", "stream"] }
 rocksdb                          = { version = "0.21.0" }
 rpassword                        = { version = "7" }
 rstest                           = { version = "0.24.0" }
