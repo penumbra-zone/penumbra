@@ -750,7 +750,7 @@ impl Tree {
 
     /// Get a dynamic representation of the internal structure of the tree, which can be traversed
     /// and inspected arbitrarily.
-    pub fn structure(&self) -> structure::Node {
+    pub fn structure(&self) -> structure::Node<'_> {
         let _structure_span = trace_span!("structure");
         // TODO: use the structure span for instrumenting methods of the structure, as it is traversed
         Node::root(&*self.inner)

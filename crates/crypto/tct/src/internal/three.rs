@@ -103,7 +103,7 @@ impl<T> Three<T> {
     }
 
     /// Get an enumeration of the elements of this [`Three`] by reference.
-    pub fn elems(&self) -> Elems<T> {
+    pub fn elems(&self) -> Elems<'_, T> {
         match self.elems.len() {
             0 => Elems::_0([]),
             1 => Elems::_1([&self.elems[0]]),
@@ -114,7 +114,7 @@ impl<T> Three<T> {
     }
 
     /// Get an enumeration of the elements of this [`Three`] by mutable reference.
-    pub fn elems_mut(&mut self) -> ElemsMut<T> {
+    pub fn elems_mut(&mut self) -> ElemsMut<'_, T> {
         match self.elems.as_mut_slice() {
             [] => ElemsMut::_0([]),
             [a] => ElemsMut::_1([a]),
