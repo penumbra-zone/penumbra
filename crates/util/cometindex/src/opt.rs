@@ -40,6 +40,12 @@ pub struct Options {
     /// If set, don't index, running only integrity checks against the database.
     #[clap(long)]
     pub integrity_checks_only: bool,
+
+    /// If set, allow the options for app views to change.
+    ///
+    /// This is a safeguard against accidentally changing them.
+    #[clap(long)]
+    pub new_options: bool,
 }
 
 /// Parses a string containing a [`Duration`], represented as a number of milliseconds.

@@ -14,10 +14,30 @@ async fn reset_index_if_necessary(
     index: &dyn AppView,
     manager: &IndexingManager,
     dbtx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    new_options: bool,
 ) -> anyhow::Result<()> {
     let name = index.name();
     let state = manager.index_state(&name).await?;
     let version = index.version();
+    let options_changed = version.option_hash() != state.version.option_hash();
+    if options_changed && !new_options {
+        let new = version
+            .option_hash()
+            .map(hex::encode)
+            .unwrap_or_else(|| "NULL".to_string());
+        let old = state
+            .version
+            .option_hash()
+            .map(hex::encode)
+            .unwrap_or_else(|| "NULL".to_string());
+        anyhow::bail!(
+            r#"
+Current option hash for index {name} is {old}, but new option hash is {new}.
+Use `--new-options` to allow changing the options for app views.
+If this was not your intent, check that the options have not changed.
+"#
+        );
+    }
     if version.major() < state.version.major() {
         // My thinking is that the only reason this can happen is that:
         // a) Someone accidentally decreased the version in their AppView.
@@ -30,9 +50,7 @@ If so, maybe there's a bug in this particular index.
         "#,
             state.version
         );
-    } else if version.major() > state.version.major()
-        || version.option_hash() != state.version.option_hash()
-    {
+    } else if version.major() > state.version.major() || options_changed {
         tracing::info!(?name, old_version = ?state.version, new_version = ?version, "resetting index");
         index.reset(dbtx).await?;
         IndexingManager::update_index_state(
@@ -200,6 +218,7 @@ impl Indexer {
                     genesis_json,
                     exit_on_catchup,
                     integrity_checks_only,
+                    new_options,
                 },
             indices,
         } = self;
@@ -226,7 +245,7 @@ impl Indexer {
         {
             let mut dbtx = manager.begin_transaction().await?;
             for index in &indices {
-                reset_index_if_necessary(index.as_ref(), &manager, &mut dbtx).await?;
+                reset_index_if_necessary(index.as_ref(), &manager, &mut dbtx, new_options).await?;
                 index.on_startup(&mut dbtx).await?;
             }
             dbtx.commit().await?;
