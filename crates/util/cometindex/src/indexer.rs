@@ -18,7 +18,7 @@ async fn reset_index_if_necessary(
     let name = index.name();
     let state = manager.index_state(&name).await?;
     let version = index.version();
-    if version < state.version {
+    if version.major() < state.version.major() {
         // My thinking is that the only reason this can happen is that:
         // a) Someone accidentally decreased the version in their AppView.
         // b) For some reason, we're running the wrong version of the consuming pindexer against a DB.
@@ -30,7 +30,9 @@ If so, maybe there's a bug in this particular index.
         "#,
             state.version
         );
-    } else if version > state.version {
+    } else if version.major() > state.version.major()
+        || version.option_hash() != state.version.option_hash()
+    {
         tracing::info!(?name, old_version = ?state.version, new_version = ?version, "resetting index");
         index.reset(dbtx).await?;
         IndexingManager::update_index_state(
@@ -84,7 +86,7 @@ async fn catchup(
         let (tx, mut rx) = mpsc::channel::<EventBatch>(BATCH_LOOKAHEAD);
         txs.push(tx);
         let name = index.name();
-        let index_state = index_states.get(&name).copied().unwrap_or_default();
+        let index_state = index_states.get(&name).cloned().unwrap_or_default();
         let manager_cp = manager.clone();
         let genesis_cp = genesis.clone();
         tasks.spawn(async move {

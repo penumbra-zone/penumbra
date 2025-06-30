@@ -42,7 +42,7 @@ impl From<Height> for u64 {
 }
 
 /// The state of a particular index.
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone)]
 pub struct IndexState {
     /// What version this particular index has been using.
     pub version: Version,
@@ -69,6 +69,9 @@ impl IndexingManager {
         )
         .execute(&self.dst)
         .await?;
+        sqlx::query("ALTER TABLE index_watermarks ADD COLUMN IF NOT EXISTS option_hash BYTEA")
+            .execute(&self.dst)
+            .await?;
         Ok(())
     }
 
@@ -82,24 +85,36 @@ impl IndexingManager {
     }
 
     pub async fn index_state(&self, name: &str) -> anyhow::Result<IndexState> {
-        let row: Option<(Height, Version)> =
-            sqlx::query_as("SELECT height, version FROM index_watermarks WHERE index_name = $1")
-                .bind(name)
-                .fetch_optional(&self.dst)
-                .await?;
+        let row: Option<(Height, Option<i64>, Option<[u8; 32]>)> = sqlx::query_as(
+            "SELECT height, version, option_hash FROM index_watermarks WHERE index_name = $1",
+        )
+        .bind(name)
+        .fetch_optional(&self.dst)
+        .await?;
         Ok(row
-            .map(|(height, version)| IndexState { height, version })
+            .map(|(height, major, option_hash)| IndexState {
+                height,
+                version: Version::new(major, option_hash),
+            })
             .unwrap_or_default())
     }
 
     pub async fn index_states(&self) -> anyhow::Result<HashMap<String, IndexState>> {
-        let rows: Vec<(String, Height, Version)> =
-            sqlx::query_as("SELECT index_name, height, version FROM index_watermarks")
+        let rows: Vec<(String, Height, Option<i64>, Option<[u8; 32]>)> =
+            sqlx::query_as("SELECT index_name, height, version, option_hash FROM index_watermarks")
                 .fetch_all(&self.dst)
                 .await?;
         Ok(rows
             .into_iter()
-            .map(|(name, height, version)| (name, IndexState { height, version }))
+            .map(|(name, height, major, option_hash)| {
+                (
+                    name,
+                    IndexState {
+                        height,
+                        version: Version::new(major, option_hash),
+                    },
+                )
+            })
             .collect())
     }
 
@@ -115,12 +130,14 @@ impl IndexingManager {
         ON CONFLICT (index_name) 
         DO UPDATE SET
             height = excluded.height,
-            version = excluded.version
+            version = excluded.version,
+            option_hash = excluded.option_hash
         ",
         )
         .bind(name)
         .bind(new_state.height)
-        .bind(new_state.version)
+        .bind(i64::try_from(new_state.version.major())?)
+        .bind(new_state.version.option_hash())
         .execute(dbtx.as_mut())
         .await?;
         Ok(())

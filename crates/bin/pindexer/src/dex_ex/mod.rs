@@ -1481,7 +1481,18 @@ impl AppView for Component {
     }
 
     fn version(&self) -> Version {
-        Version::with_major(1)
+        let hash: [u8; 32] = blake2b_simd::Params::default()
+            .personal(b"option_hash")
+            .hash_length(32)
+            .to_state()
+            .update(&self.denom.to_bytes())
+            .update(&self.min_liquidity.to_le_bytes())
+            .update(&[u8::from(self.ignore_arb_executions)])
+            .finalize()
+            .as_bytes()
+            .try_into()
+            .expect("Impossible 000-001: expected 32 byte hash");
+        Version::with_major(1).with_option_hash(hash)
     }
 
     async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {

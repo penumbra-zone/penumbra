@@ -166,25 +166,45 @@ impl EventBatchContext {
 /// ```
 /// assert!(Version::with_major(3) > Version::with_major(2));
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, sqlx::Type)]
-#[sqlx(transparent)]
-pub struct Version(Option<i64>);
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, sqlx::Type)]
+pub struct Version {
+    major: Option<i64>,
+    option_hash: Option<[u8; 32]>,
+}
 
 impl Version {
     /// Construct a new version by specifying a "major" / "breaking" number.
     pub fn with_major(v: u64) -> Self {
-        Self(Some(v.try_into().expect("version must fit into an i64")))
+        Self {
+            major: Some(v.try_into().expect("version must fit into an i64")),
+            option_hash: None,
+        }
+    }
+
+    pub fn with_option_hash(self, option_hash: [u8; 32]) -> Self {
+        Self {
+            major: self.major,
+            option_hash: Some(option_hash),
+        }
     }
 
     /// Get the major version, which controls breakage.
-    pub fn major(self) -> u64 {
-        u64::try_from(self.0.unwrap_or_default()).expect("major version cannot be negative")
+    pub fn major(&self) -> u64 {
+        u64::try_from(self.major.unwrap_or_default()).expect("major version cannot be negative")
+    }
+
+    pub fn option_hash(&self) -> Option<&[u8; 32]> {
+        self.option_hash.as_ref()
+    }
+
+    pub(crate) fn new(major: Option<i64>, option_hash: Option<[u8; 32]>) -> Self {
+        Self { major, option_hash }
     }
 }
 
 impl Display for Version {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "v{}", self.0.unwrap_or_default())
+        write!(f, "v{}", self.major.unwrap_or_default())
     }
 }
 
