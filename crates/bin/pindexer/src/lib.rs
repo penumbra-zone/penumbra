@@ -27,4 +27,6 @@ pub struct Options {
     /// The minimum liquidity for the indexing denom in the dex explorer app view.
     #[clap(long, default_value = "100000000")]
     pub dex_ex_min_liquidity: u128,
+    #[clap(long, default_value = "true")]
+    pub dex_ex_ignore_arb: bool,
 }
