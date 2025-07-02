@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, iter, ops::Div as _};
 
 use cometindex::{
     async_trait,
-    index::{EventBatch, EventBatchContext},
+    index::{EventBatch, EventBatchContext, Version},
     AppView, ContextualizedEvent, PgTransaction,
 };
 use penumbra_sdk_app::genesis::Content;
@@ -521,6 +521,24 @@ impl Component {
 
 #[async_trait]
 impl AppView for Component {
+    fn version(&self) -> Version {
+        let hash: [u8; 32] = blake2b_simd::Params::default()
+            .personal(b"option_hash")
+            .hash_length(32)
+            .to_state()
+            .update(
+                self.price_numeraire
+                    .map(|x| x.to_bytes())
+                    .unwrap_or_default()
+                    .as_slice(),
+            )
+            .finalize()
+            .as_bytes()
+            .try_into()
+            .expect("Impossible 000-002: expected 32 byte hash");
+        Version::default().with_option_hash(hash)
+    }
+
     async fn init_chain(
         &self,
         dbtx: &mut PgTransaction,
@@ -550,6 +568,13 @@ impl AppView for Component {
     ) -> Result<(), anyhow::Error> {
         for event in batch.events() {
             self.index_event(dbtx, event).await?;
+        }
+        Ok(())
+    }
+
+    async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        for statement in include_str!("reset.sql").split(";") {
+            sqlx::query(statement).execute(dbtx.as_mut()).await?;
         }
         Ok(())
     }

@@ -20,6 +20,7 @@ network-integration = []
 
 [dependencies]
 anyhow = {workspace = true}
+blake2b_simd = {workspace = true}
 clap = {workspace = true}
 chrono = {workspace = true, features = ["serde"] }
 cometindex = {workspace = true}

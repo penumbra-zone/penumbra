@@ -14,11 +14,49 @@ async fn reset_index_if_necessary(
     index: &dyn AppView,
     manager: &IndexingManager,
     dbtx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    new_options: bool,
 ) -> anyhow::Result<()> {
     let name = index.name();
     let state = manager.index_state(&name).await?;
     let version = index.version();
-    if version < state.version {
+    // If there's no previous version, this index is new, and we can just write its version
+    // out, without a need to reset it at all.
+    let old_version = match state {
+        None => {
+            tracing::info!(?name, new_version = ?version, "initializing index state");
+            IndexingManager::update_index_state(
+                dbtx,
+                &name,
+                IndexState {
+                    height: Height::default(),
+                    version,
+                },
+            )
+            .await?;
+
+            return Ok(());
+        }
+        Some(s) => s.version,
+    };
+    let options_changed = version.option_hash() != old_version.option_hash();
+    if options_changed && !new_options {
+        let new = version
+            .option_hash()
+            .map(hex::encode)
+            .unwrap_or_else(|| "NULL".to_string());
+        let old = old_version
+            .option_hash()
+            .map(hex::encode)
+            .unwrap_or_else(|| "NULL".to_string());
+        anyhow::bail!(
+            r#"
+Current option hash for index {name} is {old}, but new option hash is {new}.
+Use `--new-options` to allow changing the options for app views.
+If this was not your intent, check that the options have not changed.
+"#
+        );
+    }
+    if version.major() < old_version.major() {
         // My thinking is that the only reason this can happen is that:
         // a) Someone accidentally decreased the version in their AppView.
         // b) For some reason, we're running the wrong version of the consuming pindexer against a DB.
@@ -28,10 +66,10 @@ Current version for index {name} {version:?} is lower than that recorded in the 
 Are you running the right version of the code?
 If so, maybe there's a bug in this particular index.
         "#,
-            state.version
+            old_version
         );
-    } else if version > state.version {
-        tracing::info!(?name, old_version = ?state.version, new_version = ?version, "resetting index");
+    } else if version.major() > old_version.major() || options_changed {
+        tracing::info!(?name, ?old_version, new_version = ?version, "resetting index");
         index.reset(dbtx).await?;
         IndexingManager::update_index_state(
             dbtx,
@@ -84,7 +122,7 @@ async fn catchup(
         let (tx, mut rx) = mpsc::channel::<EventBatch>(BATCH_LOOKAHEAD);
         txs.push(tx);
         let name = index.name();
-        let index_state = index_states.get(&name).copied().unwrap_or_default();
+        let index_state = index_states.get(&name).cloned().unwrap_or_default();
         let manager_cp = manager.clone();
         let genesis_cp = genesis.clone();
         tasks.spawn(async move {
@@ -198,6 +236,7 @@ impl Indexer {
                     genesis_json,
                     exit_on_catchup,
                     integrity_checks_only,
+                    new_options,
                 },
             indices,
         } = self;
@@ -224,7 +263,7 @@ impl Indexer {
         {
             let mut dbtx = manager.begin_transaction().await?;
             for index in &indices {
-                reset_index_if_necessary(index.as_ref(), &manager, &mut dbtx).await?;
+                reset_index_if_necessary(index.as_ref(), &manager, &mut dbtx, new_options).await?;
                 index.on_startup(&mut dbtx).await?;
             }
             dbtx.commit().await?;
