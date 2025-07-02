@@ -19,14 +19,32 @@ async fn reset_index_if_necessary(
     let name = index.name();
     let state = manager.index_state(&name).await?;
     let version = index.version();
-    let options_changed = version.option_hash() != state.version.option_hash();
+    // If there's no previous version, this index is new, and we can just write its version
+    // out, without a need to reset it at all.
+    let old_version = match state {
+        None => {
+            tracing::info!(?name, new_version = ?version, "initializing index state");
+            IndexingManager::update_index_state(
+                dbtx,
+                &name,
+                IndexState {
+                    height: Height::default(),
+                    version,
+                },
+            )
+            .await?;
+
+            return Ok(());
+        }
+        Some(s) => s.version,
+    };
+    let options_changed = version.option_hash() != old_version.option_hash();
     if options_changed && !new_options {
         let new = version
             .option_hash()
             .map(hex::encode)
             .unwrap_or_else(|| "NULL".to_string());
-        let old = state
-            .version
+        let old = old_version
             .option_hash()
             .map(hex::encode)
             .unwrap_or_else(|| "NULL".to_string());
@@ -38,7 +56,7 @@ If this was not your intent, check that the options have not changed.
 "#
         );
     }
-    if version.major() < state.version.major() {
+    if version.major() < old_version.major() {
         // My thinking is that the only reason this can happen is that:
         // a) Someone accidentally decreased the version in their AppView.
         // b) For some reason, we're running the wrong version of the consuming pindexer against a DB.
@@ -48,10 +66,10 @@ Current version for index {name} {version:?} is lower than that recorded in the 
 Are you running the right version of the code?
 If so, maybe there's a bug in this particular index.
         "#,
-            state.version
+            old_version
         );
-    } else if version.major() > state.version.major() || options_changed {
-        tracing::info!(?name, old_version = ?state.version, new_version = ?version, "resetting index");
+    } else if version.major() > old_version.major() || options_changed {
+        tracing::info!(?name, ?old_version, new_version = ?version, "resetting index");
         index.reset(dbtx).await?;
         IndexingManager::update_index_state(
             dbtx,

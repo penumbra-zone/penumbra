@@ -67,7 +67,6 @@ processes:
           --src-database-url "postgresql://localhost:5432/penumbra_cometbft?sslmode=disable" \
           --dst-database-url "postgresql://localhost:5432/penumbra_pindexer?sslmode=disable" \
           --genesis-json ~/.penumbra/network_data/node0/cometbft/config/genesis.json \
-          --new-options
     depends_on:
       postgresql-init:
         condition: process_completed_successfully

@@ -84,19 +84,17 @@ impl IndexingManager {
         Ok(res.unwrap_or_default())
     }
 
-    pub async fn index_state(&self, name: &str) -> anyhow::Result<IndexState> {
+    pub async fn index_state(&self, name: &str) -> anyhow::Result<Option<IndexState>> {
         let row: Option<(Height, Option<i64>, Option<[u8; 32]>)> = sqlx::query_as(
             "SELECT height, version, option_hash FROM index_watermarks WHERE index_name = $1",
         )
         .bind(name)
         .fetch_optional(&self.dst)
         .await?;
-        Ok(row
-            .map(|(height, major, option_hash)| IndexState {
-                height,
-                version: Version::new(major, option_hash),
-            })
-            .unwrap_or_default())
+        Ok(row.map(|(height, major, option_hash)| IndexState {
+            height,
+            version: Version::new(major, option_hash),
+        }))
     }
 
     pub async fn index_states(&self) -> anyhow::Result<HashMap<String, IndexState>> {
