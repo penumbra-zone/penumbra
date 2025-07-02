@@ -4,7 +4,17 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to use for the docs subdirectory."
+        required: false
+        type: string
   workflow_call:
+    inputs:
+      image_tag:
+        description: "Image tag to use for the docs subdirectory."
+        required: false
+        type: string
 
 jobs:
 
@@ -33,10 +43,21 @@ jobs:
       - name: Load Rust caching
         uses: astriaorg/buildjet-rust-cache@v2.5.1
 
+      - name: Determine docs version tag
+        id: get_tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_call" && "${{ inputs.image_tag }}" != "" ]]; then
+            echo "tag=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.image_tag }}" != "" ]]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
       # Previously we used a GHA helper to look up the version, which was overkill.
       # Let's still log the version of the docs we intend to build.
       - name: Print version component of deployment path
-        run: echo ${{ github.event.inputs.image_tag || github.ref_name }}
+        run: echo ${{ steps.get_tag.outputs.tag }}
 
       - name: Build protocol spec
         run: cd docs/protocol/ && nix develop --command mdbook build
@@ -46,7 +67,7 @@ jobs:
           cd docs/protocol
           rm -rf firebase-tmp
           mkdir firebase-tmp
-          mv book/html firebase-tmp/${{ github.event.inputs.image_tag || github.ref_name }}
+          mv book/html firebase-tmp/${{ steps.get_tag.outputs.tag }}
           tree firebase-tmp
 
       - name: Deploy protocol spec to firebase
@@ -66,9 +87,9 @@ jobs:
           cd docs/rustdoc
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
-          mv ../../target/doc firebase-tmp/${{ github.event.inputs.image_tag || github.ref_name }}
+          mv ../../target/doc firebase-tmp/${{ steps.get_tag.outputs.tag }}
           # Copy in the static index file
-          cp index.html firebase-tmp/${{ github.event.inputs.image_tag || github.ref_name }}
+          cp index.html firebase-tmp/${{ steps.get_tag.outputs.tag }}
 
       - name: Deploy API docs to firebase
         uses: w9jds/firebase-action@v12.9.0
