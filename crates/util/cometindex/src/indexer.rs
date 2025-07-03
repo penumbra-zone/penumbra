@@ -132,7 +132,7 @@ async fn catchup(
                 index.init_chain(&mut dbtx, &genesis_cp).await?;
                 tracing::info!(?name, "finished initialization");
                 let new_state = IndexState {
-                    version: index_state.version,
+                    version: index.version(),
                     height: Height::default(),
                 };
                 IndexingManager::update_index_state(&mut dbtx, &name, new_state).await?;
