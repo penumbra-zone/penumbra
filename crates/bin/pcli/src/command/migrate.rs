@@ -339,7 +339,18 @@ impl MigrateCmd {
                 if *plan_only {
                     println!("{}", serde_json::to_string_pretty(&plan)?);
                 } else {
-                    app.build_and_submit_transaction(plan).await?;
+                    // Ask for confirmation
+                    print!("Send transaction? (Y/N): ");
+                    std::io::stdout().flush()?;
+
+                    let response: String = std::io::stdin().lock().read_line()?.unwrap_or_default();
+                    let trimmed = response.trim().to_lowercase();
+
+                    if trimmed == "y" || trimmed == "yes" {
+                        app.build_and_submit_transaction(plan).await?;
+                    } else {
+                        println!("Transaction cancelled.");
+                    }
                 }
 
                 Result::Ok(())
