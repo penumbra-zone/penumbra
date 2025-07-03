@@ -124,7 +124,7 @@ impl IndexingManager {
         sqlx::query(
             "
         INSERT INTO index_watermarks 
-        VALUES ($1, $2, $3) 
+        VALUES ($1, $2, $3, $4) 
         ON CONFLICT (index_name) 
         DO UPDATE SET
             height = excluded.height,
