@@ -18,3 +18,5 @@
 !tools/summonerd/
 # parameter setup tool, for wrangling circuit configuration
 !tools/parameter-setup/
+# picturesque setup tool, for wrangling node configs
+!tools/picturesque/
