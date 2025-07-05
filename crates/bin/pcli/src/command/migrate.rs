@@ -29,7 +29,12 @@ pub enum MigrateCmd {
     /// All funds will be deposited in the account 0 of the destination wallet,
     /// minus any gas prices for the migration transaction.
     #[clap(name = "balance")]
-    Balance,
+    Balance {
+        #[clap(long, default_value_t = false)]
+        /// Set to omit the destination FVK from the transaction memo for the migration plan.
+        /// By default, the destination FVK will be included.
+        private_destination: bool,
+    },
 }
 
 impl MigrateCmd {
@@ -47,7 +52,9 @@ impl MigrateCmd {
             .try_into()?;
 
         match self {
-            MigrateCmd::Balance => {
+            MigrateCmd::Balance {
+                private_destination,
+            } => {
                 let source_fvk = app.config.full_viewing_key.clone();
 
                 let dest_fvk = read_fvk()?;
@@ -102,7 +109,11 @@ impl MigrateCmd {
                     planner.output(Value { asset_id, amount }, address);
                 }
 
-                let memo = format!("Migrating balance from {} to {}", source_fvk, dest_fvk);
+                let memo = if *private_destination {
+                    format!("Migrating balance from {} to new account", source_fvk)
+                } else {
+                    format!("Migrating balance from {} to {}", source_fvk, dest_fvk)
+                };
                 let plan = planner
                     .memo(memo)
                     .plan(
