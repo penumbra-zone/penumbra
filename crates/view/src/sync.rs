@@ -68,9 +68,10 @@ pub async fn scan_block(
     let spent_nullifiers: Vec<Nullifier> = nullifiers;
 
     // Trial-decrypt the notes in this block, keeping track of the ones that were meant for us
-    let mut note_decryptions = Vec::new();
-    let mut swap_decryptions = Vec::new();
-    let mut unknown_commitments = Vec::new();
+    let payloads_len = state_payloads.len();
+    let mut note_decryptions = Vec::with_capacity(payloads_len);
+    let mut swap_decryptions = Vec::with_capacity(payloads_len);
+    let mut unknown_commitments = Vec::with_capacity(payloads_len);
 
     for payload in state_payloads.iter() {
         match payload {

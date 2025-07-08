@@ -2,7 +2,7 @@ use anyhow::Context;
 use decaf377_rdsa::{Binding, Signature};
 use penumbra_sdk_asset::{Balance, Value};
 use penumbra_sdk_dex::{swap::SwapView, swap_claim::SwapClaimView};
-use penumbra_sdk_keys::AddressView;
+use penumbra_sdk_keys::{Address, AddressView};
 use penumbra_sdk_proto::{core::transaction::v1 as pbt, DomainType};
 use penumbra_sdk_shielded_pool::{OutputView, SpendView};
 use serde::{Deserialize, Serialize};
@@ -116,9 +116,10 @@ impl TransactionView {
 
     /// Produces a TransactionSummary, iterating through each visible action and collecting the effects of the transaction.
     pub fn summary(&self) -> TransactionSummary {
-        let mut effects = Vec::new();
+        let action_views = &self.body_view.action_views;
+        let mut effects = Vec::with_capacity(action_views.len());
 
-        for action_view in &self.body_view.action_views {
+        for action_view in action_views {
             match action_view {
                 ActionView::Spend(spend_view) => match spend_view {
                     SpendView::Visible { spend: _, note } => {

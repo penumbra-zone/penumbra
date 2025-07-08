@@ -41,7 +41,6 @@ where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    let mut plans = Vec::new();
     // fetch all transactions
     // check if they contain Swap actions
     // if they do, check if the associated notes are unspent
@@ -52,6 +51,7 @@ where
 
     let unclaimed_swaps = view.unclaimed_swaps().await?;
 
+    let mut plans = Vec::with_capacity(unclaimed_swaps.capacity());
     for swap in unclaimed_swaps {
         // We found an unclaimed swap, so we can claim it.
         let swap_plaintext = swap.swap;

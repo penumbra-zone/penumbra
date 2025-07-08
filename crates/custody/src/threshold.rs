@@ -105,7 +105,7 @@ pub async fn dkg(t: u16, n: u16, terminal: &impl Terminal) -> Result<Config> {
         "Round 1/2: Gather {expected_responses} messages from the other participants:"
     ))?;
     let round1_replies = {
-        let mut acc: Vec<dkg::Round1> = Vec::new();
+        let mut acc: Vec<dkg::Round1> = Vec::with_capacity(expected_responses);
         while acc.len() < expected_responses {
             let rsp = terminal.next_response::<dkg::Round1>().await?;
             // Before we accept, check that the user hasn't double-pasted the same message.
@@ -141,7 +141,7 @@ pub async fn dkg(t: u16, n: u16, terminal: &impl Terminal) -> Result<Config> {
         "Round 2/2: Gather {expected_responses} messages from the other participants:"
     ))?;
     let round2_replies = {
-        let mut acc: Vec<dkg::Round2> = Vec::new();
+        let mut acc: Vec<dkg::Round2> = Vec::with_capacity(expected_responses);
         while acc.len() < expected_responses {
             let rsp = terminal.next_response::<dkg::Round2>().await?;
             // Before we accept, check that the user hasn't double-pasted the same message.
@@ -362,6 +362,7 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
 mod test {
     use std::collections::HashMap;
 
+    use futures::SinkExt;
     use penumbra_sdk_transaction::TransactionPlan;
 
     use tokio::sync;
@@ -442,9 +443,9 @@ mod test {
     }
 
     fn make_terminals(follower_count: usize) -> (CoordinatorTerminal, Vec<FollowerTerminal>) {
-        let mut followers = Vec::new();
-        let mut incoming = Vec::new();
-        let mut outgoing = Vec::new();
+        let mut followers = Vec::with_capacity(follower_count);
+        let mut incoming = Vec::with_capacity(follower_count);
+        let mut outgoing = Vec::with_capacity(follower_count);
         for _ in 0..follower_count {
             let (c2f_send, c2f_recv) = sync::mpsc::channel(1);
             let (f2c_send, f2c_recv) = sync::mpsc::channel(1);
@@ -473,7 +474,7 @@ mod test {
                 recving.insert((i, j), recv);
             }
         }
-        let mut out = Vec::new();
+        let mut out = Vec::with_capacity(count);
         for i in 0..count {
             let incoming = (0..count)
                 .filter(|&j| j != i)
@@ -494,11 +495,11 @@ mod test {
 
     async fn run_dkg(t: u16, n: u16) -> Result<Vec<Config>> {
         let terminals = make_symmetric_terminals(n as usize);
-        let mut handles = Vec::new();
+        let mut handles = Vec::with_capacity(terminals.len());
         for terminal in terminals {
             handles.push(tokio::spawn(async move { dkg(t, n, &terminal).await }));
         }
-        let mut out = Vec::new();
+        let mut out = Vec::with_capacity(handles.len());
         for handle in handles {
             out.push(handle.await??);
         }
