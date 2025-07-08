@@ -6530,6 +6530,7 @@ version = "2.0.4"
 dependencies = [
  "anyhow",
  "clap",
+ "regex",
  "serde",
  "tokio",
  "toml 0.7.8",
