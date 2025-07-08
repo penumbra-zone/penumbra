@@ -6526,10 +6526,11 @@ dependencies = [
 
 [[package]]
 name = "penumbra_sdk_wayang"
-version = "2.0.1"
+version = "2.0.2"
 dependencies = [
  "anyhow",
  "clap",
+ "regex",
  "serde",
  "tokio",
  "toml 0.7.8",
