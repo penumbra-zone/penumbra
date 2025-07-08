@@ -1,96 +1,12 @@
 mod client;
 pub mod config;
-mod environment;
-mod registry;
+pub mod dex;
 
 use client::Client;
-use config::{Symbol, SymbolPair};
-use regex::Regex;
-use std::{fmt::Display, io::IsTerminal, str::FromStr, time::Duration};
+use dex::{Position, Symbol};
+use std::{io::IsTerminal as _, str::FromStr as _, time::Duration};
 use tokio::sync::watch;
 use tracing_subscriber::{prelude::*, EnvFilter};
-
-#[derive(Debug, Clone)]
-pub struct PositionShape {
-    pub upper_price: f64,
-    pub lower_price: f64,
-    pub base_liquidity: f64,
-    pub quote_liquidity: f64,
-}
-
-impl FromStr for PositionShape {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re = Regex::new(r"(\d+\.?\d*)/(\d+\.?\d*)\s+\[(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\]")?;
-
-        let captures = re.captures(s.trim()).ok_or_else(|| {
-            anyhow::anyhow!(
-                "expected format 'base_liquidity/quote_liquidity [lower_price, upper_price]'"
-            )
-        })?;
-
-        let base_liquidity = captures[1]
-            .parse::<f64>()
-            .map_err(|_| anyhow::anyhow!("invalid base liquidity: {}", &captures[1]))?;
-        let quote_liquidity = captures[2]
-            .parse::<f64>()
-            .map_err(|_| anyhow::anyhow!("invalid quote liquidity: {}", &captures[2]))?;
-        let lower_price = captures[3]
-            .parse::<f64>()
-            .map_err(|_| anyhow::anyhow!("invalid lower price: {}", &captures[3]))?;
-        let upper_price = captures[4]
-            .parse::<f64>()
-            .map_err(|_| anyhow::anyhow!("invalid upper price: {}", &captures[4]))?;
-
-        Ok(PositionShape {
-            upper_price,
-            lower_price,
-            base_liquidity,
-            quote_liquidity,
-        })
-    }
-}
-
-impl Display for PositionShape {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}/{} [{}, {}]",
-            self.base_liquidity, self.quote_liquidity, self.lower_price, self.upper_price
-        )
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Position {
-    pub pair: SymbolPair,
-    pub shape: PositionShape,
-}
-
-impl FromStr for Position {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re = Regex::new(r"([a-zA-Z]+/[a-zA-Z]+)\s+(.+)")?;
-
-        let captures = re.captures(s.trim())
-            .ok_or_else(|| anyhow::anyhow!("expected format 'SYMBOL1/SYMBOL2 base_liquidity/quote_liquidity [lower_price, upper_price]'"))?;
-
-        let shape_str = &captures[2];
-
-        let pair = SymbolPair::from_str(&captures[1])?;
-        let shape = PositionShape::from_str(shape_str)?;
-
-        Ok(Position { pair, shape })
-    }
-}
-
-impl Display for Position {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}", self.pair, self.shape)
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Status {
@@ -112,7 +28,7 @@ pub struct Feeler {
 impl Feeler {
     async fn next_move(&mut self) -> anyhow::Result<Move> {
         let res = self.moves.wait_for(Option::is_some).await?;
-        Ok(res.as_ref().cloned().expect("Impossible 000-000"))
+        Ok(res.as_ref().cloned().expect("Impossible 000-004"))
     }
 
     pub async fn run(mut self) -> anyhow::Result<()> {
@@ -182,36 +98,4 @@ pub fn init_tracing() -> anyhow::Result<()> {
         .with(fmt_layer);
     registry.init();
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_position_from_str() {
-        let position = Position::from_str("UM/USDC 100/200 [0.8, 0.9]").unwrap();
-        assert_eq!(position.pair.to_string(), "UM/USDC");
-        assert_eq!(position.shape.base_liquidity, 100.0);
-        assert_eq!(position.shape.quote_liquidity, 200.0);
-        assert_eq!(position.shape.lower_price, 0.8);
-        assert_eq!(position.shape.upper_price, 0.9);
-    }
-
-    #[test]
-    fn test_position_from_str_with_decimals() {
-        let position = Position::from_str("UM/USDC 100.5/200.25 [0.8, 0.9]").unwrap();
-        assert_eq!(position.pair.to_string(), "UM/USDC");
-        assert_eq!(position.shape.base_liquidity, 100.5);
-        assert_eq!(position.shape.quote_liquidity, 200.25);
-        assert_eq!(position.shape.lower_price, 0.8);
-        assert_eq!(position.shape.upper_price, 0.9);
-    }
-
-    #[test]
-    fn test_position_from_str_invalid_format() {
-        assert!(Position::from_str("invalid").is_err());
-        assert!(Position::from_str("UM/USDC").is_err());
-        assert!(Position::from_str("UM 100/200 [0.8, 0.9]").is_err());
-    }
 }

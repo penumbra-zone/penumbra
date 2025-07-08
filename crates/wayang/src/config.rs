@@ -1,77 +1,10 @@
-use anyhow::{anyhow, Result};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt;
+use anyhow::anyhow;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::str::FromStr;
 use tokio::fs;
 
-/// The "symbol" providing a short name for a given asset.
-///
-/// For example: "USDC", "UM", etc.
-///
-/// You can use `as_ref` to treat a symbol as a string.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[allow(dead_code)]
-pub struct Symbol(String);
-
-impl FromStr for Symbol {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.to_string()))
-    }
-}
-
-impl AsRef<str> for Symbol {
-    fn as_ref(&self) -> &str {
-        &self.0
-    }
-}
-
-#[derive(Clone, Debug)]
-#[allow(dead_code)]
-pub struct SymbolPair {
-    pub base: Symbol,
-    pub quote: Symbol,
-}
-
-impl FromStr for SymbolPair {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (base_str, quote_str) = s
-            .split_once("/")
-            .ok_or(anyhow!("expected string of the form 'X/Y'"))?;
-        let base = Symbol::from_str(base_str)?;
-        let quote = Symbol::from_str(quote_str)?;
-        Ok(SymbolPair { base, quote })
-    }
-}
-
-impl fmt::Display for SymbolPair {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}/{}", self.base.0, self.quote.0)
-    }
-}
-
-impl Serialize for SymbolPair {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&self.to_string())
-    }
-}
-
-impl<'de> Deserialize<'de> for SymbolPair {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        SymbolPair::from_str(&s).map_err(serde::de::Error::custom)
-    }
-}
+use crate::dex::SymbolPair;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -124,13 +57,14 @@ impl Default for Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dex::Symbol;
 
     #[test]
     fn test_config_example_parsing() {
         let config = Config::default();
 
-        assert_eq!(config.pair.base.0, "UM");
-        assert_eq!(config.pair.quote.0, "USDC");
+        assert_eq!(config.pair.base, Symbol::from_str("UM").unwrap());
+        assert_eq!(config.pair.quote, Symbol::from_str("USDC").unwrap());
         assert_eq!(config.account, 1);
         assert_eq!(config.grpc_url, "https://grpc.testnet.penumbra.zone");
         assert_eq!(config.view_service, "http://localhost:8080");
