@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use penumbra_sdk_wayang::{config::Config, init_tracing, rhythm_and_feeler, Move, Position};
+use penumbra_sdk_wayang::{config::Config, dex::Position, init_tracing, rhythm_and_feeler, Move};
 use std::{path::PathBuf, str::FromStr};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::task::JoinHandle;
