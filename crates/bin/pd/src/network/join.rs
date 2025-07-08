@@ -165,7 +165,7 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
     // as seeds within the joining node's CometBFT config.
     let threshold = 5;
     let mut peers = Vec::with_capacity(net_info_peers.len());
-    let mut seeds = Vec::with_capacity(net_info_peers.len());
+    let mut seeds = Vec::new();
 
     for raw_peer in net_info_peers {
         tracing::debug!(?raw_peer, "Analyzing whether to include candidate peer");

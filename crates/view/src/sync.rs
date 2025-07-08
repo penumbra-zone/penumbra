@@ -73,7 +73,7 @@ pub async fn scan_block(
     let mut swap_decryptions = Vec::with_capacity(payloads_len);
     let mut unknown_commitments = Vec::with_capacity(payloads_len);
 
-    for payload in state_payloads.iter() {
+    for payload in &state_payloads {
         match payload {
             StatePayload::Note { note, .. } => {
                 note_decryptions.push(trial_decrypt_note((**note).clone()));

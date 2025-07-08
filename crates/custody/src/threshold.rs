@@ -362,7 +362,6 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
 mod test {
     use std::collections::HashMap;
 
-    use futures::SinkExt;
     use penumbra_sdk_transaction::TransactionPlan;
 
     use tokio::sync;

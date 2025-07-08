@@ -2,7 +2,7 @@ use anyhow::Context;
 use decaf377_rdsa::{Binding, Signature};
 use penumbra_sdk_asset::{Balance, Value};
 use penumbra_sdk_dex::{swap::SwapView, swap_claim::SwapClaimView};
-use penumbra_sdk_keys::{Address, AddressView};
+use penumbra_sdk_keys::AddressView;
 use penumbra_sdk_proto::{core::transaction::v1 as pbt, DomainType};
 use penumbra_sdk_shielded_pool::{OutputView, SpendView};
 use serde::{Deserialize, Serialize};
