@@ -276,6 +276,10 @@ impl Metadata {
         }
     }
 
+    pub fn symbol(&self) -> &str {
+        &self.inner.symbol
+    }
+
     /// Create a value of this denomination.
     pub fn value(&self, amount: Amount) -> Value {
         Value {
