@@ -1,11 +1,20 @@
 //! Contains an abstraction over connecting to the actual chain.
+use anyhow::anyhow;
 use anyhow::Context;
+use futures::TryStreamExt as _;
+use penumbra_sdk_custody::AuthorizeRequest;
+use penumbra_sdk_custody::CustodyClient;
+use penumbra_sdk_keys::keys::AddressIndex;
 use penumbra_sdk_proto::box_grpc_svc::BoxGrpcService;
 use penumbra_sdk_proto::custody::v1::custody_service_client::CustodyServiceClient;
+use penumbra_sdk_proto::view::v1::broadcast_transaction_response::Status as BroadcastStatus;
 use penumbra_sdk_proto::{box_grpc_svc, view::v1::view_service_client::ViewServiceClient};
+use penumbra_sdk_transaction::{Transaction, TransactionPlan};
+use penumbra_sdk_view::Planner;
 use penumbra_sdk_view::ViewClient;
+use rand_core::OsRng;
 
-use crate::registry::Registry;
+use crate::dex::Registry;
 
 #[allow(dead_code)]
 pub struct Client {
@@ -36,5 +45,53 @@ impl Client {
     pub async fn registry(&mut self) -> anyhow::Result<Registry> {
         let res = ViewClient::assets(&mut self.view_client).await?;
         Ok(Registry::from_metadata(&mut res.values()))
+    }
+
+    async fn submit(&mut self, plan: TransactionPlan) -> anyhow::Result<Transaction> {
+        let auth_data = CustodyClient::authorize(
+            &mut self.custody_client,
+            AuthorizeRequest {
+                plan: plan.clone(),
+                pre_authorizations: Default::default(),
+            },
+        )
+        .await?
+        .data
+        .expect("auth data should be present")
+        .try_into()?;
+        let tx = ViewClient::witness_and_build(&mut self.view_client, plan, auth_data).await?;
+        let mut rsp =
+            ViewClient::broadcast_transaction(&mut self.view_client, tx.clone(), true).await?;
+        let tx_id = format!("{}", tx.id());
+
+        while let Some(rsp) = rsp.try_next().await? {
+            match rsp.status.ok_or(anyhow!("missing status"))? {
+                BroadcastStatus::BroadcastSuccess(_) => {
+                    tracing::info!(tx_id, "transaction broadcast");
+                }
+                BroadcastStatus::Confirmed(c) => {
+                    tracing::info!(tx_id, height = c.detection_height, "transaction confirmed");
+                    break;
+                }
+            }
+        }
+
+        Ok(tx)
+    }
+
+    pub async fn build_and_submit<F, Fut>(
+        &mut self,
+        source: AddressIndex,
+        add_to_plan: F,
+    ) -> anyhow::Result<Transaction>
+    where
+        F: FnOnce(Planner<OsRng>) -> anyhow::Result<Planner<OsRng>>,
+    {
+        let mut planner = Planner::new(OsRng);
+        planner.set_gas_prices(ViewClient::gas_prices(&mut self.view_client).await?);
+        let mut planner = add_to_plan(planner)?;
+        let plan = planner.plan(&mut self.view_client, source).await?;
+
+        self.submit(plan).await
     }
 }

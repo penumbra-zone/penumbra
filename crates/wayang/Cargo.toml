@@ -11,10 +11,16 @@ license.workspace = true
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 clap = {workspace = true, features = ["derive", "env", "color"]}
+futures = {workspace = true}
 penumbra-sdk-asset = {workspace = true}
+penumbra-sdk-dex = {workspace = true}
 penumbra-sdk-custody = {workspace = true}
+penumbra-sdk-keys = {workspace = true}
+penumbra-sdk-num = {workspace = true}
+penumbra-sdk-transaction = {workspace = true}
 penumbra-sdk-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
 penumbra-sdk-view = {workspace = true}
+rand_core = { workspace = true }
 regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 toml = { workspace = true }
