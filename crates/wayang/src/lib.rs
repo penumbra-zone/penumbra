@@ -2,9 +2,8 @@ pub mod config;
 mod environment;
 
 use config::SymbolPair;
-use environment::Environment;
 use regex::Regex;
-use std::{io::IsTerminal, str::FromStr, time::Duration};
+use std::{fmt::Display, io::IsTerminal, str::FromStr, time::Duration};
 use tokio::sync::watch;
 use tracing_subscriber::{prelude::*, EnvFilter};
 
@@ -50,6 +49,16 @@ impl FromStr for PositionShape {
     }
 }
 
+impl Display for PositionShape {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}/{} [{}, {}]",
+            self.base_liquidity, self.quote_liquidity, self.lower_price, self.upper_price
+        )
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Position {
     pub pair: SymbolPair,
@@ -74,6 +83,12 @@ impl FromStr for Position {
     }
 }
 
+impl Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.pair, self.shape)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Status {
     pub height: u64,
@@ -82,11 +97,10 @@ pub struct Status {
 
 #[derive(Clone)]
 pub struct Move {
-    pub shape: PositionShape,
+    pub position: Position,
 }
 
 pub struct Feeler {
-    environment: Environment,
     moves: watch::Receiver<Option<Move>>,
     status: watch::Sender<Option<Status>>,
 }
@@ -104,10 +118,7 @@ impl Feeler {
             height += 1;
             let status = Status {
                 height,
-                positions: vec![Position {
-                    pair: self.environment.pair().clone(),
-                    shape: moove.shape,
-                }],
+                positions: vec![moove.position],
             };
             self.status.send(Some(status))?;
             tokio::time::sleep(Duration::from_secs(1)).await;
@@ -133,7 +144,7 @@ impl Rhythm {
     }
 }
 
-pub fn rhythm_and_feeler(config: &config::Config) -> anyhow::Result<(Rhythm, Feeler)> {
+pub fn rhythm_and_feeler(_config: &config::Config) -> anyhow::Result<(Rhythm, Feeler)> {
     let (moves_in, moves_out) = watch::channel(None);
     let (status_in, mut status_out) = watch::channel(None);
     // So that we can immediately get a status.
@@ -146,7 +157,6 @@ pub fn rhythm_and_feeler(config: &config::Config) -> anyhow::Result<(Rhythm, Fee
         Feeler {
             moves: moves_out,
             status: status_in,
-            environment: Environment::new(config)?,
         },
     ))
 }
