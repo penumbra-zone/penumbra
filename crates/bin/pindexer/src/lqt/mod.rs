@@ -94,29 +94,13 @@ mod _params {
 }
 
 mod _meta {
-    use penumbra_sdk_sct::event::EventBlockRoot;
-
     use super::*;
-
-    const DEFAULT_BLOCK_TIME_SECS: f64 = 5.0;
 
     pub async fn update_with_batch(
         dbtx: &mut PgTransaction<'_>,
         batch: &EventBatch,
+        block_time_s: f64,
     ) -> anyhow::Result<()> {
-        let block_time_s = {
-            let mut timestamps = batch.events().filter_map(|e| {
-                EventBlockRoot::try_from_event(e.event)
-                    .ok()
-                    .map(|x| (x.height, x.timestamp_seconds as f64))
-            });
-            let first = timestamps.next();
-            let last = timestamps.last();
-            match (first, last) {
-                (Some((h0, t0)), Some((h1, t1))) => (t1 - t0) / (h1 - h0) as f64,
-                _ => DEFAULT_BLOCK_TIME_SECS,
-            }
-        };
         let current_height = batch
             .events_by_block()
             .last()
@@ -335,9 +319,15 @@ mod _votes {
 }
 
 #[derive(Debug)]
-pub struct Lqt {}
+pub struct Lqt {
+    block_time_s: f64,
+}
 
 impl Lqt {
+    pub fn new(block_time_s: f64) -> Self {
+        Self { block_time_s }
+    }
+
     async fn index_event(
         &self,
         dbtx: &mut PgTransaction<'_>,
@@ -406,7 +396,17 @@ impl AppView for Lqt {
     }
 
     fn version(&self) -> Version {
-        Version::with_major(4)
+        let hash: [u8; 32] = blake2b_simd::Params::default()
+            .personal(b"option_hash")
+            .hash_length(32)
+            .to_state()
+            .update(&self.block_time_s.to_le_bytes())
+            .finalize()
+            .as_bytes()
+            .try_into()
+            .expect("Impossible 000-003: expected 32 byte hash");
+
+        Version::with_major(4).with_option_hash(hash)
     }
 
     async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
@@ -430,7 +430,7 @@ impl AppView for Lqt {
         batch: EventBatch,
         _ctx: EventBatchContext,
     ) -> Result<(), anyhow::Error> {
-        _meta::update_with_batch(dbtx, &batch).await?;
+        _meta::update_with_batch(dbtx, &batch, self.block_time_s).await?;
         for event in batch.events() {
             self.index_event(dbtx, event).await?;
         }
