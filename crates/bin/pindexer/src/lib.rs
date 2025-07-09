@@ -29,4 +29,10 @@ pub struct Options {
     pub dex_ex_min_liquidity: u128,
     #[clap(long, default_value = "true")]
     pub dex_ex_ignore_arb: bool,
+    /// The expected block time, in seconds.
+    ///
+    /// By default this has the mainnet value. For testnets with faster blocks,
+    /// you'll want to adjust this.
+    #[clap(long, default_value = "5.1")]
+    pub block_time_s: f64,
 }

@@ -20,6 +20,6 @@ impl IndexerExt for cometindex::Indexer {
             .with_index(Box::new(crate::insights::Component::new(Some(
                 options.indexing_denom,
             ))))
-            .with_index(Box::new(crate::lqt::Lqt {}))
+            .with_index(Box::new(crate::lqt::Lqt::new(options.block_time_s)))
     }
 }
