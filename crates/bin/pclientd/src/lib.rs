@@ -131,7 +131,7 @@ pub enum Command {
         ///
         /// If this is present, it will be assumed to be an HTTP URL. If the URL ends in ".json",
         /// it's assumed to be a specific registry file, which will be fetched. If the URL
-        /// does not end in ".json", it will be concatened with the chain id pclientd has,
+        /// does not end in ".json", it will be concatenated with the chain id pclientd has,
         /// in the assumption that this points to a folder of registry files.
         ///
         /// If the URL starts with "file://" instead of "https://" or "http://", then
