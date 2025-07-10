@@ -309,7 +309,7 @@ impl DutchCmd {
                         batch_num + 1,
                         batches.len(),
                         auctions_progress_count,
-                        auction_ids.len()
+                        auctions.len()
                     );
                     if auction_batch.is_empty() {
                         continue;
