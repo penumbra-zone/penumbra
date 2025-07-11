@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use cometindex::{
     async_trait,
-    index::{EventBatch, EventBatchContext},
+    index::{EventBatch, EventBatchContext, Version},
     AppView, ContextualizedEvent, PgTransaction,
 };
 use penumbra_sdk_asset::Value;
@@ -205,6 +205,20 @@ impl Component {
 impl AppView for Component {
     fn name(&self) -> String {
         "ibc".to_string()
+    }
+
+    fn version(&self) -> Version {
+        Version::with_major(1)
+    }
+
+    async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        for statement in include_str!("reset.sql").split(";") {
+            let trimmed = statement.trim();
+            if !trimmed.is_empty() {
+                sqlx::query(trimmed).execute(dbtx.as_mut()).await?;
+            }
+        }
+        Ok(())
     }
 
     async fn init_chain(
