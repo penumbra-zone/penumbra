@@ -11,7 +11,6 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 #[derive(Debug, Clone)]
 pub struct Status {
     pub height: u64,
-    pub positions: Vec<Position>,
 }
 
 #[derive(Clone)]
@@ -39,10 +38,7 @@ impl Feeler {
         loop {
             let moove = self.next_move().await?;
             height += 1;
-            let status = Status {
-                height,
-                positions: vec![moove.position],
-            };
+            let status = Status { height };
             self.status.send(Some(status))?;
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
@@ -68,7 +64,7 @@ impl Rhythm {
 }
 
 pub async fn rhythm_and_feeler(config: &config::Config) -> anyhow::Result<(Rhythm, Feeler)> {
-    let client = Client::init(config.view_service.as_str()).await?;
+    let client = Client::init(config.grpc_url.as_str(), config.view_service.as_str()).await?;
     let (moves_in, moves_out) = watch::channel(None);
     let (status_in, mut status_out) = watch::channel(None);
     // So that we can immediately get a status.
