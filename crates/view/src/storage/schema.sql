@@ -128,7 +128,8 @@ CREATE INDEX swaps_nullifier_idx ON swaps (nullifier);
 CREATE TABLE positions (
      position_id            BLOB PRIMARY KEY NOT NULL,
      position_state         TEXT NOT NULL,
-     trading_pair           TEXT NOT NULL
+     trading_pair           TEXT NOT NULL,
+     account                BIGINT
 );
 
 -- This table records the user's own auction state, using the

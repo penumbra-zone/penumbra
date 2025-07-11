@@ -1749,7 +1749,7 @@ impl ViewService for ViewServer {
         let pb::OwnedPositionIdsRequest {
             position_state,
             trading_pair,
-            subaccount: _,
+            subaccount,
         } = request.into_inner();
 
         let position_state: Option<position::State> = position_state
@@ -1764,9 +1764,15 @@ impl ViewService for ViewServer {
             .map_err(|e: anyhow::Error| e.context("could not decode trading pair"))
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
+        let subaccount: Option<AddressIndex> = subaccount
+            .map(|a| a.try_into())
+            .transpose()
+            .map_err(|e: anyhow::Error| e.context("could not decode subaccount"))
+            .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
+
         let ids = self
             .storage
-            .owned_position_ids(position_state, trading_pair)
+            .owned_position_ids(position_state, trading_pair, subaccount)
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error getting position ids: {e}")))?;
 
@@ -1774,9 +1780,10 @@ impl ViewService for ViewServer {
             for id in ids {
                 yield pb::OwnedPositionIdsResponse{
                     position_id: Some(id.into()),
-                    // The rust view server does not index positions by subaccount,
-                    // so this information is invisible to it.
-                    subaccount: None,
+                    // We null out the randomizer, reflecting that we didn't use it.
+                    subaccount: subaccount.map(|s|
+                        AddressIndex { account: s.account, ..Default::default()}.into()
+                    ),
                 }
             }
         };

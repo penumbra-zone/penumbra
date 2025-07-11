@@ -34,7 +34,7 @@ const ADJUST_WAIT_SECS: u64 = 120;
 async fn close_all_positions(clients: &Clients, pair: TradingPair) -> anyhow::Result<()> {
     let mut view = clients.view();
     let position_ids = view
-        .owned_position_ids(Some(position::State::Opened), Some(pair))
+        .owned_position_ids(Some(position::State::Opened), Some(pair), None)
         .await?;
     for chunk in position_ids.chunks(POSITION_CHUNK_SIZE) {
         let tx = build_and_submit(clients, Default::default(), |mut planner| async {
@@ -58,7 +58,7 @@ async fn withdraw_all_positions(clients: &Clients, pair: TradingPair) -> anyhow:
     let mut view = clients.view();
     let mut dex_query_service = clients.dex_query_service();
     let position_ids = view
-        .owned_position_ids(Some(position::State::Closed), Some(pair))
+        .owned_position_ids(Some(position::State::Closed), Some(pair), None)
         .await?;
     for chunk in position_ids.chunks(POSITION_CHUNK_SIZE) {
         let tx = build_and_submit(clients, Default::default(), |mut planner| async {

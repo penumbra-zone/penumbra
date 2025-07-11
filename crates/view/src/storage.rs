@@ -1231,6 +1231,26 @@ impl Storage {
         Ok(())
     }
 
+    pub async fn update_position_with_account(
+        &self,
+        position_id: position::Id,
+        account: u32,
+    ) -> anyhow::Result<()> {
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            pool.get()?
+                .execute(
+                    "UPDATE positions SET (account) = ?1 WHERE position_id = ?2",
+                    (i64::from(account), position_id.0),
+                )
+                .map_err(anyhow::Error::from)
+        })
+        .await??;
+
+        Ok(())
+    }
+
     pub async fn record_empty_block(&self, height: u64) -> anyhow::Result<()> {
         // Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?.ok_or_else(|| {
@@ -1689,33 +1709,30 @@ impl Storage {
         &self,
         position_state: Option<State>,
         trading_pair: Option<TradingPair>,
+        address_index: Option<AddressIndex>,
     ) -> anyhow::Result<Vec<position::Id>> {
         let pool = self.pool.clone();
 
         let state_clause = match position_state {
             Some(state) => format!("position_state = \"{}\"", state),
-            None => "".to_string(),
+            None => "true".to_string(),
         };
 
         let pair_clause = match trading_pair {
             Some(pair) => format!("trading_pair = \"{}\"", pair),
-            None => "".to_string(),
+            None => "true".to_string(),
+        };
+
+        let account_clause = match address_index {
+            Some(index) => format!("account = {}", index.account),
+            None => "true".to_string(),
         };
 
         spawn_blocking(move || {
-            let mut q = "SELECT position_id FROM positions".to_string();
-            match (position_state.is_some(), trading_pair.is_some()) {
-                (true, true) => {
-                    q = q + " WHERE " + &state_clause + " AND " + &pair_clause;
-                }
-                (true, false) => {
-                    q = q + " WHERE " + &state_clause;
-                }
-                (false, true) => {
-                    q = q + " WHERE " + &pair_clause;
-                }
-                (false, false) => (),
-            };
+            let q = format!(
+                "SELECT position_id FROM positions WHERE {} AND {} AND {}",
+                state_clause, pair_clause, account_clause
+            );
 
             pool.get()?
                 .prepare_cached(&q)?
