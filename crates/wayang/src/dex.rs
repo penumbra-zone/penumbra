@@ -5,10 +5,8 @@ use rand_core::CryptoRngCore;
 pub use registry::Registry;
 
 use anyhow::anyhow;
-use penumbra_sdk_dex::{
-    lp::{position::Position as PenumbraPosition, Reserves},
-    DirectedTradingPair,
-};
+pub use penumbra_sdk_dex::lp::position::Position as PenumbraPosition;
+use penumbra_sdk_dex::{lp::Reserves, DirectedTradingPair};
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
@@ -193,9 +191,9 @@ pub struct Position {
 
 impl Position {
     pub fn to_penumbra(
-        self,
+        &self,
         rng: &mut dyn CryptoRngCore,
-        registry: Registry,
+        registry: &Registry,
     ) -> anyhow::Result<PenumbraPosition> {
         let base_meta = registry
             .lookup(&self.pair.base)
@@ -245,6 +243,10 @@ impl Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} {}", self.pair, self.shape)
     }
+}
+
+pub fn effectively_the_same_position(p1: &PenumbraPosition, p2: &PenumbraPosition) -> bool {
+    p1.reserves == p2.reserves && p1.phi == p2.phi && p1.close_on_fill == p2.close_on_fill
 }
 
 #[cfg(test)]

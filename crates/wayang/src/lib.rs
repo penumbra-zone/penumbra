@@ -3,16 +3,16 @@ pub mod config;
 pub mod dex;
 
 use client::Client;
-use dex::{Position, Symbol};
-use std::{io::IsTerminal as _, str::FromStr as _, time::Duration};
+use dex::{effectively_the_same_position, PenumbraPosition, Position, Registry, Symbol};
+use penumbra_sdk_dex::lp::position::State;
+use penumbra_sdk_keys::keys::AddressIndex;
+use rand_core::OsRng;
+use std::{io::IsTerminal as _, str::FromStr as _};
 use tokio::sync::watch;
 use tracing_subscriber::{prelude::*, EnvFilter};
 
 #[derive(Debug, Clone)]
-pub struct Status {
-    pub height: u64,
-    pub positions: Vec<Position>,
-}
+pub struct Status {}
 
 #[derive(Clone)]
 pub struct Move {
@@ -20,6 +20,7 @@ pub struct Move {
 }
 
 pub struct Feeler {
+    account: u32,
     moves: watch::Receiver<Option<Move>>,
     status: watch::Sender<Option<Status>>,
     client: Client,
@@ -31,20 +32,97 @@ impl Feeler {
         Ok(res.as_ref().cloned().expect("Impossible 000-004"))
     }
 
+    async fn wait_for_change(
+        &mut self,
+        registry: &Registry,
+        from: &PenumbraPosition,
+    ) -> anyhow::Result<()> {
+        self.moves
+            .wait_for(|m| {
+                let Some(m) = m else { return false };
+                let Ok(p) = m.position.to_penumbra(&mut OsRng, registry) else {
+                    return false;
+                };
+                !effectively_the_same_position(&p, from)
+            })
+            .await?;
+        Ok(())
+    }
+
+    async fn tick(&mut self, registry: &Registry) -> anyhow::Result<()> {
+        let moove = self.next_move().await?;
+        let desired_position = moove.position.to_penumbra(&mut OsRng, registry)?;
+        let positions = self.client.positions().await?;
+        let res = self
+            .client
+            .build_and_submit(AddressIndex::new(self.account), |mut planner| {
+                let mut matching_position = false;
+                let mut did_something = false;
+                for position in positions.iter() {
+                    match position.state {
+                        State::Withdrawn { sequence } if !position.reserves.empty() => {
+                            did_something = true;
+                            planner.position_withdraw(
+                                position.id(),
+                                position.reserves.clone(),
+                                position.phi.pair,
+                                sequence + 1,
+                            );
+                        }
+                        State::Closed => {
+                            did_something = true;
+                            planner.position_withdraw(
+                                position.id(),
+                                position.reserves.clone(),
+                                position.phi.pair,
+                                0,
+                            );
+                        }
+                        State::Opened
+                            if !matching_position
+                                && effectively_the_same_position(&position, &desired_position) =>
+                        {
+                            matching_position = true;
+                        }
+                        State::Opened => {
+                            did_something = true;
+                            planner.position_close(position.id());
+                        }
+                        _ => {}
+                    }
+                }
+                if !matching_position {
+                    did_something = true;
+                    planner.position_open(desired_position.clone());
+                }
+                if did_something {
+                    Ok(Some(planner))
+                } else {
+                    Ok(None)
+                }
+            })
+            .await?;
+        // If we didn't end up creating a transaction, we need to wait until the desired state
+        // changes.
+        match res {
+            None => {
+                self.wait_for_change(registry, &desired_position).await?;
+            }
+            Some(tx) => tracing::info!("detected transaction: {}", tx.id()),
+        };
+        let status = Status {};
+        self.status.send(Some(status))?;
+        Ok(())
+    }
+
     pub async fn run(mut self) -> anyhow::Result<()> {
         let registry = self.client.registry().await?;
         dbg!(&registry.lookup(&Symbol::from_str("UM").unwrap()));
         dbg!(&registry.lookup(&Symbol::from_str("USDC").unwrap()));
-        let mut height = 0u64;
         loop {
-            let moove = self.next_move().await?;
-            height += 1;
-            let status = Status {
-                height,
-                positions: vec![moove.position],
-            };
-            self.status.send(Some(status))?;
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            if let Err(e) = self.tick(&registry).await {
+                tracing::warn!(error = %e, "Failed to process move");
+            }
         }
     }
 }
@@ -68,7 +146,7 @@ impl Rhythm {
 }
 
 pub async fn rhythm_and_feeler(config: &config::Config) -> anyhow::Result<(Rhythm, Feeler)> {
-    let client = Client::init(config.view_service.as_str()).await?;
+    let client = Client::init(config.grpc_url.as_str(), config.view_service.as_str()).await?;
     let (moves_in, moves_out) = watch::channel(None);
     let (status_in, mut status_out) = watch::channel(None);
     // So that we can immediately get a status.
@@ -79,6 +157,7 @@ pub async fn rhythm_and_feeler(config: &config::Config) -> anyhow::Result<(Rhyth
             status: status_out,
         },
         Feeler {
+            account: config.account,
             moves: moves_out,
             status: status_in,
             client,
