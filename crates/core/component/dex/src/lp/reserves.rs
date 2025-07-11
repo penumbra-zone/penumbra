@@ -34,6 +34,13 @@ impl Reserves {
         }
     }
 
+    /// True if the reserves contain no value.
+    ///
+    /// This is useful to check if a position is worth withdrawing.
+    pub fn empty(&self) -> bool {
+        self.r1 == Amount::zero() && self.r2 == Amount::zero()
+    }
+
     /// Augment `self` with type information to get a typed `Balance`.
     pub fn balance(&self, pair: &TradingPair) -> Balance {
         let r1 = Value {
