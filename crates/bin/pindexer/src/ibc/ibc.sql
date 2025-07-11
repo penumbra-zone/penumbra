@@ -13,5 +13,7 @@ CREATE TABLE IF NOT EXISTS ibc_transfer (
   -- The address on the other side.
   foreign_addr TEXT NOT NULL,
   -- What kind of transfer this is.
-  kind TEXT NOT NULL CHECK (kind IN ('inbound', 'outbound', 'refund_timeout', 'refund_error', 'refund_other'))
+  kind TEXT NOT NULL CHECK (kind IN ('inbound', 'outbound', 'refund_timeout', 'refund_error', 'refund_other')),
+  -- The transaction hash associated with this transfer
+  tx_hash BYTEA
 );
