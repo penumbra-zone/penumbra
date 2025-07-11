@@ -3,17 +3,13 @@ use std::str::FromStr;
 
 use anyhow::anyhow;
 use anyhow::Context;
-use futures::StreamExt;
-use futures::TryStreamExt;
 use futures::TryStreamExt as _;
 use penumbra_sdk_custody::AuthorizeRequest;
 use penumbra_sdk_custody::CustodyClient;
-use penumbra_sdk_dex::lp::position;
 use penumbra_sdk_dex::lp::position::Position;
 use penumbra_sdk_keys::keys::AddressIndex;
 use penumbra_sdk_proto::box_grpc_svc::BoxGrpcService;
 use penumbra_sdk_proto::core::component::dex::v1 as pb_dex;
-use penumbra_sdk_proto::core::component::dex::v1::LiquidityPositionByIdRequest;
 use penumbra_sdk_proto::core::component::dex::v1::LiquidityPositionsByIdRequest;
 use penumbra_sdk_proto::custody::v1::custody_service_client::CustodyServiceClient;
 use penumbra_sdk_proto::view::v1::broadcast_transaction_response::Status as BroadcastStatus;
@@ -100,7 +96,8 @@ impl Client {
     }
 
     pub async fn positions(&mut self) -> anyhow::Result<Vec<Position>> {
-        let positions = ViewClient::owned_position_ids(&mut self.view_client, None, None).await?;
+        let positions =
+            ViewClient::owned_position_ids(&mut self.view_client, None, None, None).await?;
         let positions_proto: Vec<_> = positions.into_iter().map(|x| x.into()).collect();
         let count = positions_proto.len();
         let mut resp = DexQueryServiceClient::new(self.node_channel.clone())

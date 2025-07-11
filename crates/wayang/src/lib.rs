@@ -36,7 +36,7 @@ impl Feeler {
         dbg!(&registry.lookup(&Symbol::from_str("USDC").unwrap()));
         let mut height = 0u64;
         loop {
-            let moove = self.next_move().await?;
+            let _moove = self.next_move().await?;
             height += 1;
             let status = Status { height };
             self.status.send(Some(status))?;
