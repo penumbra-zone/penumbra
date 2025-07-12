@@ -164,7 +164,7 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
     // in more solid peering behavior than the previous strategy of declaring all fullnodes
     // as seeds within the joining node's CometBFT config.
     let threshold = 5;
-    let mut peers = Vec::new();
+    let mut peers = Vec::with_capacity(net_info_peers.len());
     let mut seeds = Vec::new();
 
     for raw_peer in net_info_peers {

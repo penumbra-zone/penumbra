@@ -59,8 +59,8 @@ fn tx_lost_transfers(transaction: Transaction) -> impl Iterator<Item = Packet> {
 ///
 /// This does so by looking at all transactions, looking for the relayed acknowledgements.
 async fn lost_transfers(state: &StateDelta<Snapshot>) -> anyhow::Result<Vec<Packet>> {
-    let mut out = Vec::new();
     let end_height = state.get_block_height().await?;
+    let mut out = Vec::new();
     // We only need to start from the height where transfers were enabled via governance.
     for height in ICS20_TRANSFER_START_HEIGHT..=end_height {
         let transactions = state.transactions_by_height(height).await?.transactions;
