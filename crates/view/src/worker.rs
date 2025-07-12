@@ -390,6 +390,13 @@ impl Worker {
                                     note_commitment,
                                 )
                                 .await?;
+                        } else if let Ok(lp_nft) = LpNft::try_from(note_denom) {
+                            self.storage
+                                .update_position_with_account(
+                                    lp_nft.position_id(),
+                                    note_record.address_index.account,
+                                )
+                                .await?;
                         }
                         continue;
                     } else {

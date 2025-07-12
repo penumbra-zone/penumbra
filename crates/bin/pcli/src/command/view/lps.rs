@@ -20,7 +20,7 @@ impl LiquidityPositionsCmd {
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         let my_position_ids = app
             .view()
-            .owned_position_ids(Some(State::Opened), None)
+            .owned_position_ids(Some(State::Opened), None, None)
             .await?;
         let mut dex_client = DexQueryServiceClient::new(app.pd_channel().await?);
 
