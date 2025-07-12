@@ -76,7 +76,7 @@ async fn audit_passes_on_wallets_that_migrated_once() -> anyhow::Result<()> {
 /// one of the wallets ran `pcli migrate balance` once, then that receiving
 /// wallet ran `pcli migrate balance` itself, so the genesis funds are now
 /// two (2) FVKs away from the original account. In this case,
-/// pmonitor` should exit 0, because it understood all balance migrations
+/// `pmonitor` should exit 0, because it understood all balance migrations
 /// and updated the FVK in its config file accordingly.
 async fn audit_passes_on_wallets_that_migrated_twice() -> anyhow::Result<()> {
     let p = PmonitorTestRunner::new();
