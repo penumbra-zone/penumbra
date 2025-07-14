@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use cometindex::{
     async_trait,
-    index::{EventBatch, EventBatchContext},
+    index::{EventBatch, EventBatchContext, Version},
     AppView, ContextualizedEvent, PgTransaction,
 };
 use penumbra_sdk_asset::Value;
@@ -176,8 +176,9 @@ async fn create_transfer(
     dbtx: &mut PgTransaction<'_>,
     height: u64,
     transfer: DatabaseTransfer,
+    tx_hash: &[u8],
 ) -> anyhow::Result<()> {
-    sqlx::query("INSERT INTO ibc_transfer VALUES (DEFAULT, $7, $1, $6::NUMERIC(39, 0) * $2::NUMERIC(39, 0), $3, $4, $5)")
+    sqlx::query("INSERT INTO ibc_transfer VALUES (DEFAULT, $7, $1, $6::NUMERIC(39, 0) * $2::NUMERIC(39, 0), $3, $4, $5, $8)")
         .bind(transfer.value.asset_id.to_bytes())
         .bind(transfer.value.amount.to_string())
         .bind(transfer.penumbra_addr.to_vec())
@@ -185,6 +186,7 @@ async fn create_transfer(
         .bind(transfer.kind)
         .bind(if transfer.negate { -1i32 } else { 1i32 })
         .bind(i64::try_from(height)?)
+        .bind(tx_hash.to_vec())
         .execute(dbtx.as_mut())
         .await?;
     Ok(())
@@ -203,6 +205,20 @@ impl Component {
 impl AppView for Component {
     fn name(&self) -> String {
         "ibc".to_string()
+    }
+
+    fn version(&self) -> Version {
+        Version::with_major(1)
+    }
+
+    async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
+        for statement in include_str!("reset.sql").split(";") {
+            let trimmed = statement.trim();
+            if !trimmed.is_empty() {
+                sqlx::query(trimmed).execute(dbtx.as_mut()).await?;
+            }
+        }
+        Ok(())
     }
 
     async fn init_chain(
@@ -225,7 +241,15 @@ impl AppView for Component {
                 Err(_) => continue,
             };
             let transfer = parsed.db_transfer();
-            create_transfer(dbtx, event.block_height, transfer).await?;
+            create_transfer(
+                dbtx,
+                event.block_height,
+                transfer,
+                &event
+                    .tx_hash()
+                    .expect("IBC events should have associated transaction hash"),
+            )
+            .await?;
         }
         Ok(())
     }
