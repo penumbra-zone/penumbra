@@ -66,22 +66,45 @@ mod candle {
         }
 
         pub fn point(price: f64, direct_volume: f64) -> Self {
+            // Ensure all values are finite and positive
+            let safe_price = if price.is_finite() && price > 0.0 {
+                price
+            } else {
+                0.0
+            };
+            let safe_volume = if direct_volume.is_finite() && direct_volume >= 0.0 {
+                direct_volume
+            } else {
+                0.0
+            };
+
             Self {
-                open: price,
-                close: price,
-                low: price,
-                high: price,
-                direct_volume,
+                open: safe_price,
+                close: safe_price,
+                low: safe_price,
+                high: safe_price,
+                direct_volume: safe_volume,
                 swap_volume: 0.0,
             }
         }
 
         pub fn merge(&mut self, that: &Self) {
-            self.close = that.close;
-            self.low = self.low.min(that.low);
-            self.high = self.high.max(that.high);
-            self.direct_volume += that.direct_volume;
-            self.swap_volume += that.swap_volume;
+            // Only merge if the other candle has finite values
+            if that.close.is_finite() && that.close > 0.0 {
+                self.close = that.close;
+            }
+            if that.low.is_finite() && that.low > 0.0 {
+                self.low = self.low.min(that.low);
+            }
+            if that.high.is_finite() && that.high > 0.0 {
+                self.high = self.high.max(that.high);
+            }
+            if that.direct_volume.is_finite() && that.direct_volume >= 0.0 {
+                self.direct_volume += that.direct_volume;
+            }
+            if that.swap_volume.is_finite() && that.swap_volume >= 0.0 {
+                self.swap_volume += that.swap_volume;
+            }
         }
     }
 
@@ -468,8 +491,18 @@ mod summary {
                 SELECT
                     COALESCE(SUM(direct_volume), 0.0) AS direct_volume_over_window,
                     COALESCE(SUM(swap_volume), 0.0) AS swap_volume_over_window,
-                    COALESCE(SUM(COALESCE(start_price_indexing_denom, 0.0) * direct_volume), 0.0) as direct_volume_indexing_denom_over_window,
-                    COALESCE(SUM(COALESCE(start_price_indexing_denom, 0.0) * swap_volume), 0.0) as swap_volume_indexing_denom_over_window,
+                    COALESCE(SUM(
+                        CASE 
+                            WHEN start_price_indexing_denom = 'NaN' OR start_price_indexing_denom = 'Infinity' OR start_price_indexing_denom = '-Infinity' THEN 0.0
+                            ELSE COALESCE(start_price_indexing_denom, 0.0) * direct_volume 
+                        END
+                    ), 0.0) as direct_volume_indexing_denom_over_window,
+                    COALESCE(SUM(
+                        CASE 
+                            WHEN start_price_indexing_denom = 'NaN' OR start_price_indexing_denom = 'Infinity' OR start_price_indexing_denom = '-Infinity' THEN 0.0
+                            ELSE COALESCE(start_price_indexing_denom, 0.0) * swap_volume 
+                        END
+                    ), 0.0) as swap_volume_indexing_denom_over_window,
                     COALESCE(SUM(trades), 0.0) AS trades_over_window,
                     COALESCE(MIN(price), 0.0) AS low,
                     COALESCE(MAX(price), 0.0) AS high
@@ -750,9 +783,22 @@ impl Events {
         let pair_2_1 = pair_1_2.flip();
         let input_amount = f64::from(input.amount);
         let output_amount = f64::from(output.amount);
+
+        // Prevent NaN by checking for zero amounts
+        if input_amount <= 0.0 || output_amount <= 0.0 {
+            return;
+        }
+
         let price_1_2 = output_amount / input_amount;
+        let price_2_1 = input_amount / output_amount;
+
+        // Validate that prices are finite
+        if !price_1_2.is_finite() || !price_2_1.is_finite() {
+            return;
+        }
+
         let candle_1_2 = Candle::point(price_1_2, input_amount);
-        let candle_2_1 = Candle::point(1.0 / price_1_2, output_amount);
+        let candle_2_1 = Candle::point(price_2_1, output_amount);
         self.metric(&pair_1_2).trades += 1.0;
         self.candles
             .entry(pair_1_2)
@@ -968,6 +1014,7 @@ impl Events {
         self.candles
             .get(&DirectedTradingPair::new(asset, indexing_denom))
             .map(|x| x.close)
+            .filter(|price| price.is_finite() && *price > 0.0)
     }
 }
 
