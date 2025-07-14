@@ -747,6 +747,10 @@ impl Events {
         let pair_2_1 = pair_1_2.flip();
         let input_amount = f64::from(input.amount);
         let output_amount = f64::from(output.amount);
+        if input_amount == 0.0 && output_amount == 0.0 {
+            tracing::warn!(?input, ?output, "ignoring trace with 0 input and output");
+            return;
+        }
         let price_1_2 = output_amount / input_amount;
         let candle_1_2 = Candle::point(price_1_2, input_amount);
         let candle_2_1 = Candle::point(1.0 / price_1_2, output_amount);
@@ -1492,7 +1496,7 @@ impl AppView for Component {
             .as_bytes()
             .try_into()
             .expect("Impossible 000-001: expected 32 byte hash");
-        Version::with_major(1).with_option_hash(hash)
+        Version::with_major(2).with_option_hash(hash)
     }
 
     async fn reset(&self, dbtx: &mut PgTransaction) -> Result<(), anyhow::Error> {
