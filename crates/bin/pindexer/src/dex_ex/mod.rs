@@ -533,7 +533,10 @@ mod summary {
             converted_pairs_summary AS (
                 SELECT
                     asset_start, asset_end,
-                    (dex_ex_pairs_summary.price - greatest(price_then, 0.000001)) / greatest(price_then, 0.000001) * 100 AS price_change,
+                    CASE 
+                        WHEN price_then IS NULL OR price_then <= 0 THEN NULL
+                        ELSE (dex_ex_pairs_summary.price - price_then) / price_then * 100 
+                    END AS price_change,
                     liquidity * ed_end.price AS liquidity,
                     direct_volume_indexing_denom_over_window AS dv,
                     swap_volume_indexing_denom_over_window AS sv,
@@ -547,8 +550,8 @@ mod summary {
             ),
             sums AS (
                 SELECT
-                    SUM(dv) AS direct_volume,
-                    SUM(sv) AS swap_volume,
+                    COALESCE(SUM(CASE WHEN dv != 'NaN' THEN dv END), 0) AS direct_volume,
+                    COALESCE(SUM(CASE WHEN sv != 'NaN' THEN sv END), 0) AS swap_volume,
                     SUM(trades) AS trades
                 FROM converted_pairs_summary WHERE asset_start < asset_end
             ),
@@ -564,8 +567,8 @@ mod summary {
               SELECT
                   a_start AS asset_start,
                   a_end AS asset_end,
-                  (SELECT SUM(sv) FROM converted_pairs_summary WHERE (asset_start = a_start AND asset_end = a_end) OR (asset_start = a_end AND asset_end = a_start)) AS sv,
-                  (SELECT SUM(dv) FROM converted_pairs_summary WHERE (asset_start = a_start AND asset_end = a_end) OR (asset_start = a_end AND asset_end = a_start)) AS dv
+                  COALESCE((SELECT SUM(CASE WHEN sv != 'NaN' THEN sv END) FROM converted_pairs_summary WHERE (asset_start = a_start AND asset_end = a_end) OR (asset_start = a_end AND asset_end = a_start)), 0) AS sv,
+                  COALESCE((SELECT SUM(CASE WHEN dv != 'NaN' THEN dv END) FROM converted_pairs_summary WHERE (asset_start = a_start AND asset_end = a_end) OR (asset_start = a_end AND asset_end = a_start)), 0) AS dv
               FROM pairs
             ),
             counts AS (
