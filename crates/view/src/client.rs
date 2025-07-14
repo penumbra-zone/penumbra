@@ -185,6 +185,7 @@ pub trait ViewClient {
         &mut self,
         position_state: Option<position::State>,
         trading_pair: Option<TradingPair>,
+        subaccount: Option<AddressIndex>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<position::Id>>> + Send + 'static>>;
 
     /// Generates a full perspective for a selected transaction using a full viewing key
@@ -704,6 +705,7 @@ where
         &mut self,
         position_state: Option<position::State>,
         trading_pair: Option<TradingPair>,
+        subaccount: Option<AddressIndex>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<position::Id>>> + Send + 'static>> {
         // should the return be streamed here? none of the other viewclient responses are, probably fine for now
         // but might be an issue eventually
@@ -714,9 +716,9 @@ where
             let rsp = ViewServiceClient::owned_position_ids(
                 &mut self2,
                 tonic::Request::new(pb::OwnedPositionIdsRequest {
-                    trading_pair: trading_pair.map(TryInto::try_into).transpose()?,
-                    position_state: position_state.map(TryInto::try_into).transpose()?,
-                    subaccount: None,
+                    trading_pair: trading_pair.map(Into::into),
+                    position_state: position_state.map(Into::into),
+                    subaccount: subaccount.map(Into::into),
                 }),
             );
 

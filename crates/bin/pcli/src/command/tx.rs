@@ -1343,7 +1343,7 @@ impl TxCmd {
                     .context("view service must be initialized")?;
 
                 let owned_position_ids = view
-                    .owned_position_ids(Some(position::State::Opened), *trading_pair)
+                    .owned_position_ids(Some(position::State::Opened), *trading_pair, None)
                     .await?;
 
                 if owned_position_ids.is_empty() {
@@ -1393,7 +1393,7 @@ impl TxCmd {
                     .context("view service must be initialized")?;
 
                 let owned_position_ids = view
-                    .owned_position_ids(Some(position::State::Closed), *trading_pair)
+                    .owned_position_ids(Some(position::State::Closed), *trading_pair, None)
                     .await?;
 
                 if owned_position_ids.is_empty() {
