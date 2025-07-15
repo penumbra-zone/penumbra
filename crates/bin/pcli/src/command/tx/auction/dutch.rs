@@ -203,7 +203,7 @@ impl DutchCmd {
             } => {
                 let auction_ids = match (all, auction_ids.is_empty()) {
                     (true, _) => auctions_to_end(app.view(), *source).await?,
-                    (false, false) => auction_ids.to_vec(),
+                    (false, false) => auction_ids.to_owned(),
                     (false, true) => {
                         bail!("auction_ids are required when --all is not set")
                     }
@@ -216,11 +216,12 @@ impl DutchCmd {
 
                 // Process auctions in batches
                 let batches = auction_ids.chunks(*batch as usize);
-                for (batch_num, auction_batch) in batches.clone().enumerate() {
+                let num_batches = &batches.len();
+                for (batch_num, auction_batch) in batches.enumerate() {
                     println!(
                         "processing batch {} of {}, starting with {}",
                         batch_num + 1,
-                        batches.len(),
+                        num_batches,
                         batch_num * *batch as usize
                     );
 
@@ -273,7 +274,7 @@ impl DutchCmd {
                                         auction_id
                                     )
                                 })?
-                                .clone();
+                                .to_owned();
                             selected_auctions.push(auction);
                         }
 
@@ -290,20 +291,14 @@ impl DutchCmd {
                 }
 
                 let batches = auctions.chunks(*batch as usize);
-
+                let num_batches = &batches.len();
                 // Process auctions in batches
-                for (batch_num, auction_batch) in batches.clone().enumerate() {
-                    let auctions_progress_count: usize = if batch_num == 0 {
-                        auction_batch.len()
-                    } else {
-                        auction_batch.len() + (batch_num as usize * *batch as usize)
-                    };
+                for (batch_num, auction_batch) in batches.enumerate() {
                     println!(
-                        "processing batch {} of {}, containing auctions {} of {} ...",
+                        "processing batch {} of {}, starting with {}",
                         batch_num + 1,
-                        batches.len(),
-                        auctions_progress_count,
-                        auctions.len()
+                        num_batches,
+                        batch_num * *batch as usize
                     );
                     if auction_batch.is_empty() {
                         continue;
