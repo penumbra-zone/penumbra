@@ -988,17 +988,15 @@ impl Storage {
         .await?
     }
 
+    /// Return all notes that are eligible for voting at `votable_at_height`.
+    /// If an `address_index` is provided, only notes from within that subaccount
+    /// will be returned; otherwise, all voting notes across all subaccounts will
+    /// returned. If you want just the main account, then set `Some(0)` in the caller.
     pub async fn notes_for_voting(
         &self,
         address_index: Option<penumbra_sdk_keys::keys::AddressIndex>,
         votable_at_height: u64,
     ) -> anyhow::Result<Vec<(SpendableNoteRecord, IdentityKey)>> {
-        // If set, only return notes with the specified address index.
-        // crypto.AddressIndex address_index = 3;
-        let address_clause = address_index
-            .map(|d| format!("x'{}'", hex::encode(d.to_bytes())))
-            .unwrap_or_else(|| "address_index".to_string());
-
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
@@ -1021,8 +1019,7 @@ impl Storage {
                     FROM
                         notes JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
                     WHERE
-                        spendable_notes.address_index IS {address_clause}
-                        AND notes.asset_id IN (
+                        notes.asset_id IN (
                             SELECT asset_id FROM assets WHERE denom LIKE '_delegation\\_%' ESCAPE '\\'
                         )
                         AND ((spendable_notes.height_spent IS NULL) OR (spendable_notes.height_spent > {votable_at_height}))
@@ -1036,6 +1033,12 @@ impl Storage {
             // do it this way; if it becomes slow, we can do it better
             let mut results = Vec::new();
             for record in spendable_note_records {
+                // Skip notes that don't match the account index, if declared.
+                if let Some(address_index) = address_index {
+                    if record.address_index.account != address_index.account {
+                        continue;
+                    }
+                }
                 let asset_id = record.note.asset_id().to_bytes().to_vec();
                 let denom: String = dbtx.query_row_and_then(
                     "SELECT denom FROM assets WHERE asset_id = ?1",
