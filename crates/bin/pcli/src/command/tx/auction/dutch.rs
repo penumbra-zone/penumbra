@@ -217,17 +217,11 @@ impl DutchCmd {
                 // Process auctions in batches
                 let batches = auction_ids.chunks(*batch as usize);
                 for (batch_num, auction_batch) in batches.clone().enumerate() {
-                    let auctions_progress_count: usize = if batch_num == 0 {
-                        auction_batch.len()
-                    } else {
-                        auction_batch.len() + (batch_num as usize * *batch as usize)
-                    };
                     println!(
-                        "processing batch {} of {}, containing auctions {} of {} ...",
+                        "processing batch {} of {}, starting with {}",
                         batch_num + 1,
                         batches.len(),
-                        auctions_progress_count,
-                        auction_ids.len()
+                        batch_num * *batch as usize
                     );
 
                     if auction_batch.is_empty() {
