@@ -814,7 +814,7 @@ impl Tree {
     ///    [`.load_hashes()`](storage::LoadCommitments::load_hashes) to get an object
     ///    [`LoadHashes`](storage::LoadHashes).
     /// 3. [`LoadHashes`](storage::LoadHashes) can be used to
-    ///    [`insert`](storage::LoadHashes::insert) positioned, heighted hashes.
+    ///    [`insert`](storage::LoadHashes::insert) positioned, heightened hashes.
     /// 4. Finally, call [`.finish()`](storage::LoadHashes::finish) on the
     ///    [`LoadHashes`](storage::LoadHashes) to get the [`Tree`].
     ///

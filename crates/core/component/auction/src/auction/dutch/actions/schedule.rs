@@ -6,7 +6,7 @@ use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 /// The maximum amount of input/output in a Dutch auction description.
-/// 52 bits gives us enough headroom to do infaillible price interpolation.
+/// 52 bits gives us enough headroom to do infallible price interpolation.
 pub const MAX_AUCTION_AMOUNT_RESERVES: u128 = (1 << 52) - 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

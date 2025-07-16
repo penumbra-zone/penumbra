@@ -254,7 +254,7 @@ impl BareTradingFunction {
         // delta_1 = r2 * effective_price^-1
         let fillable_delta_1 = self.convert_to_delta_1(lambda_2.into())?;
 
-        // We burn the rouding error by apply `ceil` to delta_1:
+        // We burn the rounding error by apply `ceil` to delta_1:
         //
         // delta_1_star = Ceil(delta_1)
         // TODO: round_up is now fallible
@@ -352,7 +352,7 @@ impl BareTradingFunction {
             // delta_1 = r2 * effective_price^-1
             let fillable_delta_1 = self.convert_to_delta_1(r2)?;
 
-            // We burn the rouding error by apply `ceil` to delta_1:
+            // We burn the rounding error by apply `ceil` to delta_1:
             //
             // delta_1_star = Ceil(delta_1)
             // TODO: round_up is now fallible
