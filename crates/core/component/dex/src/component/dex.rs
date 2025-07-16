@@ -130,7 +130,7 @@ impl Component for Dex {
                     execution_budget,
                 )
                 .await
-                .expect("handling batch swaps is infaillible");
+                .expect("handling batch swaps is infallible");
             metrics::histogram!(crate::component::metrics::DEX_BATCH_DURATION)
                 .record(batch_start.elapsed());
 
