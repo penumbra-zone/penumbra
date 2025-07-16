@@ -106,9 +106,12 @@ pub enum DutchCmd {
         /// If set, ends all auctions owned by the specified account.
         #[clap(long, display_order = 150)]
         all: bool,
-        /// Identifier of the auction to end, if `--all` is not set.
+        /// Identifiers of the auctions to end, if `--all` is not set.
         #[clap(display_order = 200)]
-        auction_id: Option<String>,
+        auction_ids: Vec<AuctionId>,
+        /// Maximum number of auctions to process in a single transaction.
+        #[clap(long, default_value = "20", display_order = 250)]
+        batch: u8,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, default_value_t, display_order = 300)]
         fee_tier: FeeTier,
@@ -122,9 +125,12 @@ pub enum DutchCmd {
         /// If set, withdraws all auctions owned by the specified account.
         #[clap(long, display_order = 150)]
         all: bool,
-        /// Identifier of the auction to withdraw from, if `--all` is not set.
+        /// Identifiers of the auctions to withdraw, if `--all` is not set.
         #[clap(display_order = 200)]
-        auction_id: Option<String>,
+        auction_ids: Vec<AuctionId>,
+        /// Maximum number of auctions to process in a single transaction.
+        #[clap(long, default_value = "20", display_order = 250)]
+        batch: u8,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, default_value_t, display_order = 600)]
         fee_tier: FeeTier,
@@ -190,87 +196,134 @@ impl DutchCmd {
             }
             DutchCmd::DutchAuctionEnd {
                 all,
-                auction_id,
+                auction_ids,
                 source,
+                batch,
                 fee_tier,
             } => {
-                let auction_ids = match (all, auction_id) {
+                let auction_ids = match (all, auction_ids.is_empty()) {
                     (true, _) => auctions_to_end(app.view(), *source).await?,
-                    (false, Some(auction_id)) => {
-                        let auction_id = auction_id.parse::<AuctionId>()?;
-                        vec![auction_id]
-                    }
-                    (false, None) => {
-                        bail!("auction_id is required when --all is not set")
+                    (false, false) => auction_ids.to_owned(),
+                    (false, true) => {
+                        bail!("auction_ids are required when --all is not set")
                     }
                 };
 
-                let mut planner = Planner::new(OsRng);
-
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
-
-                for auction_id in auction_ids {
-                    planner.dutch_auction_end(auction_id);
+                if auction_ids.is_empty() {
+                    println!("no active auctions to end");
+                    return Ok(());
                 }
 
-                let plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await
-                    .context("can't build auction end transaction")?;
-                app.build_and_submit_transaction(plan).await?;
+                // Process auctions in batches
+                let batches = auction_ids.chunks(*batch as usize);
+                let num_batches = &batches.len();
+                for (batch_num, auction_batch) in batches.enumerate() {
+                    println!(
+                        "processing batch {} of {}, starting with {}",
+                        batch_num + 1,
+                        num_batches,
+                        batch_num * *batch as usize
+                    );
+
+                    if auction_batch.is_empty() {
+                        continue;
+                    }
+
+                    let mut planner = Planner::new(OsRng);
+                    planner
+                        .set_gas_prices(gas_prices)
+                        .set_fee_tier((*fee_tier).into());
+
+                    for auction_id in auction_batch {
+                        planner.dutch_auction_end(*auction_id);
+                    }
+
+                    let plan = planner
+                        .plan(
+                            app.view
+                                .as_mut()
+                                .context("view service must be initialized")?,
+                            AddressIndex::new(*source),
+                        )
+                        .await
+                        .context("can't build auction end transaction")?;
+                    app.build_and_submit_transaction(plan).await?;
+                }
                 Ok(())
             }
             DutchCmd::DutchAuctionWithdraw {
                 all,
                 source,
-                auction_id,
+                auction_ids,
+                batch,
                 fee_tier,
             } => {
-                let auctions = match (all, auction_id) {
+                let auctions = match (all, auction_ids.is_empty()) {
                     (true, _) => auctions_to_withdraw(app.view(), *source).await?,
-                    (false, Some(auction_id)) => {
-                        let auction_id = auction_id.parse::<AuctionId>()?;
-
+                    (false, false) => {
                         let all = auctions_to_withdraw(app.view(), *source).await?;
-                        vec![all
-                            .into_iter()
-                            .find(|a| a.description.id() == auction_id)
-                            .ok_or_else(|| {
-                                anyhow!("the auction id is unknown from the view service!")
-                            })?]
+                        let mut selected_auctions = Vec::new();
+
+                        for auction_id in auction_ids {
+                            let auction = all
+                                .iter()
+                                .find(|a| a.description.id() == *auction_id)
+                                .ok_or_else(|| {
+                                    anyhow!(
+                                        "auction id {} is unknown from the view service!",
+                                        auction_id
+                                    )
+                                })?
+                                .to_owned();
+                            selected_auctions.push(auction);
+                        }
+
+                        selected_auctions
                     }
-                    (false, None) => {
-                        bail!("auction_id is required when --all is not set")
+                    (false, true) => {
+                        bail!("auction_ids are required when --all is not set")
                     }
                 };
 
-                let mut planner = Planner::new(OsRng);
-
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
-
-                for auction in &auctions {
-                    planner.dutch_auction_withdraw(auction);
+                if auctions.is_empty() {
+                    println!("no ended auctions to withdraw");
+                    return Ok(());
                 }
 
-                let plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await
-                    .context("can't build auction withdrawal transaction")?;
-                app.build_and_submit_transaction(plan).await?;
+                let batches = auctions.chunks(*batch as usize);
+                let num_batches = &batches.len();
+                // Process auctions in batches
+                for (batch_num, auction_batch) in batches.enumerate() {
+                    println!(
+                        "processing batch {} of {}, starting with {}",
+                        batch_num + 1,
+                        num_batches,
+                        batch_num * *batch as usize
+                    );
+                    if auction_batch.is_empty() {
+                        continue;
+                    }
+
+                    let mut planner = Planner::new(OsRng);
+                    planner
+                        .set_gas_prices(gas_prices)
+                        .set_fee_tier((*fee_tier).into());
+
+                    for auction in auction_batch {
+                        planner.dutch_auction_withdraw(auction);
+                    }
+
+                    let plan = planner
+                        .plan(
+                            app.view
+                                .as_mut()
+                                .context("view service must be initialized")?,
+                            AddressIndex::new(*source),
+                        )
+                        .await
+                        .context("can't build auction withdrawal transaction")?;
+                    app.build_and_submit_transaction(plan).await?;
+                }
                 Ok(())
             }
             DutchCmd::DutchAuctionGradualSchedule {
