@@ -169,7 +169,7 @@ impl OrderCmd {
             OrderCmd::Buy { buy_order, .. } => {
                 tracing::info!(?buy_order, "parsing buy order");
                 let order = BuyOrder::parse_str(buy_order)?;
-                let mut positions = Vec::new();
+                let mut positions = Vec::with_capacity(self.num_copies() as usize);
                 for _ in 0..self.num_copies() {
                     let mut position = order.into_position(&mut rng);
                     if self.is_auto_closing() {
@@ -182,7 +182,7 @@ impl OrderCmd {
             OrderCmd::Sell { sell_order, .. } => {
                 tracing::info!(?sell_order, "parsing sell order");
                 let order = SellOrder::parse_str(sell_order)?;
-                let mut positions = Vec::new();
+                let mut positions = Vec::with_capacity(self.num_copies() as usize);
 
                 for _ in 0..self.num_copies() {
                     let mut position = order.into_position(&mut rng);
