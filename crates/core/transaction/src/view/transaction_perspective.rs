@@ -59,7 +59,7 @@ pub struct TransactionPerspective {
     pub batch_swap_output_data: Vec<BatchSwapOutputData>,
     /// The key used to decrypt position metadata.
     ///
-    /// We leave this as optional for maximal backwards compatability.
+    /// We leave this as optional for maximal backwards compatibility.
     pub position_metadata_key: Option<PositionMetadataKey>,
 }
 

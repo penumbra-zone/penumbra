@@ -63,7 +63,7 @@ message CommitmentSource {
   }
   // The commitment was created by the LQT mechanism and tracks LQT reward notes. 
   message LiquidityTournamentReward {
-    // The epoch in which the reward occured.
+    // The epoch in which the reward occurred.
     uint64 epoch = 1;
     // Transaction hash of the transaction that did the voting.
     txhash.v1.TransactionId tx_hash = 2;
