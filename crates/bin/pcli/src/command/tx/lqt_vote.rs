@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use penumbra_sdk_asset::asset::REGISTRY;
 use penumbra_sdk_fee::{FeeTier, GasPrices};
-use penumbra_sdk_keys::Address;
+use penumbra_sdk_keys::{keys::AddressIndex, Address};
 use penumbra_sdk_proto::core::component::sct::v1::{
     query_service_client::QueryServiceClient as SctQueryServiceClient, EpochByHeightRequest,
 };
@@ -38,6 +38,9 @@ pub struct LqtVoteCmd {
     /// This can also be an integer, indicating an ephemeral address of a sub-account.
     #[clap(short, long)]
     rewards_recipient: Option<String>,
+    /// Only consider delegations within the specified subaccount.
+    #[clap(long, default_value = "0", display_order = 300)]
+    source: u32,
     /// The selected fee tier.
     #[clap(short, long, default_value_t)]
     fee_tier: FeeTier,
@@ -79,7 +82,17 @@ impl LqtVoteCmd {
         let vote_denom = vote_meta.base_denom();
 
         let epoch = fetch_epoch(app).await?;
-        let voting_notes = app.view().lqt_voting_notes(epoch.index, None).await?;
+        let voting_notes = app
+            .view()
+            .lqt_voting_notes(epoch.index, Some(AddressIndex::new(self.source)))
+            .await?;
+
+        if voting_notes.is_empty() {
+            anyhow::bail!(
+                "no voting notes found in subaccount {}, cannot cast LQT vote",
+                self.source
+            );
+        }
 
         let mut planner = Planner::new(OsRng);
 
@@ -106,11 +119,13 @@ impl LqtVoteCmd {
         let change_addr = app
             .config
             .full_viewing_key
-            .ephemeral_address(OsRng, Default::default())
+            .ephemeral_address(OsRng, AddressIndex::new(self.source))
             .0;
         planner.change_address(change_addr.clone());
 
-        let plan = planner.plan(app.view(), Default::default()).await?;
+        let plan = planner
+            .plan(app.view(), AddressIndex::new(self.source))
+            .await?;
         app.build_and_submit_transaction(plan).await?;
 
         Ok(())
