@@ -1034,10 +1034,8 @@ impl Storage {
             let mut results = Vec::new();
             for record in spendable_note_records {
                 // Skip notes that don't match the account index, if declared.
-                if let Some(address_index) = address_index {
-                    if record.address_index.account != address_index.account {
-                        continue;
-                    }
+                if matches!(address_index, Some(a) if a.account != record.address_index.account) {
+                      continue;
                 }
                 let asset_id = record.note.asset_id().to_bytes().to_vec();
                 let denom: String = dbtx.query_row_and_then(
