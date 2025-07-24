@@ -24,7 +24,7 @@ pub fn rmm() {
 
         🚧📉 In the twilight of financial reckoning, whence tools that replicate payoffs dwell, 📈🚧
         💸 Lo! Beware the treacherous path, for risk and uncertainty shroudeth the numbers, 💸
-        📉 In the shadows of miscalculation, one must tread cautiously, lest ruin befall, 📈
+        📉 In the shadows of miscalculation, one must treat cautiously, lest ruin befall, 📈
         💸 As the fates of wealth and prosperity intertwine, with the whispers of uncertainty. 🚧
         🚧📈 Heed this warning, O wise one, for unseen perils may lead to unforeseen loss. 📉🚧
 
