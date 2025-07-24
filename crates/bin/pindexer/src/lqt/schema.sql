@@ -232,7 +232,7 @@ public to distinguish this case from multiple delegators.$$;
 COMMENT ON COLUMN lqt.delegator_summary.epochs_voted_in IS
 $$The number of rounds this delegator has voted in.$$;
 COMMENT ON COLUMN lqt.delegator_summary.total_rewards IS
-$$The total rewards this delegator has receieved.$$;
+$$The total rewards this delegator has received.$$;
 COMMENT ON COLUMN lqt.delegator_summary.total_voting_power IS
 $$The total amount of voting power this delegator has exercised.$$;
 COMMENT ON COLUMN lqt.delegator_summary.streak IS
