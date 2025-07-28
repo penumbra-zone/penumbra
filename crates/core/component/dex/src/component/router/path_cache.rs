@@ -39,7 +39,6 @@ impl<S: StateRead + 'static> PathEntry<S> {
             Some(spill) if new_path.price < spill.price => {
                 tracing::debug!(new_spill_price = %new_path.price, old_spill_price = %spill.price, "new path is better than spill path, updating cache");
                 self.spill = Some(new_path);
-                self.active = true;
             }
             Some(spill) => {
                 tracing::debug!(new_spill_price = %new_path.price, old_spill_price = %spill.price, "new path is worse than spill path, ignore");
@@ -47,7 +46,6 @@ impl<S: StateRead + 'static> PathEntry<S> {
             None => {
                 tracing::debug!(new_spill_price = %new_path.price, "new path is a suitable spill path, updating cache");
                 self.spill = Some(new_path);
-                self.active = true;
             }
         }
     }
