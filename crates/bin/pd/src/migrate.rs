@@ -139,7 +139,9 @@ impl Migration {
             Migration::Mainnet5 => {
                 // New pattern: instantiate and run
                 let migration = migrate2::mainnet5::Mainnet5Migration;
-                migration.run(pd_home.clone(), comet_home.clone(), genesis_start).await?;
+                migration
+                    .run(pd_home.clone(), comet_home.clone(), genesis_start)
+                    .await?;
                 // Early return since the new framework handles everything
                 return Ok(());
             }
