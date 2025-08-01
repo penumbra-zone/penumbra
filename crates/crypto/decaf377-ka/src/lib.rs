@@ -5,6 +5,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use decaf377::{self};
+#[cfg(feature = "rand")]
 use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroize;
 
@@ -39,6 +40,7 @@ pub enum Error {
 
 impl Secret {
     /// Generate a new secret key using `rng`.
+    #[cfg(feature = "rand")]
     pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         Self(decaf377::Fr::rand(rng))
     }
