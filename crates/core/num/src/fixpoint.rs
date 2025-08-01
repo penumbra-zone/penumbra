@@ -10,23 +10,16 @@ mod ops;
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "r1cs")]
 use ark_ff::{BigInteger, PrimeField, ToConstraintField, Zero};
-#[cfg(feature = "r1cs")]
 use ark_r1cs_std::bits::uint64::UInt64;
-#[cfg(feature = "r1cs")]
 use ark_r1cs_std::fields::fp::FpVar;
-#[cfg(feature = "r1cs")]
 use ark_r1cs_std::prelude::*;
-#[cfg(feature = "r1cs")]
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
-#[cfg(feature = "r1cs")]
 use decaf377::{r1cs::FqVar, Fq};
 use ethnum::U256;
 
 use crate::Amount;
-#[cfg(feature = "r1cs")]
 use crate::AmountVar;
 
 use self::div::stub_div_rem_u384_by_u256;
@@ -197,13 +190,11 @@ impl U128x128 {
     }
 }
 
-#[cfg(feature = "r1cs")]
 #[derive(Clone)]
 pub struct U128x128Var {
     pub limbs: [UInt64<Fq>; 4],
 }
 
-#[cfg(feature = "r1cs")]
 impl AllocVar<U128x128, Fq> for U128x128Var {
     fn new_variable<T: std::borrow::Borrow<U128x128>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
@@ -261,7 +252,6 @@ impl AllocVar<U128x128, Fq> for U128x128Var {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl R1CSVar<Fq> for U128x128Var {
     type Value = U128x128;
 
@@ -285,7 +275,6 @@ impl R1CSVar<Fq> for U128x128Var {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl U128x128Var {
     pub fn checked_add(self, rhs: &Self) -> Result<U128x128Var, SynthesisError> {
         // x = [x0, x1, x2, x3]
@@ -683,7 +672,6 @@ impl U128x128Var {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl EqGadget<Fq> for U128x128Var {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         let limb_1_eq = self.limbs[0].is_eq(&other.limbs[0])?;
@@ -698,7 +686,6 @@ impl EqGadget<Fq> for U128x128Var {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl ToConstraintField<Fq> for U128x128 {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
         let (hi_128, lo_128) = self.0.into_words();
@@ -706,7 +693,6 @@ impl ToConstraintField<Fq> for U128x128 {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl CondSelectGadget<Fq> for U128x128Var {
     fn conditionally_select(
         cond: &Boolean<Fq>,
@@ -724,13 +710,11 @@ impl CondSelectGadget<Fq> for U128x128Var {
 }
 
 /// Convert Uint64 into an FqVar
-#[cfg(feature = "r1cs")]
 pub fn convert_uint64_to_fqvar<F: PrimeField>(value: &UInt64<F>) -> FpVar<F> {
     Boolean::<F>::le_bits_to_fp_var(&value.to_bits_le()).expect("can convert to bits")
 }
 
 /// Bit constrain for FqVar and return number of bits
-#[cfg(feature = "r1cs")]
 pub fn bit_constrain(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
     let inner = value.value().unwrap_or(Fq::zero());
 

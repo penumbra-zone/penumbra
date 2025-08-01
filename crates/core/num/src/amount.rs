@@ -11,6 +11,7 @@ use penumbra_proto::{penumbra::core::num::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
+#[cfg(feature = "r1cs")]
 use crate::fixpoint::U128x128;
 #[cfg(feature = "r1cs")]
 use crate::fixpoint::bit_constrain;
@@ -514,18 +515,21 @@ impl From<Amount> for i128 {
     }
 }
 
+#[cfg(feature = "r1cs")]
 impl From<Amount> for U128x128 {
     fn from(amount: Amount) -> U128x128 {
         U128x128::from(amount.inner)
     }
 }
 
+#[cfg(feature = "r1cs")]
 impl From<&Amount> for U128x128 {
     fn from(value: &Amount) -> Self {
         (*value).into()
     }
 }
 
+#[cfg(feature = "r1cs")]
 impl TryFrom<U128x128> for Amount {
     type Error = <u128 as TryFrom<U128x128>>::Error;
     fn try_from(value: U128x128) -> Result<Self, Self::Error> {
