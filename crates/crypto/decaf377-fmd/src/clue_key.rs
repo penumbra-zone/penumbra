@@ -2,6 +2,7 @@ use std::{cell::RefCell, convert::TryFrom};
 
 use bitvec::{array::BitArray, order};
 use decaf377::{Fq, Fr};
+#[cfg(feature = "rand")]
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{hash, hkd, Clue, Error, Precision};
@@ -160,6 +161,7 @@ impl ExpandedClueKey {
     /// # Errors
     ///
     /// `precision_bits` must be smaller than [`MAX_PRECISION`].
+    #[cfg(feature = "rand")]
     #[allow(non_snake_case)]
     pub fn create_clue<R: RngCore + CryptoRng>(
         &self,

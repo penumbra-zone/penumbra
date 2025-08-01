@@ -14,15 +14,16 @@ harness = false
 
 [features]
 default = ["std"]
-std = ["ark-ff/std"]
+rand = ["decaf377/rand", "rand_core"]
+std = ["ark-ff/std", "rand"]
 
 [dependencies]
 ark-ff = {workspace = true, default-features = false}
 ark-serialize = {workspace = true}
 bitvec = {workspace = true}
 blake2b_simd = {workspace = true}
-decaf377 = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
+decaf377 = {workspace = true, default-features = false}
+rand_core = {workspace = true, features = ["getrandom"], optional = true}
 thiserror = {workspace = true}
 
 [dev-dependencies]

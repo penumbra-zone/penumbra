@@ -1,6 +1,7 @@
 use crate::{hash, hkd, Clue, ClueKey, Error, MAX_PRECISION};
 use bitvec::{order, slice::BitSlice};
 use decaf377::Fr;
+#[cfg(feature = "rand")]
 use rand_core::{CryptoRng, RngCore};
 use std::convert::{TryFrom, TryInto};
 
@@ -15,6 +16,7 @@ pub struct DetectionKey {
 
 impl DetectionKey {
     /// Create a random detection key using the supplied `rng`.
+    #[cfg(feature = "rand")]
     pub fn new<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         Self::from_field(decaf377::Fr::rand(&mut rng))
     }
