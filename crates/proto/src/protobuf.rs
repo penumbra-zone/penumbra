@@ -40,6 +40,7 @@ where
 // This should only be done here in cases where the domain type lives in a crate
 // that shouldn't depend on the Penumbra proto framework.
 
+#[cfg(feature = "ibc")]
 use crate::penumbra::core::component::ibc::v1::IbcRelay;
 use crate::penumbra::crypto::decaf377_rdsa::v1::{
     BindingSignature, SpendAuthSignature, SpendVerificationKey,
@@ -84,21 +85,21 @@ impl From<VerificationKey<SpendAuth>> for SpendVerificationKey {
 impl TryFrom<SpendAuthSignature> for Signature<SpendAuth> {
     type Error = anyhow::Error;
     fn try_from(value: SpendAuthSignature) -> Result<Self, Self::Error> {
-        Ok(value.inner.as_slice().try_into()?)
+        Ok(value.inner.as_slice().try_into().unwrap())
     }
 }
 
 impl TryFrom<BindingSignature> for Signature<Binding> {
     type Error = anyhow::Error;
     fn try_from(value: BindingSignature) -> Result<Self, Self::Error> {
-        Ok(value.inner.as_slice().try_into()?)
+        Ok(value.inner.as_slice().try_into().unwrap())
     }
 }
 
 impl TryFrom<SpendVerificationKey> for VerificationKey<SpendAuth> {
     type Error = anyhow::Error;
     fn try_from(value: SpendVerificationKey) -> Result<Self, Self::Error> {
-        Ok(value.inner.as_slice().try_into()?)
+        Ok(value.inner.as_slice().try_into().unwrap())
     }
 }
 
@@ -131,12 +132,15 @@ impl TryFrom<ProtoClue> for Clue {
 // The tendermint-rs PublicKey type already has a tendermint-proto type;
 // this redefines its proto, because the encodings are consensus-critical
 // and we don't vendor all of the tendermint protos.
+#[cfg(feature = "tendermint")]
 use crate::penumbra::core::keys::v1::ConsensusKey;
 
+#[cfg(feature = "tendermint")]
 impl DomainType for tendermint::PublicKey {
     type Proto = ConsensusKey;
 }
 
+#[cfg(feature = "tendermint")]
 impl From<tendermint::PublicKey> for crate::penumbra::core::keys::v1::ConsensusKey {
     fn from(v: tendermint::PublicKey) -> Self {
         Self {
@@ -145,6 +149,7 @@ impl From<tendermint::PublicKey> for crate::penumbra::core::keys::v1::ConsensusK
     }
 }
 
+#[cfg(feature = "tendermint")]
 impl TryFrom<crate::core::keys::v1::ConsensusKey> for tendermint::PublicKey {
     type Error = anyhow::Error;
     fn try_from(value: crate::core::keys::v1::ConsensusKey) -> Result<Self, Self::Error> {
@@ -154,41 +159,60 @@ impl TryFrom<crate::core::keys::v1::ConsensusKey> for tendermint::PublicKey {
 }
 
 // IBC-rs impls
+#[cfg(feature = "ibc")]
 extern crate ibc_types;
 
+#[cfg(feature = "ibc")]
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
+#[cfg(feature = "ibc")]
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+#[cfg(feature = "ibc")]
 use ibc_proto::ibc::core::connection::v1::ClientPaths as RawClientPaths;
+#[cfg(feature = "ibc")]
 use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
 
+#[cfg(feature = "ibc")]
 use ibc_types::core::channel::ChannelEnd;
+#[cfg(feature = "ibc")]
 use ibc_types::core::client::Height;
+#[cfg(feature = "ibc")]
 use ibc_types::core::connection::{ClientPaths, ConnectionEnd};
+#[cfg(feature = "ibc")]
 use ibc_types::lightclients::tendermint::client_state::ClientState;
+#[cfg(feature = "ibc")]
 use ibc_types::lightclients::tendermint::consensus_state::ConsensusState;
 
+#[cfg(feature = "ibc")]
 impl DomainType for ClientPaths {
     type Proto = RawClientPaths;
 }
 
+#[cfg(feature = "ibc")]
 impl DomainType for ConnectionEnd {
     type Proto = RawConnectionEnd;
 }
 
+#[cfg(feature = "ibc")]
 impl DomainType for ChannelEnd {
     type Proto = RawChannel;
 }
+
+#[cfg(feature = "ibc")]
 impl DomainType for Height {
     type Proto = RawHeight;
 }
 
+#[cfg(feature = "ibc")]
 impl DomainType for ClientState {
     type Proto = ibc_proto::google::protobuf::Any;
 }
+
+#[cfg(feature = "ibc")]
 impl DomainType for ConsensusState {
     type Proto = ibc_proto::google::protobuf::Any;
 }
 
+#[cfg(feature = "ibc")]
 impl<T> From<T> for IbcRelay
 where
     T: ibc_types::DomainType + Send + Sync + 'static,

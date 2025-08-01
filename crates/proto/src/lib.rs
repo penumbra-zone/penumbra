@@ -32,6 +32,7 @@ pub mod serializers;
 pub mod box_grpc_svc;
 
 /// Helper trait for using Protobuf messages as ABCI events.
+#[cfg(feature = "tendermint")]
 pub mod event;
 mod protobuf;
 pub use protobuf::DomainType;
