@@ -2,15 +2,18 @@ use ark_ff::{BigInteger, PrimeField, ToConstraintField};
 use ark_r1cs_std::{prelude::*, uint64::UInt64};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{Fq, Fr};
-use penumbra_sdk_proto::{penumbra::core::num::v1 as pb, DomainType};
+#[cfg(feature = "proto")]
+use penumbra_proto::{penumbra::core::num::v1 as pb, DomainType};
+#[cfg(feature = "proto")]
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
 use crate::fixpoint::{bit_constrain, U128x128, U128x128Var};
 use decaf377::r1cs::FqVar;
 
-#[derive(Serialize, Default, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
-#[serde(try_from = "pb::Amount", into = "pb::Amount")]
+#[derive(Default, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+#[cfg_attr(feature = "proto", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "proto", serde(try_from = "pb::Amount", into = "pb::Amount"))]
 pub struct Amount {
     inner: u128,
 }
@@ -292,6 +295,7 @@ impl std::ops::Mul for AmountVar {
     }
 }
 
+#[cfg(feature = "proto")]
 impl From<Amount> for pb::Amount {
     fn from(a: Amount) -> Self {
         let lo = a.inner as u64;
@@ -300,6 +304,7 @@ impl From<Amount> for pb::Amount {
     }
 }
 
+#[cfg(feature = "proto")]
 impl TryFrom<pb::Amount> for Amount {
     type Error = anyhow::Error;
 
@@ -334,6 +339,7 @@ impl TryFrom<std::string::String> for Amount {
     }
 }
 
+#[cfg(feature = "proto")]
 impl DomainType for Amount {
     type Proto = pb::Amount;
 }
@@ -542,7 +548,7 @@ impl Sum for Amount {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod test {
     use crate::Amount;
     use penumbra_sdk_proto::penumbra::core::num::v1 as pb;

@@ -736,7 +736,7 @@ pub fn bit_constrain(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, Synthes
     Ok(boolean_constraints)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "rand"))]
 mod test {
     use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
     use ark_relations::r1cs::ConstraintSynthesizer;
