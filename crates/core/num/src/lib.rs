@@ -4,5 +4,6 @@ mod amount;
 pub mod fixpoint;
 mod percentage;
 
-pub use amount::{Amount, AmountVar};
-pub use percentage::Percentage;
+pub use amount::Amount;
+#[cfg(feature = "r1cs")]
+pub use amount::AmountVar;
