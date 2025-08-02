@@ -7,14 +7,12 @@ use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{Fq, Fr};
 #[cfg(feature = "proto")]
 use penumbra_proto::{penumbra::core::num::v1 as pb, DomainType};
-#[cfg(feature = "proto")]
-use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
 #[cfg(feature = "r1cs")]
-use crate::fixpoint::U128x128;
-#[cfg(feature = "r1cs")]
 use crate::fixpoint::bit_constrain;
+#[cfg(feature = "r1cs")]
+use crate::fixpoint::U128x128;
 #[cfg(feature = "r1cs")]
 use crate::fixpoint::U128x128Var;
 #[cfg(feature = "r1cs")]

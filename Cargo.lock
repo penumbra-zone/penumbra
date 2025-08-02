@@ -1983,13 +1983,16 @@ dependencies = [
 [[package]]
 name = "decaf377-rdsa"
 version = "0.11.0"
-source = "git+https://github.com/informalsystems/decaf377-rdsa.git#06b9b353675ba4b8152cfb01b7972763e5eed5bb"
+source = "git+https://github.com/informalsystems/decaf377-rdsa.git#140b31b2783d19392a5f8d9fd98c65e80f55129e"
 dependencies = [
  "ark-ff",
  "blake2b_simd 0.5.11",
  "decaf377",
  "digest 0.9.0",
  "hex",
+ "rand_core",
+ "serde",
+ "thiserror",
  "zeroize",
 ]
 

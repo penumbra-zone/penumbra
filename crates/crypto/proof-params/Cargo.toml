@@ -23,7 +23,7 @@ hex = { version = "0.4.3", optional = true }
 anyhow = "1"
 
 [features]
-default = []
+default = ["rand", "decaf377/arkworks"]
 bundled-proving-keys = []
 download-proving-keys = [
     "regex",
@@ -40,6 +40,11 @@ parallel = [
     "ark-std/parallel",
     "ark-r1cs-std/parallel",
 ]
+rand = [
+    "rand_core",
+    "dep:rand",
+    "decaf377/rand",
+]
 
 [dependencies]
 anyhow = {workspace = true}
@@ -52,11 +57,11 @@ ark-serialize = {workspace = true}
 ark-snark = {workspace = true}
 ark-std = {workspace = true, default-features = false}
 bech32 = {workspace = true}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377 = {workspace = true, features = ["r1cs"]}
 num-bigint = {workspace = true}
 once_cell = {workspace = true}
-rand = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
+rand = {workspace = true, optional = true}
+rand_core = {workspace = true, features = ["getrandom"], optional = true}
 serde = {workspace = true, features = ["derive"]}
 sha2 = {workspace = true}
 tracing = {workspace = true}

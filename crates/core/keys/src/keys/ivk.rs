@@ -1,4 +1,5 @@
 use ark_ff::{PrimeField, Zero};
+#[cfg(feature = "rand")]
 use rand_core::{CryptoRng, RngCore};
 
 use ark_r1cs_std::prelude::*;
@@ -64,6 +65,7 @@ impl IncomingViewingKey {
     }
 
     /// Derive an ephemeral address for the provided account.
+    #[cfg(feature = "rand")]
     pub fn ephemeral_address<R: RngCore + CryptoRng>(
         &self,
         mut rng: R,

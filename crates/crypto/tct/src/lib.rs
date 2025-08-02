@@ -55,6 +55,7 @@ extern crate async_trait;
 mod commitment;
 mod index;
 mod proof;
+#[cfg(feature = "rand")]
 mod random;
 mod tree;
 mod witness;

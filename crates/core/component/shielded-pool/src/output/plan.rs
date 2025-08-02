@@ -1,12 +1,13 @@
 use decaf377::{Fq, Fr};
 use decaf377_ka as ka;
+use penumbra_proto::{core::component::shielded_pool::v1 as pb, DomainType};
 use penumbra_sdk_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_keys::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
     symmetric::WrappedMemoKey,
     Address, PayloadKey,
 };
-use penumbra_sdk_proto::{core::component::shielded_pool::v1 as pb, DomainType};
+#[cfg(feature = "rand")]
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -27,6 +28,7 @@ pub struct OutputPlan {
 
 impl OutputPlan {
     /// Create a new [`OutputPlan`] that sends `value` to `dest_address`.
+    #[cfg(feature = "rand")]
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
         value: Value,
@@ -45,6 +47,7 @@ impl OutputPlan {
     }
 
     /// Create a dummy [`OutputPlan`].
+    #[cfg(feature = "rand")]
     pub fn dummy<R: CryptoRng + RngCore>(rng: &mut R) -> OutputPlan {
         let dummy_address = Address::dummy(rng);
         Self::new(

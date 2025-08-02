@@ -6,12 +6,13 @@ use decaf377::Fq;
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 use once_cell::sync::Lazy;
+use penumbra_proto::penumbra::core::component::shielded_pool::v1 as pb;
 use penumbra_sdk_keys::{
     keys::{Diversifier, FullViewingKey, IncomingViewingKey, OutgoingViewingKey},
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
     Address, AddressView,
 };
-use penumbra_sdk_proto::penumbra::core::component::shielded_pool::v1 as pb;
+#[cfg(feature = "rand")]
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 use thiserror;
@@ -173,6 +174,7 @@ impl Note {
 
     /// Generate a fresh note representing the given value for the given destination address, with a
     /// random blinding factor.
+    #[cfg(feature = "rand")]
     pub fn generate(rng: &mut (impl Rng + CryptoRng), address: &Address, value: Value) -> Self {
         let rseed = Rseed::generate(rng);
         Note::from_parts(address.clone(), value, rseed)

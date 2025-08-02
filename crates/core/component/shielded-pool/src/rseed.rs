@@ -1,6 +1,7 @@
 use decaf377::{Fq, Fr};
 use decaf377_ka as ka;
-use penumbra_sdk_keys::prf;
+use penumbra_keys::prf;
+#[cfg(feature = "rand")]
 use rand::{CryptoRng, RngCore};
 
 /// The rseed is a uniformly random 32-byte sequence included in the note plaintext.
@@ -9,6 +10,7 @@ pub struct Rseed(pub [u8; 32]);
 
 impl Rseed {
     /// Generate a new rseed from a random source.
+    #[cfg(feature = "rand")]
     pub fn generate<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         let mut bytes = [0u8; 32];
         rng.fill_bytes(&mut bytes);

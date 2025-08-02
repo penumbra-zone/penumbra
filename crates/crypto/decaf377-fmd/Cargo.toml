@@ -22,7 +22,7 @@ ark-ff = {workspace = true, default-features = false}
 ark-serialize = {workspace = true}
 bitvec = {workspace = true}
 blake2b_simd = {workspace = true}
-decaf377 = {workspace = true, default-features = false}
+decaf377 = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"], optional = true}
 thiserror = {workspace = true}
 

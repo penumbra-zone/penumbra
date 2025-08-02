@@ -3,6 +3,7 @@ use ark_serialize::CanonicalDeserialize;
 use decaf377::{Fq, Fr};
 use once_cell::sync::Lazy;
 use poseidon377::hash_2;
+#[cfg(feature = "rand")]
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -43,6 +44,7 @@ impl FullViewingKey {
     }
 
     /// Derive a random ephemeral address.
+    #[cfg(feature = "rand")]
     pub fn ephemeral_address<R: RngCore + CryptoRng>(
         &self,
         rng: R,

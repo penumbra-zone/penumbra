@@ -1,5 +1,6 @@
 use std::fmt;
 
+#[cfg(feature = "rand")]
 use rand_core::{CryptoRng, RngCore};
 use sha2::Digest;
 
@@ -73,6 +74,7 @@ pub struct SeedPhrase(pub Vec<String>);
 
 impl SeedPhrase {
     /// Randomly generates a 24 word BIP39 [`SeedPhrase`].
+    #[cfg(feature = "rand")]
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         let mut randomness = [0u8; NUM_ENTROPY_BITS_LONG / NUM_BITS_PER_BYTE];
         rng.fill_bytes(&mut randomness);
@@ -80,6 +82,7 @@ impl SeedPhrase {
     }
 
     /// Randomly generates a 12 word BIP39 [`SeedPhrase`].
+    #[cfg(feature = "rand")]
     pub fn short_generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         let mut randomness = [0u8; NUM_ENTROPY_BITS_SHORT / NUM_BITS_PER_BYTE];
         rng.fill_bytes(&mut randomness);

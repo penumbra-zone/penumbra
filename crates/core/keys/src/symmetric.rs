@@ -5,9 +5,10 @@ use chacha20poly1305::{
     ChaCha20Poly1305, Key, Nonce, XChaCha20Poly1305, XNonce,
 };
 use decaf377_ka as ka;
-use penumbra_sdk_asset::balance;
-use penumbra_sdk_proto::core::keys::v1::{self as pb};
-use penumbra_sdk_tct::StateCommitment;
+use penumbra_asset::balance;
+use penumbra_proto::core::keys::v1::{self as pb};
+use penumbra_tct::StateCommitment;
+#[cfg(feature = "rand")]
 use rand::{CryptoRng, RngCore};
 
 pub const PAYLOAD_KEY_LEN_BYTES: usize = 32;
@@ -58,6 +59,7 @@ impl PayloadKey {
     }
 
     /// Derive a random `PayloadKey`. Used for memo key wrapping.
+    #[cfg(feature = "rand")]
     pub fn random_key<R: CryptoRng + RngCore>(rng: &mut R) -> Self {
         let mut key_bytes = [0u8; 32];
         rng.fill_bytes(&mut key_bytes);

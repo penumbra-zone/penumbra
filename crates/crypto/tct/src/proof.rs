@@ -1,5 +1,3 @@
-use poseidon377::Fq;
-
 use crate::prelude::*;
 
 /// A proof of the inclusion of some [`Commitment`] in a [`Tree`] with a particular [`Root`].
@@ -56,9 +54,10 @@ impl Proof {
     }
 
     /// Generate a dummy [`Proof`] for a given commitment.
+    #[cfg(feature = "rand")]
     pub fn dummy<R: Rng + rand::CryptoRng>(rng: &mut R, commitment: StateCommitment) -> Self {
         let dummy_position = 0u64.into();
-        let dummy_auth_path: [[Hash; 3]; 24] = [[Hash::new(Fq::rand(rng)); 3]; 24];
+        let dummy_auth_path: [[Hash; 3]; 24] = [[Hash::new(poseidon377::Fq::rand(rng)); 3]; 24];
         Self::new(commitment, dummy_position, dummy_auth_path)
     }
 
@@ -121,7 +120,8 @@ impl Proof {
     }
 }
 
-use penumbra_sdk_proto::penumbra::crypto::tct::v1 as pb;
+use penumbra_proto::penumbra::crypto::tct::v1 as pb;
+#[cfg(feature = "rand")]
 use rand::Rng;
 
 impl From<Proof> for pb::StateCommitmentProof {

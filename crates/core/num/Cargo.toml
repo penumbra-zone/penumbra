@@ -8,11 +8,13 @@ license = {workspace = true}
 edition = {workspace = true}
 
 [features]
-default = []
+default = ["rand", "proto", "r1cs"]
 parallel = ["ark-ff/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
-rand = ["rand_core", "dep:rand"]
+rand = ["std", "rand_core", "dep:rand", "decaf377/rand"]
 proto = ["penumbra-proto", "dep:serde"]
-r1cs = ["decaf377/r1cs",
+r1cs = [
+    "std",
+    "decaf377/r1cs",
     "dep:ark-ff",
     "dep:ark-groth16",
     "dep:ark-r1cs-std",
@@ -22,15 +24,17 @@ r1cs = ["decaf377/r1cs",
     "dep:ark-std",
     "dep:ethnum",
     "dep:ibig",
-    "dep:thiserror",
 ]
-std = ["rand", "proto", "r1cs"]
+std = [
+  "ark-ff/std",
+  "dep:thiserror",
+]
 
 [dependencies]
 anyhow = {workspace = true}
-ark-ff = {workspace = true, default-features = false, optional = true}
-ark-groth16 = {workspace = true, default-features = false, optional = true}
-ark-r1cs-std = {workspace = true, default-features = false, optional = true}
+ark-ff = {workspace = true, optional = true}
+ark-groth16 = {workspace = true, optional = true}
+ark-r1cs-std = {workspace = true, optional = true}
 ark-relations = {workspace = true, optional = true}
 ark-serialize = {workspace = true, optional = true}
 ark-snark = {workspace = true, optional = true}

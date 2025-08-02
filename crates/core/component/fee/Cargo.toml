@@ -15,9 +15,17 @@ component = [
     "tonic",
     "penumbra-sdk-proto/rpc"
 ]
-default = ["std", "component"]
+default = ["std", "component", "rand", "decaf377/arkworks"]
 std = ["ark-ff/std"]
 docsrs = []
+rand = [
+    "rand_core",
+    "dep:rand",
+    "decaf377/rand",
+    "decaf377-rdsa/rand",
+    "penumbra-asset/rand",
+    "penumbra-num/rand",
+]
 
 [dependencies]
 anyhow = {workspace = true}
@@ -27,15 +35,15 @@ blake2b_simd = {workspace = true}
 bytes = {workspace = true}
 cnidarium = {workspace = true, optional = true, default-features = true}
 cnidarium-component = {workspace = true, optional = true, default-features = true}
-decaf377 = {workspace = true, default-features = true}
+decaf377 = {workspace = true}
 decaf377-rdsa = {workspace = true}
 im = {workspace = true}
 metrics = {workspace = true}
-penumbra-sdk-asset = {workspace = true, default-features = false}
-penumbra-sdk-num = {workspace = true, default-features = false}
-penumbra-sdk-proto = {workspace = true, default-features = false}
-rand = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
+penumbra-asset = {workspace = true}
+penumbra-num = {workspace = true}
+penumbra-proto = {workspace = true}
+rand = {workspace = true, optional = true}
+rand_core = {workspace = true, features = ["getrandom"], optional = true}
 serde = {workspace = true, features = ["derive"]}
 tendermint = {workspace = true}
 tonic = {workspace = true, optional = true}

@@ -15,10 +15,10 @@ pub const GROTH16_PROOF_LENGTH_BYTES: usize = 192;
 
 mod traits;
 
-pub use traits::{
-    generate_constraint_matrices, generate_prepared_test_parameters, generate_test_parameters,
-    DummyWitness, ProvingKeyExt, VerifyingKeyExt,
-};
+pub use traits::{generate_constraint_matrices, DummyWitness, ProvingKeyExt, VerifyingKeyExt};
+
+#[cfg(feature = "rand")]
+pub use traits::{generate_prepared_test_parameters, generate_test_parameters};
 
 /// A wrapper around a proving key that can be lazily loaded.
 ///

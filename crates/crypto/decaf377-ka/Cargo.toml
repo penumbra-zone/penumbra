@@ -8,15 +8,15 @@ license = {workspace = true}
 edition = {workspace = true}
 
 [features]
-default = ["std", "rand"]
+default = ["std", "rand", "decaf377/arkworks"]
 std = ["ark-ff/std"]
-rand = ["decaf377/rand", "rand_core/getrandom"]
+rand = ["decaf377/rand", "rand_core"]
 
 [dependencies]
 ark-ff = {workspace = true, default-features = false}
 decaf377 = {workspace = true}
 hex = {workspace = true}
-rand_core = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"], optional = true}
 thiserror = {workspace = true}
 zeroize = "1.4"
 zeroize_derive = "1.3"

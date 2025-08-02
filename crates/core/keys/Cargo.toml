@@ -8,8 +8,26 @@ license = {workspace = true}
 edition = {workspace = true}
 
 [features]
-default = []
-parallel = ["penumbra-sdk-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
+default = ["rand", "decaf377/arkworks"]
+parallel = [
+    "penumbra-tct/parallel",
+    "ark-ff/parallel", 
+    "poseidon377/parallel", 
+    "decaf377-rdsa/parallel", 
+    "ark-std/parallel", 
+    "ark-r1cs-std/parallel",
+    "decaf377/parallel",
+    "penumbra-asset/parallel"
+]
+rand = [
+    "rand_core", 
+    "dep:rand", 
+    "decaf377/rand", 
+    "decaf377-fmd/rand", 
+    "decaf377-ka/rand",
+    "decaf377-rdsa/rand",
+    "penumbra-asset/rand",
+]
 
 [dependencies]
 aes = "0.8.1"
@@ -25,10 +43,10 @@ bip32 = "0.5"
 blake2b_simd = {workspace = true}
 bytes = {workspace = true}
 chacha20poly1305 = {workspace = true}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377 = {workspace = true, features = ["r1cs"]}
 decaf377-fmd = {workspace = true}
 decaf377-ka = {workspace = true}
-decaf377-rdsa = {workspace = true}
+decaf377-rdsa = {workspace = true, features = ["serde"]}
 derivative = {workspace = true}
 ethnum = {workspace = true}
 f4jumble = "0.1.0"
@@ -38,12 +56,18 @@ ibig = {workspace = true}
 num-bigint = {workspace = true}
 once_cell = {workspace = true}
 pbkdf2 = "0.12.0"
+<<<<<<< HEAD
 penumbra-sdk-asset = {workspace = true, default-features = true}
 penumbra-sdk-proto = {workspace = true, default-features = true}
 penumbra-sdk-tct = {workspace = true, features = ["r1cs"], default-features = true}
+=======
+penumbra-asset = {workspace = true}
+penumbra-proto = {workspace = true}
+penumbra-tct = {workspace = true, features = ["r1cs"]}
+>>>>>>> dd9aa0352 (fix: feature gate rand deps across libs)
 poseidon377 = {workspace = true, features = ["r1cs"]}
-rand = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
+rand = {workspace = true, optional = true}
+rand_core = {workspace = true, features = ["getrandom"], optional = true}
 regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 sha2 = {workspace = true}

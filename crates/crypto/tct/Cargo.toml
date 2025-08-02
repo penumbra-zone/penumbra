@@ -8,10 +8,15 @@ license = {workspace = true}
 edition = {workspace = true}
 
 [features]
+default = ["rand", "decaf377/arkworks"]
 internal = []
 arbitrary = ["proptest", "proptest-derive"]
 r1cs = ["ark-r1cs-std", "ark-relations", "decaf377/r1cs", "poseidon377/r1cs"]
 parallel = ["ark-r1cs-std/parallel", "ark-ff/parallel", "decaf377/parallel", "poseidon377/parallel"]
+rand = [
+    "dep:rand",
+    "decaf377/rand",
+]
 
 [dependencies]
 ark-ed-on-bls12-377 = "0.4"
@@ -21,7 +26,7 @@ ark-relations = {workspace = true, optional = true}
 ark-serialize = {workspace = true}
 async-trait = {workspace = true}
 blake2b_simd = {workspace = true}
-decaf377 = {workspace = true, default-features = true}
+decaf377 = {workspace = true}
 derivative = {workspace = true}
 futures = {workspace = true}
 getrandom = {workspace = true, features = ["js"]}
@@ -30,11 +35,11 @@ hex = {workspace = true}
 im = {workspace = true, features = ["serde"]}
 once_cell = {workspace = true}
 parking_lot = {workspace = true}
-penumbra-sdk-proto = {workspace = true, default-features = true}
+penumbra-proto = {workspace = true}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 proptest = {workspace = true, optional = true}
 proptest-derive = {workspace = true, optional = true}
-rand = {workspace = true}
+rand = {workspace = true, optional = true}
 serde = {workspace = true, features = ["derive", "rc"]}
 thiserror = {workspace = true}
 tracing = {workspace = true}

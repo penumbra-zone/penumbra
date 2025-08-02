@@ -12,8 +12,9 @@ use ark_groth16::{
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
-use penumbra_sdk_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
-use penumbra_sdk_tct as tct;
+use penumbra_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
+use penumbra_tct as tct;
+#[cfg(feature = "rand")]
 use rand::{CryptoRng, Rng};
 use tct::StateCommitment;
 
@@ -146,6 +147,7 @@ impl DummyWitness for NullifierDerivationCircuit {
 pub struct NullifierDerivationProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl NullifierDerivationProof {
+    #[cfg(feature = "rand")]
     pub fn prove<R: CryptoRng + Rng>(
         rng: &mut R,
         pk: &ProvingKey<Bls12_377>,
