@@ -1,4 +1,3 @@
-use crate::Name;
 use std::convert::{From, TryFrom};
 
 #[cfg(feature = "tendermint")]
