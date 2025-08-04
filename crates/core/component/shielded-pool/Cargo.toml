@@ -55,18 +55,15 @@ ark-r1cs-std = {workspace = true, default-features = false}
 ark-relations = {workspace = true}
 ark-serialize = {workspace = true}
 ark-snark = {workspace = true}
-async-stream = {workspace = true}
 async-trait = {workspace = true}
 base64 = {workspace = true}
 blake2b_simd = {workspace = true}
-bytes = {workspace = true}
-chacha20poly1305 = {workspace = true}
 cnidarium = {workspace = true, optional = true, default-features = true}
 cnidarium-component = {workspace = true, optional = true, default-features = true}
-decaf377 = {workspace = true, features = ["r1cs"]}
-decaf377-fmd = {workspace = true}
-decaf377-ka = {workspace = true}
-decaf377-rdsa = {workspace = true}
+decaf377 = {workspace = true, features = ["r1cs"], default-features = false}
+decaf377-fmd = {workspace = true, default-features = false}
+decaf377-ka = {workspace = true, default-features = false}
+decaf377-rdsa = {workspace = true, default-features = false}
 futures = {workspace = true}
 hex = {workspace = true}
 ibc-proto = {workspace = true, default-features = false}
@@ -74,17 +71,6 @@ ibc-types = {workspace = true, features = ["with_serde"], default-features = fal
 im = {workspace = true}
 metrics = {workspace = true}
 once_cell = {workspace = true}
-<<<<<<< HEAD
-penumbra-sdk-asset = {workspace = true, default-features = false}
-penumbra-sdk-ibc = {workspace = true, default-features = false}
-penumbra-sdk-keys = {workspace = true, default-features = false}
-penumbra-sdk-num = {workspace = true, default-features = false}
-penumbra-sdk-proof-params = {workspace = true, default-features = false}
-penumbra-sdk-proto = {workspace = true, default-features = false}
-penumbra-sdk-sct = {workspace = true, default-features = false}
-penumbra-sdk-tct = {workspace = true, default-features = true}
-penumbra-sdk-txhash = {workspace = true, default-features = false}
-=======
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-ibc = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
@@ -92,14 +78,13 @@ penumbra-num = {workspace = true, default-features = false}
 penumbra-proof-params = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, default-features = false}
 penumbra-sct = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true}
+penumbra-tct = {workspace = true, default-features = false}
 penumbra-txhash = {workspace = true, default-features = false}
->>>>>>> dd9aa0352 (fix: feature gate rand deps across libs)
 poseidon377 = {workspace = true, features = ["r1cs"]}
+poseidon377 = {workspace = true, features = ["r1cs"], default-features = false}
 prost = {workspace = true}
 rand = {workspace = true, optional = true}
 rand_core = {workspace = true, features = ["getrandom"], optional = true}
-regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
 tap = {workspace = true}
