@@ -8,6 +8,7 @@ mod mainnet1;
 mod mainnet2;
 mod mainnet3;
 mod mainnet4;
+mod migrate2;
 mod reset_halt_bit;
 mod simple;
 mod testnet72;
@@ -21,6 +22,8 @@ use penumbra_sdk_governance::StateReadExt;
 use penumbra_sdk_sct::component::clock::EpochRead;
 use std::path::{Path, PathBuf};
 use tracing::instrument;
+
+use migrate2::Migration as MigrationTrait;
 
 use cnidarium::Storage;
 use penumbra_sdk_app::SUBSTORE_PREFIXES;
@@ -70,6 +73,11 @@ pub enum Migration {
     ///
     /// Intended to support code upgrades for Liquidity Tournament support.
     Mainnet4,
+    /// Mainnet-5 migration:
+    /// - no-op
+    ///
+    /// Uses the new migration framework.
+    Mainnet5,
 }
 
 impl Migration {
@@ -127,6 +135,15 @@ impl Migration {
             }
             Migration::Mainnet4 => {
                 mainnet4::migrate(storage, pd_home.clone(), genesis_start).await?;
+            }
+            Migration::Mainnet5 => {
+                // New pattern: instantiate and run
+                let migration = migrate2::mainnet5::Mainnet5Migration;
+                migration
+                    .run(pd_home.clone(), comet_home.clone(), genesis_start)
+                    .await?;
+                // Early return since the new framework handles everything
+                return Ok(());
             }
             // We keep historical migrations around for now, this will help inform an abstracted
             // design. Feel free to remove it if it's causing you trouble.
