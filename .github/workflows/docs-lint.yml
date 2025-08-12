@@ -12,7 +12,7 @@ jobs:
     # on PRs, but we'll still only deploy after merge into main.
     runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
 
@@ -40,7 +40,7 @@ jobs:
     # Downgrading runner size to 4vcpu, since we're not compiling code.
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: false
 

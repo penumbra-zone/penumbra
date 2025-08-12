@@ -16,7 +16,7 @@ jobs:
   lint:
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
 
@@ -60,7 +60,7 @@ jobs:
   features:
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
 
@@ -88,7 +88,7 @@ jobs:
   test:
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
 

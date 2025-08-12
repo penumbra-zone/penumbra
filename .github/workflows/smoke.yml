@@ -16,7 +16,7 @@ jobs:
   smoke:
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
 
@@ -42,7 +42,7 @@ jobs:
   pmonitor:
     runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
 
@@ -68,7 +68,7 @@ jobs:
   # testnet:
   #   runs-on: buildjet-16vcpu-ubuntu-2204
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v5
   #       with:
   #         lfs: true
   #
