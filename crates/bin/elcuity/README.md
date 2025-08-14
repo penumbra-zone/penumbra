@@ -49,7 +49,7 @@ e.g. if you have a target of 1000, and are quoting a price of 2 UM / DENOM, then
 500 UM and 250 DENOM in reserves, because each DENOM is worth 2 UM.
 
 The command will also only provide balances that it actually has, so if it only has, say, 200 DENOM
-(continuing this exammple), it will limit the reserves to just that.
+(continuing this example), it will limit the reserves to just that.
 Furthermore, to guarantee the ability to pay fees, it will never allocate more than
 90% of its UM balance to liquidity provision.
 So, if you have 500 UM in balance, you will only provide 450 UM in liquidity (in this example).
