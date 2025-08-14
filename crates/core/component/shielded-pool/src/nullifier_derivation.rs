@@ -12,8 +12,8 @@ use ark_groth16::{
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
-use penumbra_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
-use penumbra_tct as tct;
+use penumbra_sdk_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
+use penumbra_sdk_tct as tct;
 #[cfg(feature = "rand")]
 use rand::{CryptoRng, Rng};
 use tct::StateCommitment;

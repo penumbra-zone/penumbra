@@ -11,7 +11,7 @@ edition = {workspace = true}
 default = ["rand", "proto", "r1cs"]
 parallel = ["ark-ff/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
 rand = ["std", "rand_core", "dep:rand", "decaf377/rand"]
-proto = ["penumbra-proto", "dep:serde"]
+proto = ["penumbra-sdk-proto", "dep:serde"]
 r1cs = [
     "std",
     "decaf377/r1cs",
@@ -42,7 +42,7 @@ ark-std = {workspace = true, default-features = false, optional = true}
 decaf377 = {workspace = true, default-features = false}
 ethnum = {workspace = true, optional = true}
 ibig = {workspace = true, optional = true}
-penumbra-proto = {workspace = true, default-features = false, optional = true}
+penumbra-sdk-proto = {workspace = true, default-features = false, optional = true}
 rand = {workspace = true, optional = true}
 rand_core = {workspace = true, features = ["getrandom"], optional = true}
 serde = {workspace = true, features = ["derive"], optional = true}

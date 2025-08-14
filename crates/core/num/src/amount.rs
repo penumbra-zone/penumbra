@@ -6,7 +6,7 @@ use ark_r1cs_std::{prelude::*, uint64::UInt64};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{Fq, Fr};
 #[cfg(feature = "proto")]
-use penumbra_proto::{penumbra::core::num::v1 as pb, DomainType};
+use penumbra_sdk_proto::{penumbra::core::num::v1 as pb, DomainType};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
 #[cfg(feature = "r1cs")]

@@ -192,10 +192,10 @@ penumbra-sdk-wallet                  = { version = "2.0.4", path = "crates/walle
 pin-project                      = { version = "1.0.12" }
 pin-project-lite                 = { version = "0.2.9" }
 poseidon377                      = { version = "1.2.0", git = "https://github.com/informalsystems/poseidon377.git"}
-proptest                         = { version = "1" }
-proptest-derive                  = { version = "0.3" }
-prost                            = { version = "0.12.3" }
-prost-types                      = { version = "0.12" }
+proptest                         = { version = "1.6" }
+proptest-derive                  = { version = "0.5.1" }
+prost                            = { version = "0.13.4" }
+prost-types                      = { version = "0.13.4" }
 r2d2                             = { version = "0.8" }
 r2d2_sqlite                      = { version = "0.25" }
 rand                             = { version = "0.8.5" }

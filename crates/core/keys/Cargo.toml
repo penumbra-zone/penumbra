@@ -10,14 +10,14 @@ edition = {workspace = true}
 [features]
 default = ["rand", "decaf377/arkworks"]
 parallel = [
-    "penumbra-tct/parallel",
+    "penumbra-sdk-tct/parallel",
     "ark-ff/parallel", 
     "poseidon377/parallel", 
     "decaf377-rdsa/parallel", 
     "ark-std/parallel", 
     "ark-r1cs-std/parallel",
     "decaf377/parallel",
-    "penumbra-asset/parallel"
+    "penumbra-sdk-asset/parallel"
 ]
 rand = [
     "rand_core", 
@@ -26,7 +26,7 @@ rand = [
     "decaf377-fmd/rand", 
     "decaf377-ka/rand",
     "decaf377-rdsa/rand",
-    "penumbra-asset/rand",
+    "penumbra-sdk-asset/rand",
 ]
 
 [dependencies]
@@ -56,15 +56,9 @@ ibig = {workspace = true}
 num-bigint = {workspace = true}
 once_cell = {workspace = true}
 pbkdf2 = "0.12.0"
-<<<<<<< HEAD
-penumbra-sdk-asset = {workspace = true, default-features = true}
-penumbra-sdk-proto = {workspace = true, default-features = true}
-penumbra-sdk-tct = {workspace = true, features = ["r1cs"], default-features = true}
-=======
-penumbra-asset = {workspace = true}
-penumbra-proto = {workspace = true}
-penumbra-tct = {workspace = true, features = ["r1cs"]}
->>>>>>> dd9aa0352 (fix: feature gate rand deps across libs)
+penumbra-sdk-asset = {workspace = true}
+penumbra-sdk-proto = {workspace = true}
+penumbra-sdk-tct = {workspace = true, features = ["r1cs"]}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 rand = {workspace = true, optional = true}
 rand_core = {workspace = true, features = ["getrandom"], optional = true}

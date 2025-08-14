@@ -120,7 +120,7 @@ impl Proof {
     }
 }
 
-use penumbra_proto::penumbra::crypto::tct::v1 as pb;
+use penumbra_sdk_proto::penumbra::crypto::tct::v1 as pb;
 #[cfg(feature = "rand")]
 use rand::Rng;
 

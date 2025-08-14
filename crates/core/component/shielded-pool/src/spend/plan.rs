@@ -1,10 +1,10 @@
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_keys::{keys::AddressIndex, FullViewingKey};
-use penumbra_proto::{core::component::shielded_pool::v1 as pb, DomainType};
-use penumbra_sct::Nullifier;
-use penumbra_tct as tct;
+use penumbra_sdk_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_sdk_keys::{keys::AddressIndex, FullViewingKey};
+use penumbra_sdk_proto::{core::component::shielded_pool::v1 as pb, DomainType};
+use penumbra_sdk_sct::Nullifier;
+use penumbra_sdk_tct as tct;
 #[cfg(feature = "rand")]
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};

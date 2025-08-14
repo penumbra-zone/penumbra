@@ -23,8 +23,8 @@ rand = [
     "dep:rand",
     "decaf377/rand",
     "decaf377-rdsa/rand",
-    "penumbra-asset/rand",
-    "penumbra-num/rand",
+    "penumbra-sdk-asset/rand",
+    "penumbra-sdk-num/rand",
 ]
 
 [dependencies]
@@ -39,9 +39,9 @@ decaf377 = {workspace = true}
 decaf377-rdsa = {workspace = true}
 im = {workspace = true}
 metrics = {workspace = true}
-penumbra-asset = {workspace = true}
-penumbra-num = {workspace = true}
-penumbra-proto = {workspace = true}
+penumbra-sdk-asset = {workspace = true}
+penumbra-sdk-num = {workspace = true}
+penumbra-sdk-proto = {workspace = true}
 rand = {workspace = true, optional = true}
 rand_core = {workspace = true, features = ["getrandom"], optional = true}
 serde = {workspace = true, features = ["derive"]}

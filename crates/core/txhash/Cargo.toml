@@ -11,7 +11,7 @@ edition = {workspace = true}
 anyhow = {workspace = true}
 blake2b_simd = {workspace = true}
 hex = {workspace = true}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true}
+penumbra-sdk-proto = {workspace = true, default-features = false}
+penumbra-sdk-tct = {workspace = true}
 serde = {workspace = true}
 getrandom = {workspace = true}
