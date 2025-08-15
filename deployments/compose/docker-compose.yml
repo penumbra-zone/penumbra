@@ -12,21 +12,29 @@ services:
   # Initialize node config, via `pd network join`.
   pd-node0-init:
     platform: "linux/amd64"
-    image: ghcr.io/penumbra-zone/penumbra:latest
+    # just container
+    image: ghcr.io/penumbra-zone/penumbra:local
     command: >-
       sh -c
       "
       pd --version &&
       if ! test -e /pd/network_data/node0/cometbft/config/config.toml ; then
-          >&2 printf 'WARN: network config not found. Creating fresh node identity.'
-          >&2 echo ' See docs for details: https://guide.penumbra.zone/node/pd/join-network.html
-          /bin/pd network --network-dir /pd/network_data join
+          >&2 printf 'WARN: network config not found. Creating fresh local network.\n'
+          # --allocation-address is mnemonic 'test test test test test test test test test test test junk' (commonly used in Ethereum)
+          rm -rf /pd/network_data &&
+          /bin/pd network --network-dir /pd/network_data generate --chain-id penumbra-local-devnet --preserve-chain-id --gas-price-simple 0 --unbonding-delay 302400 --epoch-duration 302400 --proposal-voting-blocks 50 --timeout-commit 500ms --allocation-address "penumbra1eu5pnv6qptp2p0aevfc0adjrpd24glz5shey7wvwlg5sp3ffca2zk32cemjd90ughdh7xqplrej9lqzc06337w2scxykjajd2nrtttvmqt6tssr6pmzp283hhte7y4jf6sn2wh"
       else
           >&2 echo 'Node config already found, using it'
       fi &&
-      chown 100 -R /pd/network_data/node0/cometbft &&
-      chown 1000 -R /pd/network_data/node0/pd &&
-      ls -l /pd/network_data/node0/ && exit 0
+      if test -d /pd/network_data/node0 ; then
+          mkdir -p /pd/network_data/node0/cometbft/data &&
+          chown 100 -R /pd/network_data/node0/cometbft &&
+          chown 1000 -R /pd/network_data/node0/pd &&
+          ls -l /pd/network_data/node0/ && exit 0
+      else
+          >&2 echo 'ERROR: network generation failed'
+          exit 1
+      fi
       "
     restart: on-failure
     volumes:
@@ -37,7 +45,7 @@ services:
   # The Penumbra daemon
   pd-node0:
     platform: "linux/amd64"
-    image: ghcr.io/penumbra-zone/penumbra:latest
+    image: ghcr.io/penumbra-zone/penumbra:local
     # consider verbose debugging logs:
     # environment:
       # RUST_LOG: h2=off,debug
@@ -49,6 +57,7 @@ services:
     volumes:
       - penumbra-pd-node0:/pd
     user: "${UID:-1000}"
+    stop_signal: SIGKILL
     depends_on:
       - pd-node0-init
     ports:
@@ -63,6 +72,7 @@ services:
       - "26657:26657"
     volumes:
       - penumbra-pd-node0:/cometbft
+    user: "100"
     environment:
       CMTHOME: /cometbft/network_data/node0/cometbft
     command: start --proxy_app=tcp://pd-node0:26658

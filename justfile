@@ -89,4 +89,8 @@ integration-pd:
 
 # Build the container image locally
 container:
-  podman build -t ghcr.io/penumbra-zone/penumbra -f ./deployments/containerfiles/Dockerfile .
+  docker build -t ghcr.io/penumbra-zone/penumbra:local -f ./deployments/containerfiles/Dockerfile .
+
+# Run the testnet locally entirely
+testnet:
+  docker compose -f deployments/compose/docker-compose.yml down --volumes && docker compose -f deployments/compose/docker-compose.yml up
