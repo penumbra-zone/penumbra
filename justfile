@@ -93,4 +93,10 @@ container:
 
 # Run the testnet locally entirely
 testnet:
-  docker compose -f deployments/compose/docker-compose.yml down --volumes && docker compose -f deployments/compose/docker-compose.yml up
+  just --justfile {{justfile()}} testnet-clean
+  docker compose -f deployments/compose/docker-compose.yml up
+
+# clean up the testnet, removing all volumes
+testnet-clean:
+  docker compose -f deployments/compose/docker-compose.yml down --volumes
+  docker volume rm compose_penumbra-pd-node0 --force || true
