@@ -1,6 +1,4 @@
-#[cfg(feature = "tendermint")]
-use crate::event::ProtoEvent;
-use crate::{DomainType, Message};
+use crate::{event::ProtoEvent, DomainType, Message};
 
 use std::fmt::Debug;
 
@@ -42,7 +40,6 @@ pub trait StateWriteProto: StateWrite + Send + Sync {
     }
 
     /// Records a Protobuf message as a typed ABCI event.
-    #[cfg(feature = "tendermint")]
     fn record_proto<E>(&mut self, proto_event: E)
     where
         E: ProtoEvent,

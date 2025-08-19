@@ -1,5 +1,4 @@
 use crate::Name;
-
 use std::convert::{From, TryFrom};
 
 #[cfg(feature = "tendermint")]
@@ -86,21 +85,21 @@ impl From<VerificationKey<SpendAuth>> for SpendVerificationKey {
 impl TryFrom<SpendAuthSignature> for Signature<SpendAuth> {
     type Error = anyhow::Error;
     fn try_from(value: SpendAuthSignature) -> Result<Self, Self::Error> {
-        Ok(value.inner.as_slice().try_into().unwrap())
+        Ok(value.inner.as_slice().try_into()?)
     }
 }
 
 impl TryFrom<BindingSignature> for Signature<Binding> {
     type Error = anyhow::Error;
     fn try_from(value: BindingSignature) -> Result<Self, Self::Error> {
-        Ok(value.inner.as_slice().try_into().unwrap())
+        Ok(value.inner.as_slice().try_into()?)
     }
 }
 
 impl TryFrom<SpendVerificationKey> for VerificationKey<SpendAuth> {
     type Error = anyhow::Error;
     fn try_from(value: SpendVerificationKey) -> Result<Self, Self::Error> {
-        Ok(value.inner.as_slice().try_into().unwrap())
+        Ok(value.inner.as_slice().try_into()?)
     }
 }
 
