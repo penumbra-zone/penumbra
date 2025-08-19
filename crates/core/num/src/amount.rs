@@ -1,26 +1,16 @@
-#[cfg(feature = "r1cs")]
 use ark_ff::{BigInteger, PrimeField, ToConstraintField};
-#[cfg(feature = "r1cs")]
 use ark_r1cs_std::{prelude::*, uint64::UInt64};
-#[cfg(feature = "r1cs")]
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{Fq, Fr};
-#[cfg(feature = "proto")]
 use penumbra_sdk_proto::{penumbra::core::num::v1 as pb, DomainType};
+use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
-#[cfg(feature = "r1cs")]
-use crate::fixpoint::bit_constrain;
-#[cfg(feature = "r1cs")]
-use crate::fixpoint::U128x128;
-#[cfg(feature = "r1cs")]
-use crate::fixpoint::U128x128Var;
-#[cfg(feature = "r1cs")]
+use crate::fixpoint::{bit_constrain, U128x128, U128x128Var};
 use decaf377::r1cs::FqVar;
 
-#[derive(Default, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
-#[cfg_attr(feature = "proto", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "proto", serde(try_from = "pb::Amount", into = "pb::Amount"))]
+#[derive(Serialize, Default, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+#[serde(try_from = "pb::Amount", into = "pb::Amount")]
 pub struct Amount {
     inner: u128,
 }
@@ -100,13 +90,11 @@ impl ops::Not for Amount {
     }
 }
 
-#[cfg(feature = "r1cs")]
 #[derive(Clone)]
 pub struct AmountVar {
     pub amount: FqVar,
 }
 
-#[cfg(feature = "r1cs")]
 impl ToConstraintField<Fq> for Amount {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
         let mut elements = Vec::new();
@@ -116,7 +104,6 @@ impl ToConstraintField<Fq> for Amount {
 }
 
 /// Return a boolean constraint indicating if the FqVar can be represented using n bits
-#[cfg(feature = "r1cs")]
 pub fn is_bit_constrained(
     cs: ConstraintSystemRef<Fq>,
     value: FqVar,
@@ -141,7 +128,6 @@ pub fn is_bit_constrained(
     constructed_fqvar.is_eq(&value)
 }
 
-#[cfg(feature = "r1cs")]
 impl AmountVar {
     pub fn negate(&self) -> Result<Self, SynthesisError> {
         Ok(Self {
@@ -204,7 +190,6 @@ impl AmountVar {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl AllocVar<Amount, Fq> for AmountVar {
     fn new_variable<T: std::borrow::Borrow<Amount>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
@@ -223,7 +208,6 @@ impl AllocVar<Amount, Fq> for AmountVar {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl AllocVar<Fq, Fq> for AmountVar {
     fn new_variable<T: std::borrow::Borrow<Fq>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
@@ -242,7 +226,6 @@ impl AllocVar<Fq, Fq> for AmountVar {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl R1CSVar<Fq> for AmountVar {
     type Value = Amount;
 
@@ -261,14 +244,12 @@ impl R1CSVar<Fq> for AmountVar {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl EqGadget<Fq> for AmountVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         self.amount.is_eq(&other.amount)
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl CondSelectGadget<Fq> for AmountVar {
     fn conditionally_select(
         cond: &Boolean<Fq>,
@@ -281,7 +262,6 @@ impl CondSelectGadget<Fq> for AmountVar {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl std::ops::Add for AmountVar {
     type Output = Self;
 
@@ -292,7 +272,6 @@ impl std::ops::Add for AmountVar {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl std::ops::Sub for AmountVar {
     type Output = Self;
 
@@ -303,7 +282,6 @@ impl std::ops::Sub for AmountVar {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl std::ops::Mul for AmountVar {
     type Output = Self;
 
@@ -314,7 +292,6 @@ impl std::ops::Mul for AmountVar {
     }
 }
 
-#[cfg(feature = "proto")]
 impl From<Amount> for pb::Amount {
     fn from(a: Amount) -> Self {
         let lo = a.inner as u64;
@@ -323,7 +300,6 @@ impl From<Amount> for pb::Amount {
     }
 }
 
-#[cfg(feature = "proto")]
 impl TryFrom<pb::Amount> for Amount {
     type Error = anyhow::Error;
 
@@ -358,7 +334,6 @@ impl TryFrom<std::string::String> for Amount {
     }
 }
 
-#[cfg(feature = "proto")]
 impl DomainType for Amount {
     type Proto = pb::Amount;
 }
@@ -513,21 +488,18 @@ impl From<Amount> for i128 {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl From<Amount> for U128x128 {
     fn from(amount: Amount) -> U128x128 {
         U128x128::from(amount.inner)
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl From<&Amount> for U128x128 {
     fn from(value: &Amount) -> Self {
         (*value).into()
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl TryFrom<U128x128> for Amount {
     type Error = <u128 as TryFrom<U128x128>>::Error;
     fn try_from(value: U128x128) -> Result<Self, Self::Error> {
@@ -537,7 +509,6 @@ impl TryFrom<U128x128> for Amount {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl U128x128Var {
     pub fn from_amount_var(amount: AmountVar) -> Result<U128x128Var, SynthesisError> {
         let bits = amount.amount.to_bits_le()?;
@@ -554,7 +525,6 @@ impl U128x128Var {
     }
 }
 
-#[cfg(feature = "r1cs")]
 impl From<U128x128Var> for AmountVar {
     fn from(value: U128x128Var) -> Self {
         let mut le_bits = Vec::new();
@@ -572,7 +542,7 @@ impl Sum for Amount {
     }
 }
 
-#[cfg(all(test, feature = "std"))]
+#[cfg(test)]
 mod test {
     use crate::Amount;
     use penumbra_sdk_proto::penumbra::core::num::v1 as pb;

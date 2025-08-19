@@ -19,7 +19,7 @@ component = [
     "ibc-proto/transport",
 ]
 # proving-keys = ["penumbra-proof-params/proving-keys"]
-default = ["std", "component", "rand", "decaf377/arkworks"]
+default = ["std", "component", "rand", "decaf377/arkworks", "penumbra-sdk-proto/tendermint"]
 std = ["ark-ff/std"]
 parallel = [
     "penumbra-sdk-tct/parallel",

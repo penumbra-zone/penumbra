@@ -8,7 +8,7 @@ license = {workspace = true}
 edition = {workspace = true}
 
 [features]
-default = ["rand"]
+default = ["rand", "decaf377/arkworks"]
 parallel = [
     "ark-ff/parallel",
     "poseidon377/parallel",
@@ -41,7 +41,7 @@ decaf377-fmd = {workspace = true, default-features = false}
 decaf377-rdsa = {workspace = true, default-features = false}
 getrandom = {workspace = true, features = ["js"], optional = true}
 once_cell = {workspace = true}
-penumbra-sdk-num = {workspace = true, features = ["r1cs", "proto"], default-features = false}
+penumbra-sdk-num = {workspace = true, default-features = false}
 penumbra-sdk-proto = {workspace = true, default-features = false}
 poseidon377 = {workspace = true, features = ["r1cs"], default-features = false}
 rand = {workspace = true, optional = true}

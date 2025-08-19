@@ -13,9 +13,8 @@ harness = false
 
 
 [features]
-default = ["std"]
+default = ["rand", "decaf377/arkworks"]
 rand = ["decaf377/rand", "rand_core"]
-std = ["ark-ff/std", "rand"]
 
 [dependencies]
 ark-ff = {workspace = true, default-features = false}

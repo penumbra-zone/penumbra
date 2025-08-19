@@ -19,8 +19,7 @@ use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{r1cs::FqVar, Fq};
 use ethnum::U256;
 
-use crate::Amount;
-use crate::AmountVar;
+use crate::{Amount, AmountVar};
 
 use self::div::stub_div_rem_u384_by_u256;
 
@@ -737,7 +736,7 @@ pub fn bit_constrain(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, Synthes
     Ok(boolean_constraints)
 }
 
-#[cfg(all(test, feature = "std"))]
+#[cfg(test)]
 mod test {
     use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
     use ark_relations::r1cs::ConstraintSynthesizer;

@@ -8,45 +8,46 @@ license = {workspace = true}
 edition = {workspace = true}
 
 [features]
-default = ["rand", "proto", "r1cs"]
-parallel = ["ark-ff/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
-rand = ["std", "rand_core", "dep:rand", "decaf377/rand"]
-proto = ["penumbra-sdk-proto", "dep:serde"]
-r1cs = [
-    "std",
-    "decaf377/r1cs",
-    "dep:ark-ff",
-    "dep:ark-groth16",
-    "dep:ark-r1cs-std",
-    "dep:ark-relations",
-    "dep:ark-serialize",
-    "dep:ark-snark",
-    "dep:ark-std",
-    "dep:ethnum",
-    "dep:ibig",
-]
-std = [
-  "ark-ff/std",
-  "dep:thiserror",
+default = ["rand", "decaf377/arkworks"]
+parallel = ["ark-ff/parallel", "decaf377-rdsa/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
+rand = [
+    "rand_core",
+    "dep:rand",
+    "decaf377/rand",
+    "decaf377-fmd/rand", 
+    "decaf377-rdsa/rand",
 ]
 
 [dependencies]
 anyhow = {workspace = true}
-ark-ff = {workspace = true, optional = true}
-ark-groth16 = {workspace = true, optional = true}
-ark-r1cs-std = {workspace = true, optional = true}
-ark-relations = {workspace = true, optional = true}
-ark-serialize = {workspace = true, optional = true}
-ark-snark = {workspace = true, optional = true}
-ark-std = {workspace = true, default-features = false, optional = true}
+ark-ff = {workspace = true, default-features = false}
+ark-groth16 = {workspace = true, default-features = false}
+ark-r1cs-std = {workspace = true, default-features = false}
+ark-relations = {workspace = true}
+ark-serialize = {workspace = true}
+ark-snark = {workspace = true}
+ark-std = {workspace = true, default-features = false}
+base64 = {workspace = true}
+bech32 = {workspace = true}
+blake2b_simd = {workspace = true}
+bytes = {workspace = true}
 decaf377 = {workspace = true, default-features = false}
-ethnum = {workspace = true, optional = true}
-ibig = {workspace = true, optional = true}
-penumbra-sdk-proto = {workspace = true, default-features = false, optional = true}
+decaf377-fmd = {workspace = true}
+decaf377-rdsa = {workspace = true}
+derivative = {workspace = true}
+ethnum = {workspace = true}
+hex = {workspace = true}
+ibig = {workspace = true}
+num-bigint = {workspace = true}
+once_cell = {workspace = true}
+penumbra-sdk-proto = {workspace = true, default-features = false}
 rand = {workspace = true, optional = true}
 rand_core = {workspace = true, features = ["getrandom"], optional = true}
-serde = {workspace = true, features = ["derive"], optional = true}
-thiserror = {workspace = true, optional = true}
+regex = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+sha2 = {workspace = true}
+thiserror = {workspace = true}
+tracing = {workspace = true}
 
 [dev-dependencies]
 proptest = {workspace = true}

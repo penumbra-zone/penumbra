@@ -26,6 +26,7 @@ rand = [
     "decaf377-fmd/rand", 
     "decaf377-ka/rand",
     "decaf377-rdsa/rand",
+    "penumbra-sdk-tct/rand",
     "penumbra-sdk-asset/rand",
 ]
 
