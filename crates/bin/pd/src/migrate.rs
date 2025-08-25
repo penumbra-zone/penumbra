@@ -78,6 +78,9 @@ pub enum Migration {
     ///
     /// Uses the new migration framework.
     Mainnet5,
+    /// IBC client recovery
+    /// - Swap IBC client state
+    IbcClientRecovery,
 }
 
 impl Migration {
@@ -114,12 +117,6 @@ impl Migration {
 
         tracing::info!("started migration");
 
-        // If this is `ReadyToStart`, we need to reset the halt bit and return early.
-        if let Migration::ReadyToStart = self {
-            reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
-            return Ok(());
-        }
-
         match self {
             Migration::SimpleMigration => {
                 simple::migrate(storage, pd_home.clone(), genesis_start).await?
@@ -142,7 +139,12 @@ impl Migration {
                 migration
                     .run(pd_home.clone(), comet_home.clone(), genesis_start)
                     .await?;
-                // Early return since the new framework handles everything
+                // Early return since the new framework handles genesis generation.
+                return Ok(());
+            }
+            Migration::ReadyToStart => {
+                reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
+                // Early return since we are not producing a new genesis.
                 return Ok(());
             }
             // We keep historical migrations around for now, this will help inform an abstracted
