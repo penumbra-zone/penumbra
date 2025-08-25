@@ -59,8 +59,12 @@ pub enum MigrateCmd {
     #[clap(name = "subaccount-balance")]
     SubaccountBalance {
         /// Range of source subaccount indices to migrate from (e.g., 0..17)
-        #[clap(long, required = true, value_parser = parse_range, name = "subaccount_index")]
-        from: std::ops::Range<u32>,
+        ///
+        /// The range is inclusive of the `start` value, and exclusive of the `end` value,
+        /// such that `1..4` will migrate subaccounts 1, 2, & 3, but not 4. Therefore
+        /// to migrate only subaccount 4, use `4..5`.
+        #[clap(long, required = true, value_parser = parse_range, name = "subaccount_index_range")]
+        from_range: std::ops::Range<u32>,
         /// Only print the transaction plan without executing it (for threshold signing)
         #[clap(long)]
         plan_only: bool,
@@ -156,7 +160,10 @@ impl MigrateCmd {
 
                 Result::Ok(())
             }
-            MigrateCmd::SubaccountBalance { from, plan_only } => {
+            MigrateCmd::SubaccountBalance {
+                from_range,
+                plan_only,
+            } => {
                 let source_fvk = app.config.full_viewing_key.clone();
 
                 // Read destination FVK from stdin
@@ -211,7 +218,7 @@ impl MigrateCmd {
 
                 // Filter and spend notes only from subaccounts in the specified range
                 for (account, notes_by_asset) in all_notes {
-                    if from.contains(&account) {
+                    if from_range.contains(&account) {
                         for notes in notes_by_asset.into_values() {
                             for note in notes {
                                 let position = note.position;
@@ -260,7 +267,7 @@ impl MigrateCmd {
 
                 let memo = format!(
                     "Migrating subaccounts {}..{} from {} to {}",
-                    from.start, from.end, source_fvk, dest_fvk
+                    from_range.start, from_range.end, source_fvk, dest_fvk
                 );
 
                 let plan = planner
@@ -284,7 +291,7 @@ impl MigrateCmd {
                 println!("Destination wallet: {}", dest_fvk);
                 println!(
                     "Subaccounts: {} through {} (inclusive)",
-                    from.start, from.end
+                    from_range.start, from_range.end
                 );
 
                 // Calculate total assets across all subaccounts
