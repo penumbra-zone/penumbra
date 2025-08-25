@@ -49,7 +49,7 @@ or by contributing invalid shares.
 
 ## A Survey of Existing DKGs
 
-[Gurkan, Jovanovic, Maller, Meiklejohn, Stern, and Tomescu][GJMMST] present a survey of DKG instantiations with their communication complexity, public verifiablity, round complexity, prover, and verifier costs:
+[Gurkan, Jovanovic, Maller, Meiklejohn, Stern, and Tomescu][GJMMST] present a survey of DKG instantiations with their communication complexity, public verifiability, round complexity, prover, and verifier costs:
 
 ![](./dkg-table.png)
 
