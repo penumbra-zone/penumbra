@@ -59,11 +59,8 @@ pub enum MigrateCmd {
     #[clap(name = "subaccount-balance")]
     SubaccountBalance {
         /// Range of source subaccount indices to migrate from (e.g., 0..17)
-        #[clap(long, required = true, value_parser = parse_range)]
+        #[clap(long, required = true, value_parser = parse_range, name = "subaccount_index")]
         from: std::ops::Range<u32>,
-        /// Destination FullViewingKey to migrate to
-        #[clap(long, required = true)]
-        to: String,
         /// Only print the transaction plan without executing it (for threshold signing)
         #[clap(long)]
         plan_only: bool,
@@ -159,17 +156,11 @@ impl MigrateCmd {
 
                 Result::Ok(())
             }
-            MigrateCmd::SubaccountBalance {
-                from,
-                to,
-                plan_only,
-            } => {
+            MigrateCmd::SubaccountBalance { from, plan_only } => {
                 let source_fvk = app.config.full_viewing_key.clone();
 
-                // Parse destination FVK
-                let dest_fvk = to
-                    .parse::<FullViewingKey>()
-                    .context("invalid destination FullViewingKey")?;
+                // Read destination FVK from stdin
+                let dest_fvk = read_fvk()?;
 
                 let mut planner = Planner::new(OsRng);
                 planner
