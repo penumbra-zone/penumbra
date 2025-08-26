@@ -6,15 +6,15 @@ use penumbra_sdk_sct::component::clock::EpochRead;
 
 use crate::component::{ConsensusStateWriteExt, HostInterface};
 
-use super::client::{ClientStatus, StateReadExt as ClientStateReadExt, StateWriteExt as ClientStateWriteExt};
+use super::client::{
+    ClientStatus, StateReadExt as ClientStateReadExt, StateWriteExt as ClientStateWriteExt,
+};
 
 /// Extension trait for IBC client recovery operations.
 ///
 /// This trait provides privileged operations for recovering frozen/expired IBC clients
 /// by substituting them with active clients. This is typically used during chain upgrades
 /// or emergency recovery scenarios.
-///
-/// Based on ADR-026: https://ibc.cosmos.network/architecture/adr-026-ibc-client-recovery-mechanisms/
 #[async_trait]
 pub trait ClientRecoveryExt: StateWrite + ConsensusStateWriteExt {
     /// Recover a frozen or expired client by substituting it with an active client.
@@ -24,7 +24,7 @@ pub trait ClientRecoveryExt: StateWrite + ConsensusStateWriteExt {
     /// 2. Verify both clients exist
     /// 3. Check that the subject client is NOT Active
     /// 4. Check that the substitute client IS Active  
-    /// 5. Verify ADR-026 compliance (client parameters match)
+    /// 5. Verify client parameters match.
     /// 6. Verify substitute client has greater height
     /// 7. Copy the substitute client's state over the subject client
     async fn recover_client<HI: HostInterface>(
@@ -81,7 +81,7 @@ pub trait ClientRecoveryExt: StateWrite + ConsensusStateWriteExt {
 
         // 5. Check that we honor ADR-26
         // All client parameters must match except for the frozen height, latest height, and proof specs
-        validate_adr26_fields(&subject_client_state, &substitute_client_state)?;
+        check_field_consistency(&subject_client_state, &substitute_client_state)?;
 
         // 6. Check that the substitute client height is greater than subject's latest height
         let subject_height = get_client_latest_height(&subject_client_state)?;
@@ -125,20 +125,114 @@ pub trait ClientRecoveryExt: StateWrite + ConsensusStateWriteExt {
 impl<T: StateWrite + ConsensusStateWriteExt> ClientRecoveryExt for T {}
 
 /// Validate that a client ID matches the expected format.
-pub fn validate_client_id_format_ics07(_client_id: &ClientId) -> Result<()> {
+/// Client IDs must be of the form: 07-tendermint-<NUM> where NUM is a non-empty sequence of digits
+/// TODO(erwan): iirc there's an ibc types routine that does this?
+pub fn validate_client_id_format_ics07(client_id: &ClientId) -> Result<()> {
+    use regex::Regex;
+
+    let client_id_str = client_id.as_str();
+
+    // Match exactly: 07-tendermint- followed by one or more digits
+    let re = Regex::new(r"^07-tendermint-\d+$").expect("valid regex");
+
+    ensure!(
+        re.is_match(client_id_str),
+        "invalid client ID format: '{}'. Expected format: 07-tendermint-<NUM> (e.g., 07-tendermint-0, 07-tendermint-123)",
+        client_id_str
+    );
+
+    let parts: Vec<&str> = client_id_str.split('-').collect();
+    if parts.len() == 3 {
+        let num_part = parts[2];
+        ensure!(
+            !(num_part.len() > 1 && num_part.starts_with('0')),
+            "invalid client ID: '{}'. Number part cannot have leading zeros",
+            client_id_str
+        );
+    }
+
     Ok(())
 }
 
-/// Verify that two client states comply with ADR-026 requirements.
+/// Check that the field of two client states are coherent.
 ///
-/// Per ADR-026, all client parameters must match except:
-/// - frozen_height (subject may be frozen)
-/// - latest_height (substitute will be higher)
-/// - proof_specs (may differ)
-pub fn validate_adr26_fields(
-    _subject: &ibc_types::lightclients::tendermint::client_state::ClientState,
-    _substitute: &ibc_types::lightclients::tendermint::client_state::ClientState,
+/// The goal is to verify that a subject/substitute couple are fundamentally the same client.
+/// Evne if at different points in their lifecyle. This is directly inspired by Cosmos ADR-26,
+/// which recognizes that client recovery is a form of controlled mutation: we are not replacing
+/// one client state with an arbitrary other, but ratehr fast-forwarding a stuck client to a
+/// healthy state.
+///
+/// The Tendermint ClientState contains:
+/// ```
+/// ClientState {
+///     // IMMUTABLE
+///     chain_id,          
+///     trust_level,       
+///     trusting_period,   
+///     unbonding_period,  
+///     max_clock_drift,   
+///     upgrade_path,      
+///     allow_update,      
+///     
+///     // MUTABLE
+///     latest_height,     // can advance
+///     frozen_height,     // can be unfrozen
+///     proof_specs,       // mechanical, not trust-related
+/// }
+/// ```
+pub fn check_field_consistency(
+    subject: &ibc_types::lightclients::tendermint::client_state::ClientState,
+    substitute: &ibc_types::lightclients::tendermint::client_state::ClientState,
 ) -> Result<()> {
+    ensure!(
+        subject.chain_id == substitute.chain_id,
+        "chain IDs must match: subject has '{}', substitute has '{}'",
+        subject.chain_id,
+        substitute.chain_id
+    );
+
+    ensure!(
+        subject.trust_level == substitute.trust_level,
+        "trust levels must match: subject has '{:?}', substitute has '{:?}'",
+        subject.trust_level,
+        substitute.trust_level
+    );
+
+    ensure!(
+        subject.trusting_period == substitute.trusting_period,
+        "trusting periods must match: subject has '{:?}', substitute has '{:?}'",
+        subject.trusting_period,
+        substitute.trusting_period
+    );
+
+    ensure!(
+        subject.unbonding_period == substitute.unbonding_period,
+        "unbonding periods must match: subject has '{:?}', substitute has '{:?}'",
+        subject.unbonding_period,
+        substitute.unbonding_period
+    );
+
+    ensure!(
+        subject.max_clock_drift == substitute.max_clock_drift,
+        "max clock drifts must match: subject has '{:?}', substitute has '{:?}'",
+        subject.max_clock_drift,
+        substitute.max_clock_drift
+    );
+
+    ensure!(
+        subject.upgrade_path == substitute.upgrade_path,
+        "upgrade paths must match: subject has '{:?}', substitute has '{:?}'",
+        subject.upgrade_path,
+        substitute.upgrade_path
+    );
+
+    ensure!(
+        subject.allow_update == substitute.allow_update,
+        "allow_update flags must match: subject has '{:?}', substitute has '{:?}'",
+        subject.allow_update,
+        substitute.allow_update
+    );
+
     Ok(())
 }
 
