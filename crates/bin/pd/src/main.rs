@@ -493,6 +493,15 @@ async fn main() -> anyhow::Result<()> {
 
             // Handle migration subcommands
             match migration_type {
+                Some(MigrateCommand::ReadyToStart) => {
+                    tracing::info!("disabling halt order in local state");
+                    ReadyToStart
+                        .migrate(pd_home, comet_home, None, force)
+                        .instrument(pd_migrate_span)
+                        .await
+                        .context("failed to disable halt bit in local state")?;
+                    exit(0)
+                }
                 Some(MigrateCommand::IbcRecovery {
                     old_client_id,
                     new_client_id,
@@ -521,9 +530,9 @@ async fn main() -> anyhow::Result<()> {
                         .context("failed to perform IBC client recovery")?;
                 }
                 None => {
-                    // Default migration behavior
                     if ready_to_start {
-                        tracing::info!("disabling halt order in local state");
+                        // backward compatible interface.
+                        tracing::info!("disabling halt flag in local state");
                         ReadyToStart
                             .migrate(pd_home, comet_home, None, force)
                             .instrument(pd_migrate_span)

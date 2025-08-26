@@ -151,6 +151,8 @@ pub enum RootCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum MigrateCommand {
+    /// Reset the chain's halt bit to allow it to start.
+    ReadyToStart,
     /// Perform IBC client recovery, overwriting an old client ID with a new one.
     IbcRecovery {
         /// The old IBC client ID to replace.
