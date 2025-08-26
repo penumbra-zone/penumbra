@@ -1,6 +1,7 @@
 use anyhow::Result;
 use cnidarium::StateDelta;
 use ibc_types::core::client::ClientId;
+use penumbra_sdk_app::PenumbraHost;
 use penumbra_sdk_ibc::component::ClientRecoveryExt;
 
 use super::framework::Migration;
@@ -50,7 +51,7 @@ impl Migration for IbcClientRecoveryMigration {
         // Use the ClientRecoveryExt trait to perform the recovery
         // All validation logic is encapsulated in the trait method
         delta
-            .recover_client(&subject_client_id, &substitute_client_id)
+            .recover_client::<PenumbraHost>(&subject_client_id, &substitute_client_id)
             .await?;
 
         Ok(())
