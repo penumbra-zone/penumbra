@@ -79,8 +79,8 @@ pub trait ClientRecoveryExt: StateWrite + ConsensusStateWriteExt {
             substitute_status
         );
 
-        // 5. Check that we honor ADR-26
-        // All client parameters must match except for the frozen height, latest height, and proof specs
+        // 5. Check that all client parameters must match except
+        // for the frozen height, latest height, and proof specs
         check_field_consistency(&subject_client_state, &substitute_client_state)?;
 
         // 6. Check that the substitute client height is greater than subject's latest height
@@ -99,13 +99,14 @@ pub trait ClientRecoveryExt: StateWrite + ConsensusStateWriteExt {
         let substitute_consensus_state = self
             .get_verified_consensus_state(
                 &substitute_client_state.latest_height(),
-                &subject_client_id,
+                &substitute_client_id,
             )
             .await?;
 
+        // smooth brain: we write the substitute - into -> the subject.
         self.put_verified_consensus_state::<HI>(
             substitute_client_state.latest_height(),
-            substitute_client_id.clone(),
+            subject_client_id.clone(),
             substitute_consensus_state,
         )
         .await?;
