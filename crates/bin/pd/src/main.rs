@@ -11,8 +11,8 @@ use anyhow::{anyhow, Context};
 use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
-    cli::{NetworkCommand, Opt, RootCommand},
-    migrate::Migration::{Mainnet4, ReadyToStart},
+    cli::{MigrateCommand, NetworkCommand, Opt, RootCommand},
+    migrate::Migration::{IbcClientRecovery, Mainnet4, ReadyToStart},
     network::{
         config::{get_network_dir, parse_tm_address, url_has_necessary_parts},
         generate::NetworkConfig,
@@ -476,6 +476,7 @@ async fn main() -> anyhow::Result<()> {
             comet_home,
             force,
             ready_to_start,
+            migration_type,
         } => {
             let (pd_home, comet_home) = match home {
                 Some(h) => (h, comet_home),
@@ -490,23 +491,56 @@ async fn main() -> anyhow::Result<()> {
             pd_migrate_span
                 .in_scope(|| tracing::info!("migrating pd state in {}", pd_home.display()));
 
-            if ready_to_start {
-                tracing::info!("disabling halt order in local state");
-                ReadyToStart
-                    .migrate(pd_home, comet_home, None, force)
-                    .instrument(pd_migrate_span)
-                    .await
-                    .context("failed to disable halt bit in local state")?;
-                exit(0)
-            }
+            // Handle migration subcommands
+            match migration_type {
+                Some(MigrateCommand::IbcRecovery {
+                    old_client_id,
+                    new_client_id,
+                    app_version,
+                }) => {
+                    tracing::info!(
+                        "performing IBC client recovery: {} -> {} (app_version: {:?})",
+                        old_client_id,
+                        new_client_id,
+                        app_version
+                    );
+                    IbcClientRecovery
+                        .migrate_with_params(
+                            pd_home,
+                            comet_home,
+                            None,
+                            force,
+                            vec![
+                                old_client_id,
+                                new_client_id,
+                                app_version.map(|v| v.to_string()).unwrap_or_default(),
+                            ],
+                        )
+                        .instrument(pd_migrate_span)
+                        .await
+                        .context("failed to perform IBC client recovery")?;
+                }
+                None => {
+                    // Default migration behavior
+                    if ready_to_start {
+                        tracing::info!("disabling halt order in local state");
+                        ReadyToStart
+                            .migrate(pd_home, comet_home, None, force)
+                            .instrument(pd_migrate_span)
+                            .await
+                            .context("failed to disable halt bit in local state")?;
+                        exit(0)
+                    }
 
-            let genesis_start = pd::migrate::last_block_timestamp(pd_home.clone()).await?;
-            tracing::info!(?genesis_start, "last block timestamp");
-            Mainnet4
-                .migrate(pd_home.clone(), comet_home, Some(genesis_start), force)
-                .instrument(pd_migrate_span)
-                .await
-                .context("failed to upgrade state")?;
+                    let genesis_start = pd::migrate::last_block_timestamp(pd_home.clone()).await?;
+                    tracing::info!(?genesis_start, "last block timestamp");
+                    Mainnet4
+                        .migrate(pd_home.clone(), comet_home, Some(genesis_start), force)
+                        .instrument(pd_migrate_span)
+                        .await
+                        .context("failed to upgrade state")?;
+                }
+            }
         }
     }
     Ok(())

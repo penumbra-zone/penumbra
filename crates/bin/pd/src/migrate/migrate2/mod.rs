@@ -1,4 +1,4 @@
 pub mod framework;
-pub mod mainnet5;
+pub mod ibc_client_recovery;
 
 pub use framework::Migration;
