@@ -156,6 +156,7 @@ impl Migration {
                 return Ok(());
             }
             Migration::IbcClientRecovery => {
+                storage.release().await;
                 ensure!(
                     params.len() >= 2,
                     "IBC client recovery requires at least old and new client IDs"
