@@ -350,7 +350,7 @@ impl Opt {
                 let genesis_filtered_block =
                     genesis::scan_genesis_block(genesis_compact_block, fvk_list.clone()).await?;
 
-                let mut accounts = Vec::new();
+                let mut accounts = Vec::with_capacity(fvk_list.len());
 
                 // Now we need to make subdirectories for each of the FVKs and setup their
                 // config files, with the selected FVK and GRPC URL.

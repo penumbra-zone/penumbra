@@ -67,7 +67,7 @@ async fn missing_events(name: &'static str, db: PgPool) -> anyhow::Result<bool> 
 
 pub async fn integrity_check(src_database_url: &str) -> anyhow::Result<()> {
     let db = read_only_db(src_database_url).await?;
-    let mut tasks = Vec::new();
+    let mut tasks = Vec::with_capacity(2);
     tasks.push(tokio::spawn({
         let db = db.clone();
         async move { missing_blocks("# 000 Missing Blocks", db).await }
