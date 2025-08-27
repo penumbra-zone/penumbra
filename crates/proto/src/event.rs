@@ -52,7 +52,7 @@ pub trait ProtoEvent: Message + Name + Serialize + DeserializeOwned + Sized {
         }
 
         let json = serde_json::to_value(attributes)
-            .expect("HashMap of String, serde_json::Value should be serializeable.");
+            .expect("HashMap of String, serde_json::Value should be serializable.");
 
         return Ok(
             serde_json::from_value(json).context("could not deserialise ProtoJSON into event")?
