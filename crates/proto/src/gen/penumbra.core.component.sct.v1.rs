@@ -157,7 +157,7 @@ pub mod commitment_source {
     /// The commitment was created by the LQT mechanism and tracks LQT reward notes.
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct LiquidityTournamentReward {
-        /// The epoch in which the reward occured.
+        /// The epoch in which the reward occurred.
         #[prost(uint64, tag = "1")]
         pub epoch: u64,
         /// Transaction hash of the transaction that did the voting.

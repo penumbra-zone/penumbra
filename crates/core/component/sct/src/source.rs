@@ -31,7 +31,7 @@ pub enum CommitmentSource {
     },
     /// The commitment was created through the participation in the liquidity tournament.
     LiquidityTournamentReward {
-        /// The epoch in which the reward occured.
+        /// The epoch in which the reward occurred.
         epoch: u64,
         /// Transaction hash of the transaction that did the voting.
         tx_hash: TransactionId,
