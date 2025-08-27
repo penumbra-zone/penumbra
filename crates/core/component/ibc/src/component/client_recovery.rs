@@ -17,25 +17,16 @@ use super::client::{
 /// or emergency recovery scenarios.
 #[async_trait]
 pub trait ClientRecoveryExt: StateWrite + ConsensusStateWriteExt {
-    /// Recover a frozen or expired client by substituting it with an active client.
-    ///
-    /// This operation will:
-    /// 1. Validate both client IDs are well-formed
-    /// 2. Verify both clients exist
-    /// 3. Check that the subject client is NOT Active
-    /// 4. Check that the substitute client IS Active  
-    /// 5. Verify client parameters match.
-    /// 6. Verify substitute client has greater height
-    /// 7. Copy the substitute client's state over the subject client
-    async fn recover_client<HI: HostInterface>(
-        &mut self,
+    /// Validate a client recovery operation
+    async fn validate_recover_client<HI: HostInterface>(
+        &self,
         subject_client_id: &ClientId,
         substitute_client_id: &ClientId,
     ) -> Result<()> {
         tracing::debug!(
             %subject_client_id,
             %substitute_client_id,
-            "starting ibc client recovery"
+            "validating ibc client recovery"
         );
 
         // 1. Check that the clients are well-formed (regex validation)
@@ -80,7 +71,7 @@ pub trait ClientRecoveryExt: StateWrite + ConsensusStateWriteExt {
         );
 
         // 5. Check that all client parameters must match except
-        // for the frozen height, latest height, and proof specs
+        // for the frozen height, latest height, trust period, and proof specs
         check_field_consistency(&subject_client_state, &substitute_client_state)?;
 
         // 6. Check that the substitute client height is greater than subject's latest height
@@ -95,6 +86,36 @@ pub trait ClientRecoveryExt: StateWrite + ConsensusStateWriteExt {
 
         // 7. Perform the recovery: copy substitute client state to subject client
         tracing::debug!("overwriting client state");
+
+        Ok(())
+    }
+    /// Recover a frozen or expired client by substituting it with an active client.
+    ///
+    /// This operation will:
+    /// 1. Validate both client IDs are well-formed
+    /// 2. Verify both clients exist
+    /// 3. Check that the subject client is NOT Active
+    /// 4. Check that the substitute client IS Active
+    /// 5. Verify client parameters match.
+    /// 6. Verify substitute client has greater height
+    /// 7. Copy the substitute client's state over the subject client
+    async fn recover_client<HI: HostInterface>(
+        &mut self,
+        subject_client_id: &ClientId,
+        substitute_client_id: &ClientId,
+    ) -> Result<()> {
+        tracing::debug!(
+            %subject_client_id,
+            %substitute_client_id,
+            "starting ibc client recovery"
+        );
+        self.validate_recover_client::<HI>(&subject_client_id, &substitute_client_id)
+            .await?;
+
+        let substitute_client_state = self
+            .get_client_state(substitute_client_id)
+            .await
+            .context("substitute client not found")?;
 
         let substitute_consensus_state = self
             .get_verified_consensus_state(
@@ -199,12 +220,10 @@ pub fn check_field_consistency(
         substitute.trust_level
     );
 
-    ensure!(
-        subject.trusting_period == substitute.trusting_period,
-        "trusting periods must match: subject has '{:?}', substitute has '{:?}'",
-        subject.trusting_period,
-        substitute.trusting_period
-    );
+    // We leave out checking the trust period.
+    // This makes testing easier, gives some leeway in case of
+    // misconfiguration, and is safe because ICS02 validation requires:
+    // `trust_period < unbonding_period`
 
     ensure!(
         subject.unbonding_period == substitute.unbonding_period,
