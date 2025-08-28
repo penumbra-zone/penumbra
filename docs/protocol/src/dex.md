@@ -152,7 +152,7 @@ Handling of concentrated liquidity is described in more detail in the
 
 [bwh]: https://ethresear.ch/t/why-you-cant-build-a-private-uniswap-with-zkps/7754
 [flow_enc]: ./crypto/flow.md
-[budish-cramton-shim]: https://faculty.chicagobooth.edu/eric.budish/research/HFT-FrequentBatchAuctions.pdf
+[budish-cramton-shim]: https://ericbudish.org/wp-content/uploads/2022/03/high_frequency_trading_arms_race.pdf
 [staking-lending-competition]: https://arxiv.org/abs/2001.00919
 
 [^1]: on HFT, N.B. their footnote 5:
