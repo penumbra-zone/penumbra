@@ -78,6 +78,9 @@ pub enum Migration {
     ///
     /// Uses the new migration framework.
     Mainnet5,
+    /// IBC client recovery
+    /// - Swap IBC client state
+    IbcClientRecovery,
 }
 
 impl Migration {
@@ -88,6 +91,19 @@ impl Migration {
         comet_home: Option<PathBuf>,
         genesis_start: Option<tendermint::time::Time>,
         force: bool,
+    ) -> anyhow::Result<()> {
+        self.migrate_with_params(pd_home, comet_home, genesis_start, force, vec![])
+            .await
+    }
+
+    #[instrument(skip(pd_home, genesis_start, force, params))]
+    pub async fn migrate_with_params(
+        &self,
+        pd_home: PathBuf,
+        comet_home: Option<PathBuf>,
+        genesis_start: Option<tendermint::time::Time>,
+        force: bool,
+        params: Vec<String>,
     ) -> anyhow::Result<()> {
         tracing::debug!(
             ?pd_home,
@@ -114,11 +130,9 @@ impl Migration {
 
         tracing::info!("started migration");
 
-        // If this is `ReadyToStart`, we need to reset the halt bit and return early.
-        if let Migration::ReadyToStart = self {
-            reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
-            return Ok(());
-        }
+        // We early return :
+        // - using the migration framework (as opposed to legacy migrations)
+        // - using a ready-to-start or ibc-client-recovery recipe.
 
         match self {
             Migration::SimpleMigration => {
@@ -136,13 +150,41 @@ impl Migration {
             Migration::Mainnet4 => {
                 mainnet4::migrate(storage, pd_home.clone(), genesis_start).await?;
             }
-            Migration::Mainnet5 => {
-                // New pattern: instantiate and run
-                let migration = migrate2::mainnet5::Mainnet5Migration;
+            Migration::ReadyToStart => {
+                reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
+                // Early return since we are not producing a new genesis.
+                return Ok(());
+            }
+            Migration::IbcClientRecovery => {
+                storage.release().await;
+                ensure!(
+                    params.len() >= 2,
+                    "IBC client recovery requires at least old and new client IDs"
+                );
+                // All validation is done inside of the migration recipe.
+                let old_client_id = params[0].clone();
+                let new_client_id = params[1].clone();
+
+                // Parse optional app_version from third parameter
+                let app_version = if params.len() >= 3 && !params[2].is_empty() {
+                    Some(
+                        params[2]
+                            .parse::<u64>()
+                            .context("app_version must be a valid u64")?,
+                    )
+                } else {
+                    None
+                };
+
+                let migration = migrate2::ibc_client_recovery::IbcClientRecoveryMigration::new(
+                    old_client_id,
+                    new_client_id,
+                    app_version,
+                );
                 migration
                     .run(pd_home.clone(), comet_home.clone(), genesis_start)
                     .await?;
-                // Early return since the new framework handles everything
+                // Early return since the new framework handles genesis generation.
                 return Ok(());
             }
             // We keep historical migrations around for now, this will help inform an abstracted

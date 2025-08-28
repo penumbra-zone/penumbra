@@ -5801,6 +5801,7 @@ dependencies = [
  "penumbra-sdk-sct",
  "penumbra-sdk-txhash",
  "prost 0.13.4",
+ "regex",
  "serde",
  "serde_json",
  "sha2 0.10.8",

@@ -14,7 +14,8 @@ use crate::network::generate::NetworkConfig;
 pub trait Migration {
     fn name(&self) -> &'static str;
 
-    fn target_app_version(&self) -> u64;
+    /// If the migration results in a bumped app version.
+    fn target_app_version(&self) -> Option<u64>;
 
     #[instrument(skip(self, pd_home, _comet_home))]
     async fn prepare(
@@ -65,8 +66,9 @@ pub trait Migration {
 
         let mut delta = StateDelta::new(initial_state);
 
-        let target_version = self.target_app_version();
-        migrate_app_version(&mut delta, target_version).await?;
+        if let Some(target_version) = self.target_app_version() {
+            migrate_app_version(&mut delta, target_version).await?;
+        }
 
         self.migrate_inner(&mut delta).await?;
 
