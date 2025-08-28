@@ -143,6 +143,27 @@ pub enum RootCommand {
         /// across upgrade boundaries.
         #[clap(long, display_order = 1000)]
         ready_to_start: bool,
+        /// Optional migration subcommand. If not specified, runs the default migration.
+        #[clap(subcommand)]
+        migration_type: Option<MigrateCommand>,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum MigrateCommand {
+    /// Reset the chain's halt bit to allow it to start.
+    ReadyToStart,
+    /// Perform IBC client recovery, overwriting an old client ID with a new one.
+    IbcRecovery {
+        /// The old IBC client ID to replace.
+        #[clap(long, short = 'o', value_name = "OLD_CLIENT_ID")]
+        old_client_id: String,
+        /// The new IBC client ID to use.
+        #[clap(long, short = 'n', value_name = "NEW_CLIENT_ID")]
+        new_client_id: String,
+        /// Optional app version to set during migration.
+        #[clap(long, value_name = "VERSION")]
+        app_version: Option<u64>,
     },
 }
 

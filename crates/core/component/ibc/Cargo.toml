@@ -40,6 +40,7 @@ penumbra-sdk-proto = {workspace = true, default-features = false}
 penumbra-sdk-sct = {workspace = true, default-features = false}
 penumbra-sdk-txhash = {workspace = true, default-features = false}
 prost = {workspace = true}
+regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
 sha2 = {workspace = true}
