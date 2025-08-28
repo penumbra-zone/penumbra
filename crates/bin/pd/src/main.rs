@@ -12,7 +12,7 @@ use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{MigrateCommand, NetworkCommand, Opt, RootCommand},
-    migrate::Migration::{IbcClientRecovery, ReadyToStart},
+    migrate::Migration::{IbcClientRecovery, NoOp, ReadyToStart},
     network::{
         config::{get_network_dir, parse_tm_address, url_has_necessary_parts},
         generate::NetworkConfig,
@@ -505,13 +505,13 @@ async fn main() -> anyhow::Result<()> {
                 Some(MigrateCommand::IbcRecovery {
                     old_client_id,
                     new_client_id,
-                    app_version,
+                    target_app_version,
                 }) => {
                     tracing::info!(
                         "performing IBC client recovery: {} -> {} (app_version: {:?})",
                         old_client_id,
                         new_client_id,
-                        app_version
+                        target_app_version
                     );
                     IbcClientRecovery
                         .migrate_with_params(
@@ -522,12 +522,29 @@ async fn main() -> anyhow::Result<()> {
                             vec![
                                 old_client_id,
                                 new_client_id,
-                                app_version.map(|v| v.to_string()).unwrap_or_default(),
+                                target_app_version
+                                    .map(|v| v.to_string())
+                                    .unwrap_or_default(),
                             ],
                         )
                         .instrument(pd_migrate_span)
                         .await
                         .context("failed to perform IBC client recovery")?;
+                }
+                Some(MigrateCommand::NoOp { target_app_version }) => {
+                    tracing::info!(target_app_version, "performing no-op migration");
+                    NoOp.migrate_with_params(
+                        pd_home,
+                        comet_home,
+                        None,
+                        force,
+                        vec![target_app_version
+                            .map(|v| v.to_string())
+                            .unwrap_or_default()],
+                    )
+                    .instrument(pd_migrate_span)
+                    .await
+                    .context("failed to perform no-op migration")?;
                 }
                 None => {
                     if ready_to_start {
