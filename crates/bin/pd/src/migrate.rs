@@ -81,6 +81,9 @@ pub enum Migration {
     /// IBC client recovery
     /// - Swap IBC client state
     IbcClientRecovery,
+    /// No-op migration
+    /// - Resets halt bit and produces new genesis without state changes
+    NoOp,
 }
 
 impl Migration {
@@ -181,6 +184,27 @@ impl Migration {
                     new_client_id,
                     app_version,
                 );
+                migration
+                    .run(pd_home.clone(), comet_home.clone(), genesis_start)
+                    .await?;
+                // Early return since the new framework handles genesis generation.
+                return Ok(());
+            }
+            Migration::NoOp => {
+                storage.release().await;
+
+                // Parse optional app_version from first parameter
+                let app_version = if !params.is_empty() && !params[0].is_empty() {
+                    Some(
+                        params[0]
+                            .parse::<u64>()
+                            .context("app_version must be a valid u64")?,
+                    )
+                } else {
+                    None
+                };
+
+                let migration = migrate2::noop::NoOpMigration::new(app_version);
                 migration
                     .run(pd_home.clone(), comet_home.clone(), genesis_start)
                     .await?;
