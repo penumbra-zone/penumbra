@@ -163,7 +163,13 @@ pub enum MigrateCommand {
         new_client_id: String,
         /// Optional app version to set during migration.
         #[clap(long, value_name = "VERSION")]
-        app_version: Option<u64>,
+        target_app_version: Option<u64>,
+    },
+    /// Perform a no-op migration that resets the halt bit and produces a new genesis.
+    NoOp {
+        /// Optional app version to set during migration.
+        #[clap(long, value_name = "VERSION")]
+        target_app_version: Option<u64>,
     },
 }
 
