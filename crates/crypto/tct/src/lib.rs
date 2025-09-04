@@ -69,6 +69,7 @@ pub mod validate;
 pub use {
     commitment::StateCommitment,
     internal::hash::Forgotten,
+    internal::hash::Hash,
     internal::hash::DOMAIN_SEPARATOR,
     proof::Proof,
     tree::{Position, Root, Tree},
