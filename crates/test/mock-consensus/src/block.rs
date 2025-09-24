@@ -138,7 +138,7 @@ where
 
         trace!("sending block");
         test_node.begin_block(header, last_commit_info).await?;
-        let mut deliver_tx_responses = Vec::new();
+        let mut deliver_tx_responses = Vec::with_capacity(data.len());
         for tx in data {
             let tx = tx.into();
             // The caller may want to access the DeliverTx responses

@@ -1057,7 +1057,7 @@ impl ViewService for ViewServer {
 
         // Now, extend the TxV with information helpful to understand the data it can view:
 
-        let mut denoms = Vec::new();
+        let mut denoms = Vec::with_capacity(asset_ids.len());
 
         for id in asset_ids {
             if let Some(asset) = self.storage.asset_by_id(&id).await.map_err(|e| {

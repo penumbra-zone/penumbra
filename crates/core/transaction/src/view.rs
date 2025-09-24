@@ -116,9 +116,10 @@ impl TransactionView {
 
     /// Produces a TransactionSummary, iterating through each visible action and collecting the effects of the transaction.
     pub fn summary(&self) -> TransactionSummary {
-        let mut effects = Vec::new();
+        let action_views = &self.body_view.action_views;
+        let mut effects = Vec::with_capacity(action_views.len());
 
-        for action_view in &self.body_view.action_views {
+        for action_view in action_views {
             match action_view {
                 ActionView::Spend(spend_view) => match spend_view {
                     SpendView::Visible { spend: _, note } => {
