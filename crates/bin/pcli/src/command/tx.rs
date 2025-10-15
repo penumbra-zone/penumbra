@@ -178,8 +178,9 @@ pub enum TxCmd {
     /// Withdraw stake from a validator's delegation pool.
     #[clap(display_order = 200)]
     Undelegate {
-        /// The amount of delegation tokens to undelegate.
-        amount: String,
+        /// The amounts of delegation tokens to undelegate.
+        #[clap(required = true)]
+        amounts: Vec<String>,
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
@@ -697,35 +698,10 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Undelegate {
-                amount,
+                amounts,
                 source,
                 fee_tier,
             } => {
-                let delegation_value @ Value {
-                    amount: _,
-                    asset_id,
-                } = amount.parse::<Value>()?;
-
-                // TODO: it's awkward that we can't just pull the denom out of the `amount` string we were already given
-                let delegation_token: DelegationToken = app
-                    .view()
-                    .assets()
-                    .await?
-                    .get(&asset_id)
-                    .ok_or_else(|| anyhow::anyhow!("unknown asset id {}", asset_id))?
-                    .clone()
-                    .try_into()
-                    .context("could not parse supplied denomination as a delegation token")?;
-
-                let from = delegation_token.validator();
-
-                let mut stake_client = StakeQueryServiceClient::new(app.pd_channel().await?);
-                let rate_data: RateData = stake_client
-                    .current_validator_rate(tonic::Request::new(from.into()))
-                    .await?
-                    .into_inner()
-                    .try_into()?;
-
                 let mut sct_client = SctQueryServiceClient::new(app.pd_channel().await?);
                 let latest_sync_height = app.view().status().await?.full_sync_height;
                 let epoch = sct_client
@@ -743,8 +719,37 @@ impl TxCmd {
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into());
 
+                let mut stake_client = StakeQueryServiceClient::new(app.pd_channel().await?);
+
+                for amount in amounts {
+                    let delegation_value @ Value {
+                        amount: _,
+                        asset_id,
+                    } = amount.parse::<Value>()?;
+
+                    // TODO: it's awkward that we can't just pull the denom out of the `amount` string we were already given
+                    let delegation_token: DelegationToken = app
+                        .view()
+                        .assets()
+                        .await?
+                        .get(&asset_id)
+                        .ok_or_else(|| anyhow::anyhow!("unknown asset id {}", asset_id))?
+                        .clone()
+                        .try_into()
+                        .context("could not parse supplied denomination as a delegation token")?;
+
+                    let from = delegation_token.validator();
+
+                    let rate_data: RateData = stake_client
+                        .current_validator_rate(tonic::Request::new(from.into()))
+                        .await?
+                        .into_inner()
+                        .try_into()?;
+
+                    planner.undelegate(epoch, delegation_value.amount, rate_data);
+                }
+
                 let plan = planner
-                    .undelegate(epoch, delegation_value.amount, rate_data)
                     .plan(
                         app.view
                             .as_mut()
