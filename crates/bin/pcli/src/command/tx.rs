@@ -925,7 +925,10 @@ impl TxCmd {
                             address_index,
                         )
                         .await?;
-                    app.build_and_submit_transaction(plan).await?;
+
+                    if plan.actions.len() != 0 {
+                        app.build_and_submit_transaction(plan).await?;
+                    }
                 }
             }
             TxCmd::Proposal(ProposalCmd::Submit {
