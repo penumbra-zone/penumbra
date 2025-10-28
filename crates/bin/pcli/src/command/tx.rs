@@ -804,6 +804,11 @@ impl TxCmd {
                     .collect();
 
                 for (address_index, notes_by_asset) in notes.into_iter() {
+                    let mut planner = Planner::new(OsRng);
+                    planner
+                        .set_gas_prices(gas_prices.clone())
+                        .set_fee_tier((*fee_tier).into());
+
                     for (token, notes) in notes_by_asset.into_iter() {
                         println!("claiming {}", token.denom().default_unit());
 
@@ -900,31 +905,27 @@ impl TxCmd {
                             })?
                             .try_into()?;
 
-                        let mut planner = Planner::new(OsRng);
-                        planner
-                            .set_gas_prices(gas_prices.clone())
-                            .set_fee_tier((*fee_tier).into());
                         let unbonding_amount = notes.iter().map(|n| n.note.amount()).sum();
 
-                        let plan = planner
-                            .undelegate_claim(UndelegateClaimPlan {
-                                validator_identity,
-                                unbonding_start_height,
-                                penalty,
-                                unbonding_amount,
-                                balance_blinding: Fr::rand(&mut OsRng),
-                                proof_blinding_r: Fq::rand(&mut OsRng),
-                                proof_blinding_s: Fq::rand(&mut OsRng),
-                            })
-                            .plan(
-                                app.view
-                                    .as_mut()
-                                    .context("view service must be initialized")?,
-                                address_index,
-                            )
-                            .await?;
-                        app.build_and_submit_transaction(plan).await?;
+                        planner.undelegate_claim(UndelegateClaimPlan {
+                            validator_identity,
+                            unbonding_start_height,
+                            penalty,
+                            unbonding_amount,
+                            balance_blinding: Fr::rand(&mut OsRng),
+                            proof_blinding_r: Fq::rand(&mut OsRng),
+                            proof_blinding_s: Fq::rand(&mut OsRng),
+                        });
                     }
+                    let plan = planner
+                        .plan(
+                            app.view
+                                .as_mut()
+                                .context("view service must be initialized")?,
+                            address_index,
+                        )
+                        .await?;
+                    app.build_and_submit_transaction(plan).await?;
                 }
             }
             TxCmd::Proposal(ProposalCmd::Submit {
