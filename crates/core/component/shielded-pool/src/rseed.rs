@@ -6,7 +6,7 @@ use penumbra_sdk_keys::prf;
 use rand::{CryptoRng, RngCore};
 
 pub static RCM_DOMAIN_SEP: Lazy<Fq> =
-    Lazy::new(|| Fq::from_le_bytes_mod_order(b"cycles.derive.rcm"));
+    Lazy::new(|| Fq::from_le_bytes_mod_order(b"cycles.derive.pool.rcm"));
 
 /// The rseed is a uniformly random 32-byte sequence included in the note plaintext.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
