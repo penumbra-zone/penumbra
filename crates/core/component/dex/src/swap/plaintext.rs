@@ -57,8 +57,8 @@ impl SwapPlaintext {
         let rseed_1_hash = hash_1(&OUTPUT_1_BLINDING_DOMAIN_SEPARATOR, fq_rseed);
         let rseed_2_hash = hash_1(&OUTPUT_2_BLINDING_DOMAIN_SEPARATOR, fq_rseed);
         (
-            Rseed(rseed_1_hash.to_bytes()),
-            Rseed(rseed_2_hash.to_bytes()),
+            Rseed::from(rseed_1_hash.to_bytes()),
+            Rseed::from(rseed_2_hash.to_bytes()),
         )
     }
 
@@ -317,7 +317,7 @@ impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
                 .trading_pair
                 .ok_or_else(|| anyhow::anyhow!("missing trading pair in SwapPlaintext"))?
                 .try_into()?,
-            rseed: Rseed(plaintext.rseed.as_slice().try_into()?),
+            rseed: Rseed::from(plaintext.rseed.as_slice()),
         })
     }
 }
@@ -401,7 +401,7 @@ impl TryFrom<&[u8]> for SwapPlaintext {
                 asset_id: asset::Id::try_from(fee_asset_id_bytes)?,
             }),
             claim_address: pb_address.try_into()?,
-            rseed: Rseed(rseed),
+            rseed: Rseed::from(rseed),
         })
     }
 }

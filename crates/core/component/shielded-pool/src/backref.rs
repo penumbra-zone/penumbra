@@ -156,7 +156,7 @@ mod tests {
                     .unwrap()
                     .id(),
             };
-            let rseed = Rseed(rseed_randomness);
+            let rseed = Rseed::from(rseed_randomness);
 
             let note = Note::from_parts(sender, value_to_send, rseed).expect("valid note");
             let note_commitment: penumbra_sdk_tct::StateCommitment = note.commit();
@@ -195,7 +195,7 @@ mod tests {
                     .unwrap()
                     .id(),
             };
-            let rseed = Rseed(rseed_randomness);
+            let rseed = Rseed::from(rseed_randomness);
 
             let note = Note::from_parts(sender, value_to_send, rseed).expect("valid note");
             let note_commitment: penumbra_sdk_tct::StateCommitment = note.commit();

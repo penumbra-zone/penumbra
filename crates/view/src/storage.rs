@@ -1346,7 +1346,7 @@ impl Storage {
                     let amount = row.get::<_, [u8; 16]>("amount")?;
                     let amount_u128: u128 = u128::from_be_bytes(amount);
                     let asset_id = asset::Id(Fq::from_bytes_checked(&row.get::<_, [u8; 32]>("asset_id")?).expect("asset id malformed"));
-                    let rseed = Rseed(row.get::<_, [u8; 32]>("rseed")?);
+                    let rseed = Rseed::from(row.get::<_, [u8; 32]>("rseed")?);
                     let note = Note::from_parts(
                         address,
                         Value {

@@ -108,7 +108,7 @@ impl TryFrom<&Row<'_>> for SpendableNoteRecord {
                     amount: u128::from_be_bytes(row.get::<_, [u8; 16]>("amount")?).into(),
                     asset_id: row.get::<_, Vec<u8>>("asset_id")?[..].try_into()?,
                 },
-                Rseed(row.get::<_, [u8; 32]>("rseed")?),
+                Rseed::from(row.get::<_, [u8; 32]>("rseed")?),
             )?,
             source: CommitmentSource::decode(&row.get::<_, Vec<u8>>("source")?[..])?,
             return_address,

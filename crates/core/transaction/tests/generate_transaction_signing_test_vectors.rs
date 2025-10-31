@@ -385,7 +385,7 @@ fn note_strategy_without_address() -> impl Strategy<Value = Note> {
         prop::array::uniform32(any::<u8>()),
     )
         .prop_map(|(address, value, rseed_bytes)| {
-            Note::from_parts(address, value, Rseed(rseed_bytes))
+            Note::from_parts(address, value, Rseed::from(rseed_bytes))
                 .expect("should be a valid test note")
         })
 }

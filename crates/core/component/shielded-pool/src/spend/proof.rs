@@ -231,7 +231,7 @@ impl DummyWitness for SpendCircuit {
         let note = Note::from_parts(
             address,
             Value::from_str("1upenumbra").expect("valid value"),
-            Rseed([1u8; 32]),
+            Rseed::from([1u8; 32]),
         )
         .expect("can make a note");
         let v_blinding = Fr::from(1u64);
@@ -423,7 +423,7 @@ mod tests {
             let note = Note::from_parts(
                 sender.clone(),
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -436,7 +436,7 @@ mod tests {
             // unrelated items in the SCT.
             for i in 0..num_commitments {
                 // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
-                let rseed = Rseed([i as u8; 32]);
+                let rseed = Rseed::from([i as u8; 32]);
                 let dummy_note_commitment = Note::from_parts(sender.clone(), value_to_send, rseed).expect("can create note").commit();
                 sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
             }
@@ -492,7 +492,7 @@ mod tests {
             let note = Note::from_parts(
                 sender.clone(),
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -505,7 +505,7 @@ mod tests {
             // unrelated items in the SCT.
             for i in 0..num_commitments {
                 // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
-                let rseed = Rseed([i as u8; 32]);
+                let rseed = Rseed::from([i as u8; 32]);
                 let dummy_note_commitment = Note::from_parts(sender.clone(), value_to_send, rseed).expect("can create note").commit();
                 sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
             }
@@ -577,7 +577,7 @@ mod tests {
             let note = Note::from_parts(
                 wrong_sender,
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -635,7 +635,7 @@ mod tests {
             let note = Note::from_parts(
                 sender.clone(),
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -648,12 +648,12 @@ mod tests {
             // unrelated items in the SCT.
             for i in 0..num_commitments {
                 // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
-                let rseed = Rseed([i as u8; 32]);
+                let rseed = Rseed::from([i as u8; 32]);
                 let dummy_note_commitment = Note::from_parts(sender.clone(), value_to_send, rseed).expect("can create note").commit();
                 sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
             }
             // Insert one more note commitment and witness it.
-            let rseed = Rseed([num_commitments as u8; 32]);
+            let rseed = Rseed::from([num_commitments as u8; 32]);
             let dummy_note_commitment = Note::from_parts(sender.clone(), value_to_send, rseed).expect("can create note").commit();
             sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
             let incorrect_position = sct.witness(dummy_note_commitment).expect("can witness note commitment").position();
@@ -709,7 +709,7 @@ mod tests {
             let note = Note::from_parts(
                 sender.clone(),
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -722,7 +722,7 @@ mod tests {
             // unrelated items in the SCT.
             for i in 0..num_commitments {
                 // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
-                let rseed = Rseed([i as u8; 32]);
+                let rseed = Rseed::from([i as u8; 32]);
                 let dummy_note_commitment = Note::from_parts(sender.clone(), value_to_send, rseed).expect("can create note").commit();
                 sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
             }
@@ -778,7 +778,7 @@ mod tests {
             let note = Note::from_parts(
                 sender.clone(),
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
             let nk = *sk_sender.nullifier_key();
@@ -790,7 +790,7 @@ mod tests {
             // unrelated items in the SCT.
             for i in 0..num_commitments {
                 // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
-                let rseed = Rseed([i as u8; 32]);
+                let rseed = Rseed::from([i as u8; 32]);
                 let dummy_note_commitment = Note::from_parts(sender.clone(), value_to_send, rseed).expect("can create note").commit();
                 sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
             }
@@ -847,7 +847,7 @@ mod tests {
             let note = Note::from_parts(
                 sender.clone(),
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -956,7 +956,7 @@ mod tests {
             let note = Note::from_parts(
                 address,
                 Value::from_str("1upenumbra").expect("valid value"),
-                Rseed([1u8; 32]),
+                Rseed::from([1u8; 32]),
             )
             .expect("can make a note");
             let mut sct = tct::Tree::new();
@@ -986,7 +986,7 @@ mod tests {
         let note = Note::from_parts(
             address,
             Value::from_str("1upenumbra").expect("valid value"),
-            Rseed([1u8; 32]),
+            Rseed::from([1u8; 32]),
         )
         .expect("can make a note");
         note.commit()

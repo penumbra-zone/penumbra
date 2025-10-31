@@ -119,7 +119,7 @@ impl DummyWitness for NullifierDerivationCircuit {
         let note = Note::from_parts(
             address,
             Value::from_str("1upenumbra").expect("valid value"),
-            Rseed([1u8; 32]),
+            Rseed::from([1u8; 32]),
         )
         .expect("can make a note");
         let nullifier = Nullifier(Fq::from(1u64));
@@ -256,7 +256,7 @@ mod tests {
                     amount: Amount::from(amount),
                     asset_id: asset::Id(Fq::from(asset_id64)),
                 },
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let nullifier = Nullifier::derive(&nk, position.into(), &note.commit());
             let public = NullifierDerivationProofPublic {
@@ -290,7 +290,7 @@ mod tests {
                     amount: Amount::from(amount),
                     asset_id: asset::Id(Fq::from(asset_id64)),
                 },
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let nullifier = Nullifier::derive(&nk, position.into(), &note.commit());
 

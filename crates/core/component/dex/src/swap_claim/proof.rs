@@ -336,7 +336,7 @@ impl DummyWitness for SwapClaimCircuit {
                     .id(),
             }),
             claim_address: address,
-            rseed: Rseed([1u8; 32]),
+            rseed: Rseed::from([1u8; 32]),
         };
         let mut sct = tct::Tree::new();
         let swap_commitment = swap_plaintext.swap_commitment();
@@ -611,7 +611,7 @@ mod tests {
         let delta_2_i = Amount::from(0u64);
         let fee = Fee::default();
 
-        let rseed = Rseed(rseed_randomness);
+        let rseed = Rseed::from(rseed_randomness);
         let swap_plaintext = SwapPlaintext {
             trading_pair,
             delta_1_i,
@@ -743,7 +743,7 @@ mod tests {
         let delta_2_i = Amount::from(0u64);
         let fee = Fee::default();
 
-        let rseed = Rseed(rseed_randomness);
+        let rseed = Rseed::from(rseed_randomness);
         let swap_plaintext = SwapPlaintext {
             trading_pair,
             delta_1_i,
@@ -834,7 +834,7 @@ mod tests {
         let delta_2_i = Amount::from(0u64);
         let fee = Fee::default();
 
-        let rseed = Rseed(rseed_randomness);
+        let rseed = Rseed::from(rseed_randomness);
         let swap_plaintext = SwapPlaintext {
             trading_pair,
             delta_1_i,
