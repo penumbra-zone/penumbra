@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   lint:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,7 +58,7 @@ jobs:
   # As of 2025Q1, the "features" job is the slowest in the CI suite.
   # Consider moving to a scheduled job on main, rather than running on PRs.
   features:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -86,7 +86,7 @@ jobs:
         run: nix develop --command ./deployments/scripts/check-wasm-compat.sh
 
   test:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:

@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   smoke:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,7 +40,7 @@ jobs:
         run: nix develop --command just smoke
 
   pmonitor:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,7 +66,7 @@ jobs:
   # Temporarily disabling these in CI, as the testnet endpoints are
   # incompatible with `main`, given GH5010.
   # testnet:
-  #   runs-on: buildjet-16vcpu-ubuntu-2204
+  #   runs-on: ubuntu-latest
   #   steps:
   #     - uses: actions/checkout@v4
   #       with:
