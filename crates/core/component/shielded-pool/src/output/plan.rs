@@ -161,7 +161,7 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
                 .dest_address
                 .ok_or_else(|| anyhow::anyhow!("missing address"))?
                 .try_into()?,
-            rseed: Rseed(msg.rseed.as_slice().try_into()?),
+            rseed: Rseed::from(msg.rseed.as_slice()),
             value_blinding: Fr::from_bytes_checked(msg.value_blinding.as_slice().try_into()?)
                 .expect("value_blinding malformed"),
             proof_blinding_r: Fq::from_bytes_checked(msg.proof_blinding_r.as_slice().try_into()?)

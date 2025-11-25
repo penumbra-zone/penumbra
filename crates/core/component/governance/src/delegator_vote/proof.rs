@@ -256,7 +256,7 @@ impl DummyWitness for DelegatorVoteCircuit {
         let note = Note::from_parts(
             address,
             Value::from_str("1upenumbra").expect("valid value"),
-            Rseed([1u8; 32]),
+            Rseed::from([1u8; 32]),
         )
         .expect("can make a note");
         let v_blinding = Fr::from(1u64);
@@ -459,7 +459,7 @@ mod tests {
             let note = Note::from_parts(
                 sender.clone(),
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -472,7 +472,7 @@ mod tests {
             // unrelated items in the SCT.
             for i in 0..num_commitments {
                 // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
-                let rseed = Rseed([i as u8; 32]);
+                let rseed = Rseed::from([i as u8; 32]);
                 let dummy_note_commitment = Note::from_parts(sender.clone(), value_to_send, rseed).expect("can create note").commit();
                 sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("can insert note commitment into SCT");
             }
@@ -484,7 +484,7 @@ mod tests {
             // All proposals should have a position commitment index of zero, so we need to end the epoch
             // and get the position that corresponds to the first commitment in the new epoch.
             sct.end_epoch().expect("should be able to end an epoch");
-            let first_note_commitment = Note::from_parts(sender.clone(), value_to_send, Rseed([u8::MAX; 32])).expect("can create note").commit();
+            let first_note_commitment = Note::from_parts(sender.clone(), value_to_send, Rseed::from([u8::MAX; 32])).expect("can create note").commit();
             sct.insert(tct::Witness::Keep, first_note_commitment).expect("can insert note commitment into SCT");
             let start_position = sct.witness(first_note_commitment).expect("can witness note commitment").position();
 
@@ -535,7 +535,7 @@ mod tests {
             let note = Note::from_parts(
                 sender.clone(),
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -548,7 +548,7 @@ mod tests {
             // unrelated items in the SCT.
             for i in 0..num_commitments {
                 // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
-                let rseed = Rseed([i as u8; 32]);
+                let rseed = Rseed::from([i as u8; 32]);
                 let dummy_note_commitment = Note::from_parts(sender.clone(), value_to_send, rseed).expect("can create note").commit();
                 sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("can insert note commitment into SCT");
             }
@@ -557,7 +557,7 @@ mod tests {
             let anchor = sct.root();
             let state_commitment_proof = sct.witness(note_commitment).expect("can witness note commitment");
 
-            let rseed = Rseed([num_commitments as u8; 32]);
+            let rseed = Rseed::from([num_commitments as u8; 32]);
             let not_first_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
             sct.insert(tct::Witness::Keep, not_first_note_commitment).expect("can insert note commitment into SCT");
             // All proposals should have a position commitment index of zero, but this one will not, so

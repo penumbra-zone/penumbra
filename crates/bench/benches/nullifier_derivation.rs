@@ -38,7 +38,7 @@ fn nullifier_derivation_proving_time(c: &mut Criterion) {
     let note = Note::from_parts(
         address,
         Value::from_str("1upenumbra").expect("valid value"),
-        Rseed([1u8; 32]),
+        Rseed::from([1u8; 32]),
     )
     .expect("can make a note");
     let nullifier = Nullifier(Fq::from(1u64));

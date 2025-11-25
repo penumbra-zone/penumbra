@@ -150,7 +150,7 @@ impl DummyWitness for OutputCircuit {
         let note = Note::from_parts(
             address,
             Value::from_str("1upenumbra").expect("valid value"),
-            Rseed([1u8; 32]),
+            Rseed::from([1u8; 32]),
         )
         .expect("can make a note");
         let balance_blinding = Fr::from(1u64);
@@ -298,7 +298,7 @@ mod tests {
             let note = Note::from_parts(
                 dest,
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
             let balance_commitment = (-Balance::from(value_to_send)).commit(balance_blinding);
@@ -335,7 +335,7 @@ mod tests {
             let note = Note::from_parts(
                 dest,
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let balance_commitment = (-Balance::from(value_to_send)).commit(balance_blinding);
 
@@ -380,7 +380,7 @@ mod tests {
             let note = Note::from_parts(
                 dest,
                 value_to_send,
-                Rseed(rseed_randomness),
+                Rseed::from(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
 
