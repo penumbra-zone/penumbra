@@ -464,6 +464,15 @@ pub struct TransactionPlannerRequest {
     pub action_liquidity_tournament_vote: ::prost::alloc::vec::Vec<
         transaction_planner_request::ActionLiquidityTournamentVote,
     >,
+    /// Token factory actions
+    #[prost(message, repeated, tag = "78")]
+    pub token_factory_create_actions: ::prost::alloc::vec::Vec<
+        super::super::core::component::token_factory::v1::ActionTokenFactoryCreate,
+    >,
+    #[prost(message, repeated, tag = "79")]
+    pub token_factory_mint_actions: ::prost::alloc::vec::Vec<
+        super::super::core::component::token_factory::v1::ActionTokenFactoryMint,
+    >,
     /// The epoch index of the transaction being planned.
     #[deprecated]
     #[prost(uint64, tag = "200")]

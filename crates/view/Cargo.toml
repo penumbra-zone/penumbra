@@ -53,6 +53,7 @@ penumbra-sdk-stake = {workspace = true, default-features = false}
 penumbra-sdk-tct = {workspace = true, default-features = true}
 penumbra-sdk-transaction = {workspace = true, default-features = true}
 penumbra-sdk-auction = {workspace = true, default-features = false}
+penumbra-sdk-token-factory = {workspace = true, default-features = false}
 prost = {workspace = true}
 r2d2 = {workspace = true}
 r2d2_sqlite = {workspace = true, features = ["bundled"]}

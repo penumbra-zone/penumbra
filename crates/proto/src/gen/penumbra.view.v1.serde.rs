@@ -7913,6 +7913,12 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.action_liquidity_tournament_vote.is_empty() {
             len += 1;
         }
+        if !self.token_factory_create_actions.is_empty() {
+            len += 1;
+        }
+        if !self.token_factory_mint_actions.is_empty() {
+            len += 1;
+        }
         if self.epoch_index != 0 {
             len += 1;
         }
@@ -7985,6 +7991,12 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.action_liquidity_tournament_vote.is_empty() {
             struct_ser.serialize_field("actionLiquidityTournamentVote", &self.action_liquidity_tournament_vote)?;
         }
+        if !self.token_factory_create_actions.is_empty() {
+            struct_ser.serialize_field("tokenFactoryCreateActions", &self.token_factory_create_actions)?;
+        }
+        if !self.token_factory_mint_actions.is_empty() {
+            struct_ser.serialize_field("tokenFactoryMintActions", &self.token_factory_mint_actions)?;
+        }
         if self.epoch_index != 0 {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
@@ -8046,6 +8058,10 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "delegatorVotes",
             "action_liquidity_tournament_vote",
             "actionLiquidityTournamentVote",
+            "token_factory_create_actions",
+            "tokenFactoryCreateActions",
+            "token_factory_mint_actions",
+            "tokenFactoryMintActions",
             "epoch_index",
             "epochIndex",
             "epoch",
@@ -8077,6 +8093,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             DutchAuctionWithdrawActions,
             DelegatorVotes,
             ActionLiquidityTournamentVote,
+            TokenFactoryCreateActions,
+            TokenFactoryMintActions,
             EpochIndex,
             Epoch,
             AutoFee,
@@ -8123,6 +8141,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "dutchAuctionWithdrawActions" | "dutch_auction_withdraw_actions" => Ok(GeneratedField::DutchAuctionWithdrawActions),
                             "delegatorVotes" | "delegator_votes" => Ok(GeneratedField::DelegatorVotes),
                             "actionLiquidityTournamentVote" | "action_liquidity_tournament_vote" => Ok(GeneratedField::ActionLiquidityTournamentVote),
+                            "tokenFactoryCreateActions" | "token_factory_create_actions" => Ok(GeneratedField::TokenFactoryCreateActions),
+                            "tokenFactoryMintActions" | "token_factory_mint_actions" => Ok(GeneratedField::TokenFactoryMintActions),
                             "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
                             "epoch" => Ok(GeneratedField::Epoch),
                             "autoFee" | "auto_fee" => Ok(GeneratedField::AutoFee),
@@ -8166,6 +8186,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut dutch_auction_withdraw_actions__ = None;
                 let mut delegator_votes__ = None;
                 let mut action_liquidity_tournament_vote__ = None;
+                let mut token_factory_create_actions__ = None;
+                let mut token_factory_mint_actions__ = None;
                 let mut epoch_index__ = None;
                 let mut epoch__ = None;
                 let mut fee_mode__ = None;
@@ -8293,6 +8315,18 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             action_liquidity_tournament_vote__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::TokenFactoryCreateActions => {
+                            if token_factory_create_actions__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tokenFactoryCreateActions"));
+                            }
+                            token_factory_create_actions__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::TokenFactoryMintActions => {
+                            if token_factory_mint_actions__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tokenFactoryMintActions"));
+                            }
+                            token_factory_mint_actions__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::EpochIndex => {
                             if epoch_index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("epochIndex"));
@@ -8347,6 +8381,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     dutch_auction_withdraw_actions: dutch_auction_withdraw_actions__.unwrap_or_default(),
                     delegator_votes: delegator_votes__.unwrap_or_default(),
                     action_liquidity_tournament_vote: action_liquidity_tournament_vote__.unwrap_or_default(),
+                    token_factory_create_actions: token_factory_create_actions__.unwrap_or_default(),
+                    token_factory_mint_actions: token_factory_mint_actions__.unwrap_or_default(),
                     epoch_index: epoch_index__.unwrap_or_default(),
                     epoch: epoch__,
                     fee_mode: fee_mode__,
