@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package penumbra.core.component.token_factory.v1;
+
+import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/num/v1/num.proto";
+
+// Unique identifier for a token factory token (32-byte nonce).
+message TokenFactoryId {
+  bytes inner = 1;
+}
+
+// Mint capability - represents the right to mint additional tokens.
+// The sequence number increments with each mint, preventing replay.
+message MintCapability {
+  TokenFactoryId id = 1;
+  uint64 seq = 2;
+}
+
+// Action to create a new token, optionally with minting capability.
+//
+// If enable_mint is true, also produces a MintCapability(seq=0) that
+// allows the holder to mint additional tokens.
+message ActionTokenFactoryCreate {
+  // Random nonce defining the token ID (32 bytes).
+  TokenFactoryId nonce = 1;
+  // Token metadata.
+  penumbra.core.asset.v1.Metadata metadata = 2;
+  // Initial supply to create (can be 0 for bridge tokens).
+  penumbra.core.num.v1.Amount initial_supply = 3;
+  // If true, also outputs a MintCapability for future minting.
+  bool enable_mint = 4;
+}
+
+// Action to mint additional tokens using the mint capability.
+//
+// Consumes MintCapability(seq=N) and produces MintCapability(seq=N+1)
+// plus the specified amount of minted tokens.
+message ActionTokenFactoryMint {
+  // The token factory ID to mint from.
+  TokenFactoryId token_id = 1;
+  // Current sequence number of the capability being consumed.
+  uint64 current_seq = 2;
+  // Amount to mint.
+  penumbra.core.num.v1.Amount amount = 3;
+}
+
+// Event emitted when a new token is created.
+message EventTokenFactoryCreate {
+  TokenFactoryId id = 1;
+  penumbra.core.asset.v1.Metadata metadata = 2;
+  penumbra.core.num.v1.Amount initial_supply = 3;
+  bool enable_mint = 4;
+}
+
+// Event emitted when tokens are minted.
+message EventTokenFactoryMint {
+  TokenFactoryId id = 1;
+  uint64 seq = 2;
+  penumbra.core.num.v1.Amount amount = 3;
+}
