@@ -139,7 +139,7 @@ impl ::prost::Name for DetectionData {
 pub struct Action {
     #[prost(
         oneof = "action::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70, 200"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 61, 62, 70, 200"
     )]
     pub action: ::core::option::Option<action::Action>,
 }
@@ -220,6 +220,15 @@ pub mod action {
         #[prost(message, tag = "55")]
         ActionDutchAuctionWithdraw(
             super::super::super::component::auction::v1::ActionDutchAuctionWithdraw,
+        ),
+        /// Token Factory
+        #[prost(message, tag = "61")]
+        ActionTokenFactoryCreate(
+            super::super::super::component::token_factory::v1::ActionTokenFactoryCreate,
+        ),
+        #[prost(message, tag = "62")]
+        ActionTokenFactoryMint(
+            super::super::super::component::token_factory::v1::ActionTokenFactoryMint,
         ),
         /// Funding
         #[prost(message, tag = "70")]
@@ -471,7 +480,7 @@ impl ::prost::Name for TransactionBodyView {
 pub struct ActionView {
     #[prost(
         oneof = "action_view::ActionView",
-        tags = "1, 2, 3, 4, 21, 35, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 70, 200"
+        tags = "1, 2, 3, 4, 21, 35, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 61, 62, 70, 200"
     )]
     pub action_view: ::core::option::Option<action_view::ActionView>,
 }
@@ -558,6 +567,15 @@ pub mod action_view {
         /// of the transaction. is that fine?
         #[prost(message, tag = "43")]
         UndelegateClaim(super::super::super::component::stake::v1::UndelegateClaim),
+        /// Token Factory
+        #[prost(message, tag = "61")]
+        ActionTokenFactoryCreate(
+            super::super::super::component::token_factory::v1::ActionTokenFactoryCreate,
+        ),
+        #[prost(message, tag = "62")]
+        ActionTokenFactoryMint(
+            super::super::super::component::token_factory::v1::ActionTokenFactoryMint,
+        ),
         #[prost(message, tag = "70")]
         ActionLiquidityTournamentVote(
             super::super::super::component::funding::v1::ActionLiquidityTournamentVoteView,
@@ -686,7 +704,7 @@ impl ::prost::Name for DetectionDataPlan {
 pub struct ActionPlan {
     #[prost(
         oneof = "action_plan::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 35, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 35, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 61, 62, 70"
     )]
     pub action: ::core::option::Option<action_plan::Action>,
 }
@@ -775,6 +793,15 @@ pub mod action_plan {
         #[prost(message, tag = "55")]
         ActionDutchAuctionWithdraw(
             super::super::super::component::auction::v1::ActionDutchAuctionWithdrawPlan,
+        ),
+        /// Token Factory
+        #[prost(message, tag = "61")]
+        ActionTokenFactoryCreate(
+            super::super::super::component::token_factory::v1::ActionTokenFactoryCreate,
+        ),
+        #[prost(message, tag = "62")]
+        ActionTokenFactoryMint(
+            super::super::super::component::token_factory::v1::ActionTokenFactoryMint,
         ),
         /// Funding
         #[prost(message, tag = "70")]

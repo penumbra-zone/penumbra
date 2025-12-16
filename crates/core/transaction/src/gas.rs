@@ -19,6 +19,7 @@ use penumbra_sdk_stake::{
 use penumbra_sdk_governance::{
     DelegatorVote, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
+use penumbra_sdk_token_factory::{ActionTokenFactoryCreate, ActionTokenFactoryMint};
 
 use crate::{
     plan::{ActionPlan, TransactionPlan},
@@ -375,6 +376,9 @@ impl GasCost for ActionPlan {
             ActionPlan::CommunityPoolDeposit(dd) => dd.gas_cost(),
             ActionPlan::Ics20Withdrawal(w) => w.gas_cost(),
             ActionPlan::ActionLiquidityTournamentVote(_) => liquidity_tournament_vote_gas_cost(),
+            // Token factory actions are simple state updates without ZK proofs
+            ActionPlan::ActionTokenFactoryCreate(a) => a.gas_cost(),
+            ActionPlan::ActionTokenFactoryMint(a) => a.gas_cost(),
         }
     }
 }
@@ -415,6 +419,8 @@ impl GasCost for Action {
             Action::ActionLiquidityTournamentVote(action_liquidity_tournament_vote) => {
                 action_liquidity_tournament_vote.gas_cost()
             }
+            Action::ActionTokenFactoryCreate(a) => a.gas_cost(),
+            Action::ActionTokenFactoryMint(a) => a.gas_cost(),
         }
     }
 }
@@ -719,5 +725,37 @@ impl GasCost for ActionDutchAuctionWithdraw {
 impl GasCost for ActionLiquidityTournamentVote {
     fn gas_cost(&self) -> Gas {
         liquidity_tournament_vote_gas_cost()
+    }
+}
+
+// Token factory action - simple state update without ZK proofs
+//
+// Block space is computed from actual encoded size to prevent DoS via
+// large metadata payloads.
+
+impl GasCost for ActionTokenFactoryCreate {
+    fn gas_cost(&self) -> Gas {
+        Gas {
+            // Use actual encoded size - metadata is variable length and
+            // must be charged appropriately to prevent DoS
+            block_space: self.encode_to_vec().len() as u64,
+            compact_block_space: 0,
+            // Small verification cost for nonce uniqueness check
+            verification: 50,
+            execution: 10,
+        }
+    }
+}
+
+impl GasCost for ActionTokenFactoryMint {
+    fn gas_cost(&self) -> Gas {
+        Gas {
+            // Mint action has fixed size (token_id + seq + amount)
+            block_space: self.encode_to_vec().len() as u64,
+            compact_block_space: 0,
+            // Small verification cost for sequence check
+            verification: 50,
+            execution: 10,
+        }
     }
 }

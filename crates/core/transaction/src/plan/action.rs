@@ -22,6 +22,7 @@ use penumbra_sdk_governance::{
     delegator_vote::DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
     ValidatorVote,
 };
+use penumbra_sdk_token_factory::{ActionTokenFactoryCreate, ActionTokenFactoryMint};
 use penumbra_sdk_txhash::{EffectHash, EffectingData};
 
 use penumbra_sdk_ibc::IbcRelay;
@@ -85,6 +86,11 @@ pub enum ActionPlan {
     ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawPlan),
 
     ActionLiquidityTournamentVote(ActionLiquidityTournamentVotePlan),
+
+    /// Token factory: create a new token
+    ActionTokenFactoryCreate(ActionTokenFactoryCreate),
+    /// Token factory: mint tokens using a mint capability
+    ActionTokenFactoryMint(ActionTokenFactoryMint),
 }
 
 impl ActionPlan {
@@ -180,6 +186,8 @@ impl ActionPlan {
                     auth_path.clone(),
                 ))
             }
+            ActionTokenFactoryCreate(plan) => Action::ActionTokenFactoryCreate(plan.clone()),
+            ActionTokenFactoryMint(plan) => Action::ActionTokenFactoryMint(plan.clone()),
         })
     }
 
@@ -210,6 +218,8 @@ impl ActionPlan {
             ActionPlan::ActionDutchAuctionSchedule(_) => 53,
             ActionPlan::ActionDutchAuctionEnd(_) => 54,
             ActionPlan::ActionDutchAuctionWithdraw(_) => 55,
+            ActionPlan::ActionTokenFactoryCreate(_) => 60,
+            ActionPlan::ActionTokenFactoryMint(_) => 61,
             ActionPlan::ActionLiquidityTournamentVote(_) => 70,
         }
     }
@@ -239,6 +249,9 @@ impl ActionPlan {
             ActionDutchAuctionSchedule(action) => action.balance(),
             ActionDutchAuctionEnd(action) => action.balance(),
             ActionDutchAuctionWithdraw(action) => action.balance(),
+
+            ActionTokenFactoryCreate(action) => action.balance(),
+            ActionTokenFactoryMint(action) => action.balance(),
 
             // None of these contribute to transaction balance:
             IbcAction(_)
@@ -277,6 +290,8 @@ impl ActionPlan {
             ActionDutchAuctionEnd(_) => Fr::zero(),
             ActionDutchAuctionWithdraw(_) => Fr::zero(),
             ActionLiquidityTournamentVote(_) => Fr::zero(),
+            ActionTokenFactoryCreate(_) => Fr::zero(),
+            ActionTokenFactoryMint(_) => Fr::zero(),
         }
     }
 
@@ -310,6 +325,8 @@ impl ActionPlan {
             ActionDutchAuctionEnd(plan) => plan.effect_hash(),
             ActionDutchAuctionWithdraw(plan) => plan.to_action().effect_hash(),
             ActionLiquidityTournamentVote(plan) => plan.to_body(fvk).effect_hash(),
+            ActionTokenFactoryCreate(plan) => plan.effect_hash(),
+            ActionTokenFactoryMint(plan) => plan.effect_hash(),
         }
     }
 }
@@ -466,6 +483,18 @@ impl From<ActionLiquidityTournamentVotePlan> for ActionPlan {
     }
 }
 
+impl From<ActionTokenFactoryCreate> for ActionPlan {
+    fn from(inner: ActionTokenFactoryCreate) -> ActionPlan {
+        ActionPlan::ActionTokenFactoryCreate(inner)
+    }
+}
+
+impl From<ActionTokenFactoryMint> for ActionPlan {
+    fn from(inner: ActionTokenFactoryMint) -> ActionPlan {
+        ActionPlan::ActionTokenFactoryMint(inner)
+    }
+}
+
 impl DomainType for ActionPlan {
     type Proto = pb_t::ActionPlan;
 }
@@ -564,6 +593,16 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                     inner.into(),
                 )),
             },
+            ActionPlan::ActionTokenFactoryCreate(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ActionTokenFactoryCreate(
+                    inner.into(),
+                )),
+            },
+            ActionPlan::ActionTokenFactoryMint(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ActionTokenFactoryMint(
+                    inner.into(),
+                )),
+            },
         }
     }
 }
@@ -659,6 +698,12 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::ActionLiquidityTournamentVote(inner) => {
                 Ok(ActionPlan::ActionLiquidityTournamentVote(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ActionTokenFactoryCreate(inner) => {
+                Ok(ActionPlan::ActionTokenFactoryCreate(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ActionTokenFactoryMint(inner) => {
+                Ok(ActionPlan::ActionTokenFactoryMint(inner.try_into()?))
             }
         }
     }

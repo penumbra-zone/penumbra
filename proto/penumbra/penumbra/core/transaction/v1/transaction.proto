@@ -12,6 +12,7 @@ import "penumbra/core/component/ibc/v1/ibc.proto";
 import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
 import "penumbra/core/component/stake/v1/stake.proto";
+import "penumbra/core/component/token_factory/v1/token_factory.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/txhash/v1/txhash.proto";
 import "penumbra/crypto/decaf377_fmd/v1/decaf377_fmd.proto";
@@ -112,6 +113,10 @@ message Action {
     component.auction.v1.ActionDutchAuctionSchedule action_dutch_auction_schedule = 53;
     component.auction.v1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
     component.auction.v1.ActionDutchAuctionWithdraw action_dutch_auction_withdraw = 55;
+
+    // Token Factory
+    component.token_factory.v1.ActionTokenFactoryCreate action_token_factory_create = 61;
+    component.token_factory.v1.ActionTokenFactoryMint action_token_factory_mint = 62;
 
     // Funding
     component.funding.v1.ActionLiquidityTournamentVote action_liquidity_tournament_vote = 70;
@@ -250,8 +255,12 @@ message ActionView {
     // of the transaction. is that fine?
     component.stake.v1.UndelegateClaim undelegate_claim = 43;
 
+    // Token Factory
+    component.token_factory.v1.ActionTokenFactoryCreate action_token_factory_create = 61;
+    component.token_factory.v1.ActionTokenFactoryMint action_token_factory_mint = 62;
+
     component.funding.v1.ActionLiquidityTournamentVoteView action_liquidity_tournament_vote = 70;
-    
+
     component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
   }
 }
@@ -348,6 +357,10 @@ message ActionPlan {
     component.auction.v1.ActionDutchAuctionSchedule action_dutch_auction_schedule = 53;
     component.auction.v1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
     component.auction.v1.ActionDutchAuctionWithdrawPlan action_dutch_auction_withdraw = 55;
+
+    // Token Factory
+    component.token_factory.v1.ActionTokenFactoryCreate action_token_factory_create = 61;
+    component.token_factory.v1.ActionTokenFactoryMint action_token_factory_mint = 62;
 
     // Funding
     component.funding.v1.ActionLiquidityTournamentVotePlan action_liquidity_tournament_vote = 70;

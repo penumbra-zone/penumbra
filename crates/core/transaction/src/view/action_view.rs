@@ -19,6 +19,7 @@ use penumbra_sdk_ibc::IbcRelay;
 use penumbra_sdk_proto::{core::transaction::v1 as pbt, DomainType};
 use penumbra_sdk_shielded_pool::Ics20Withdrawal;
 use penumbra_sdk_stake::{Delegate, Undelegate, UndelegateClaim};
+use penumbra_sdk_token_factory::{ActionTokenFactoryCreate, ActionTokenFactoryMint};
 use serde::{Deserialize, Serialize};
 
 pub use penumbra_sdk_governance::DelegatorVoteView;
@@ -58,6 +59,8 @@ pub enum ActionView {
     ActionDutchAuctionEnd(ActionDutchAuctionEnd),
     ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawView),
     ActionLiquidityTournamentVote(ActionLiquidityTournamentVoteView),
+    ActionTokenFactoryCreate(ActionTokenFactoryCreate),
+    ActionTokenFactoryMint(ActionTokenFactoryMint),
 }
 
 impl DomainType for ActionView {
@@ -113,6 +116,12 @@ impl TryFrom<pbt::ActionView> for ActionView {
                     ActionView::ActionLiquidityTournamentVote(x.try_into()?)
                 }
                 AV::PositionOpenView(x) => ActionView::PositionOpen(x.try_into()?),
+                AV::ActionTokenFactoryCreate(x) => {
+                    ActionView::ActionTokenFactoryCreate(x.try_into()?)
+                }
+                AV::ActionTokenFactoryMint(x) => {
+                    ActionView::ActionTokenFactoryMint(x.try_into()?)
+                }
             },
         )
     }
@@ -154,6 +163,8 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::ActionLiquidityTournamentVote(x) => {
                     AV::ActionLiquidityTournamentVote(x.into())
                 }
+                ActionView::ActionTokenFactoryCreate(x) => AV::ActionTokenFactoryCreate(x.into()),
+                ActionView::ActionTokenFactoryMint(x) => AV::ActionTokenFactoryMint(x.into()),
             }),
         }
     }
@@ -193,6 +204,8 @@ impl From<ActionView> for Action {
             ActionView::ActionLiquidityTournamentVote(x) => {
                 Action::ActionLiquidityTournamentVote(x.into())
             }
+            ActionView::ActionTokenFactoryCreate(x) => Action::ActionTokenFactoryCreate(x),
+            ActionView::ActionTokenFactoryMint(x) => Action::ActionTokenFactoryMint(x),
         }
     }
 }

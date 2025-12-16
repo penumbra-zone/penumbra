@@ -57,6 +57,7 @@ penumbra-sdk-sct = {workspace = true, default-features = false}
 penumbra-sdk-shielded-pool = {workspace = true, default-features = false}
 penumbra-sdk-stake = {workspace = true, default-features = false}
 penumbra-sdk-tct = {workspace = true, default-features = true }
+penumbra-sdk-token-factory = {workspace = true, default-features = false}
 penumbra-sdk-txhash = {workspace = true, default-features = false}
 poseidon377 = {workspace = true, features = ["r1cs"]}
 rand = {workspace = true}
