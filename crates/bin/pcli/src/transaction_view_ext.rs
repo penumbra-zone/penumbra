@@ -460,6 +460,14 @@ impl TransactionViewExt for TransactionView {
                     ["Dutch Auction Withdraw", &action]
                 }
                 penumbra_sdk_transaction::ActionView::ActionLiquidityTournamentVote(_) => todo!(),
+                penumbra_sdk_transaction::ActionView::ActionTokenFactoryCreate(_) => {
+                    action = "Token Factory Create".to_string();
+                    ["Token Factory", &action]
+                }
+                penumbra_sdk_transaction::ActionView::ActionTokenFactoryMint(x) => {
+                    action = format!("Mint {} tokens (seq={})", x.amount, x.current_seq);
+                    ["Token Factory", &action]
+                }
             };
 
             actions_table.add_row(row);

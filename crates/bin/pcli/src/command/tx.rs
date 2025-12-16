@@ -95,6 +95,9 @@ mod liquidity_position;
 mod lqt_vote;
 mod proposal;
 mod replicate;
+mod token_factory;
+
+use token_factory::TokenFactoryCmd;
 
 /// The planner can fail to build a large transaction, so
 /// pcli splits apart the number of positions to close/withdraw
@@ -329,6 +332,9 @@ pub enum TxCmd {
     },
     #[clap(display_order = 700)]
     LqtVote(LqtVoteCmd),
+    /// Token factory commands for creating and minting custom tokens.
+    #[clap(display_order = 800, subcommand)]
+    TokenFactory(TokenFactoryCmd),
 }
 
 /// Vote on a governance proposal.
@@ -387,6 +393,7 @@ impl TxCmd {
             TxCmd::Broadcast { .. } => false,
             TxCmd::RegisterForwardingAccount { .. } => false,
             TxCmd::LqtVote(cmd) => cmd.offline(),
+            TxCmd::TokenFactory(cmd) => cmd.offline(),
         }
     }
 
@@ -1636,6 +1643,7 @@ impl TxCmd {
                 println!("Noble response: {:?}", r);
             }
             TxCmd::LqtVote(cmd) => cmd.exec(app, gas_prices).await?,
+            TxCmd::TokenFactory(cmd) => cmd.exec(app).await?,
         }
 
         Ok(())
