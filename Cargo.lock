@@ -4872,6 +4872,7 @@ dependencies = [
  "penumbra-sdk-shielded-pool",
  "penumbra-sdk-stake",
  "penumbra-sdk-tct",
+ "penumbra-sdk-token-factory",
  "penumbra-sdk-transaction",
  "penumbra-sdk-view",
  "penumbra-sdk-wallet",
@@ -5161,6 +5162,7 @@ dependencies = [
  "penumbra-sdk-shielded-pool",
  "penumbra-sdk-stake",
  "penumbra-sdk-tct",
+ "penumbra-sdk-token-factory",
  "penumbra-sdk-tower-trace",
  "penumbra-sdk-transaction",
  "penumbra-sdk-txhash",
@@ -6339,6 +6341,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-sdk-token-factory"
+version = "2.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "cnidarium",
+ "cnidarium-component",
+ "hex",
+ "once_cell",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-txhash",
+ "proptest",
+ "rand_core",
+ "regex",
+ "serde",
+ "tendermint 0.40.3",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
 name = "penumbra-sdk-tower-trace"
 version = "2.1.1"
 dependencies = [
@@ -6399,6 +6424,7 @@ dependencies = [
  "penumbra-sdk-shielded-pool",
  "penumbra-sdk-stake",
  "penumbra-sdk-tct",
+ "penumbra-sdk-token-factory",
  "penumbra-sdk-txhash",
  "poseidon377",
  "proptest",
@@ -6468,6 +6494,7 @@ dependencies = [
  "penumbra-sdk-shielded-pool",
  "penumbra-sdk-stake",
  "penumbra-sdk-tct",
+ "penumbra-sdk-token-factory",
  "penumbra-sdk-transaction",
  "prost 0.13.4",
  "r2d2",
