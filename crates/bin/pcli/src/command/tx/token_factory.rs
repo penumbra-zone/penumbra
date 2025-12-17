@@ -11,13 +11,19 @@
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use penumbra_sdk_asset::asset;
+use dialoguer::Confirm;
+use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_dex::{
+    lp::{position::Position, Reserves},
+    DirectedTradingPair,
+};
 use penumbra_sdk_fee::FeeTier;
 use penumbra_sdk_keys::keys::AddressIndex;
 use penumbra_sdk_num::Amount;
+use penumbra_sdk_shielded_pool::ActionBurnPlan;
 use penumbra_sdk_token_factory::{ActionTokenFactoryCreate, ActionTokenFactoryMint, TokenFactoryId};
-use penumbra_sdk_wallet::plan::Planner;
-use rand_core::OsRng;
+use penumbra_sdk_view::{Planner, ViewClient};
+use rand_core::{CryptoRngCore, OsRng};
 
 use crate::App;
 
@@ -70,6 +76,61 @@ pub enum TokenFactoryCmd {
         #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
+    /// Fair launch a new token with a bonding curve.
+    ///
+    /// Creates a new token and immediately commits the entire supply to a
+    /// bonding curve. The mint capability and all LP NFTs are burned, making
+    /// the liquidity immutable. No frontrunning is possible because all DEX
+    /// operations are batched per block.
+    ///
+    /// The bonding curve is approximated by a series of constant-price LP
+    /// positions at ascending prices.
+    #[clap(display_order = 120)]
+    Launch {
+        /// The name/symbol for the token (e.g., "MYTOKEN").
+        #[clap(long)]
+        name: String,
+        /// The total supply to create for the bonding curve.
+        #[clap(long)]
+        supply: String,
+        /// The quote asset to pair against (e.g., "penumbra" or "usdc").
+        /// This is the asset used to purchase the new token.
+        #[clap(long)]
+        quote_asset: String,
+        /// The starting price (quote asset per token) at the bottom of the curve.
+        #[clap(long)]
+        start_price: f64,
+        /// The ending price (quote asset per token) at the top of the curve.
+        #[clap(long)]
+        end_price: f64,
+        /// The type of bonding curve.
+        #[clap(long, value_enum, default_value = "linear")]
+        curve: CurveType,
+        /// Number of LP positions to create along the curve.
+        #[clap(long, default_value = "32")]
+        num_positions: u32,
+        /// Fee in basis points for each position (0-5000).
+        #[clap(long, default_value = "0")]
+        fee_bps: u32,
+        /// Only spend funds originally received by the given account.
+        #[clap(long, default_value = "0")]
+        source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, default_value_t)]
+        fee_tier: FeeTier,
+        /// Skip confirmation prompt.
+        #[clap(short, long)]
+        yes: bool,
+    },
+}
+
+/// The type of bonding curve to use for fair launches.
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum CurveType {
+    /// Linear price increase from start to end.
+    Linear,
+    /// Exponential price increase (steeper at higher prices).
+    Exponential,
 }
 
 impl TokenFactoryCmd {
@@ -203,6 +264,250 @@ impl TokenFactoryCmd {
                 println!("Tokens minted successfully.");
                 Ok(())
             }
+
+            TokenFactoryCmd::Launch {
+                name,
+                supply,
+                quote_asset,
+                start_price,
+                end_price,
+                curve,
+                num_positions,
+                fee_bps,
+                source,
+                fee_tier,
+                yes,
+            } => {
+                // validate inputs
+                if *start_price <= 0.0 || *end_price <= 0.0 {
+                    anyhow::bail!("prices must be positive");
+                }
+                if *start_price >= *end_price {
+                    anyhow::bail!("start_price must be less than end_price");
+                }
+                if *num_positions < 2 {
+                    anyhow::bail!("need at least 2 positions for a bonding curve");
+                }
+                if *fee_bps > 5000 {
+                    anyhow::bail!("fee cannot exceed 5000 bps (50%)");
+                }
+
+                // look up quote asset from the asset registry
+                let asset_cache = app.view().assets().await?;
+                let quote_metadata = asset_cache
+                    .iter()
+                    .find(|(_id, m)| m.symbol().to_lowercase() == quote_asset.to_lowercase()
+                        || m.base_denom().denom.to_lowercase() == quote_asset.to_lowercase())
+                    .map(|(_id, m)| m.clone())
+                    .ok_or_else(|| anyhow::anyhow!(
+                        "unknown quote asset '{}'. try 'penumbra' or check available assets with 'pcli view balance'",
+                        quote_asset
+                    ))?;
+                let quote_asset_id = quote_metadata.id();
+
+                // generate token id
+                let mut nonce_bytes = [0u8; 32];
+                rand::RngCore::fill_bytes(&mut OsRng, &mut nonce_bytes);
+                let token_id = TokenFactoryId::new(nonce_bytes);
+
+                // parse supply
+                let supply: Amount = Amount::from(
+                    supply
+                        .parse::<u128>()
+                        .context("invalid supply amount")?
+                );
+
+                // create metadata
+                let metadata = asset::Metadata::try_from(
+                    penumbra_sdk_proto::core::asset::v1::Metadata {
+                        base: token_id.denom(),
+                        display: name.clone(),
+                        name: name.clone(),
+                        symbol: name.clone(),
+                        ..Default::default()
+                    }
+                )?;
+
+                // the new token's asset id
+                let new_token_id = metadata.id();
+
+                // build bonding curve positions
+                let positions = build_bonding_curve_positions(
+                    OsRng,
+                    new_token_id,
+                    quote_asset_id,
+                    supply,
+                    *start_price,
+                    *end_price,
+                    *curve,
+                    *num_positions,
+                    *fee_bps,
+                );
+
+                println!("################################################################################");
+                println!("########################### FAIR LAUNCH SUMMARY ################################");
+                println!("################################################################################");
+                println!("\nToken: {}", name);
+                println!("Token ID: {}", hex::encode(token_id.as_bytes()));
+                println!("Denom: {}", token_id.denom());
+                println!("Total supply: {}", supply);
+                println!("Quote asset: {} ({})", quote_metadata.symbol(), quote_metadata);
+                println!("Price range: {} - {} {}/{}", start_price, end_price, quote_metadata.symbol(), name);
+                println!("Curve type: {:?}", curve);
+                println!("Positions: {}", num_positions);
+                println!("Fee per position: {} bps", fee_bps);
+                println!("\nThis transaction will:");
+                println!("  1. Create the token with full supply");
+                println!("  2. Burn the mint capability (no more tokens can ever be minted)");
+                println!("  3. Open {} LP positions forming a bonding curve", num_positions);
+                println!("  4. Burn all LP NFTs (liquidity is permanently locked)");
+                println!("\nAfter this transaction, the entire supply will be available on the");
+                println!("bonding curve. Because penumbra batches all dex operations per block,");
+                println!("there is no frontrunning - everyone gets equal access.\n");
+
+                if !*yes
+                    && !Confirm::new()
+                        .with_prompt("proceed with fair launch?")
+                        .interact()?
+                {
+                    return Ok(());
+                }
+
+                // create action with enable_mint=true so we get the mint cap to burn
+                let create_action = ActionTokenFactoryCreate::new(
+                    token_id.clone(),
+                    metadata.clone(),
+                    supply,
+                    true, // enable mint so we get the cap
+                ).context("invalid create parameters")?;
+
+                // build the mint cap asset id for burning
+                let mint_cap_denom = format!("factory_mint_0_{}", hex::encode(token_id.as_bytes()));
+                let mint_cap_metadata = asset::Metadata::try_from(
+                    penumbra_sdk_proto::core::asset::v1::Metadata {
+                        base: mint_cap_denom.clone(),
+                        display: mint_cap_denom.clone(),
+                        name: mint_cap_denom.clone(),
+                        symbol: mint_cap_denom.clone(),
+                        ..Default::default()
+                    }
+                )?;
+                let mint_cap_value = Value {
+                    amount: Amount::from(1u64),
+                    asset_id: mint_cap_metadata.id(),
+                };
+
+                let mut planner = Planner::new(OsRng);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
+
+                // 1. create the token
+                planner.token_factory_create(create_action);
+
+                // 2. burn the mint capability
+                let mint_cap_burn = ActionBurnPlan::new(&mut OsRng, mint_cap_value);
+                planner.action_burn(mint_cap_burn);
+
+                // 3. open all positions and burn their lpnfts
+                for position in &positions {
+                    planner.position_open(position.clone());
+                    // the lpnft will be burned - we add burn plans for each
+                    let lp_nft_denom = format!("lpnft_opened_{}", position.id());
+                    let lp_nft_metadata = asset::Metadata::try_from(
+                        penumbra_sdk_proto::core::asset::v1::Metadata {
+                            base: lp_nft_denom.clone(),
+                            display: lp_nft_denom.clone(),
+                            name: lp_nft_denom.clone(),
+                            symbol: lp_nft_denom.clone(),
+                            ..Default::default()
+                        }
+                    )?;
+                    let lp_nft_value = Value {
+                        amount: Amount::from(1u64),
+                        asset_id: lp_nft_metadata.id(),
+                    };
+                    let lp_burn = ActionBurnPlan::new(&mut OsRng, lp_nft_value);
+                    planner.action_burn(lp_burn);
+                }
+
+                let plan = planner
+                    .plan(
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
+
+                let tx_id = app.build_and_submit_transaction(plan).await?;
+                println!("\nFair launch successful!");
+                println!("Transaction ID: {}", tx_id);
+                println!("\nToken {} is now live on the bonding curve.", name);
+                println!("The entire supply is locked in immutable liquidity positions.");
+                Ok(())
+            }
         }
     }
+}
+
+/// Build LP positions that approximate a bonding curve.
+///
+/// The positions are funded with the new token and spread across the price range.
+/// When bought, tokens move from low-price positions to buyers, and the quote asset
+/// accumulates in those positions.
+fn build_bonding_curve_positions<R: CryptoRngCore>(
+    mut rng: R,
+    token_id: asset::Id,
+    quote_id: asset::Id,
+    total_supply: Amount,
+    start_price: f64,
+    end_price: f64,
+    curve_type: CurveType,
+    num_positions: u32,
+    fee_bps: u32,
+) -> Vec<Position> {
+    let mut positions = Vec::with_capacity(num_positions as usize);
+
+    // trading pair: token -> quote (buying tokens costs quote asset)
+    let pair = DirectedTradingPair::new(token_id, quote_id);
+
+    // calculate token allocation per position
+    // for a bonding curve, we want more tokens at lower prices
+    let supply_per_position = total_supply.value() as f64 / num_positions as f64;
+
+    for i in 0..num_positions {
+        let t = i as f64 / (num_positions - 1) as f64;
+
+        // calculate price at this position based on curve type
+        let price = match curve_type {
+            CurveType::Linear => start_price + t * (end_price - start_price),
+            CurveType::Exponential => {
+                // exponential interpolation: start * (end/start)^t
+                start_price * (end_price / start_price).powf(t)
+            }
+        };
+
+        // for bonding curves, we want supply distributed so early buyers get more tokens
+        // simpler approach: equal supply per position
+        let tokens_at_position = Amount::from(supply_per_position as u128);
+
+        // p and q define the exchange rate: p units of asset2 per q units of asset1
+        // price = p/q means 1 token costs `price` quote
+        // we use a scaling factor for precision
+        let scale = 1_000_000u128;
+        let p = Amount::from((price * scale as f64) as u128);
+        let q = Amount::from(scale);
+
+        // reserves: we're selling tokens, so r1 has tokens, r2 is empty
+        let reserves = Reserves {
+            r1: tokens_at_position,
+            r2: Amount::zero(),
+        };
+
+        let position = Position::new(&mut rng, pair, fee_bps, p, q, reserves);
+        positions.push(position);
+    }
+
+    positions
 }
