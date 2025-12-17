@@ -44,7 +44,7 @@ use penumbra_sdk_ibc::IbcRelay;
 use penumbra_sdk_keys::{keys::AddressIndex, Address};
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::view::v1::{NotesForVotingRequest, NotesRequest};
-use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
+use penumbra_sdk_shielded_pool::{ActionBurnPlan, Ics20Withdrawal, Note, OutputPlan, SpendPlan};
 use penumbra_sdk_stake::{rate::RateData, validator, IdentityKey, UndelegateClaimPlan};
 use penumbra_sdk_tct as tct;
 use penumbra_sdk_token_factory::{ActionTokenFactoryCreate, ActionTokenFactoryMint};
@@ -541,6 +541,17 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn token_factory_mint(&mut self, action: ActionTokenFactoryMint) -> &mut Self {
         self.action_list.push(action);
+        self
+    }
+
+    /// Burn any value (tokens, LP NFTs, mint capabilities).
+    ///
+    /// This consumes value from the transaction balance, permanently
+    /// removing it from circulation. Used for fair launches to burn
+    /// mint caps and LP NFTs, making liquidity immutable.
+    #[instrument(skip(self))]
+    pub fn action_burn(&mut self, plan: ActionBurnPlan) -> &mut Self {
+        self.action_list.push(plan);
         self
     }
 
