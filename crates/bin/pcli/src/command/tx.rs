@@ -333,7 +333,7 @@ pub enum TxCmd {
     #[clap(display_order = 700)]
     LqtVote(LqtVoteCmd),
     /// Token factory commands for creating and minting custom tokens.
-    #[clap(display_order = 800, subcommand)]
+    #[clap(display_order = 800, subcommand, visible_alias = "tf")]
     TokenFactory(TokenFactoryCmd),
 }
 

@@ -5,6 +5,7 @@ use balance::BalanceCmd;
 use lps::LiquidityPositionsCmd;
 use noble_address::NobleAddressCmd;
 use staked::StakedCmd;
+use token_factory::TokenFactoryCmd;
 use transaction_hashes::TransactionHashesCmd;
 use tx::TxCmd;
 use wallet_id::WalletIdCmd;
@@ -19,6 +20,7 @@ mod balance;
 mod lps;
 mod noble_address;
 mod staked;
+mod token_factory;
 mod wallet_id;
 
 pub mod transaction_hashes;
@@ -53,6 +55,9 @@ pub enum ViewCmd {
     /// View information about the liquidity positions you control.
     #[clap(visible_alias = "lps")]
     LiquidityPositions(LiquidityPositionsCmd),
+    /// View your token factory assets (created tokens and mint capabilities).
+    #[clap(visible_alias = "tf")]
+    TokenFactory(TokenFactoryCmd),
 }
 
 impl ViewCmd {
@@ -69,6 +74,7 @@ impl ViewCmd {
             ViewCmd::ListTransactionHashes(transactions_cmd) => transactions_cmd.offline(),
             ViewCmd::Tx(tx_cmd) => tx_cmd.offline(),
             ViewCmd::LiquidityPositions(lps_cmd) => lps_cmd.offline(),
+            ViewCmd::TokenFactory(tf_cmd) => tf_cmd.offline(),
         }
     }
 
@@ -117,6 +123,7 @@ impl ViewCmd {
                     .await?;
             }
             ViewCmd::LiquidityPositions(cmd) => cmd.exec(app).await?,
+            ViewCmd::TokenFactory(cmd) => cmd.exec(app.view()).await?,
         }
 
         Ok(())

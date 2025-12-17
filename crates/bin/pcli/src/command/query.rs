@@ -7,10 +7,12 @@ mod dex;
 mod governance;
 mod ibc_query;
 mod shielded_pool;
+mod token_factory;
 mod tx;
 mod validator;
 
 use auction::AuctionCmd;
+use token_factory::TokenFactoryCmd;
 use base64::prelude::*;
 use chain::ChainCmd;
 use cnidarium::proto::v1::non_verifiable_key_value_request::Key as NVKey;
@@ -94,6 +96,9 @@ pub enum QueryCmd {
     /// Queries information about a Dutch auction.
     #[clap(subcommand)]
     Auction(AuctionCmd),
+    /// Queries token factory state.
+    #[clap(subcommand, visible_alias = "tf")]
+    TokenFactory(TokenFactoryCmd),
 }
 
 impl QueryCmd {
@@ -139,6 +144,10 @@ impl QueryCmd {
             return auction.exec(app).await;
         }
 
+        if let QueryCmd::TokenFactory(tf) = self {
+            return tf.exec(app).await;
+        }
+
         // TODO: this is a hack; we should replace all raw state key uses with RPC methods.
         if let QueryCmd::ShieldedPool(ShieldedPool::CompactBlock { height }) = self {
             use penumbra_sdk_proto::core::component::compact_block::v1::{
@@ -167,6 +176,7 @@ impl QueryCmd {
             | QueryCmd::CommunityPool(_)
             | QueryCmd::Watch { .. }
             | QueryCmd::Auction { .. }
+            | QueryCmd::TokenFactory { .. }
             | QueryCmd::Ibc(_) => {
                 unreachable!("query handled in guard");
             }
@@ -230,7 +240,7 @@ impl QueryCmd {
 
     pub fn offline(&self) -> bool {
         match self {
-            QueryCmd::Dex { .. } | QueryCmd::CommunityPool { .. } => false,
+            QueryCmd::Dex { .. } | QueryCmd::CommunityPool { .. } | QueryCmd::TokenFactory { .. } => false,
             QueryCmd::Tx { .. }
             | QueryCmd::Chain { .. }
             | QueryCmd::Validator { .. }
@@ -257,6 +267,7 @@ impl QueryCmd {
             | QueryCmd::CommunityPool { .. }
             | QueryCmd::Watch { .. }
             | QueryCmd::Auction { .. }
+            | QueryCmd::TokenFactory { .. }
             | QueryCmd::Ibc(_) => {
                 unreachable!("query is special cased")
             }
