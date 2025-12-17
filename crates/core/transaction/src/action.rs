@@ -2,6 +2,7 @@ use anyhow::anyhow;
 use penumbra_sdk_auction::auction::dutch::actions::{
     ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
 };
+use penumbra_sdk_shielded_pool::ActionBurn;
 use penumbra_sdk_token_factory::{ActionTokenFactoryCreate, ActionTokenFactoryMint};
 use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
@@ -52,6 +53,8 @@ pub enum Action {
 
     ActionTokenFactoryCreate(ActionTokenFactoryCreate),
     ActionTokenFactoryMint(ActionTokenFactoryMint),
+
+    ActionBurn(ActionBurn),
 }
 
 impl EffectingData for Action {
@@ -84,6 +87,7 @@ impl EffectingData for Action {
             Action::ActionLiquidityTournamentVote(a) => a.effect_hash(),
             Action::ActionTokenFactoryCreate(a) => a.effect_hash(),
             Action::ActionTokenFactoryMint(a) => a.effect_hash(),
+            Action::ActionBurn(a) => a.effect_hash(),
         }
     }
 }
@@ -144,6 +148,7 @@ impl Action {
             Action::ActionTokenFactoryMint(_) => {
                 tracing::info_span!("ActionTokenFactoryMint", ?idx)
             }
+            Action::ActionBurn(_) => tracing::info_span!("ActionBurn", ?idx),
         }
     }
 
@@ -176,6 +181,7 @@ impl Action {
             Action::ActionDutchAuctionWithdraw(_) => 55,
             Action::ActionTokenFactoryCreate(_) => 60,
             Action::ActionTokenFactoryMint(_) => 61,
+            Action::ActionBurn(_) => 63,
             Action::ActionLiquidityTournamentVote(_) => 70,
         }
     }
@@ -213,6 +219,7 @@ impl IsAction for Action {
             Action::ActionLiquidityTournamentVote(action) => action.balance_commitment(),
             Action::ActionTokenFactoryCreate(action) => action.balance().commit(Default::default()),
             Action::ActionTokenFactoryMint(action) => action.balance().commit(Default::default()),
+            Action::ActionBurn(action) => action.balance().commit(Default::default()),
         }
     }
 
@@ -245,6 +252,7 @@ impl IsAction for Action {
             Action::ActionLiquidityTournamentVote(x) => x.view_from_perspective(txp),
             Action::ActionTokenFactoryCreate(x) => ActionView::ActionTokenFactoryCreate(x.to_owned()),
             Action::ActionTokenFactoryMint(x) => ActionView::ActionTokenFactoryMint(x.to_owned()),
+            Action::ActionBurn(x) => ActionView::ActionBurn(x.to_owned()),
         }
     }
 }
@@ -339,6 +347,9 @@ impl From<Action> for pb::Action {
             Action::ActionTokenFactoryMint(inner) => pb::Action {
                 action: Some(pb::action::Action::ActionTokenFactoryMint(inner.into())),
             },
+            Action::ActionBurn(inner) => pb::Action {
+                action: Some(pb::action::Action::ActionBurn(inner.into())),
+            },
         }
     }
 }
@@ -422,6 +433,7 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::ActionTokenFactoryMint(inner) => {
                 Ok(Action::ActionTokenFactoryMint(inner.try_into()?))
             }
+            pb::action::Action::ActionBurn(inner) => Ok(Action::ActionBurn(inner.try_into()?)),
         }
     }
 }

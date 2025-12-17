@@ -11,7 +11,7 @@ use penumbra_sdk_funding::liquidity_tournament::{
 };
 use penumbra_sdk_ibc::IbcRelay;
 use penumbra_sdk_keys::symmetric::ENCRYPTED_POSITION_METADATA_SIZE_BYTES;
-use penumbra_sdk_shielded_pool::{Ics20Withdrawal, Output, Spend};
+use penumbra_sdk_shielded_pool::{ActionBurn, ActionBurnPlan, Ics20Withdrawal, Output, Spend};
 use penumbra_sdk_stake::{
     validator::Definition as ValidatorDefinition, Delegate, Undelegate, UndelegateClaim,
 };
@@ -379,6 +379,7 @@ impl GasCost for ActionPlan {
             // Token factory actions are simple state updates without ZK proofs
             ActionPlan::ActionTokenFactoryCreate(a) => a.gas_cost(),
             ActionPlan::ActionTokenFactoryMint(a) => a.gas_cost(),
+            ActionPlan::ActionBurn(a) => a.gas_cost(),
         }
     }
 }
@@ -421,6 +422,7 @@ impl GasCost for Action {
             }
             Action::ActionTokenFactoryCreate(a) => a.gas_cost(),
             Action::ActionTokenFactoryMint(a) => a.gas_cost(),
+            Action::ActionBurn(a) => a.gas_cost(),
         }
     }
 }
@@ -757,5 +759,28 @@ impl GasCost for ActionTokenFactoryMint {
             verification: 50,
             execution: 10,
         }
+    }
+}
+
+// Burn actions are simple value consumption without ZK proofs
+fn burn_gas_cost() -> Gas {
+    Gas {
+        // Value = 48 bytes (asset_id + amount)
+        block_space: 48,
+        compact_block_space: 0,
+        verification: 0,
+        execution: 10,
+    }
+}
+
+impl GasCost for ActionBurn {
+    fn gas_cost(&self) -> Gas {
+        burn_gas_cost()
+    }
+}
+
+impl GasCost for ActionBurnPlan {
+    fn gas_cost(&self) -> Gas {
+        burn_gas_cost()
     }
 }

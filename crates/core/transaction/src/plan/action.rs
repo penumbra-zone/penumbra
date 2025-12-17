@@ -28,7 +28,7 @@ use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use penumbra_sdk_ibc::IbcRelay;
 use penumbra_sdk_keys::{symmetric::PayloadKey, FullViewingKey};
 use penumbra_sdk_proto::{core::transaction::v1 as pb_t, DomainType};
-use penumbra_sdk_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
+use penumbra_sdk_shielded_pool::{ActionBurnPlan, Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_sdk_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
 
@@ -91,6 +91,9 @@ pub enum ActionPlan {
     ActionTokenFactoryCreate(ActionTokenFactoryCreate),
     /// Token factory: mint tokens using a mint capability
     ActionTokenFactoryMint(ActionTokenFactoryMint),
+
+    /// Burn any value (tokens, LP NFTs, mint caps)
+    ActionBurn(ActionBurnPlan),
 }
 
 impl ActionPlan {
@@ -188,6 +191,7 @@ impl ActionPlan {
             }
             ActionTokenFactoryCreate(plan) => Action::ActionTokenFactoryCreate(plan.clone()),
             ActionTokenFactoryMint(plan) => Action::ActionTokenFactoryMint(plan.clone()),
+            ActionBurn(plan) => Action::ActionBurn(plan.build()),
         })
     }
 
@@ -220,6 +224,7 @@ impl ActionPlan {
             ActionPlan::ActionDutchAuctionWithdraw(_) => 55,
             ActionPlan::ActionTokenFactoryCreate(_) => 60,
             ActionPlan::ActionTokenFactoryMint(_) => 61,
+            ActionPlan::ActionBurn(_) => 63,
             ActionPlan::ActionLiquidityTournamentVote(_) => 70,
         }
     }
@@ -252,6 +257,7 @@ impl ActionPlan {
 
             ActionTokenFactoryCreate(action) => action.balance(),
             ActionTokenFactoryMint(action) => action.balance(),
+            ActionBurn(action) => action.balance(),
 
             // None of these contribute to transaction balance:
             IbcAction(_)
@@ -292,6 +298,7 @@ impl ActionPlan {
             ActionLiquidityTournamentVote(_) => Fr::zero(),
             ActionTokenFactoryCreate(_) => Fr::zero(),
             ActionTokenFactoryMint(_) => Fr::zero(),
+            ActionBurn(plan) => plan.value_blinding(),
         }
     }
 
@@ -327,6 +334,7 @@ impl ActionPlan {
             ActionLiquidityTournamentVote(plan) => plan.to_body(fvk).effect_hash(),
             ActionTokenFactoryCreate(plan) => plan.effect_hash(),
             ActionTokenFactoryMint(plan) => plan.effect_hash(),
+            ActionBurn(plan) => plan.clone().build().effect_hash(),
         }
     }
 }
@@ -495,6 +503,12 @@ impl From<ActionTokenFactoryMint> for ActionPlan {
     }
 }
 
+impl From<ActionBurnPlan> for ActionPlan {
+    fn from(inner: ActionBurnPlan) -> ActionPlan {
+        ActionPlan::ActionBurn(inner)
+    }
+}
+
 impl DomainType for ActionPlan {
     type Proto = pb_t::ActionPlan;
 }
@@ -603,6 +617,9 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                     inner.into(),
                 )),
             },
+            ActionPlan::ActionBurn(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ActionBurn(inner.into())),
+            },
         }
     }
 }
@@ -704,6 +721,9 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::ActionTokenFactoryMint(inner) => {
                 Ok(ActionPlan::ActionTokenFactoryMint(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ActionBurn(inner) => {
+                Ok(ActionPlan::ActionBurn(inner.try_into()?))
             }
         }
     }

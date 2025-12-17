@@ -278,7 +278,8 @@ impl Transaction {
                 | Action::ActionDutchAuctionWithdraw(_)
                 | Action::ActionLiquidityTournamentVote(_)
                 | Action::ActionTokenFactoryCreate(_)
-                | Action::ActionTokenFactoryMint(_) => {}
+                | Action::ActionTokenFactoryMint(_)
+                | Action::ActionBurn(_) => {}
             }
         }
 

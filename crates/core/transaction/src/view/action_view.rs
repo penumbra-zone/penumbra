@@ -17,7 +17,7 @@ use penumbra_sdk_governance::{
 };
 use penumbra_sdk_ibc::IbcRelay;
 use penumbra_sdk_proto::{core::transaction::v1 as pbt, DomainType};
-use penumbra_sdk_shielded_pool::Ics20Withdrawal;
+use penumbra_sdk_shielded_pool::{ActionBurn, Ics20Withdrawal};
 use penumbra_sdk_stake::{Delegate, Undelegate, UndelegateClaim};
 use penumbra_sdk_token_factory::{ActionTokenFactoryCreate, ActionTokenFactoryMint};
 use serde::{Deserialize, Serialize};
@@ -61,6 +61,7 @@ pub enum ActionView {
     ActionLiquidityTournamentVote(ActionLiquidityTournamentVoteView),
     ActionTokenFactoryCreate(ActionTokenFactoryCreate),
     ActionTokenFactoryMint(ActionTokenFactoryMint),
+    ActionBurn(ActionBurn),
 }
 
 impl DomainType for ActionView {
@@ -122,6 +123,7 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::ActionTokenFactoryMint(x) => {
                     ActionView::ActionTokenFactoryMint(x.try_into()?)
                 }
+                AV::ActionBurn(x) => ActionView::ActionBurn(x.try_into()?),
             },
         )
     }
@@ -165,6 +167,7 @@ impl From<ActionView> for pbt::ActionView {
                 }
                 ActionView::ActionTokenFactoryCreate(x) => AV::ActionTokenFactoryCreate(x.into()),
                 ActionView::ActionTokenFactoryMint(x) => AV::ActionTokenFactoryMint(x.into()),
+                ActionView::ActionBurn(x) => AV::ActionBurn(x.into()),
             }),
         }
     }
@@ -206,6 +209,7 @@ impl From<ActionView> for Action {
             }
             ActionView::ActionTokenFactoryCreate(x) => Action::ActionTokenFactoryCreate(x),
             ActionView::ActionTokenFactoryMint(x) => Action::ActionTokenFactoryMint(x),
+            ActionView::ActionBurn(x) => Action::ActionBurn(x),
         }
     }
 }
