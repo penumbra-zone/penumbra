@@ -163,6 +163,7 @@ fn pretty_print_transaction_plan(
             ActionPlan::ActionLiquidityTournamentVote(_) => None,
             ActionPlan::ActionTokenFactoryCreate(_) => None,
             ActionPlan::ActionTokenFactoryMint(_) => None,
+            ActionPlan::ActionBurn(_) => None,
         }
     }
 

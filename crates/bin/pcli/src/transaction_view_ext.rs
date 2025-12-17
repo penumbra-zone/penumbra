@@ -468,6 +468,10 @@ impl TransactionViewExt for TransactionView {
                     action = format!("Mint {} tokens (seq={})", x.amount, x.current_seq);
                     ["Token Factory", &action]
                 }
+                penumbra_sdk_transaction::ActionView::ActionBurn(x) => {
+                    action = format!("Burn {} of {:?}", x.value.amount, x.value.asset_id);
+                    ["Burn", &action]
+                }
             };
 
             actions_table.add_row(row);
