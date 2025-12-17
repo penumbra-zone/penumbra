@@ -118,6 +118,9 @@ message Action {
     component.token_factory.v1.ActionTokenFactoryCreate action_token_factory_create = 61;
     component.token_factory.v1.ActionTokenFactoryMint action_token_factory_mint = 62;
 
+    // Generic burn action (burns any asset including LP NFTs, mint caps)
+    component.shielded_pool.v1.ActionBurn action_burn = 63;
+
     // Funding
     component.funding.v1.ActionLiquidityTournamentVote action_liquidity_tournament_vote = 70;
 
@@ -259,6 +262,9 @@ message ActionView {
     component.token_factory.v1.ActionTokenFactoryCreate action_token_factory_create = 61;
     component.token_factory.v1.ActionTokenFactoryMint action_token_factory_mint = 62;
 
+    // Generic burn
+    component.shielded_pool.v1.ActionBurn action_burn = 63;
+
     component.funding.v1.ActionLiquidityTournamentVoteView action_liquidity_tournament_vote = 70;
 
     component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
@@ -361,6 +367,9 @@ message ActionPlan {
     // Token Factory
     component.token_factory.v1.ActionTokenFactoryCreate action_token_factory_create = 61;
     component.token_factory.v1.ActionTokenFactoryMint action_token_factory_mint = 62;
+
+    // Generic burn
+    component.shielded_pool.v1.ActionBurnPlan action_burn = 63;
 
     // Funding
     component.funding.v1.ActionLiquidityTournamentVotePlan action_liquidity_tournament_vote = 70;

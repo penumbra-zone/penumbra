@@ -139,7 +139,7 @@ impl ::prost::Name for DetectionData {
 pub struct Action {
     #[prost(
         oneof = "action::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 61, 62, 70, 200"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 61, 62, 63, 70, 200"
     )]
     pub action: ::core::option::Option<action::Action>,
 }
@@ -230,6 +230,9 @@ pub mod action {
         ActionTokenFactoryMint(
             super::super::super::component::token_factory::v1::ActionTokenFactoryMint,
         ),
+        /// Generic burn action (burns any asset including LP NFTs, mint caps)
+        #[prost(message, tag = "63")]
+        ActionBurn(super::super::super::component::shielded_pool::v1::ActionBurn),
         /// Funding
         #[prost(message, tag = "70")]
         ActionLiquidityTournamentVote(
@@ -480,7 +483,7 @@ impl ::prost::Name for TransactionBodyView {
 pub struct ActionView {
     #[prost(
         oneof = "action_view::ActionView",
-        tags = "1, 2, 3, 4, 21, 35, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 61, 62, 70, 200"
+        tags = "1, 2, 3, 4, 21, 35, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 61, 62, 63, 70, 200"
     )]
     pub action_view: ::core::option::Option<action_view::ActionView>,
 }
@@ -576,6 +579,9 @@ pub mod action_view {
         ActionTokenFactoryMint(
             super::super::super::component::token_factory::v1::ActionTokenFactoryMint,
         ),
+        /// Generic burn
+        #[prost(message, tag = "63")]
+        ActionBurn(super::super::super::component::shielded_pool::v1::ActionBurn),
         #[prost(message, tag = "70")]
         ActionLiquidityTournamentVote(
             super::super::super::component::funding::v1::ActionLiquidityTournamentVoteView,
@@ -704,7 +710,7 @@ impl ::prost::Name for DetectionDataPlan {
 pub struct ActionPlan {
     #[prost(
         oneof = "action_plan::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 35, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 61, 62, 70"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 35, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 61, 62, 63, 70"
     )]
     pub action: ::core::option::Option<action_plan::Action>,
 }
@@ -803,6 +809,9 @@ pub mod action_plan {
         ActionTokenFactoryMint(
             super::super::super::component::token_factory::v1::ActionTokenFactoryMint,
         ),
+        /// Generic burn
+        #[prost(message, tag = "63")]
+        ActionBurn(super::super::super::component::shielded_pool::v1::ActionBurnPlan),
         /// Funding
         #[prost(message, tag = "70")]
         ActionLiquidityTournamentVote(

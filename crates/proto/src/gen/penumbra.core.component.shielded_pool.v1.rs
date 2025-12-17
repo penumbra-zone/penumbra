@@ -667,6 +667,62 @@ impl ::prost::Name for OutputPlan {
         "/penumbra.core.component.shielded_pool.v1.OutputPlan".into()
     }
 }
+/// Explicitly burns a value, removing it from circulation.
+/// This is a generic burn action that works on any asset type,
+/// including LP NFTs (to make liquidity immutable) and mint
+/// capability NFTs (to fix token supply).
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionBurn {
+    /// The value to burn.
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<super::super::super::asset::v1::Value>,
+}
+impl ::prost::Name for ActionBurn {
+    const NAME: &'static str = "ActionBurn";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.shielded_pool.v1.ActionBurn".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.shielded_pool.v1.ActionBurn".into()
+    }
+}
+/// Event emitted when value is burned.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBurn {
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<super::super::super::asset::v1::Value>,
+}
+impl ::prost::Name for EventBurn {
+    const NAME: &'static str = "EventBurn";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.shielded_pool.v1.EventBurn".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.shielded_pool.v1.EventBurn".into()
+    }
+}
+/// Plan for a burn action.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionBurnPlan {
+    /// The value to burn.
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<super::super::super::asset::v1::Value>,
+    /// The blinding factor for the value commitment.
+    #[prost(bytes = "vec", tag = "2")]
+    pub value_blinding: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ActionBurnPlan {
+    const NAME: &'static str = "ActionBurnPlan";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.shielded_pool.v1.ActionBurnPlan".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.shielded_pool.v1.ActionBurnPlan".into()
+    }
+}
 /// Requests information on an asset by asset id
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetMetadataByIdRequest {

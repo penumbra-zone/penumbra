@@ -90,6 +90,9 @@ impl serde::Serialize for Action {
                 action::Action::ActionTokenFactoryMint(v) => {
                     struct_ser.serialize_field("actionTokenFactoryMint", v)?;
                 }
+                action::Action::ActionBurn(v) => {
+                    struct_ser.serialize_field("actionBurn", v)?;
+                }
                 action::Action::ActionLiquidityTournamentVote(v) => {
                     struct_ser.serialize_field("actionLiquidityTournamentVote", v)?;
                 }
@@ -155,6 +158,8 @@ impl<'de> serde::Deserialize<'de> for Action {
             "actionTokenFactoryCreate",
             "action_token_factory_mint",
             "actionTokenFactoryMint",
+            "action_burn",
+            "actionBurn",
             "action_liquidity_tournament_vote",
             "actionLiquidityTournamentVote",
             "ics20_withdrawal",
@@ -189,6 +194,7 @@ impl<'de> serde::Deserialize<'de> for Action {
             ActionDutchAuctionWithdraw,
             ActionTokenFactoryCreate,
             ActionTokenFactoryMint,
+            ActionBurn,
             ActionLiquidityTournamentVote,
             Ics20Withdrawal,
             __SkipField__,
@@ -239,6 +245,7 @@ impl<'de> serde::Deserialize<'de> for Action {
                             "actionDutchAuctionWithdraw" | "action_dutch_auction_withdraw" => Ok(GeneratedField::ActionDutchAuctionWithdraw),
                             "actionTokenFactoryCreate" | "action_token_factory_create" => Ok(GeneratedField::ActionTokenFactoryCreate),
                             "actionTokenFactoryMint" | "action_token_factory_mint" => Ok(GeneratedField::ActionTokenFactoryMint),
+                            "actionBurn" | "action_burn" => Ok(GeneratedField::ActionBurn),
                             "actionLiquidityTournamentVote" | "action_liquidity_tournament_vote" => Ok(GeneratedField::ActionLiquidityTournamentVote),
                             "ics20Withdrawal" | "ics20_withdrawal" => Ok(GeneratedField::Ics20Withdrawal),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -445,6 +452,13 @@ impl<'de> serde::Deserialize<'de> for Action {
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::ActionTokenFactoryMint)
 ;
                         }
+                        GeneratedField::ActionBurn => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("actionBurn"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::ActionBurn)
+;
+                        }
                         GeneratedField::ActionLiquidityTournamentVote => {
                             if action__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("actionLiquidityTournamentVote"));
@@ -570,6 +584,9 @@ impl serde::Serialize for ActionPlan {
                 action_plan::Action::ActionTokenFactoryMint(v) => {
                     struct_ser.serialize_field("actionTokenFactoryMint", v)?;
                 }
+                action_plan::Action::ActionBurn(v) => {
+                    struct_ser.serialize_field("actionBurn", v)?;
+                }
                 action_plan::Action::ActionLiquidityTournamentVote(v) => {
                     struct_ser.serialize_field("actionLiquidityTournamentVote", v)?;
                 }
@@ -636,6 +653,8 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             "actionTokenFactoryCreate",
             "action_token_factory_mint",
             "actionTokenFactoryMint",
+            "action_burn",
+            "actionBurn",
             "action_liquidity_tournament_vote",
             "actionLiquidityTournamentVote",
         ];
@@ -670,6 +689,7 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             ActionDutchAuctionWithdraw,
             ActionTokenFactoryCreate,
             ActionTokenFactoryMint,
+            ActionBurn,
             ActionLiquidityTournamentVote,
             __SkipField__,
         }
@@ -721,6 +741,7 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             "actionDutchAuctionWithdraw" | "action_dutch_auction_withdraw" => Ok(GeneratedField::ActionDutchAuctionWithdraw),
                             "actionTokenFactoryCreate" | "action_token_factory_create" => Ok(GeneratedField::ActionTokenFactoryCreate),
                             "actionTokenFactoryMint" | "action_token_factory_mint" => Ok(GeneratedField::ActionTokenFactoryMint),
+                            "actionBurn" | "action_burn" => Ok(GeneratedField::ActionBurn),
                             "actionLiquidityTournamentVote" | "action_liquidity_tournament_vote" => Ok(GeneratedField::ActionLiquidityTournamentVote),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -940,6 +961,13 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ActionTokenFactoryMint)
 ;
                         }
+                        GeneratedField::ActionBurn => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("actionBurn"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ActionBurn)
+;
+                        }
                         GeneratedField::ActionLiquidityTournamentVote => {
                             if action__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("actionLiquidityTournamentVote"));
@@ -1055,6 +1083,9 @@ impl serde::Serialize for ActionView {
                 action_view::ActionView::ActionTokenFactoryMint(v) => {
                     struct_ser.serialize_field("actionTokenFactoryMint", v)?;
                 }
+                action_view::ActionView::ActionBurn(v) => {
+                    struct_ser.serialize_field("actionBurn", v)?;
+                }
                 action_view::ActionView::ActionLiquidityTournamentVote(v) => {
                     struct_ser.serialize_field("actionLiquidityTournamentVote", v)?;
                 }
@@ -1122,6 +1153,8 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             "actionTokenFactoryCreate",
             "action_token_factory_mint",
             "actionTokenFactoryMint",
+            "action_burn",
+            "actionBurn",
             "action_liquidity_tournament_vote",
             "actionLiquidityTournamentVote",
             "ics20_withdrawal",
@@ -1157,6 +1190,7 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             UndelegateClaim,
             ActionTokenFactoryCreate,
             ActionTokenFactoryMint,
+            ActionBurn,
             ActionLiquidityTournamentVote,
             Ics20Withdrawal,
             __SkipField__,
@@ -1208,6 +1242,7 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             "undelegateClaim" | "undelegate_claim" => Ok(GeneratedField::UndelegateClaim),
                             "actionTokenFactoryCreate" | "action_token_factory_create" => Ok(GeneratedField::ActionTokenFactoryCreate),
                             "actionTokenFactoryMint" | "action_token_factory_mint" => Ok(GeneratedField::ActionTokenFactoryMint),
+                            "actionBurn" | "action_burn" => Ok(GeneratedField::ActionBurn),
                             "actionLiquidityTournamentVote" | "action_liquidity_tournament_vote" => Ok(GeneratedField::ActionLiquidityTournamentVote),
                             "ics20Withdrawal" | "ics20_withdrawal" => Ok(GeneratedField::Ics20Withdrawal),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -1419,6 +1454,13 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                                 return Err(serde::de::Error::duplicate_field("actionTokenFactoryMint"));
                             }
                             action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ActionTokenFactoryMint)
+;
+                        }
+                        GeneratedField::ActionBurn => {
+                            if action_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("actionBurn"));
+                            }
+                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ActionBurn)
 ;
                         }
                         GeneratedField::ActionLiquidityTournamentVote => {

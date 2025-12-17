@@ -272,3 +272,33 @@ impl From<EventInboundFungibleTokenTransfer> for pb::EventInboundFungibleTokenTr
 impl DomainType for EventInboundFungibleTokenTransfer {
     type Proto = pb::EventInboundFungibleTokenTransfer;
 }
+
+#[derive(Clone, Debug)]
+pub struct EventBurn {
+    pub value: Value,
+}
+
+impl TryFrom<pb::EventBurn> for EventBurn {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::EventBurn) -> Result<Self, Self::Error> {
+        fn inner(value: pb::EventBurn) -> anyhow::Result<EventBurn> {
+            Ok(EventBurn {
+                value: value.value.ok_or(anyhow!("missing `value`"))?.try_into()?,
+            })
+        }
+        inner(value).context(format!("parsing {}", pb::EventBurn::NAME))
+    }
+}
+
+impl From<EventBurn> for pb::EventBurn {
+    fn from(value: EventBurn) -> Self {
+        Self {
+            value: Some(value.value.into()),
+        }
+    }
+}
+
+impl DomainType for EventBurn {
+    type Proto = pb::EventBurn;
+}

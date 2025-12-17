@@ -240,6 +240,28 @@ message OutputPlan {
   bytes proof_blinding_s = 6;
 }
 
+// Explicitly burns a value, removing it from circulation.
+// This is a generic burn action that works on any asset type,
+// including LP NFTs (to make liquidity immutable) and mint
+// capability NFTs (to fix token supply).
+message ActionBurn {
+  // The value to burn.
+  asset.v1.Value value = 1;
+}
+
+// Event emitted when value is burned.
+message EventBurn {
+  asset.v1.Value value = 1;
+}
+
+// Plan for a burn action.
+message ActionBurnPlan {
+  // The value to burn.
+  asset.v1.Value value = 1;
+  // The blinding factor for the value commitment.
+  bytes value_blinding = 2;
+}
+
 // Query operations for the shielded pool component.
 service QueryService {
   rpc AssetMetadataById(AssetMetadataByIdRequest) returns (AssetMetadataByIdResponse);
