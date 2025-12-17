@@ -108,7 +108,8 @@ impl AppActionHandler for ProposalSubmit {
                         | CommunityPoolDeposit(_)
                         | ActionDutchAuctionSchedule(_)
                         | ActionDutchAuctionEnd(_)
-                        | ActionDutchAuctionWithdraw(_) => {}
+                        | ActionDutchAuctionWithdraw(_)
+                        | ActionBurn(_) => {}
                     }
                 }
             }
