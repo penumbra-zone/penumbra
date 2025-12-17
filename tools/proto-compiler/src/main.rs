@@ -65,6 +65,7 @@ fn main() -> anyhow::Result<()> {
                 "../../proto/penumbra/penumbra/core/component/sct/v1/sct.proto",
                 "../../proto/penumbra/penumbra/core/component/shielded_pool/v1/shielded_pool.proto",
                 "../../proto/penumbra/penumbra/core/component/stake/v1/stake.proto",
+                "../../proto/penumbra/penumbra/core/component/token_factory/v1/token_factory.proto",
                 "../../proto/penumbra/penumbra/core/keys/v1/keys.proto",
                 "../../proto/penumbra/penumbra/core/num/v1/num.proto",
                 "../../proto/penumbra/penumbra/core/transaction/v1/transaction.proto",

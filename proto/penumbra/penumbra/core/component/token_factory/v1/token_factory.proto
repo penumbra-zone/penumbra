@@ -59,3 +59,39 @@ message EventTokenFactoryMint {
   uint64 seq = 2;
   penumbra.core.num.v1.Amount amount = 3;
 }
+
+// Request for token metadata by ID.
+message TokenMetadataRequest {
+  // The token factory ID (32 bytes).
+  bytes token_id = 1;
+}
+
+// Response containing token metadata.
+message TokenMetadataResponse {
+  // The token metadata, if found.
+  penumbra.core.asset.v1.Metadata metadata = 1;
+}
+
+// Request to list all tokens created by the factory.
+message AllTokensRequest {
+  // Optional pagination cursor.
+  bytes cursor = 1;
+  // Maximum number of tokens to return.
+  uint64 limit = 2;
+}
+
+// Response containing a list of tokens.
+message AllTokensResponse {
+  // List of token metadata.
+  repeated penumbra.core.asset.v1.Metadata tokens = 1;
+  // Cursor for next page, if any.
+  bytes next_cursor = 2;
+}
+
+// Query service for token factory state.
+service QueryService {
+  // Get metadata for a specific token by ID.
+  rpc TokenMetadata(TokenMetadataRequest) returns (TokenMetadataResponse);
+  // List all tokens created by the factory.
+  rpc AllTokens(AllTokensRequest) returns (AllTokensResponse);
+}

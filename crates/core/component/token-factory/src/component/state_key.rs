@@ -13,3 +13,13 @@ pub fn nonce_used(id: &TokenFactoryId) -> String {
 pub fn all_nonces() -> &'static str {
     "token_factory/nonce/"
 }
+
+/// State key for storing token metadata.
+pub fn token_metadata(id: &TokenFactoryId) -> String {
+    format!("token_factory/metadata/{}", hex::encode(id.as_bytes()))
+}
+
+/// Prefix for all token metadata keys.
+pub fn all_metadata() -> &'static str {
+    "token_factory/metadata/"
+}

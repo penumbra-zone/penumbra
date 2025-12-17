@@ -49,6 +49,7 @@ use {
                 sct::v1::query_service_server::QueryServiceServer as SctQueryServiceServer,
                 shielded_pool::v1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
                 stake::v1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
+                token_factory::v1::query_service_server::QueryServiceServer as TokenFactoryQueryServiceServer,
             },
         },
         util::tendermint_proxy::v1::tendermint_proxy_service_server::{
@@ -58,6 +59,7 @@ use {
     penumbra_sdk_sct::component::rpc::Server as SctServer,
     penumbra_sdk_shielded_pool::component::rpc::Server as ShieldedPoolServer,
     penumbra_sdk_stake::component::rpc::Server as StakeServer,
+    penumbra_sdk_token_factory::component::rpc::Server as TokenFactoryServer,
     tonic::service::Routes,
     tonic_web::enable as we,
 };
@@ -128,6 +130,9 @@ pub fn routes(
         .add_service(we(FundingQueryServiceServer::new(FundingServer::new(
             storage.clone(),
         ))))
+        .add_service(we(TokenFactoryQueryServiceServer::new(
+            TokenFactoryServer::new(storage.clone()),
+        )))
         .add_service(we(tonic_reflection::server::Builder::configure()
             .register_encoded_file_descriptor_set(penumbra_sdk_proto::FILE_DESCRIPTOR_SET)
             .build_v1()

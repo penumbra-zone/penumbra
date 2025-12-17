@@ -25,6 +25,9 @@ impl ActionHandler for ActionTokenFactoryCreate {
         // This prevents replay attacks and ensures each token ID is unique.
         state.token_factory_mark_nonce_used(&self.nonce).await?;
 
+        // Store the token metadata for queries
+        state.token_factory_put_metadata(&self.nonce, &self.metadata);
+
         // Emit event for indexers
         state.record_proto(event::token_factory_create(self));
 

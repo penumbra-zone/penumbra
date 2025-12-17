@@ -3,11 +3,13 @@
 //! This component tracks used nonces to prevent token ID collisions.
 
 pub mod event;
+pub mod rpc;
 pub mod state_key;
 
 mod action_handler;
 mod view;
 
+pub use rpc::Server as TokenFactoryServer;
 pub use view::{StateReadExt, StateWriteExt};
 
 use std::sync::Arc;

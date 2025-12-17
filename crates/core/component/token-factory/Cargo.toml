@@ -15,6 +15,7 @@ component = [
     "cnidarium-component",
     "penumbra-sdk-proto/cnidarium",
     "tendermint",
+    "tonic",
 ]
 
 [dependencies]
@@ -33,6 +34,7 @@ regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tendermint = { workspace = true, optional = true }
 thiserror = { workspace = true }
+tonic = { workspace = true, optional = true }
 tracing = { workspace = true }
 
 [dev-dependencies]

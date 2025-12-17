@@ -6360,6 +6360,7 @@ dependencies = [
  "serde",
  "tendermint 0.40.3",
  "thiserror 1.0.69",
+ "tonic",
  "tracing",
 ]
 
