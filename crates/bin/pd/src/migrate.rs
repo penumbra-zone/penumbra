@@ -81,6 +81,8 @@ pub enum Migration {
     /// IBC client recovery
     /// - Swap IBC client state
     IbcClientRecovery,
+    /// Prune the public chain state
+    PruneState,
     /// No-op migration
     /// - Resets halt bit and produces new genesis without state changes
     NoOp,
@@ -114,6 +116,18 @@ impl Migration {
             ?force,
             "preparing to run migration!"
         );
+
+        // PruneState is non-consensus-breaking and safe to run anytime.
+        // Skip the halt bit check to avoid opening the database twice
+        // (which creates ~100KB of RocksDB LOG files per open).
+        if matches!(self, Migration::PruneState) {
+            tracing::info!("starting migration");
+            let migration = migrate2::prune_tree::JellyfishTreePruner;
+            let (root_hash, version) = migration.migrate(&pd_home, comet_home.as_ref()).await?;
+            tracing::info!(?root_hash, version, "JMT pruning complete");
+            return Ok(());
+        }
+
         let rocksdb_dir = pd_home.join("rocksdb");
         let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
         ensure!(
@@ -131,12 +145,16 @@ impl Migration {
             block_height
         );
 
-        tracing::info!("started migration");
+        tracing::info!("starting migration");
 
-        // We early return :
-        // - using the migration framework (as opposed to legacy migrations)
-        // - using a ready-to-start or ibc-client-recovery recipe.
-
+        // The control flow is a little bit ugly because we try to be backwards compatible
+        // to limit friction to existing documentation, habits, tooling, etc.
+        //
+        // When dealing with a "legacy" migration, we execute a post-migration step
+        // manually related to cometbft data (after this match block) and genesis generation.
+        //
+        // Otherwise, we are using the `migrate2` framework and we return early since
+        // this is handled for us. There is no other land mine.
         match self {
             Migration::SimpleMigration => {
                 simple::migrate(storage, pd_home.clone(), genesis_start).await?
@@ -154,12 +172,14 @@ impl Migration {
                 mainnet4::migrate(storage, pd_home.clone(), genesis_start).await?;
             }
             Migration::ReadyToStart => {
-                reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
+                reset_halt_bit::migrate(storage, pd_home.clone(), genesis_start).await?;
                 // Early return since we are not producing a new genesis.
                 return Ok(());
             }
             Migration::IbcClientRecovery => {
+                // Release storage before migrate2 framework (it loads its own)
                 storage.release().await;
+
                 ensure!(
                     params.len() >= 2,
                     "IBC client recovery requires at least old and new client IDs"
@@ -191,6 +211,7 @@ impl Migration {
                 return Ok(());
             }
             Migration::NoOp => {
+                // Release storage before migrate2 framework (it loads its own)
                 storage.release().await;
 
                 // Parse optional app_version from first parameter
@@ -210,6 +231,10 @@ impl Migration {
                     .await?;
                 // Early return since the new framework handles genesis generation.
                 return Ok(());
+            }
+            Migration::PruneState => {
+                // Handled above before Storage::load to avoid double-open
+                unreachable!()
             }
             // We keep historical migrations around for now, this will help inform an abstracted
             // design. Feel free to remove it if it's causing you trouble.
