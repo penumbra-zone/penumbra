@@ -17,7 +17,7 @@ pub fn router(prefix: &str, archive_bytes: &'static [u8]) -> axum::Router {
     // a special route for the route path.
     let path1 = format!("{prefix}");
     assert!(prefix.ends_with("/"), "prefix must end in a /");
-    let path2 = format!("{prefix}*path");
+    let path2 = format!("{prefix}{{*path}}");
     let handler1 =
         move || serve_zip(archive_bytes, Path("index.html".to_string())).instrument(span1);
     let handler2 = move |path: Path<String>| serve_zip(archive_bytes, path).instrument(span2);
