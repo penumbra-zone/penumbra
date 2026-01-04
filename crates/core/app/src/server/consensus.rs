@@ -224,6 +224,7 @@ impl Consensus {
     async fn end_block(&mut self, end_block: request::EndBlock) -> response::EndBlock {
         let latest_state_version = self.storage.latest_version();
         tracing::info!(height = ?end_block.height, ?latest_state_version, "ending block");
+
         if latest_state_version >= end_block.height as u64 {
             tracing::warn!(
                 %latest_state_version,

@@ -109,8 +109,8 @@ ark-std                          = { default-features = false, version = "0.4" }
 assert_cmd                       = { version = "2.0" }
 async-stream                     = { version = "0.3.5" }
 async-trait                      = { version = "0.1.52" }
-axum                             = { version = "0.7.9" }
-axum-extra                       = { version = "0.9.6" }
+axum                             = { version = "0.8" }
+axum-extra                       = { version = "0.10" }
 axum-server                      = { version = "0.7.1" }
 base64                           = { version = "0.21.2" }
 bech32                           = { version = "0.8.1" }
@@ -122,7 +122,7 @@ camino                           = { version = "1" }
 chacha20poly1305                 = { version = "0.9.0" }
 chrono                           = { default-features = false, version = "0.4" }
 clap                             = { version = "3.2" }
-cnidarium                        = { version = "0.83", default-features = false}
+cnidarium                        = { version = "0.84", default-features = false}
 cnidarium-component              = { default-features = false, version = "2.1.0", path = "crates/cnidarium-component" }
 cometindex                       = { version = "2.1.0", path = "crates/util/cometindex" }
 criterion                        = { version = "0.4" }
@@ -140,8 +140,8 @@ http                             = { version = "1.2.0" }
 http-body                        = { version = "1.0.1" }
 http-body-util                   = { version = "0.1.2" }
 humantime                        = { version = "2.1" }
-ibc-proto                        = { default-features = false, version = "0.51.1" }
-ibc-types                        = { default-features = false, version = "0.15.1" }
+ibc-proto                        = { default-features = false, version = "0.52.0" }
+ibc-types                        = { default-features = false, version = "0.16.0" }
 ibig                             = { version = "0.3" }
 ics23                            = { version = "0.12.0" }
 im                               = { version = "^15.1.0" }
@@ -227,9 +227,9 @@ tokio                            = { version = "1.39.0" }
 tokio-stream                     = { version = "0.1.8" }
 tokio-util                       = { version = "0.7" }
 toml                             = { version = "0.7" }
-tonic                            = { version = "0.12.3" }
-tonic-reflection                 = { version = "0.12.3" }
-tonic-web                        = { version = "0.12.3" }
+tonic                            = { version = "0.13.0" }
+tonic-reflection                 = { version = "0.13.0" }
+tonic-web                        = { version = "0.13.0" }
 tower                            = { version = "0.4.0" }
 tower-http                       = { version = "0.6.2" }
 tower-service                    = { version = "0.3.2" }
