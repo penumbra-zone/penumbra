@@ -348,29 +348,30 @@ impl Opt {
 
                 let server = Server::builder()
                     .accept_http1(true)
-                    .add_service(tonic_web::enable(view_service))
-                    .add_optional_service(custody_service.map(tonic_web::enable))
-                    .add_service(tonic_web::enable(app_query_proxy))
-                    .add_service(tonic_web::enable(governance_query_proxy))
-                    .add_service(tonic_web::enable(dex_query_proxy))
-                    .add_service(tonic_web::enable(dex_simulation_proxy))
-                    .add_service(tonic_web::enable(sct_query_proxy))
-                    .add_service(tonic_web::enable(fee_query_proxy))
-                    .add_service(tonic_web::enable(shielded_pool_query_proxy))
-                    .add_service(tonic_web::enable(chain_query_proxy))
-                    .add_service(tonic_web::enable(stake_query_proxy))
-                    .add_service(tonic_web::enable(compact_block_query_proxy))
-                    .add_service(tonic_web::enable(tendermint_proxy_proxy))
+                    .layer(tonic_web::GrpcWebLayer::new())
+                    .add_service(view_service)
+                    .add_optional_service(custody_service)
+                    .add_service(app_query_proxy)
+                    .add_service(governance_query_proxy)
+                    .add_service(dex_query_proxy)
+                    .add_service(dex_simulation_proxy)
+                    .add_service(sct_query_proxy)
+                    .add_service(fee_query_proxy)
+                    .add_service(shielded_pool_query_proxy)
+                    .add_service(chain_query_proxy)
+                    .add_service(stake_query_proxy)
+                    .add_service(compact_block_query_proxy)
+                    .add_service(tendermint_proxy_proxy)
                     // TODO: should we add the IBC services here as well? they will appear
                     // in reflection but not be available.
-                    .add_service(tonic_web::enable(
+                    .add_service(
                         tonic_reflection::server::Builder::configure()
                             .register_encoded_file_descriptor_set(
                                 penumbra_sdk_proto::FILE_DESCRIPTOR_SET,
                             )
                             .build_v1()
                             .with_context(|| "could not configure grpc reflection service")?,
-                    ))
+                    )
                     .serve(config.bind_addr);
 
                 tokio::spawn(server).await??;

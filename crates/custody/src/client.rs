@@ -4,18 +4,16 @@ use penumbra_sdk_proto::custody::v1::custody_service_client::CustodyServiceClien
 use penumbra_sdk_proto::custody::v1::AuthorizeResponse;
 use std::{future::Future, pin::Pin};
 
-use tonic::codegen::Bytes;
-
 use crate::AuthorizeRequest;
 
 /// A well-typed wrapper around the GRPC custody protocol that uses Rust domain types rather than proto types.
 ///
 /// The custody protocol is used by a wallet client to request authorization for
-/// a transaction they’ve constructed.
+/// a transaction they've constructed.
 ///
 /// Modeling transaction authorization as an asynchronous RPC call encourages
-/// software to be written in a way that has a compatible data flow with a “soft
-/// HSM”, threshold signing, a hardware wallet, etc.
+/// software to be written in a way that has a compatible data flow with a "soft
+/// HSM", threshold signing, a hardware wallet, etc.
 ///
 /// The custody protocol does not trust the client to authorize spends, so
 /// custody requests must contain sufficient information for the custodian to
@@ -38,11 +36,11 @@ pub trait CustodyClient {
 
 impl<T> CustodyClient for CustodyServiceClient<T>
 where
-    T: tonic::client::GrpcService<tonic::body::BoxBody> + Send + Clone + 'static,
-    T::ResponseBody: tonic::codegen::Body<Data = Bytes> + Send + 'static,
+    T: tonic::client::GrpcService<tonic::body::Body> + Send + Clone + 'static,
+    T::ResponseBody: http_body::Body<Data = bytes::Bytes> + Send + 'static,
     T::Future: Send + 'static,
     T::Error: Into<tonic::codegen::StdError>,
-    <T::ResponseBody as tonic::codegen::Body>::Error: Into<tonic::codegen::StdError> + Send,
+    <T::ResponseBody as http_body::Body>::Error: Into<tonic::codegen::StdError> + Send,
 {
     fn authorize(
         &mut self,
@@ -50,8 +48,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<AuthorizeResponse>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            Ok(self2
-                .authorize(tonic::Request::new(request.into()))
+            Ok(CustodyServiceClient::authorize(&mut self2, tonic::Request::new(request.into()))
                 .await?
                 .into_inner())
         }
