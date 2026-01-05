@@ -300,6 +300,7 @@ impl Contribution {
 
 /// A dummy struct to implement the phase trait.
 #[derive(Clone, Debug, Default)]
+#[allow(dead_code)]
 struct Phase2;
 
 impl Phase for Phase2 {
