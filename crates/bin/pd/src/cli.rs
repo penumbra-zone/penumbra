@@ -171,6 +171,12 @@ pub enum MigrateCommand {
         #[clap(long, value_name = "VERSION")]
         target_app_version: Option<u64>,
     },
+    /// Prune historical JMT nodes to reclaim storage space.
+    ///
+    /// This is a non-consensus-breaking local optimization that removes
+    /// old versioned nodes while preserving the latest state. The root
+    /// hash remains unchanged.
+    Prune,
 }
 
 #[derive(Debug, Subcommand)]

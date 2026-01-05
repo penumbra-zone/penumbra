@@ -6,13 +6,13 @@ use std::{
     task::{Context, Poll},
 };
 use tonic::server::NamedService;
-use tonic::{body::BoxBody, transport::Channel};
+use tonic::{body::Body, transport::Channel};
 use tower::ServiceExt;
 
 fn proxy(
     channel: Channel,
-    req: http::Request<BoxBody>,
-) -> Pin<Box<dyn Future<Output = Result<http::Response<BoxBody>, Infallible>> + Send + 'static>> {
+    req: http::Request<Body>,
+) -> Pin<Box<dyn Future<Output = Result<http::Response<Body>, Infallible>> + Send + 'static>> {
     tracing::debug!(headers = ?req.headers(), "proxying request");
 
     let rsp = channel.oneshot(req);
@@ -36,8 +36,8 @@ impl NamedService for AppQueryProxy {
     const NAME: &'static str = "penumbra.core.app.v1.QueryService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for AppQueryProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for AppQueryProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -46,7 +46,7 @@ impl tower::Service<http::Request<BoxBody>> for AppQueryProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }
@@ -58,8 +58,8 @@ impl NamedService for GovernanceQueryProxy {
     const NAME: &'static str = "penumbra.core.component.governance.v1.QueryService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for GovernanceQueryProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for GovernanceQueryProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -68,7 +68,7 @@ impl tower::Service<http::Request<BoxBody>> for GovernanceQueryProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }
@@ -80,8 +80,8 @@ impl NamedService for DexQueryProxy {
     const NAME: &'static str = "penumbra.core.component.dex.v1.QueryService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for DexQueryProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for DexQueryProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -90,7 +90,7 @@ impl tower::Service<http::Request<BoxBody>> for DexQueryProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }
@@ -102,8 +102,8 @@ impl NamedService for DexSimulationProxy {
     const NAME: &'static str = "penumbra.core.component.dex.v1.SimulationService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for DexSimulationProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for DexSimulationProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -112,7 +112,7 @@ impl tower::Service<http::Request<BoxBody>> for DexSimulationProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }
@@ -124,8 +124,8 @@ impl NamedService for FeeQueryProxy {
     const NAME: &'static str = "penumbra.core.component.fee.v1.QueryService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for FeeQueryProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for FeeQueryProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -134,7 +134,7 @@ impl tower::Service<http::Request<BoxBody>> for FeeQueryProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }
@@ -146,8 +146,8 @@ impl NamedService for SctQueryProxy {
     const NAME: &'static str = "penumbra.core.component.sct.v1.QueryService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for SctQueryProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for SctQueryProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -156,7 +156,7 @@ impl tower::Service<http::Request<BoxBody>> for SctQueryProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }
@@ -168,8 +168,8 @@ impl NamedService for ShieldedPoolQueryProxy {
     const NAME: &'static str = "penumbra.core.component.shielded_pool.v1.QueryService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for ShieldedPoolQueryProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for ShieldedPoolQueryProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -178,7 +178,7 @@ impl tower::Service<http::Request<BoxBody>> for ShieldedPoolQueryProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }
@@ -190,8 +190,8 @@ impl NamedService for ChainQueryProxy {
     const NAME: &'static str = "penumbra.core.component.chain.v1.QueryService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for ChainQueryProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for ChainQueryProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -200,7 +200,7 @@ impl tower::Service<http::Request<BoxBody>> for ChainQueryProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }
@@ -212,8 +212,8 @@ impl NamedService for StakeQueryProxy {
     const NAME: &'static str = "penumbra.core.component.stake.v1.QueryService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for StakeQueryProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for StakeQueryProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -222,7 +222,7 @@ impl tower::Service<http::Request<BoxBody>> for StakeQueryProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }
@@ -234,8 +234,8 @@ impl NamedService for CompactBlockQueryProxy {
     const NAME: &'static str = "penumbra.core.component.compact_block.v1.QueryService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for CompactBlockQueryProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for CompactBlockQueryProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -244,7 +244,7 @@ impl tower::Service<http::Request<BoxBody>> for CompactBlockQueryProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }
@@ -256,8 +256,8 @@ impl NamedService for TendermintProxyProxy {
     const NAME: &'static str = "penumbra.util.tendermint_proxy.v1.TendermintProxyService";
 }
 
-impl tower::Service<http::Request<BoxBody>> for TendermintProxyProxy {
-    type Response = http::Response<BoxBody>;
+impl tower::Service<http::Request<Body>> for TendermintProxyProxy {
+    type Response = http::Response<Body>;
     type Error = Infallible;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
@@ -266,7 +266,7 @@ impl tower::Service<http::Request<BoxBody>> for TendermintProxyProxy {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: http::Request<BoxBody>) -> Self::Future {
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
         proxy(self.0.clone(), req)
     }
 }

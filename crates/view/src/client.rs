@@ -356,7 +356,7 @@ pub trait ViewClient {
 // it should be fine.
 impl<T> ViewClient for ViewServiceClient<T>
 where
-    T: tonic::client::GrpcService<tonic::body::BoxBody> + Clone + Send + 'static,
+    T: tonic::client::GrpcService<tonic::body::Body> + Clone + Send + 'static,
     T::ResponseBody: tonic::codegen::Body<Data = Bytes> + Send + 'static,
     T::Error: Into<tonic::codegen::StdError>,
     T::Future: Send + 'static,
@@ -1080,7 +1080,8 @@ where
                 epoch_index: epoch,
                 account_filter: filter.map(|x| x.into()),
             });
-            let response = client.lqt_voting_notes(request).await?;
+            // Explicitly call the tonic-generated method to avoid recursion
+            let response = ViewServiceClient::lqt_voting_notes(&mut client, request).await?;
             let pb_notes: Vec<pb::LqtVotingNotesResponse> =
                 response.into_inner().try_collect().await?;
 

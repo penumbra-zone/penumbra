@@ -1,12 +1,12 @@
 use bytes::Bytes;
 use http_body::Body;
 use http_body_util::{combinators::UnsyncBoxBody, BodyExt as _};
-use tonic::{body::BoxBody as ReqBody, codegen::http as grpc, transport::Endpoint};
+use tonic::{body::Body as TonicBody, codegen::http as grpc, transport::Endpoint};
 use tower::{util::BoxCloneService, Service, ServiceBuilder};
 
 /// A type-erased gRPC service.
 pub type BoxGrpcService =
-    BoxCloneService<grpc::Request<ReqBody>, grpc::Response<RspBody>, BoxError>;
+    BoxCloneService<grpc::Request<TonicBody>, grpc::Response<RspBody>, BoxError>;
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
@@ -17,7 +17,7 @@ pub type RspBody = UnsyncBoxBody<Bytes, BoxError>;
 pub async fn connect(ep: Endpoint) -> anyhow::Result<BoxGrpcService> {
     let conn = ep.connect().await?;
     let svc = ServiceBuilder::new()
-        .map_response(|rsp: grpc::Response<tonic::body::BoxBody>| rsp.map(box_rsp_body))
+        .map_response(|rsp: grpc::Response<TonicBody>| rsp.map(box_rsp_body))
         .map_err(BoxError::from)
         .service(conn);
     Ok(BoxCloneService::new(svc))
@@ -27,7 +27,7 @@ pub async fn connect(ep: Endpoint) -> anyhow::Result<BoxGrpcService> {
 /// (in-process) service instance.
 pub fn local<S, B>(svc: S) -> BoxGrpcService
 where
-    S: Service<grpc::Request<ReqBody>, Response = grpc::Response<B>>,
+    S: Service<grpc::Request<TonicBody>, Response = grpc::Response<B>>,
     S: Clone + Send + Sync + 'static,
     S::Error: 'static,
     S::Future: Send,
