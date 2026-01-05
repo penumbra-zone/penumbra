@@ -532,6 +532,7 @@ impl Contribution {
 
 /// A dummy struct representing this phase, for the sake of implementing the right trait.
 #[derive(Clone, Debug, Default)]
+#[allow(dead_code)]
 struct Phase1;
 
 impl Phase for Phase1 {

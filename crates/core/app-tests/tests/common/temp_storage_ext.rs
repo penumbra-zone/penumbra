@@ -7,6 +7,7 @@ use {
 
 #[async_trait]
 pub trait TempStorageExt: Sized {
+    #[allow(dead_code)]
     async fn apply_genesis(self, genesis: AppState) -> anyhow::Result<Self>;
     #[allow(dead_code)]
     async fn apply_default_genesis(self) -> anyhow::Result<Self>;
