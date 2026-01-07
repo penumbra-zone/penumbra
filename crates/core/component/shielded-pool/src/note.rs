@@ -17,7 +17,9 @@ use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 use thiserror;
 
+#[cfg(feature = "r1cs")]
 mod r1cs;
+#[cfg(feature = "r1cs")]
 pub use r1cs::NoteVar;
 
 pub use penumbra_sdk_tct::StateCommitment;

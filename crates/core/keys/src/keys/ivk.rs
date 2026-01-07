@@ -206,6 +206,7 @@ mod test {
         test_keys,
     };
     use proptest::prelude::*;
+    use rand::rngs;
     use std::str::FromStr;
 
     use super::*;
