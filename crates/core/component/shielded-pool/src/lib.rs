@@ -45,4 +45,3 @@ pub use output::{Output, OutputCircuit, OutputPlan, OutputProof, OutputView};
 pub use spend::{
     Spend, SpendCircuit, SpendPlan, SpendProof, SpendProofPrivate, SpendProofPublic, SpendView,
 };
-
