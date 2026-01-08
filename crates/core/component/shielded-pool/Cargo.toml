@@ -93,7 +93,7 @@ penumbra-sdk-txhash = {workspace = true, default-features = false}
 poseidon377 = {workspace = true, default-features = false}
 prost = {workspace = true}
 rand = {workspace = true, optional = true}
-rand_core = {workspace = true, features = ["getrandom"], optional = true}
+rand_core = {workspace = true, optional = true}
 regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
@@ -105,3 +105,4 @@ tracing = {workspace = true}
 
 [dev-dependencies]
 proptest = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}

@@ -16,7 +16,7 @@ rand = ["decaf377/rand", "rand_core"]
 ark-ff = {workspace = true, default-features = false}
 decaf377 = {workspace = true}
 hex = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"], optional = true}
+rand_core = {workspace = true, optional = true}
 thiserror = {workspace = true}
 zeroize = "1.4"
 zeroize_derive = "1.3"

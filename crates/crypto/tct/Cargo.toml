@@ -8,7 +8,7 @@ license = {workspace = true}
 edition = {workspace = true}
 
 [features]
-default = ["rand", "decaf377/arkworks"]
+default = ["rand", "decaf377/arkworks", "getrandom-js"]
 internal = []
 arbitrary = ["proptest", "proptest-derive"]
 r1cs = ["ark-r1cs-std", "ark-relations", "decaf377/r1cs", "poseidon377/r1cs"]
@@ -17,6 +17,8 @@ rand = [
     "dep:rand",
     "decaf377/rand",
 ]
+# Enable wasm-bindgen integration for browser-based WASM (not CosmWasm)
+getrandom-js = ["dep:getrandom"]
 
 [dependencies]
 ark-ed-on-bls12-377 = "0.4"
@@ -29,7 +31,7 @@ blake2b_simd = {workspace = true}
 decaf377 = {workspace = true}
 derivative = {workspace = true}
 futures = {workspace = true}
-getrandom = {workspace = true, features = ["js"]}
+getrandom = {workspace = true, features = ["js"], optional = true}
 hash_hasher = "2"
 hex = {workspace = true}
 im = {workspace = true, features = ["serde"]}

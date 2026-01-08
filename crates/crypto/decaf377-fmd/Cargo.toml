@@ -13,18 +13,23 @@ harness = false
 
 
 [features]
-default = ["rand", "decaf377/arkworks"]
+default = ["rand", "ark-ff", "ark-serialize"]
 rand = ["decaf377/rand", "rand_core"]
+arkworks = ["decaf377/arkworks"]
 
 [dependencies]
-ark-ff = {workspace = true, default-features = false}
-ark-serialize = {workspace = true}
+ark-ff = {workspace = true, default-features = false, optional = true}
+ark-serialize = {workspace = true, optional = true}
 bitvec = {workspace = true}
 blake2b_simd = {workspace = true}
-decaf377 = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"], optional = true}
+decaf377 = {workspace = true, default-features = false}
+rand_core = {workspace = true, optional = true}
 thiserror = {workspace = true}
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+rand_core = {workspace = true, optional = true}
 
 [dev-dependencies]
 criterion = {workspace = true, features = ["html_reports"]}
 proptest = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
