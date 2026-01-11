@@ -120,10 +120,10 @@
                 (craneLib.filterCargoSources path type);
             };
             nativeBuildInputs = [ pkg-config ];
-            buildInputs = if stdenv.hostPlatform.isDarwin then 
-              with pkgs.darwin.apple_sdk.frameworks; [clang openssl rocksdb SystemConfiguration CoreServices]
+            buildInputs = if stdenv.hostPlatform.isDarwin then
+              with pkgs.darwin.apple_sdk.frameworks; [clang openssl rocksdb sqlite SystemConfiguration CoreServices]
             else
-              [clang openssl rocksdb];
+              [clang openssl rocksdb sqlite];
 
             inherit system PKG_CONFIG_PATH LIBCLANG_PATH ROCKSDB_LIB_DIR;
             cargoExtraArgs = "-p pd -p pcli -p pclientd -p pindexer -p pmonitor";

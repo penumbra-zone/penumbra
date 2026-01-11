@@ -23,10 +23,19 @@ pub use rseed::Rseed;
 pub mod convert;
 pub mod nullifier_derivation;
 pub mod output;
+pub mod r1cs;
 pub mod spend;
 
 pub mod backref;
 pub use backref::{Backref, EncryptedBackref};
+
+pub mod compliance_helpers;
+pub use compliance_helpers::{
+    generate_compliance_details, timestamp_to_day_index, GeneratedComplianceData,
+};
+
+pub mod proof_error;
+pub use proof_error::{ProofError, ProofResult};
 
 pub use convert::{ConvertCircuit, ConvertProof, ConvertProofPrivate, ConvertProofPublic};
 pub use nullifier_derivation::{
@@ -37,3 +46,6 @@ pub use output::{Output, OutputCircuit, OutputPlan, OutputProof, OutputView};
 pub use spend::{
     Spend, SpendCircuit, SpendPlan, SpendProof, SpendProofPrivate, SpendProofPublic, SpendView,
 };
+
+#[cfg(any(test, feature = "benchmark-helpers"))]
+pub mod test_proof_helpers;

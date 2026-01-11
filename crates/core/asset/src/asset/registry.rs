@@ -255,6 +255,22 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             }) as for<'r> fn(&'r str) -> _,
         )
         .add_asset(
+            "^wregulated_usd$",
+            &["^regulated_usd$"],
+            (|data: &str| {
+                assert!(data.is_empty());
+                denom_metadata::Inner::new(
+                    "wregulated_usd".to_string(),
+                    vec![
+                        denom_metadata::BareDenomUnit {
+                            exponent: 18,
+                            denom: "regulated_usd".to_string(),
+                        },
+                    ],
+                )
+            }) as for<'r> fn(&'r str) -> _,
+        )
+        .add_asset(
             "^wtest_eth$",
             &["^test_eth$"],
             (|data: &str| {

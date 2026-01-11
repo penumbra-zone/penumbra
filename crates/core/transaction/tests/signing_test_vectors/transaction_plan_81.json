@@ -1,75 +1,71 @@
 {
   "actions": [
     {
+      "positionClose": {
+        "positionId": {
+          "inner": "taiMFOffHxiwD7ds6Io88quYOXCNk2CyGVVWN7OJoMs="
+        }
+      }
+    },
+    {
       "delegate": {
         "validatorIdentity": {
-          "ik": "NcpmU7NIys/8kSmkqy4MgaHGvfx5z6CDzsvKqx8TmJc="
+          "ik": "bDLZ4aNsyszVtF6P1GxUGCx4poU2kEGRuzEhttQ6Gto="
         },
-        "epochIndex": "9048",
+        "epochIndex": "2688",
         "unbondedAmount": {
-          "lo": "54833717284945011"
+          "lo": "438483450667441994"
         },
         "delegationAmount": {
-          "lo": "303586493067683645"
+          "lo": "785717998454584766"
         }
       }
     },
     {
-      "positionOpen": {
-        "position": {
-          "phi": {
-            "component": {
-              "p": {
-                "lo": "675170173331687906"
-              },
-              "q": {
-                "lo": "939236481142618207"
-              }
+      "swap": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
             },
-            "pair": {
-              "asset1": {
-                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-              },
-              "asset2": {
-                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-              }
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
             }
           },
-          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-          "state": {
-            "state": "POSITION_STATE_ENUM_OPENED"
+          "delta1I": {
+            "lo": "408467190510039849"
           },
-          "reserves": {
-            "r1": {
-              "lo": "502668342247473787"
-            },
-            "r2": {
-              "lo": "463873293727350536"
-            }
+          "delta2I": {
+            "lo": "770940277467901787"
           },
-          "closeOnFill": true
-        }
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "dXqljmT0Wu6djwfERKYWVa9iWE0VhDG9iVOS8flInN47sb8zQj/bAUHKgUPKN0ZbYKlpLqUlOFnWSKwkj+ulKzb8mdVr/eAKbfponURIUQs="
+          },
+          "rseed": "l9oio67ouQzrszLV1wjkkqjfaSxDGLuTEKjNbVBESTY="
+        },
+        "feeBlinding": "Q/ySxMT5nQ88KaVwkXkz0Wdvb3BZqcesaPPU4qLIWAI=",
+        "proofBlindingR": "EHPJbiCol03t1ji0XJjnULZ7dslaZvKKyhMJVEiksAs=",
+        "proofBlindingS": "TppFaLg4Gn0mg30Ndckca5bKwbhKM/yDVbYLFAYc7Ak="
       }
     },
     {
-      "communityPoolSpend": {
-        "value": {
-          "amount": {
-            "lo": "602694808633890263"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrMBCJiLjf0GEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsIyIyENhDQ+LL2AUCQ1YTKuduoxBgSAgoAGgsIyIyENhDQ+LL2ASKPAXBlbnVtYnJhMWZyenRnNDkyaGQ5em10M2M0dnV4NXFxMnV4amV3cmZqenU4ZGNmcmdsZmRqcWdtYzdsd25sYTY1ejd4N3F2anFjbTN0Mmp3eXhrdDBkdDhncXk5NDk4ZTY1d25rZTdnZnl2ZXdzY2gyOWR5ZjR0bmdodnU4Y3E5a3U3enhjZDNyOXA2bWh6"
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6562791567",
-    "chainId": "fyndyxgzguqudqlexrdjbikfoom-001716125115916962125282722",
+    "expiryHeight": "9386187552",
+    "chainId": "imgjlxfpjpyowfsy-3533962190724940678812",
     "fee": {
       "amount": {
-        "lo": "343345086133969757"
+        "lo": "279665095374365112"
       }
     }
   }

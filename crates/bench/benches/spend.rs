@@ -1,72 +1,101 @@
-use std::str::FromStr;
-
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::{Fq, Fr};
-use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_sdk_asset::Value;
-use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_sdk_asset::Balance;
 use penumbra_sdk_proof_params::{DummyWitness, SPEND_PROOF_PROVING_KEY};
 use penumbra_sdk_sct::Nullifier;
-use penumbra_sdk_shielded_pool::{
-    Note, SpendCircuit, SpendProof, SpendProofPrivate, SpendProofPublic,
-};
+use penumbra_sdk_shielded_pool::test_proof_helpers::proof_test_helpers::generate_test_data;
+use penumbra_sdk_shielded_pool::{SpendCircuit, SpendProof, SpendProofPrivate, SpendProofPublic};
 use penumbra_sdk_tct as tct;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
-#[allow(clippy::too_many_arguments)]
-fn prove(r: Fq, s: Fq, public: SpendProofPublic, private: SpendProofPrivate) {
-    let _proof = SpendProof::prove(r, s, &SPEND_PROOF_PROVING_KEY, public, private)
-        .expect("can create proof");
-}
-
 fn spend_proving_time(c: &mut Criterion) {
-    let value_to_send = Value::from_str("1upenumbra").expect("valid value");
+    let mut rng = OsRng;
 
-    let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-    let fvk_sender = sk_sender.full_viewing_key();
-    let ivk_sender = fvk_sender.incoming();
-    let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
+    // Generate valid test data with compliance encryption
+    let test_data = generate_test_data(&mut rng, 1, 100, false); // unregulated for simplicity
 
-    let note = Note::generate(&mut OsRng, &sender, value_to_send);
-    let note_commitment = note.commit();
-    let spend_auth_randomizer = Fr::from(0u32);
-    let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
-    let nk = *sk_sender.nullifier_key();
-    let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
+    // Create SCT for spend
     let mut sct = tct::Tree::new();
-
+    let note_commitment = test_data.note.commit();
     sct.insert(tct::Witness::Keep, note_commitment).unwrap();
     let anchor = sct.root();
     let state_commitment_proof = sct.witness(note_commitment).unwrap();
-    let v_blinding = Fr::from(0u32);
-    let balance_commitment = value_to_send.commit(v_blinding);
-    let rk: VerificationKey<SpendAuth> = rsk.into();
-    let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-    let r = Fq::rand(&mut OsRng);
-    let s = Fq::rand(&mut OsRng);
+    // Prepare public/private inputs
+    let balance_commitment = Balance::from(test_data.value).commit(test_data.balance_blinding);
+    let nullifier = Nullifier::derive(
+        test_data.fvk.nullifier_key(),
+        state_commitment_proof.position(),
+        &note_commitment,
+    );
+    let randomizer = Fr::rand(&mut rng);
+    let rk = test_data
+        .fvk
+        .spend_verification_key()
+        .randomize(&randomizer);
+
+    // Create dummy leaves and blinded hashes
+    let dummy_leaf = penumbra_sdk_compliance::ComplianceLeaf {
+        address: test_data.address.clone(),
+        key: test_data.ack.clone(),
+        asset_id: test_data.note.asset_id(),
+    };
+    let dummy_nonce = Fr::from(0u64);
+    let sender_leaf_hash =
+        penumbra_sdk_compliance::blind_sender_leaf(dummy_leaf.commit(), dummy_nonce);
+    let counterparty_leaf_hash =
+        penumbra_sdk_compliance::blind_counterparty_leaf(dummy_leaf.commit(), dummy_nonce);
+
     let public = SpendProofPublic {
         anchor,
         balance_commitment,
-        nullifier: nf,
+        nullifier,
         rk,
-    };
-    let private = SpendProofPrivate {
-        state_commitment_proof,
-        note,
-        v_blinding,
-        spend_auth_randomizer,
-        ak,
-        nk,
+        asset_anchor: test_data.asset_anchor,
+        compliance_anchor: test_data.compliance_anchor,
+        compliance_epk: test_data.compliance_epk,
+        compliance_ciphertext: test_data.compliance_ciphertext,
+        target_timestamp: test_data.timestamp,
+        sender_leaf_hash,
+        counterparty_leaf_hash,
     };
 
+    let private = SpendProofPrivate {
+        state_commitment_proof,
+        note: test_data.note,
+        v_blinding: test_data.balance_blinding,
+        spend_auth_randomizer: randomizer,
+        ak: *test_data.fvk.spend_verification_key(),
+        nk: *test_data.fvk.nullifier_key(),
+        asset_path: penumbra_sdk_compliance::MerklePath::default(),
+        asset_position: 0,
+        is_regulated: false,
+        compliance_path: penumbra_sdk_compliance::MerklePath::default(),
+        compliance_position: 0,
+        user_leaf: test_data.user_leaf,
+        compliance_ephemeral_secret: test_data.ephemeral_secret,
+        counterparty_leaf: dummy_leaf,
+        tx_blinding_nonce: dummy_nonce,
+    };
+
+    let r = Fq::rand(&mut rng);
+    let s = Fq::rand(&mut rng);
+
     c.bench_function("spend proving", |b| {
-        b.iter(|| prove(r, s, public.clone(), private.clone()))
+        b.iter(|| {
+            let _proof = SpendProof::prove(
+                r,
+                s,
+                &SPEND_PROOF_PROVING_KEY,
+                public.clone(),
+                private.clone(),
+            )
+            .expect("can create proof");
+        })
     });
 
     // Also print out the number of constraints.

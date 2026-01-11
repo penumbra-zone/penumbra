@@ -1,50 +1,66 @@
 {
   "actions": [
     {
-      "proposalDepositClaim": {
-        "proposal": "473766891",
-        "depositAmount": {
-          "lo": "297957986956764967"
+      "undelegateClaim": {
+        "validatorIdentity": {
+          "ik": "Nv6AtnodV9UpkFXCdDnri7hmKzsuyGQcjzDZWcbgehQ="
         },
-        "outcome": {
-          "passed": {}
-        }
+        "penalty": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA="
+        },
+        "unbondingAmount": {
+          "lo": "375570791530847104"
+        },
+        "balanceBlinding": "nhNhCJUfwSNOGl/qqXwyTpnejWoU70KsyL/xmVwBhgE=",
+        "proofBlindingR": "2YRQ+5a9ebZbxEGlFYpuItm9qNK2jeN12Ex4CvZOzA0=",
+        "proofBlindingS": "cNl35TU+FhLOJeBZrrhJb/YmuQplCZLa0nFEoPrwSQQ=",
+        "unbondingStartHeight": "12406"
+      }
+    },
+    {
+      "proposalWithdraw": {
+        "proposal": "528662970"
       }
     },
     {
       "communityPoolOutput": {
         "value": {
           "amount": {
-            "lo": "424215752283475438"
+            "lo": "995434624981191954"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
         "address": {
-          "inner": "aSij68KSXafDXmgTHZGpIX/zs44rB56aBAnoaynqSijGgSABDcZP25+TwHNp8wKBv3a6CddpWe1l2m6+PreYbYlO2nglVP4kx2S7F5L8vZc="
+          "inner": "wqqumU2MD09G/W9WB5/q5mRLsCJxdOkiEoZqjSVKXONXsXpGsVks9OdMQH82GM96GN8LPuCz4Ggpt6Z05hNP41LQ6oNzlQSrKe4DK21nxcs="
         }
       }
     },
     {
-      "communityPoolSpend": {
-        "value": {
-          "amount": {
-            "lo": "243485784561771789"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "6HttorkFs7MJxaCMnbHbxUPsohIDu97WTO0cJX6YNn0="
+        },
+        "unbondedAmount": {
+          "lo": "752860702986358224"
+        },
+        "delegationAmount": {
+          "lo": "818644859983531565"
+        },
+        "fromEpoch": {
+          "index": "2732",
+          "startHeight": "2732"
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "2886812000",
-    "chainId": "oeipxhgcudkphtmxjwacqy-8106",
+    "expiryHeight": "6301925108",
+    "chainId": "kauzowsygfaurbygu-2868",
     "fee": {
       "amount": {
-        "lo": "254426681358060609"
+        "lo": "327527985948304103"
       }
     }
   }

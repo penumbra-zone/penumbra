@@ -1,77 +1,56 @@
 {
   "actions": [
     {
-      "positionClose": {
-        "positionId": {
-          "inner": "nqvxauROcSbVQnOUvk7b5149ngH4LykooPuqosPTCVY="
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "rMjwkkfL+/gjNVTNdXp/evRCQ81g3zetDxtxYVqhwLc="
+        },
+        "epochIndex": "7310",
+        "unbondedAmount": {
+          "lo": "513773968415348099"
+        },
+        "delegationAmount": {
+          "lo": "761171189206415343"
         }
       }
     },
     {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "945406569258576653"
+      "swap": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "address": {
-          "inner": "CgxXuotl8D4fIFx5jSZI8T0LAtO86iYlHhh19NID4xdZ01kyJ+7FQdZPXOaNwQ8ul4IiAs9Bw9MJGmEKaii8YAThO8Pu/RJa6DcU+dDi/ZY="
-        }
-      }
-    },
-    {
-      "positionWithdraw": {
-        "reserves": {
-          "r1": {
-            "lo": "707352881619011109"
+          "delta1I": {
+            "lo": "298292679405511903"
           },
-          "r2": {
-            "lo": "117023760349645964"
-          }
-        },
-        "positionId": {
-          "inner": "jeGxH7HTvK36Z/n6KE11qNoBQUHNl/ar/QyChuevP5o="
-        },
-        "pair": {
-          "asset1": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "delta2I": {
+            "lo": "576191886085998067"
           },
-          "asset2": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "sequence": "1"
-      }
-    },
-    {
-      "output": {
-        "value": {
-          "amount": {
-            "lo": "226381515396186902"
+          "claimFee": {
+            "amount": {}
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
+          "claimAddress": {
+            "inner": "nUXjZxsdd4sil+VH79U547yCCCnaMrS7ouDQk5JujbaOdoETLE2FimJD0bi++/P1qJlQ8kOjntz7KViTuAnDOrlXZ2ruNMBgtO+Tu4eIU5E="
+          },
+          "rseed": "1lrIManj+9My7Bp8g0Tcz+mRC26nvLLhneTnZzMR5xo="
         },
-        "destAddress": {
-          "inner": "XwrF5DMRd0uK4hGaRzdgc1c6+qsiroMkPWXBF8WhbJP04BaWWaBE+U6/xFYGhfyG3T1GF3YUpl1odiJFxpXWR9snqwib7fDYwequeDCXkQs="
-        },
-        "rseed": "lMg7z88/p8wJ5B+x/oRoehdR262nulve/ZRGF/eOkN4=",
-        "valueBlinding": "1KeVmJL4sK9w0YGxRu11hLcLrGI+Ni/5a8/5G6V9OgA=",
-        "proofBlindingR": "ovScj8QLTTZvnriN4ufSyWODaLhcVPe9SUDf9tSERgU=",
-        "proofBlindingS": "mleTW6e2o5ru+E/GXXrJwVWJqTQtJHct4eoLdb0f+Qo="
+        "feeBlinding": "P+6wwUMF4OjXILFx8FtvW8qS/LJb5aTL+fwv9s//CAA=",
+        "proofBlindingR": "rN3W3yWA8GQO2T+QeAaBgxod+9bp8bbrqbtfUIC2Yws=",
+        "proofBlindingS": "2Pl5pS7SeVmDpqVqdpzbRsus4bS/h32DlZxDenmVaQ8="
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "5221709871",
-    "chainId": "wzjcmai-096714",
+    "expiryHeight": "3534939802",
+    "chainId": "bb-0063116840480760",
     "fee": {
       "amount": {
-        "lo": "601378230710098777"
+        "lo": "566863756641549662"
       }
     }
   }

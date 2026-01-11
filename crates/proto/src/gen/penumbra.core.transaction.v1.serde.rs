@@ -87,6 +87,12 @@ impl serde::Serialize for Action {
                 action::Action::ActionLiquidityTournamentVote(v) => {
                     struct_ser.serialize_field("actionLiquidityTournamentVote", v)?;
                 }
+                action::Action::ComplianceRegisterAsset(v) => {
+                    struct_ser.serialize_field("complianceRegisterAsset", v)?;
+                }
+                action::Action::ComplianceRegisterUser(v) => {
+                    struct_ser.serialize_field("complianceRegisterUser", v)?;
+                }
                 action::Action::Ics20Withdrawal(v) => {
                     struct_ser.serialize_field("ics20Withdrawal", v)?;
                 }
@@ -147,6 +153,10 @@ impl<'de> serde::Deserialize<'de> for Action {
             "actionDutchAuctionWithdraw",
             "action_liquidity_tournament_vote",
             "actionLiquidityTournamentVote",
+            "compliance_register_asset",
+            "complianceRegisterAsset",
+            "compliance_register_user",
+            "complianceRegisterUser",
             "ics20_withdrawal",
             "ics20Withdrawal",
         ];
@@ -178,6 +188,8 @@ impl<'de> serde::Deserialize<'de> for Action {
             ActionDutchAuctionEnd,
             ActionDutchAuctionWithdraw,
             ActionLiquidityTournamentVote,
+            ComplianceRegisterAsset,
+            ComplianceRegisterUser,
             Ics20Withdrawal,
             __SkipField__,
         }
@@ -226,6 +238,8 @@ impl<'de> serde::Deserialize<'de> for Action {
                             "actionDutchAuctionEnd" | "action_dutch_auction_end" => Ok(GeneratedField::ActionDutchAuctionEnd),
                             "actionDutchAuctionWithdraw" | "action_dutch_auction_withdraw" => Ok(GeneratedField::ActionDutchAuctionWithdraw),
                             "actionLiquidityTournamentVote" | "action_liquidity_tournament_vote" => Ok(GeneratedField::ActionLiquidityTournamentVote),
+                            "complianceRegisterAsset" | "compliance_register_asset" => Ok(GeneratedField::ComplianceRegisterAsset),
+                            "complianceRegisterUser" | "compliance_register_user" => Ok(GeneratedField::ComplianceRegisterUser),
                             "ics20Withdrawal" | "ics20_withdrawal" => Ok(GeneratedField::Ics20Withdrawal),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -424,6 +438,20 @@ impl<'de> serde::Deserialize<'de> for Action {
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::ActionLiquidityTournamentVote)
 ;
                         }
+                        GeneratedField::ComplianceRegisterAsset => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceRegisterAsset"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::ComplianceRegisterAsset)
+;
+                        }
+                        GeneratedField::ComplianceRegisterUser => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceRegisterUser"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::ComplianceRegisterUser)
+;
+                        }
                         GeneratedField::Ics20Withdrawal => {
                             if action__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("ics20Withdrawal"));
@@ -539,6 +567,12 @@ impl serde::Serialize for ActionPlan {
                 action_plan::Action::ActionLiquidityTournamentVote(v) => {
                     struct_ser.serialize_field("actionLiquidityTournamentVote", v)?;
                 }
+                action_plan::Action::ComplianceRegisterAsset(v) => {
+                    struct_ser.serialize_field("complianceRegisterAsset", v)?;
+                }
+                action_plan::Action::ComplianceRegisterUser(v) => {
+                    struct_ser.serialize_field("complianceRegisterUser", v)?;
+                }
             }
         }
         struct_ser.end()
@@ -600,6 +634,10 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             "actionDutchAuctionWithdraw",
             "action_liquidity_tournament_vote",
             "actionLiquidityTournamentVote",
+            "compliance_register_asset",
+            "complianceRegisterAsset",
+            "compliance_register_user",
+            "complianceRegisterUser",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -631,6 +669,8 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             ActionDutchAuctionEnd,
             ActionDutchAuctionWithdraw,
             ActionLiquidityTournamentVote,
+            ComplianceRegisterAsset,
+            ComplianceRegisterUser,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -680,6 +720,8 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             "actionDutchAuctionEnd" | "action_dutch_auction_end" => Ok(GeneratedField::ActionDutchAuctionEnd),
                             "actionDutchAuctionWithdraw" | "action_dutch_auction_withdraw" => Ok(GeneratedField::ActionDutchAuctionWithdraw),
                             "actionLiquidityTournamentVote" | "action_liquidity_tournament_vote" => Ok(GeneratedField::ActionLiquidityTournamentVote),
+                            "complianceRegisterAsset" | "compliance_register_asset" => Ok(GeneratedField::ComplianceRegisterAsset),
+                            "complianceRegisterUser" | "compliance_register_user" => Ok(GeneratedField::ComplianceRegisterUser),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -891,6 +933,20 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ActionLiquidityTournamentVote)
 ;
                         }
+                        GeneratedField::ComplianceRegisterAsset => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceRegisterAsset"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ComplianceRegisterAsset)
+;
+                        }
+                        GeneratedField::ComplianceRegisterUser => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceRegisterUser"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ComplianceRegisterUser)
+;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -996,6 +1052,12 @@ impl serde::Serialize for ActionView {
                 action_view::ActionView::ActionLiquidityTournamentVote(v) => {
                     struct_ser.serialize_field("actionLiquidityTournamentVote", v)?;
                 }
+                action_view::ActionView::ComplianceRegisterAsset(v) => {
+                    struct_ser.serialize_field("complianceRegisterAsset", v)?;
+                }
+                action_view::ActionView::ComplianceRegisterUser(v) => {
+                    struct_ser.serialize_field("complianceRegisterUser", v)?;
+                }
                 action_view::ActionView::Ics20Withdrawal(v) => {
                     struct_ser.serialize_field("ics20Withdrawal", v)?;
                 }
@@ -1058,6 +1120,10 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             "undelegateClaim",
             "action_liquidity_tournament_vote",
             "actionLiquidityTournamentVote",
+            "compliance_register_asset",
+            "complianceRegisterAsset",
+            "compliance_register_user",
+            "complianceRegisterUser",
             "ics20_withdrawal",
             "ics20Withdrawal",
         ];
@@ -1090,6 +1156,8 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             ActionDutchAuctionWithdraw,
             UndelegateClaim,
             ActionLiquidityTournamentVote,
+            ComplianceRegisterAsset,
+            ComplianceRegisterUser,
             Ics20Withdrawal,
             __SkipField__,
         }
@@ -1139,6 +1207,8 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             "actionDutchAuctionWithdraw" | "action_dutch_auction_withdraw" => Ok(GeneratedField::ActionDutchAuctionWithdraw),
                             "undelegateClaim" | "undelegate_claim" => Ok(GeneratedField::UndelegateClaim),
                             "actionLiquidityTournamentVote" | "action_liquidity_tournament_vote" => Ok(GeneratedField::ActionLiquidityTournamentVote),
+                            "complianceRegisterAsset" | "compliance_register_asset" => Ok(GeneratedField::ComplianceRegisterAsset),
+                            "complianceRegisterUser" | "compliance_register_user" => Ok(GeneratedField::ComplianceRegisterUser),
                             "ics20Withdrawal" | "ics20_withdrawal" => Ok(GeneratedField::Ics20Withdrawal),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -1342,6 +1412,20 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                                 return Err(serde::de::Error::duplicate_field("actionLiquidityTournamentVote"));
                             }
                             action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ActionLiquidityTournamentVote)
+;
+                        }
+                        GeneratedField::ComplianceRegisterAsset => {
+                            if action_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceRegisterAsset"));
+                            }
+                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ComplianceRegisterAsset)
+;
+                        }
+                        GeneratedField::ComplianceRegisterUser => {
+                            if action_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceRegisterUser"));
+                            }
+                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ComplianceRegisterUser)
 ;
                         }
                         GeneratedField::Ics20Withdrawal => {

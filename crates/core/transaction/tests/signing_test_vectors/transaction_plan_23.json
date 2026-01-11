@@ -1,38 +1,83 @@
 {
   "actions": [
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "1v9Ntnd7yc+RwdVM6gUV0iRCfmTg4eE9zLpS8MURXxo="
+      "validatorVote": {
+        "body": {
+          "proposal": "418237639",
+          "vote": {
+            "vote": "VOTE_YES"
+          },
+          "identityKey": {
+            "ik": "gkWEQ5XYQgjzjPJCq9d7M2HUnl5Grz7pm65BNRbLB0I="
+          },
+          "governanceKey": {
+            "gk": "dIkHqqijtZ+ylmi1AOeymfNkIxEpbSagxEmZaBpfPQw="
+          },
+          "reason": {
+            "reason": "kj8Ha1Vj"
+          }
         },
-        "epochIndex": "9683",
-        "unbondedAmount": {
-          "lo": "7195608283177206"
-        },
-        "delegationAmount": {
-          "lo": "608116032648238037"
+        "authSig": {
+          "inner": "/FJCSvDZ3PSQGDB21emdXZphQYgiTX3oH1CoOXSHTBCacZ+nhqUfbrR9SyYiSep1dHQtR+i1Hh0KLKXrF5uNAw=="
         }
       }
     },
     {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "hkupgxtnkcjecxfxb-59864250696317978994561595148302",
-          "description": "rfn-61385793505989969484",
-          "signaling": {}
+      "validatorVote": {
+        "body": {
+          "proposal": "363468050",
+          "vote": {
+            "vote": "VOTE_NO"
+          },
+          "identityKey": {
+            "ik": "w6d19665RrIa3sgr+Fa82rMd3U/qVs6uWZfhE7UnPdQ="
+          },
+          "governanceKey": {
+            "gk": "3Nplzf1wScIVIQgVIl0GLjFTX8+Nr2YIBGgX9p9Hiw8="
+          },
+          "reason": {
+            "reason": "d5E"
+          }
         },
-        "depositAmount": {
-          "lo": "275107701206158898"
+        "authSig": {
+          "inner": "+kIwAlB71zOnxanMauTOw6MorMR35eWyrNIV759W6wfCoFyS1yaFjJ1yKjQuY5osDlRcKYO7hjzwpVZZDRGqAQ=="
+        }
+      }
+    },
+    {
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "973706224748493709"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "937506138206862101"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "address": {
+          "inner": "rLyw7omw+DJcuvHo5Fa0KKS0BZ9dToCNyc7FQENJWBIEDOXtpeUnSSJlvEn7LCKRz/kQ1gwUWDt7M8nfV5DC36vWY2ZbYXj+3zv6YHUDAlU="
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "61488075",
-    "chainId": "hhjevsgvz-1092128947010650909",
+    "expiryHeight": "6979900500",
+    "chainId": "unwlaefi-119234921474",
     "fee": {
       "amount": {
-        "lo": "383385177669936477"
+        "lo": "5861255085087584"
       }
     }
   }

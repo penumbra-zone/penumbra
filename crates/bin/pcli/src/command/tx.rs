@@ -26,6 +26,7 @@ use lqt_vote::LqtVoteCmd;
 use rand_core::OsRng;
 use regex::Regex;
 
+use compliance::ComplianceCmd;
 use liquidity_position::PositionCmd;
 use penumbra_sdk_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_sdk_dex::{
@@ -91,6 +92,7 @@ use crate::App;
 use clap::Parser;
 
 mod auction;
+mod compliance;
 mod liquidity_position;
 mod lqt_vote;
 mod proposal;
@@ -232,6 +234,9 @@ pub enum TxCmd {
     /// Submit or withdraw a governance proposal.
     #[clap(display_order = 500, subcommand)]
     Proposal(ProposalCmd),
+    /// Compliance-related transactions (asset and user registration).
+    #[clap(display_order = 550, subcommand)]
+    Compliance(ComplianceCmd),
     /// Deposit funds into the Community Pool.
     #[clap(display_order = 600)]
     CommunityPoolDeposit {
@@ -379,6 +384,7 @@ impl TxCmd {
             TxCmd::UndelegateClaim { .. } => false,
             TxCmd::Vote { .. } => false,
             TxCmd::Proposal(proposal_cmd) => proposal_cmd.offline(),
+            TxCmd::Compliance(compliance_cmd) => compliance_cmd.offline(),
             TxCmd::CommunityPoolDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
             TxCmd::Withdraw { .. } => false,
@@ -390,6 +396,16 @@ impl TxCmd {
     }
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
+        // Handle compliance commands that don't need wallet/view service early
+        if let TxCmd::Compliance(compliance_cmd) = self {
+            if compliance_cmd.is_scan() {
+                return compliance_cmd.exec_scan().await;
+            }
+            if compliance_cmd.is_derive_daily_key() {
+                return compliance_cmd.exec_derive_daily_key();
+            }
+        }
+
         // TODO: use a command line flag to determine the fee token,
         // and pull the appropriate GasPrices out of this rpc response,
         // the rest should follow
@@ -468,6 +484,12 @@ impl TxCmd {
                         AddressIndex::new(*source),
                     )
                     .await?;
+                app.build_and_submit_transaction(plan).await?;
+            }
+            TxCmd::Compliance(compliance_cmd) => {
+                // Scan command is handled early in exec() before gas_prices fetch.
+                // This branch only handles register-asset and register-user.
+                let plan = compliance_cmd.plan(app, gas_prices).await?;
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Sweep => loop {

@@ -1,0 +1,156 @@
+syntax = "proto3";
+package penumbra.core.component.compliance.v1;
+
+import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/keys/v1/keys.proto";
+
+// Crypto Structures
+
+// A wrapper around bytes representing a compliance viewing key (32 bytes).
+message ComplianceViewingKey {
+  bytes inner = 1;
+}
+
+// A compliance leaf in the public on-chain registry for regulated assets.
+message ComplianceLeaf {
+  // The registered address for compliance.
+  keys.v1.Address address = 1;
+  // The compliance viewing key for this wallet.
+  ComplianceViewingKey key = 2;
+  // The asset ID this compliance leaf applies to.
+  asset.v1.AssetId asset_id = 3;
+}
+
+// Registry Actions (State Transitions)
+
+// Message to register an asset as regulated or non-regulated in the compliance registry.
+message MsgRegisterAsset {
+  // The asset ID to register.
+  asset.v1.AssetId asset_id = 1;
+  // Whether this asset is regulated (requires compliance).
+  bool is_regulated = 2;
+}
+
+// Message to register a user's compliance viewing key for a regulated asset.
+message MsgRegisterUser {
+  // The compliance leaf containing the user's registration information.
+  ComplianceLeaf leaf = 1;
+  // Signature authorizing this registration.
+  bytes signature = 2;
+}
+
+// ZK Data (Quad Tree Path)
+
+// A Merkle path in the Quad Merkle Tree (arity 4).
+message MerklePath {
+  // The layers of the Merkle path, from leaf to root.
+  repeated MerklePathLayer layers = 1;
+}
+
+// A single layer in the Quad Merkle Tree path.
+// Since this is a Quad Tree (arity 4), each layer has exactly 3 siblings.
+message MerklePathLayer {
+  // The sibling hashes at this layer (always 3 siblings for a Quad Tree).
+  repeated bytes siblings = 1;
+}
+
+// Query Service for compliance registry state
+
+service QueryService {
+  // Query the regulation status of a specific asset.
+  rpc ComplianceAssetStatus(ComplianceAssetStatusRequest) returns (ComplianceAssetStatusResponse);
+  // Query the current compliance tree anchors (roots).
+  // These are needed by clients to generate valid compliance proofs.
+  rpc ComplianceAnchors(ComplianceAnchorsRequest) returns (ComplianceAnchorsResponse);
+  // Query the Merkle proofs needed for compliance ZK proofs.
+  // Returns paths and positions for both user and asset trees.
+  rpc ComplianceMerkleProofs(ComplianceMerkleProofsRequest) returns (ComplianceMerkleProofsResponse);
+  // Query a user's registered compliance leaf.
+  // Returns the full leaf (including ACK) that was registered on-chain.
+  rpc ComplianceUserLeaf(ComplianceUserLeafRequest) returns (ComplianceUserLeafResponse);
+}
+
+// Request for querying an asset's regulation status.
+message ComplianceAssetStatusRequest {
+  // The asset ID to query.
+  asset.v1.AssetId asset_id = 1;
+}
+
+// Response containing an asset's regulation status.
+message ComplianceAssetStatusResponse {
+  // The asset ID that was queried.
+  asset.v1.AssetId asset_id = 1;
+  // Whether the asset is registered in the compliance system.
+  // If false, `is_regulated` should be ignored.
+  bool is_registered = 2;
+  // Whether the asset requires compliance (only meaningful if is_registered is true).
+  bool is_regulated = 3;
+}
+
+// Request for querying the current compliance tree anchors.
+message ComplianceAnchorsRequest {
+  // Empty - no parameters needed, returns current state.
+}
+
+// Response containing the current compliance tree anchors.
+message ComplianceAnchorsResponse {
+  // The root of the user compliance tree (Quad Merkle Tree).
+  // This is a StateCommitment (32 bytes).
+  bytes user_tree_root = 1;
+  // The root of the asset regulation tree (Quad Merkle Tree).
+  // This is a StateCommitment (32 bytes).
+  bytes asset_tree_root = 2;
+}
+
+// Request for querying Merkle proofs needed for compliance ZK proofs.
+// The client provides their address and asset ID, and receives
+// the paths and positions needed to generate valid proofs.
+message ComplianceMerkleProofsRequest {
+  // The address (used to look up user's position in compliance tree).
+  keys.v1.Address address = 1;
+  // The asset ID (used to look up asset's position in asset tree).
+  asset.v1.AssetId asset_id = 2;
+}
+
+// Response containing Merkle proofs for compliance ZK proofs.
+// This provides all the data needed to populate SpendPlan/OutputPlan compliance fields.
+message ComplianceMerkleProofsResponse {
+  // Whether the user is registered for this asset.
+  // If false, compliance_path and compliance_position will be empty/zero.
+  bool user_registered = 1;
+  // Whether the asset is registered in the compliance system.
+  // If false, asset_path and asset_position will be empty/zero.
+  bool asset_registered = 2;
+  // Whether the asset is regulated (only meaningful if asset_registered is true).
+  bool is_regulated = 3;
+
+  // User's Merkle path in the compliance tree (from leaf to root).
+  MerklePath compliance_path = 4;
+  // User's position in the compliance tree.
+  uint64 compliance_position = 5;
+  // Asset's Merkle path in the asset tree (from leaf to root).
+  MerklePath asset_path = 6;
+  // Asset's position in the asset tree.
+  uint64 asset_position = 7;
+
+  // Current compliance tree root (StateCommitment, 32 bytes).
+  bytes compliance_anchor = 8;
+  // Current asset tree root (StateCommitment, 32 bytes).
+  bytes asset_anchor = 9;
+}
+
+// Request for querying a user's registered compliance leaf.
+message ComplianceUserLeafRequest {
+  // The address to look up.
+  keys.v1.Address address = 1;
+  // The asset ID to look up.
+  asset.v1.AssetId asset_id = 2;
+}
+
+// Response containing a user's registered compliance leaf.
+message ComplianceUserLeafResponse {
+  // Whether the user is registered for this asset.
+  bool is_registered = 1;
+  // The user's compliance leaf (only present if is_registered is true).
+  ComplianceLeaf leaf = 2;
+}

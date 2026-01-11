@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.core.component.shielded_pool.v1;
 
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/compliance/v1/compliance.proto";
 import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
@@ -156,6 +157,21 @@ message SpendBody {
   crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 4;
   // An encryption of the commitment of the input note to the sender's OVK.
   bytes encrypted_backref = 7;
+  // Compliance ciphertext encrypting input note details for asset issuer.
+  // 155 bytes total = [Clue: 8 bytes] + [Encrypted Payload: 147 bytes].
+  // Payload contains: Amount (16B) + Asset ID (32B) + Rseed (32B) + Address (64B) + Padding (3B).
+  // Packed in the circuit as 5 field elements of 31 bytes each.
+  bytes compliance_ciphertext = 8;
+  // Target timestamp for compliance verification (Unix timestamp in seconds).
+  uint64 target_timestamp = 9;
+  // Blinded sender leaf hash (for binding with output circuit).
+  crypto.tct.v1.StateCommitment sender_leaf_hash = 10;
+  // Blinded counterparty (receiver) leaf hash (for binding with output circuit).
+  crypto.tct.v1.StateCommitment counterparty_leaf_hash = 11;
+  // Compliance tree anchor (user tree root) used during proof generation.
+  crypto.tct.v1.StateCommitment compliance_anchor = 12;
+  // Asset tree anchor used during proof generation.
+  crypto.tct.v1.StateCommitment asset_anchor = 13;
 }
 message SpendView {
   message Visible {
@@ -184,6 +200,26 @@ message SpendPlan {
   bytes proof_blinding_r = 5;
   // The second blinding factor to use for the ZK spend proof.
   bytes proof_blinding_s = 6;
+  // Target timestamp for compliance key derivation (Unix timestamp in seconds).
+  uint64 target_timestamp = 7;
+  // Precomputed compliance ciphertext (256 bytes: 32 EPK + 224 payload, empty when not yet generated).
+  bytes compliance_ciphertext = 8;
+  // Whether the asset is regulated (requires compliance).
+  bool is_regulated = 9;
+  // Compliance leaf for ZK proof (sender's registry entry).
+  compliance.v1.ComplianceLeaf compliance_leaf = 10;
+  // Counterparty compliance leaf (recipient's registry entry).
+  compliance.v1.ComplianceLeaf counterparty_leaf = 11;
+  // Ephemeral secret used in compliance ciphertext encryption (needed by circuit).
+  bytes compliance_ephemeral_secret = 12;
+  // Counterparty address (the recipient of this spend).
+  keys.v1.Address counterparty_address = 13;
+  // Shared transaction blinding nonce (same for spend and output in one transaction).
+  bytes tx_blinding_nonce = 14;
+  // The compliance anchor (user tree root) for proof generation.
+  crypto.tct.v1.StateCommitment compliance_anchor = 15;
+  // The asset anchor (asset tree root) for proof generation.
+  crypto.tct.v1.StateCommitment asset_anchor = 16;
 }
 
 // Creates a new shielded note.
@@ -207,6 +243,20 @@ message OutputBody {
   // The key material used for note encryption, wrapped in encryption to the
   // sender's outgoing viewing key. 48 bytes.
   bytes ovk_wrapped_key = 4;
+  // Compliance ciphertext encrypting output note details for asset issuer.
+  // 160 bytes = 5 field elements (amount, asset_id, note_blinding, receiver_g_d, receiver_pk_d).
+  // Sender address is captured in the Spend circuit.
+  bytes compliance_ciphertext = 5;
+  // Target timestamp for compliance verification (Unix timestamp in seconds).
+  uint64 target_timestamp = 6;
+  // Blinded receiver leaf hash (for binding with spend circuit).
+  crypto.tct.v1.StateCommitment receiver_leaf_hash = 7;
+  // Blinded counterparty (sender) leaf hash (for binding with spend circuit).
+  crypto.tct.v1.StateCommitment counterparty_leaf_hash = 8;
+  // Compliance tree anchor (user tree root) used during proof generation.
+  crypto.tct.v1.StateCommitment compliance_anchor = 9;
+  // Asset tree anchor used during proof generation.
+  crypto.tct.v1.StateCommitment asset_anchor = 10;
 }
 
 message OutputView {
@@ -238,6 +288,26 @@ message OutputPlan {
   bytes proof_blinding_r = 5;
   // The second blinding factor to use for the ZK output proof.
   bytes proof_blinding_s = 6;
+  // Target timestamp for compliance key derivation (Unix timestamp in seconds).
+  uint64 target_timestamp = 7;
+  // Precomputed compliance ciphertext (256 bytes: 32 EPK + 224 payload, empty when not yet generated).
+  bytes compliance_ciphertext = 8;
+  // Whether the asset is regulated (requires compliance).
+  bool is_regulated = 9;
+  // Compliance leaf for ZK proof (recipient's registry entry).
+  compliance.v1.ComplianceLeaf compliance_leaf = 10;
+  // Counterparty compliance leaf (sender's registry entry).
+  compliance.v1.ComplianceLeaf counterparty_leaf = 11;
+  // Ephemeral secret used in compliance ciphertext encryption (needed by circuit).
+  bytes compliance_ephemeral_secret = 12;
+  // Counterparty address (the sender of this output).
+  keys.v1.Address counterparty_address = 13;
+  // Shared transaction blinding nonce (same for spend and output in one transaction).
+  bytes tx_blinding_nonce = 14;
+  // The compliance anchor (user tree root) for proof generation.
+  crypto.tct.v1.StateCommitment compliance_anchor = 15;
+  // The asset anchor (asset tree root) for proof generation.
+  crypto.tct.v1.StateCommitment asset_anchor = 16;
 }
 
 // Query operations for the shielded pool component.

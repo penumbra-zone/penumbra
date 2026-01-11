@@ -1,46 +1,122 @@
 {
   "actions": [
     {
-      "ibcRelayAction": {
-        "rawAction": {
-          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
-          "value": "CrMBCMLhwcICEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsIivjdMBCjuKysAUCwrdWHy7u2iBgSAgoAGgsIivjdMBCjuKysASKPAXBlbnVtYnJhMTVkM2Nxc2toenFobHN2c2wyNHhjdGQwZm5yZzhud2NqY3k3dmt4N2plcXM0MGx0bXYzNzhoN2xudDR5d2U5cG5xbXp6aHZxdDh5MDN0ajN5djh3N213MGFmN244Y3Y1Mjd1NHAycnJrdXc0NWcwbmU4bjBoZ2E5OHA1M2x0ZTVrdWF0ZjJh"
-        }
-      }
-    },
-    {
-      "actionDutchAuctionEnd": {
-        "auctionId": {
-          "inner": "OpAFH87m9VIRibODOoCnWC6KbofaAYUHTmMq6VuGFUo="
-        }
-      }
-    },
-    {
       "output": {
         "value": {
           "amount": {
-            "lo": "969023059420658370"
+            "lo": "573301088208216900"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
         "destAddress": {
-          "inner": "sFqHrX+p3N1Qwuwx9Gq1RZCTRNvzOFWkV7FZqUTJBPFnhc11WosUpgbSDflNDID9HbJ3OayE/4Z52TolHjQMUA6yZPdxRCyV0NYDEjH/mhc="
+          "inner": "pGLOVgWV1HcSUM8wgOJWskokCxrp1qW71WgWaTudoRi3xW0r1ZwkBfivxtlwlZAnOaEyz7y3t5Vk1zECPQ2FMvGmlQOq5/nNS6F5OnET1XE="
         },
-        "rseed": "s46YSg3lc3tNbuafFtHcoJgXW6Uq2sGbWichcckAOtY=",
-        "valueBlinding": "v1bIvkRVTvJ5FaH9awKp7qdxlcUTFGmcOI8eYchZygA=",
-        "proofBlindingR": "aC66pyLilol0rHc0utaE0C8nfoVYRngysVoGTVgWQQg=",
-        "proofBlindingS": "ZWjC/hKxCIQ76q0QRo9OG6BRHK9jJNB4IBXjZDTP6Ac="
+        "rseed": "u4DZPOjOeYBGTDamFbCLPJNP+ZDwqOhdik7S0HvfnJI=",
+        "valueBlinding": "o8oKDj7do6WSC/KhdOF6rxbXdB2ZsCEzP+Q1Zx1FLgQ=",
+        "proofBlindingR": "vXTskvnZq4z7Kh8JtKo/EuoRPw+i3eIlv/1KCJIftQg=",
+        "proofBlindingS": "phFqMSAF2G4e/nj0LDZ/nGFxj281kbXcHH9wwz42ugk=",
+        "targetTimestamp": "1767841918",
+        "complianceCiphertext": "PGqbdTgE87DvTsqqeohZg3J0XUVLWkmzZkcoa/FswQWgJJW0975IBY4A63Au5XVLYmNoQk9yFoSVc7Oe8HDxCioO3aRWMFrzktnB6vUFRqaihMe021sAU1T7hw+Zi4kI2bgE7CNR80ejZxR0yRTLZHlqQlpVz/GlBrcgIJaqUg//NzYSUKVL/509HGHSSnnuinJHkuImI+cRxaqGG/i/BuCiCiQx8q2JOFsdRK2gaq+M/y2cvhmWNWwAoIkdDxkSiEb+u6IRQoNm80Qcl4I40q5NGWa8+4wHU3LuqGoZIAg=",
+        "complianceLeaf": {
+          "walletId": {
+            "inner": "pGLOVgWV1HcSUM8wgOJWskokCxrp1qW71WgWaTudoRi3xW0r1ZwkBfivxtlwlZAnOaEyz7y3t5Vk1zECPQ2FMvGmlQOq5/nNS6F5OnET1XE="
+          },
+          "key": {
+            "inner": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "counterpartyLeaf": {
+          "walletId": {
+            "inner": "pGLOVgWV1HcSUM8wgOJWskokCxrp1qW71WgWaTudoRi3xW0r1ZwkBfivxtlwlZAnOaEyz7y3t5Vk1zECPQ2FMvGmlQOq5/nNS6F5OnET1XE="
+          },
+          "key": {
+            "inner": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "complianceEphemeralSecret": "c77gFtKmsnVy+nF6SBUEJgUsrSVTSf+K1UX7nXBtcAE=",
+        "txBlindingNonce": "00u1DCEaECZzBdx9JyVcT66nOWA+tvt4zwkuxV/mBwI=",
+        "complianceAnchor": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        },
+        "assetAnchor": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        }
+      }
+    },
+    {
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "KrycMwiNcRcTfD+ANIhUljEotA7UriFNEwiS4Is0XAY="
+          },
+          "consensusKey": "B2oC6THMQnoK6ezC/DaFyfScR00ut6/r3bZ+f6nbl4Q=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "KrycMwiNcRcTfD+ANIhUljEotA7UriFNEwiS4Is0XAY="
+          }
+        },
+        "authSig": "PuvLwi1+MCrYsIuJiVMn9BB6pbaVLN924Zq2E1hPyQiwVHabMWFA7xbt/2LsId3nXKl1wo05DJ9TAPON/vhxAw=="
+      }
+    },
+    {
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "dpvnsTBPuE1STUyV/zRM4S5cA5ZT7hQayDuk73KJGwI="
+          },
+          "consensusKey": "KpC5SxB4QtQ/0QwZt1NG0uvVMXi1zK8Xwg6h/Ezjk5Y=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "dpvnsTBPuE1STUyV/zRM4S5cA5ZT7hQayDuk73KJGwI="
+          }
+        },
+        "authSig": "DidOIXPIdBXSg5TgEeCKZHcCx2mBehDzooFLG3nJFRDNJr0nO5R9YzzBpjYTn7JLvFQaLKv8X9/+7eYKu9B5BA=="
+      }
+    },
+    {
+      "actionDutchAuctionSchedule": {
+        "description": {
+          "input": {
+            "amount": {
+              "lo": "668914125767429041"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "outputId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "maxOutput": {
+            "lo": "522512131033198238"
+          },
+          "minOutput": {
+            "lo": "769261686933695228"
+          },
+          "startHeight": "716514537",
+          "endHeight": "716514538",
+          "stepCount": "692689422",
+          "nonce": "56Vi4Ccx4GVoWKxoLiH2Y1xX/OoG3xblNq2CH6Pkxqg="
+        }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "3199813193",
-    "chainId": "ypuzsskkznnqurexllxyjidx-90788967119211388776565688439415",
+    "expiryHeight": "5807452818",
+    "chainId": "zcdfpacqwclcymojhybtipgnigyrcv-3600052752900723227796160037",
     "fee": {
       "amount": {
-        "lo": "702179720312966580"
+        "lo": "274803171678496727"
       }
     }
   }

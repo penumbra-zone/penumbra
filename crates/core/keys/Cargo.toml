@@ -10,6 +10,8 @@ edition = {workspace = true}
 [features]
 default = []
 parallel = ["penumbra-sdk-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
+# Enables demo/test-only code like MasterComplianceKey::demo()
+demo = []
 
 [dependencies]
 aes = "0.8.1"

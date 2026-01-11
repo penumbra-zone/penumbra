@@ -38,6 +38,7 @@ penumbra-sdk-app = {workspace = true, default-features = false}
 penumbra-sdk-asset = {workspace = true, default-features = true}
 penumbra-sdk-community-pool = {workspace = true, default-features = false}
 penumbra-sdk-compact-block = {workspace = true, default-features = false}
+penumbra-sdk-compliance = {workspace = true, default-features = false}
 penumbra-sdk-dex = {workspace = true, default-features = false}
 penumbra-sdk-distributions = {workspace = true, default-features = false}
 penumbra-sdk-fee = {workspace = true, default-features = false}
@@ -70,3 +71,6 @@ tracing = {workspace = true}
 tracing-subscriber = {workspace = true}
 url = {workspace = true}
 pbjson-types = { workspace = true }
+
+[dev-dependencies]
+penumbra-sdk-keys = {workspace = true, features = ["demo"]}

@@ -3,6 +3,7 @@ use penumbra_sdk_auction::auction::dutch::{
     ActionDutchAuctionEnd,
 };
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_compliance::structs::{MsgRegisterAsset, MsgRegisterUser};
 use penumbra_sdk_dex::{
     lp::{
         action::{PositionClose, PositionWithdraw},
@@ -58,6 +59,8 @@ pub enum ActionView {
     ActionDutchAuctionEnd(ActionDutchAuctionEnd),
     ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawView),
     ActionLiquidityTournamentVote(ActionLiquidityTournamentVoteView),
+    ComplianceRegisterAsset(MsgRegisterAsset),
+    ComplianceRegisterUser(MsgRegisterUser),
 }
 
 impl DomainType for ActionView {
@@ -113,6 +116,10 @@ impl TryFrom<pbt::ActionView> for ActionView {
                     ActionView::ActionLiquidityTournamentVote(x.try_into()?)
                 }
                 AV::PositionOpenView(x) => ActionView::PositionOpen(x.try_into()?),
+                AV::ComplianceRegisterAsset(x) => {
+                    ActionView::ComplianceRegisterAsset(x.try_into()?)
+                }
+                AV::ComplianceRegisterUser(x) => ActionView::ComplianceRegisterUser(x.try_into()?),
             },
         )
     }
@@ -154,6 +161,8 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::ActionLiquidityTournamentVote(x) => {
                     AV::ActionLiquidityTournamentVote(x.into())
                 }
+                ActionView::ComplianceRegisterAsset(x) => AV::ComplianceRegisterAsset(x.into()),
+                ActionView::ComplianceRegisterUser(x) => AV::ComplianceRegisterUser(x.into()),
             }),
         }
     }
@@ -193,6 +202,8 @@ impl From<ActionView> for Action {
             ActionView::ActionLiquidityTournamentVote(x) => {
                 Action::ActionLiquidityTournamentVote(x.into())
             }
+            ActionView::ComplianceRegisterAsset(x) => Action::ComplianceRegisterAsset(x),
+            ActionView::ComplianceRegisterUser(x) => Action::ComplianceRegisterUser(x),
         }
     }
 }

@@ -2865,6 +2865,24 @@ impl serde::Serialize for OutputBody {
         if !self.ovk_wrapped_key.is_empty() {
             len += 1;
         }
+        if !self.compliance_ciphertext.is_empty() {
+            len += 1;
+        }
+        if self.target_timestamp != 0 {
+            len += 1;
+        }
+        if self.receiver_leaf_hash.is_some() {
+            len += 1;
+        }
+        if self.counterparty_leaf_hash.is_some() {
+            len += 1;
+        }
+        if self.compliance_anchor.is_some() {
+            len += 1;
+        }
+        if self.asset_anchor.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.OutputBody", len)?;
         if let Some(v) = self.note_payload.as_ref() {
             struct_ser.serialize_field("notePayload", v)?;
@@ -2881,6 +2899,28 @@ impl serde::Serialize for OutputBody {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("ovkWrappedKey", pbjson::private::base64::encode(&self.ovk_wrapped_key).as_str())?;
+        }
+        if !self.compliance_ciphertext.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("complianceCiphertext", pbjson::private::base64::encode(&self.compliance_ciphertext).as_str())?;
+        }
+        if self.target_timestamp != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("targetTimestamp", ToString::to_string(&self.target_timestamp).as_str())?;
+        }
+        if let Some(v) = self.receiver_leaf_hash.as_ref() {
+            struct_ser.serialize_field("receiverLeafHash", v)?;
+        }
+        if let Some(v) = self.counterparty_leaf_hash.as_ref() {
+            struct_ser.serialize_field("counterpartyLeafHash", v)?;
+        }
+        if let Some(v) = self.compliance_anchor.as_ref() {
+            struct_ser.serialize_field("complianceAnchor", v)?;
+        }
+        if let Some(v) = self.asset_anchor.as_ref() {
+            struct_ser.serialize_field("assetAnchor", v)?;
         }
         struct_ser.end()
     }
@@ -2900,6 +2940,18 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
             "wrappedMemoKey",
             "ovk_wrapped_key",
             "ovkWrappedKey",
+            "compliance_ciphertext",
+            "complianceCiphertext",
+            "target_timestamp",
+            "targetTimestamp",
+            "receiver_leaf_hash",
+            "receiverLeafHash",
+            "counterparty_leaf_hash",
+            "counterpartyLeafHash",
+            "compliance_anchor",
+            "complianceAnchor",
+            "asset_anchor",
+            "assetAnchor",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2908,6 +2960,12 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
             BalanceCommitment,
             WrappedMemoKey,
             OvkWrappedKey,
+            ComplianceCiphertext,
+            TargetTimestamp,
+            ReceiverLeafHash,
+            CounterpartyLeafHash,
+            ComplianceAnchor,
+            AssetAnchor,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2934,6 +2992,12 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
                             "balanceCommitment" | "balance_commitment" => Ok(GeneratedField::BalanceCommitment),
                             "wrappedMemoKey" | "wrapped_memo_key" => Ok(GeneratedField::WrappedMemoKey),
                             "ovkWrappedKey" | "ovk_wrapped_key" => Ok(GeneratedField::OvkWrappedKey),
+                            "complianceCiphertext" | "compliance_ciphertext" => Ok(GeneratedField::ComplianceCiphertext),
+                            "targetTimestamp" | "target_timestamp" => Ok(GeneratedField::TargetTimestamp),
+                            "receiverLeafHash" | "receiver_leaf_hash" => Ok(GeneratedField::ReceiverLeafHash),
+                            "counterpartyLeafHash" | "counterparty_leaf_hash" => Ok(GeneratedField::CounterpartyLeafHash),
+                            "complianceAnchor" | "compliance_anchor" => Ok(GeneratedField::ComplianceAnchor),
+                            "assetAnchor" | "asset_anchor" => Ok(GeneratedField::AssetAnchor),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2957,6 +3021,12 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
                 let mut balance_commitment__ = None;
                 let mut wrapped_memo_key__ = None;
                 let mut ovk_wrapped_key__ = None;
+                let mut compliance_ciphertext__ = None;
+                let mut target_timestamp__ = None;
+                let mut receiver_leaf_hash__ = None;
+                let mut counterparty_leaf_hash__ = None;
+                let mut compliance_anchor__ = None;
+                let mut asset_anchor__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NotePayload => {
@@ -2987,6 +3057,46 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::ComplianceCiphertext => {
+                            if compliance_ciphertext__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceCiphertext"));
+                            }
+                            compliance_ciphertext__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::TargetTimestamp => {
+                            if target_timestamp__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("targetTimestamp"));
+                            }
+                            target_timestamp__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ReceiverLeafHash => {
+                            if receiver_leaf_hash__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("receiverLeafHash"));
+                            }
+                            receiver_leaf_hash__ = map_.next_value()?;
+                        }
+                        GeneratedField::CounterpartyLeafHash => {
+                            if counterparty_leaf_hash__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("counterpartyLeafHash"));
+                            }
+                            counterparty_leaf_hash__ = map_.next_value()?;
+                        }
+                        GeneratedField::ComplianceAnchor => {
+                            if compliance_anchor__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceAnchor"));
+                            }
+                            compliance_anchor__ = map_.next_value()?;
+                        }
+                        GeneratedField::AssetAnchor => {
+                            if asset_anchor__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetAnchor"));
+                            }
+                            asset_anchor__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -2997,6 +3107,12 @@ impl<'de> serde::Deserialize<'de> for OutputBody {
                     balance_commitment: balance_commitment__,
                     wrapped_memo_key: wrapped_memo_key__.unwrap_or_default(),
                     ovk_wrapped_key: ovk_wrapped_key__.unwrap_or_default(),
+                    compliance_ciphertext: compliance_ciphertext__.unwrap_or_default(),
+                    target_timestamp: target_timestamp__.unwrap_or_default(),
+                    receiver_leaf_hash: receiver_leaf_hash__,
+                    counterparty_leaf_hash: counterparty_leaf_hash__,
+                    compliance_anchor: compliance_anchor__,
+                    asset_anchor: asset_anchor__,
                 })
             }
         }
@@ -3029,6 +3145,36 @@ impl serde::Serialize for OutputPlan {
         if !self.proof_blinding_s.is_empty() {
             len += 1;
         }
+        if self.target_timestamp != 0 {
+            len += 1;
+        }
+        if !self.compliance_ciphertext.is_empty() {
+            len += 1;
+        }
+        if self.is_regulated {
+            len += 1;
+        }
+        if self.compliance_leaf.is_some() {
+            len += 1;
+        }
+        if self.counterparty_leaf.is_some() {
+            len += 1;
+        }
+        if !self.compliance_ephemeral_secret.is_empty() {
+            len += 1;
+        }
+        if self.counterparty_address.is_some() {
+            len += 1;
+        }
+        if !self.tx_blinding_nonce.is_empty() {
+            len += 1;
+        }
+        if self.compliance_anchor.is_some() {
+            len += 1;
+        }
+        if self.asset_anchor.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.OutputPlan", len)?;
         if let Some(v) = self.value.as_ref() {
             struct_ser.serialize_field("value", v)?;
@@ -3056,6 +3202,44 @@ impl serde::Serialize for OutputPlan {
             #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
+        if self.target_timestamp != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("targetTimestamp", ToString::to_string(&self.target_timestamp).as_str())?;
+        }
+        if !self.compliance_ciphertext.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("complianceCiphertext", pbjson::private::base64::encode(&self.compliance_ciphertext).as_str())?;
+        }
+        if self.is_regulated {
+            struct_ser.serialize_field("isRegulated", &self.is_regulated)?;
+        }
+        if let Some(v) = self.compliance_leaf.as_ref() {
+            struct_ser.serialize_field("complianceLeaf", v)?;
+        }
+        if let Some(v) = self.counterparty_leaf.as_ref() {
+            struct_ser.serialize_field("counterpartyLeaf", v)?;
+        }
+        if !self.compliance_ephemeral_secret.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("complianceEphemeralSecret", pbjson::private::base64::encode(&self.compliance_ephemeral_secret).as_str())?;
+        }
+        if let Some(v) = self.counterparty_address.as_ref() {
+            struct_ser.serialize_field("counterpartyAddress", v)?;
+        }
+        if !self.tx_blinding_nonce.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("txBlindingNonce", pbjson::private::base64::encode(&self.tx_blinding_nonce).as_str())?;
+        }
+        if let Some(v) = self.compliance_anchor.as_ref() {
+            struct_ser.serialize_field("complianceAnchor", v)?;
+        }
+        if let Some(v) = self.asset_anchor.as_ref() {
+            struct_ser.serialize_field("assetAnchor", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -3076,6 +3260,26 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
             "proofBlindingR",
             "proof_blinding_s",
             "proofBlindingS",
+            "target_timestamp",
+            "targetTimestamp",
+            "compliance_ciphertext",
+            "complianceCiphertext",
+            "is_regulated",
+            "isRegulated",
+            "compliance_leaf",
+            "complianceLeaf",
+            "counterparty_leaf",
+            "counterpartyLeaf",
+            "compliance_ephemeral_secret",
+            "complianceEphemeralSecret",
+            "counterparty_address",
+            "counterpartyAddress",
+            "tx_blinding_nonce",
+            "txBlindingNonce",
+            "compliance_anchor",
+            "complianceAnchor",
+            "asset_anchor",
+            "assetAnchor",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3086,6 +3290,16 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
             ValueBlinding,
             ProofBlindingR,
             ProofBlindingS,
+            TargetTimestamp,
+            ComplianceCiphertext,
+            IsRegulated,
+            ComplianceLeaf,
+            CounterpartyLeaf,
+            ComplianceEphemeralSecret,
+            CounterpartyAddress,
+            TxBlindingNonce,
+            ComplianceAnchor,
+            AssetAnchor,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3114,6 +3328,16 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
                             "valueBlinding" | "value_blinding" => Ok(GeneratedField::ValueBlinding),
                             "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
                             "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
+                            "targetTimestamp" | "target_timestamp" => Ok(GeneratedField::TargetTimestamp),
+                            "complianceCiphertext" | "compliance_ciphertext" => Ok(GeneratedField::ComplianceCiphertext),
+                            "isRegulated" | "is_regulated" => Ok(GeneratedField::IsRegulated),
+                            "complianceLeaf" | "compliance_leaf" => Ok(GeneratedField::ComplianceLeaf),
+                            "counterpartyLeaf" | "counterparty_leaf" => Ok(GeneratedField::CounterpartyLeaf),
+                            "complianceEphemeralSecret" | "compliance_ephemeral_secret" => Ok(GeneratedField::ComplianceEphemeralSecret),
+                            "counterpartyAddress" | "counterparty_address" => Ok(GeneratedField::CounterpartyAddress),
+                            "txBlindingNonce" | "tx_blinding_nonce" => Ok(GeneratedField::TxBlindingNonce),
+                            "complianceAnchor" | "compliance_anchor" => Ok(GeneratedField::ComplianceAnchor),
+                            "assetAnchor" | "asset_anchor" => Ok(GeneratedField::AssetAnchor),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3139,6 +3363,16 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
                 let mut value_blinding__ = None;
                 let mut proof_blinding_r__ = None;
                 let mut proof_blinding_s__ = None;
+                let mut target_timestamp__ = None;
+                let mut compliance_ciphertext__ = None;
+                let mut is_regulated__ = None;
+                let mut compliance_leaf__ = None;
+                let mut counterparty_leaf__ = None;
+                let mut compliance_ephemeral_secret__ = None;
+                let mut counterparty_address__ = None;
+                let mut tx_blinding_nonce__ = None;
+                let mut compliance_anchor__ = None;
+                let mut asset_anchor__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Value => {
@@ -3185,6 +3419,74 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::TargetTimestamp => {
+                            if target_timestamp__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("targetTimestamp"));
+                            }
+                            target_timestamp__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ComplianceCiphertext => {
+                            if compliance_ciphertext__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceCiphertext"));
+                            }
+                            compliance_ciphertext__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::IsRegulated => {
+                            if is_regulated__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("isRegulated"));
+                            }
+                            is_regulated__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::ComplianceLeaf => {
+                            if compliance_leaf__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceLeaf"));
+                            }
+                            compliance_leaf__ = map_.next_value()?;
+                        }
+                        GeneratedField::CounterpartyLeaf => {
+                            if counterparty_leaf__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("counterpartyLeaf"));
+                            }
+                            counterparty_leaf__ = map_.next_value()?;
+                        }
+                        GeneratedField::ComplianceEphemeralSecret => {
+                            if compliance_ephemeral_secret__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceEphemeralSecret"));
+                            }
+                            compliance_ephemeral_secret__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::CounterpartyAddress => {
+                            if counterparty_address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("counterpartyAddress"));
+                            }
+                            counterparty_address__ = map_.next_value()?;
+                        }
+                        GeneratedField::TxBlindingNonce => {
+                            if tx_blinding_nonce__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("txBlindingNonce"));
+                            }
+                            tx_blinding_nonce__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ComplianceAnchor => {
+                            if compliance_anchor__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceAnchor"));
+                            }
+                            compliance_anchor__ = map_.next_value()?;
+                        }
+                        GeneratedField::AssetAnchor => {
+                            if asset_anchor__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetAnchor"));
+                            }
+                            asset_anchor__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3197,6 +3499,16 @@ impl<'de> serde::Deserialize<'de> for OutputPlan {
                     value_blinding: value_blinding__.unwrap_or_default(),
                     proof_blinding_r: proof_blinding_r__.unwrap_or_default(),
                     proof_blinding_s: proof_blinding_s__.unwrap_or_default(),
+                    target_timestamp: target_timestamp__.unwrap_or_default(),
+                    compliance_ciphertext: compliance_ciphertext__.unwrap_or_default(),
+                    is_regulated: is_regulated__.unwrap_or_default(),
+                    compliance_leaf: compliance_leaf__,
+                    counterparty_leaf: counterparty_leaf__,
+                    compliance_ephemeral_secret: compliance_ephemeral_secret__.unwrap_or_default(),
+                    counterparty_address: counterparty_address__,
+                    tx_blinding_nonce: tx_blinding_nonce__.unwrap_or_default(),
+                    compliance_anchor: compliance_anchor__,
+                    asset_anchor: asset_anchor__,
                 })
             }
         }
@@ -3805,6 +4117,24 @@ impl serde::Serialize for SpendBody {
         if !self.encrypted_backref.is_empty() {
             len += 1;
         }
+        if !self.compliance_ciphertext.is_empty() {
+            len += 1;
+        }
+        if self.target_timestamp != 0 {
+            len += 1;
+        }
+        if self.sender_leaf_hash.is_some() {
+            len += 1;
+        }
+        if self.counterparty_leaf_hash.is_some() {
+            len += 1;
+        }
+        if self.compliance_anchor.is_some() {
+            len += 1;
+        }
+        if self.asset_anchor.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.SpendBody", len)?;
         if let Some(v) = self.balance_commitment.as_ref() {
             struct_ser.serialize_field("balanceCommitment", v)?;
@@ -3819,6 +4149,28 @@ impl serde::Serialize for SpendBody {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("encryptedBackref", pbjson::private::base64::encode(&self.encrypted_backref).as_str())?;
+        }
+        if !self.compliance_ciphertext.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("complianceCiphertext", pbjson::private::base64::encode(&self.compliance_ciphertext).as_str())?;
+        }
+        if self.target_timestamp != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("targetTimestamp", ToString::to_string(&self.target_timestamp).as_str())?;
+        }
+        if let Some(v) = self.sender_leaf_hash.as_ref() {
+            struct_ser.serialize_field("senderLeafHash", v)?;
+        }
+        if let Some(v) = self.counterparty_leaf_hash.as_ref() {
+            struct_ser.serialize_field("counterpartyLeafHash", v)?;
+        }
+        if let Some(v) = self.compliance_anchor.as_ref() {
+            struct_ser.serialize_field("complianceAnchor", v)?;
+        }
+        if let Some(v) = self.asset_anchor.as_ref() {
+            struct_ser.serialize_field("assetAnchor", v)?;
         }
         struct_ser.end()
     }
@@ -3836,6 +4188,18 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
             "rk",
             "encrypted_backref",
             "encryptedBackref",
+            "compliance_ciphertext",
+            "complianceCiphertext",
+            "target_timestamp",
+            "targetTimestamp",
+            "sender_leaf_hash",
+            "senderLeafHash",
+            "counterparty_leaf_hash",
+            "counterpartyLeafHash",
+            "compliance_anchor",
+            "complianceAnchor",
+            "asset_anchor",
+            "assetAnchor",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3844,6 +4208,12 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
             Nullifier,
             Rk,
             EncryptedBackref,
+            ComplianceCiphertext,
+            TargetTimestamp,
+            SenderLeafHash,
+            CounterpartyLeafHash,
+            ComplianceAnchor,
+            AssetAnchor,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3870,6 +4240,12 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                             "nullifier" => Ok(GeneratedField::Nullifier),
                             "rk" => Ok(GeneratedField::Rk),
                             "encryptedBackref" | "encrypted_backref" => Ok(GeneratedField::EncryptedBackref),
+                            "complianceCiphertext" | "compliance_ciphertext" => Ok(GeneratedField::ComplianceCiphertext),
+                            "targetTimestamp" | "target_timestamp" => Ok(GeneratedField::TargetTimestamp),
+                            "senderLeafHash" | "sender_leaf_hash" => Ok(GeneratedField::SenderLeafHash),
+                            "counterpartyLeafHash" | "counterparty_leaf_hash" => Ok(GeneratedField::CounterpartyLeafHash),
+                            "complianceAnchor" | "compliance_anchor" => Ok(GeneratedField::ComplianceAnchor),
+                            "assetAnchor" | "asset_anchor" => Ok(GeneratedField::AssetAnchor),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3893,6 +4269,12 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                 let mut nullifier__ = None;
                 let mut rk__ = None;
                 let mut encrypted_backref__ = None;
+                let mut compliance_ciphertext__ = None;
+                let mut target_timestamp__ = None;
+                let mut sender_leaf_hash__ = None;
+                let mut counterparty_leaf_hash__ = None;
+                let mut compliance_anchor__ = None;
+                let mut asset_anchor__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::BalanceCommitment => {
@@ -3921,6 +4303,46 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::ComplianceCiphertext => {
+                            if compliance_ciphertext__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceCiphertext"));
+                            }
+                            compliance_ciphertext__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::TargetTimestamp => {
+                            if target_timestamp__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("targetTimestamp"));
+                            }
+                            target_timestamp__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::SenderLeafHash => {
+                            if sender_leaf_hash__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("senderLeafHash"));
+                            }
+                            sender_leaf_hash__ = map_.next_value()?;
+                        }
+                        GeneratedField::CounterpartyLeafHash => {
+                            if counterparty_leaf_hash__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("counterpartyLeafHash"));
+                            }
+                            counterparty_leaf_hash__ = map_.next_value()?;
+                        }
+                        GeneratedField::ComplianceAnchor => {
+                            if compliance_anchor__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceAnchor"));
+                            }
+                            compliance_anchor__ = map_.next_value()?;
+                        }
+                        GeneratedField::AssetAnchor => {
+                            if asset_anchor__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetAnchor"));
+                            }
+                            asset_anchor__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3931,6 +4353,12 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                     nullifier: nullifier__,
                     rk: rk__,
                     encrypted_backref: encrypted_backref__.unwrap_or_default(),
+                    compliance_ciphertext: compliance_ciphertext__.unwrap_or_default(),
+                    target_timestamp: target_timestamp__.unwrap_or_default(),
+                    sender_leaf_hash: sender_leaf_hash__,
+                    counterparty_leaf_hash: counterparty_leaf_hash__,
+                    compliance_anchor: compliance_anchor__,
+                    asset_anchor: asset_anchor__,
                 })
             }
         }
@@ -3963,6 +4391,36 @@ impl serde::Serialize for SpendPlan {
         if !self.proof_blinding_s.is_empty() {
             len += 1;
         }
+        if self.target_timestamp != 0 {
+            len += 1;
+        }
+        if !self.compliance_ciphertext.is_empty() {
+            len += 1;
+        }
+        if self.is_regulated {
+            len += 1;
+        }
+        if self.compliance_leaf.is_some() {
+            len += 1;
+        }
+        if self.counterparty_leaf.is_some() {
+            len += 1;
+        }
+        if !self.compliance_ephemeral_secret.is_empty() {
+            len += 1;
+        }
+        if self.counterparty_address.is_some() {
+            len += 1;
+        }
+        if !self.tx_blinding_nonce.is_empty() {
+            len += 1;
+        }
+        if self.compliance_anchor.is_some() {
+            len += 1;
+        }
+        if self.asset_anchor.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.SpendPlan", len)?;
         if let Some(v) = self.note.as_ref() {
             struct_ser.serialize_field("note", v)?;
@@ -3992,6 +4450,44 @@ impl serde::Serialize for SpendPlan {
             #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
+        if self.target_timestamp != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("targetTimestamp", ToString::to_string(&self.target_timestamp).as_str())?;
+        }
+        if !self.compliance_ciphertext.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("complianceCiphertext", pbjson::private::base64::encode(&self.compliance_ciphertext).as_str())?;
+        }
+        if self.is_regulated {
+            struct_ser.serialize_field("isRegulated", &self.is_regulated)?;
+        }
+        if let Some(v) = self.compliance_leaf.as_ref() {
+            struct_ser.serialize_field("complianceLeaf", v)?;
+        }
+        if let Some(v) = self.counterparty_leaf.as_ref() {
+            struct_ser.serialize_field("counterpartyLeaf", v)?;
+        }
+        if !self.compliance_ephemeral_secret.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("complianceEphemeralSecret", pbjson::private::base64::encode(&self.compliance_ephemeral_secret).as_str())?;
+        }
+        if let Some(v) = self.counterparty_address.as_ref() {
+            struct_ser.serialize_field("counterpartyAddress", v)?;
+        }
+        if !self.tx_blinding_nonce.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("txBlindingNonce", pbjson::private::base64::encode(&self.tx_blinding_nonce).as_str())?;
+        }
+        if let Some(v) = self.compliance_anchor.as_ref() {
+            struct_ser.serialize_field("complianceAnchor", v)?;
+        }
+        if let Some(v) = self.asset_anchor.as_ref() {
+            struct_ser.serialize_field("assetAnchor", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -4011,6 +4507,26 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
             "proofBlindingR",
             "proof_blinding_s",
             "proofBlindingS",
+            "target_timestamp",
+            "targetTimestamp",
+            "compliance_ciphertext",
+            "complianceCiphertext",
+            "is_regulated",
+            "isRegulated",
+            "compliance_leaf",
+            "complianceLeaf",
+            "counterparty_leaf",
+            "counterpartyLeaf",
+            "compliance_ephemeral_secret",
+            "complianceEphemeralSecret",
+            "counterparty_address",
+            "counterpartyAddress",
+            "tx_blinding_nonce",
+            "txBlindingNonce",
+            "compliance_anchor",
+            "complianceAnchor",
+            "asset_anchor",
+            "assetAnchor",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -4021,6 +4537,16 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
             ValueBlinding,
             ProofBlindingR,
             ProofBlindingS,
+            TargetTimestamp,
+            ComplianceCiphertext,
+            IsRegulated,
+            ComplianceLeaf,
+            CounterpartyLeaf,
+            ComplianceEphemeralSecret,
+            CounterpartyAddress,
+            TxBlindingNonce,
+            ComplianceAnchor,
+            AssetAnchor,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -4049,6 +4575,16 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
                             "valueBlinding" | "value_blinding" => Ok(GeneratedField::ValueBlinding),
                             "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
                             "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
+                            "targetTimestamp" | "target_timestamp" => Ok(GeneratedField::TargetTimestamp),
+                            "complianceCiphertext" | "compliance_ciphertext" => Ok(GeneratedField::ComplianceCiphertext),
+                            "isRegulated" | "is_regulated" => Ok(GeneratedField::IsRegulated),
+                            "complianceLeaf" | "compliance_leaf" => Ok(GeneratedField::ComplianceLeaf),
+                            "counterpartyLeaf" | "counterparty_leaf" => Ok(GeneratedField::CounterpartyLeaf),
+                            "complianceEphemeralSecret" | "compliance_ephemeral_secret" => Ok(GeneratedField::ComplianceEphemeralSecret),
+                            "counterpartyAddress" | "counterparty_address" => Ok(GeneratedField::CounterpartyAddress),
+                            "txBlindingNonce" | "tx_blinding_nonce" => Ok(GeneratedField::TxBlindingNonce),
+                            "complianceAnchor" | "compliance_anchor" => Ok(GeneratedField::ComplianceAnchor),
+                            "assetAnchor" | "asset_anchor" => Ok(GeneratedField::AssetAnchor),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -4074,6 +4610,16 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
                 let mut value_blinding__ = None;
                 let mut proof_blinding_r__ = None;
                 let mut proof_blinding_s__ = None;
+                let mut target_timestamp__ = None;
+                let mut compliance_ciphertext__ = None;
+                let mut is_regulated__ = None;
+                let mut compliance_leaf__ = None;
+                let mut counterparty_leaf__ = None;
+                let mut compliance_ephemeral_secret__ = None;
+                let mut counterparty_address__ = None;
+                let mut tx_blinding_nonce__ = None;
+                let mut compliance_anchor__ = None;
+                let mut asset_anchor__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Note => {
@@ -4122,6 +4668,74 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::TargetTimestamp => {
+                            if target_timestamp__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("targetTimestamp"));
+                            }
+                            target_timestamp__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ComplianceCiphertext => {
+                            if compliance_ciphertext__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceCiphertext"));
+                            }
+                            compliance_ciphertext__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::IsRegulated => {
+                            if is_regulated__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("isRegulated"));
+                            }
+                            is_regulated__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::ComplianceLeaf => {
+                            if compliance_leaf__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceLeaf"));
+                            }
+                            compliance_leaf__ = map_.next_value()?;
+                        }
+                        GeneratedField::CounterpartyLeaf => {
+                            if counterparty_leaf__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("counterpartyLeaf"));
+                            }
+                            counterparty_leaf__ = map_.next_value()?;
+                        }
+                        GeneratedField::ComplianceEphemeralSecret => {
+                            if compliance_ephemeral_secret__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceEphemeralSecret"));
+                            }
+                            compliance_ephemeral_secret__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::CounterpartyAddress => {
+                            if counterparty_address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("counterpartyAddress"));
+                            }
+                            counterparty_address__ = map_.next_value()?;
+                        }
+                        GeneratedField::TxBlindingNonce => {
+                            if tx_blinding_nonce__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("txBlindingNonce"));
+                            }
+                            tx_blinding_nonce__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ComplianceAnchor => {
+                            if compliance_anchor__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("complianceAnchor"));
+                            }
+                            compliance_anchor__ = map_.next_value()?;
+                        }
+                        GeneratedField::AssetAnchor => {
+                            if asset_anchor__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetAnchor"));
+                            }
+                            asset_anchor__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -4134,6 +4748,16 @@ impl<'de> serde::Deserialize<'de> for SpendPlan {
                     value_blinding: value_blinding__.unwrap_or_default(),
                     proof_blinding_r: proof_blinding_r__.unwrap_or_default(),
                     proof_blinding_s: proof_blinding_s__.unwrap_or_default(),
+                    target_timestamp: target_timestamp__.unwrap_or_default(),
+                    compliance_ciphertext: compliance_ciphertext__.unwrap_or_default(),
+                    is_regulated: is_regulated__.unwrap_or_default(),
+                    compliance_leaf: compliance_leaf__,
+                    counterparty_leaf: counterparty_leaf__,
+                    compliance_ephemeral_secret: compliance_ephemeral_secret__.unwrap_or_default(),
+                    counterparty_address: counterparty_address__,
+                    tx_blinding_nonce: tx_blinding_nonce__.unwrap_or_default(),
+                    compliance_anchor: compliance_anchor__,
+                    asset_anchor: asset_anchor__,
                 })
             }
         }

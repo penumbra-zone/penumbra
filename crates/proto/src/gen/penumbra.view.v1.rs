@@ -2303,6 +2303,264 @@ impl ::prost::Name for LpStrategyCatalogResponse {
         "/penumbra.view.v1.LpStrategyCatalogResponse".into()
     }
 }
+/// Request for querying an asset's compliance regulation status.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComplianceAssetStatusRequest {
+    /// The asset ID to query.
+    #[prost(message, optional, tag = "1")]
+    pub asset_id: ::core::option::Option<super::super::core::asset::v1::AssetId>,
+}
+impl ::prost::Name for ComplianceAssetStatusRequest {
+    const NAME: &'static str = "ComplianceAssetStatusRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.ComplianceAssetStatusRequest".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.ComplianceAssetStatusRequest".into()
+    }
+}
+/// Response containing an asset's compliance regulation status.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComplianceAssetStatusResponse {
+    /// The asset ID that was queried.
+    #[prost(message, optional, tag = "1")]
+    pub asset_id: ::core::option::Option<super::super::core::asset::v1::AssetId>,
+    /// Whether the asset is registered in the compliance system.
+    /// If false, `is_regulated` should be ignored.
+    #[prost(bool, tag = "2")]
+    pub is_registered: bool,
+    /// Whether the asset requires compliance (only meaningful if is_registered is true).
+    #[prost(bool, tag = "3")]
+    pub is_regulated: bool,
+}
+impl ::prost::Name for ComplianceAssetStatusResponse {
+    const NAME: &'static str = "ComplianceAssetStatusResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.ComplianceAssetStatusResponse".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.ComplianceAssetStatusResponse".into()
+    }
+}
+/// Request for querying the current compliance tree anchors.
+///
+/// Empty - no parameters needed, returns current state.
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct ComplianceAnchorsRequest {}
+impl ::prost::Name for ComplianceAnchorsRequest {
+    const NAME: &'static str = "ComplianceAnchorsRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.ComplianceAnchorsRequest".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.ComplianceAnchorsRequest".into()
+    }
+}
+/// Response containing the current compliance tree anchors.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComplianceAnchorsResponse {
+    /// The root of the user compliance tree (Quad Merkle Tree).
+    /// This is a StateCommitment (32 bytes).
+    #[prost(bytes = "vec", tag = "1")]
+    pub user_tree_root: ::prost::alloc::vec::Vec<u8>,
+    /// The root of the asset regulation tree (Quad Merkle Tree).
+    /// This is a StateCommitment (32 bytes).
+    #[prost(bytes = "vec", tag = "2")]
+    pub asset_tree_root: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ComplianceAnchorsResponse {
+    const NAME: &'static str = "ComplianceAnchorsResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.ComplianceAnchorsResponse".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.ComplianceAnchorsResponse".into()
+    }
+}
+/// Request for querying Merkle proofs needed for compliance ZK proofs.
+/// The client provides their address and asset ID, and receives
+/// the paths and positions needed to generate valid proofs.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComplianceMerkleProofsRequest {
+    /// The address (used to look up user's position in compliance tree).
+    #[prost(message, optional, tag = "1")]
+    pub address: ::core::option::Option<super::super::core::keys::v1::Address>,
+    /// The asset ID (used to look up asset's position in asset tree).
+    #[prost(message, optional, tag = "2")]
+    pub asset_id: ::core::option::Option<super::super::core::asset::v1::AssetId>,
+}
+impl ::prost::Name for ComplianceMerkleProofsRequest {
+    const NAME: &'static str = "ComplianceMerkleProofsRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.ComplianceMerkleProofsRequest".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.ComplianceMerkleProofsRequest".into()
+    }
+}
+/// A single layer in the Quad Merkle Tree path.
+/// Since this is a Quad Tree (arity 4), each layer has exactly 3 siblings.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MerklePathLayer {
+    /// The sibling hashes at this layer (always 3 siblings for a Quad Tree).
+    #[prost(bytes = "vec", repeated, tag = "1")]
+    pub siblings: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+}
+impl ::prost::Name for MerklePathLayer {
+    const NAME: &'static str = "MerklePathLayer";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.MerklePathLayer".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.MerklePathLayer".into()
+    }
+}
+/// A Merkle path in the Quad Merkle Tree (arity 4).
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MerklePath {
+    /// The layers of the Merkle path, from leaf to root.
+    #[prost(message, repeated, tag = "1")]
+    pub layers: ::prost::alloc::vec::Vec<MerklePathLayer>,
+}
+impl ::prost::Name for MerklePath {
+    const NAME: &'static str = "MerklePath";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.MerklePath".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.MerklePath".into()
+    }
+}
+/// Response containing Merkle proofs for compliance ZK proofs.
+/// This provides all the data needed to populate SpendPlan/OutputPlan compliance fields.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComplianceMerkleProofsResponse {
+    /// Whether the user is registered for this asset.
+    /// If false, compliance_path and compliance_position will be empty/zero.
+    #[prost(bool, tag = "1")]
+    pub user_registered: bool,
+    /// Whether the asset is registered in the compliance system.
+    /// If false, asset_path and asset_position will be empty/zero.
+    #[prost(bool, tag = "2")]
+    pub asset_registered: bool,
+    /// Whether the asset is regulated (only meaningful if asset_registered is true).
+    #[prost(bool, tag = "3")]
+    pub is_regulated: bool,
+    /// User's Merkle path in the compliance tree (from leaf to root).
+    #[prost(message, optional, tag = "4")]
+    pub compliance_path: ::core::option::Option<MerklePath>,
+    /// User's position in the compliance tree.
+    #[prost(uint64, tag = "5")]
+    pub compliance_position: u64,
+    /// Asset's Merkle path in the asset tree (from leaf to root).
+    #[prost(message, optional, tag = "6")]
+    pub asset_path: ::core::option::Option<MerklePath>,
+    /// Asset's position in the asset tree.
+    #[prost(uint64, tag = "7")]
+    pub asset_position: u64,
+    /// Current compliance tree root (StateCommitment, 32 bytes).
+    #[prost(bytes = "vec", tag = "8")]
+    pub compliance_anchor: ::prost::alloc::vec::Vec<u8>,
+    /// Current asset tree root (StateCommitment, 32 bytes).
+    #[prost(bytes = "vec", tag = "9")]
+    pub asset_anchor: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ComplianceMerkleProofsResponse {
+    const NAME: &'static str = "ComplianceMerkleProofsResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.ComplianceMerkleProofsResponse".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.ComplianceMerkleProofsResponse".into()
+    }
+}
+/// Request for querying a user's registered compliance leaf.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComplianceUserLeafRequest {
+    /// The address to look up.
+    #[prost(message, optional, tag = "1")]
+    pub address: ::core::option::Option<super::super::core::keys::v1::Address>,
+    /// The asset ID to look up.
+    #[prost(message, optional, tag = "2")]
+    pub asset_id: ::core::option::Option<super::super::core::asset::v1::AssetId>,
+}
+impl ::prost::Name for ComplianceUserLeafRequest {
+    const NAME: &'static str = "ComplianceUserLeafRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.ComplianceUserLeafRequest".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.ComplianceUserLeafRequest".into()
+    }
+}
+/// A wrapper around bytes representing a compliance viewing key (32 bytes).
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComplianceViewingKey {
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ComplianceViewingKey {
+    const NAME: &'static str = "ComplianceViewingKey";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.ComplianceViewingKey".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.ComplianceViewingKey".into()
+    }
+}
+/// A compliance leaf in the public on-chain registry for regulated assets.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComplianceLeaf {
+    /// The registered address for compliance.
+    #[prost(message, optional, tag = "1")]
+    pub address: ::core::option::Option<super::super::core::keys::v1::Address>,
+    /// The compliance viewing key for this wallet.
+    #[prost(message, optional, tag = "2")]
+    pub key: ::core::option::Option<ComplianceViewingKey>,
+    /// The asset ID this compliance leaf applies to.
+    #[prost(message, optional, tag = "3")]
+    pub asset_id: ::core::option::Option<super::super::core::asset::v1::AssetId>,
+}
+impl ::prost::Name for ComplianceLeaf {
+    const NAME: &'static str = "ComplianceLeaf";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.ComplianceLeaf".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.ComplianceLeaf".into()
+    }
+}
+/// Response containing a user's registered compliance leaf.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComplianceUserLeafResponse {
+    /// Whether the user is registered for this asset.
+    #[prost(bool, tag = "1")]
+    pub is_registered: bool,
+    /// The user's compliance leaf (only present if is_registered is true).
+    #[prost(message, optional, tag = "2")]
+    pub leaf: ::core::option::Option<ComplianceLeaf>,
+}
+impl ::prost::Name for ComplianceUserLeafResponse {
+    const NAME: &'static str = "ComplianceUserLeafResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.view.v1.ComplianceUserLeafResponse".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.view.v1.ComplianceUserLeafResponse".into()
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod view_service_client {
@@ -3375,6 +3633,124 @@ pub mod view_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Query the compliance registry for an asset's regulation status.
+        /// This proxies to pd's compliance service.
+        pub async fn compliance_asset_status(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ComplianceAssetStatusRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ComplianceAssetStatusResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/ComplianceAssetStatus",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "ComplianceAssetStatus",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// Query the compliance tree anchors (roots) from the chain.
+        /// This proxies to pd's compliance service.
+        pub async fn compliance_anchors(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ComplianceAnchorsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ComplianceAnchorsResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/ComplianceAnchors",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "ComplianceAnchors"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// Query the Merkle proofs needed for compliance ZK proofs.
+        /// This proxies to pd's compliance service.
+        pub async fn compliance_merkle_proofs(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ComplianceMerkleProofsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ComplianceMerkleProofsResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/ComplianceMerkleProofs",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "ComplianceMerkleProofs",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// Query a user's registered compliance leaf.
+        /// This proxies to pd's compliance service.
+        pub async fn compliance_user_leaf(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ComplianceUserLeafRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ComplianceUserLeafResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/ComplianceUserLeaf",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1.ViewService", "ComplianceUserLeaf"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -3822,6 +4198,42 @@ pub mod view_service_server {
             request: tonic::Request<super::LpStrategyCatalogRequest>,
         ) -> std::result::Result<
             tonic::Response<Self::LpStrategyCatalogStream>,
+            tonic::Status,
+        >;
+        /// Query the compliance registry for an asset's regulation status.
+        /// This proxies to pd's compliance service.
+        async fn compliance_asset_status(
+            &self,
+            request: tonic::Request<super::ComplianceAssetStatusRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ComplianceAssetStatusResponse>,
+            tonic::Status,
+        >;
+        /// Query the compliance tree anchors (roots) from the chain.
+        /// This proxies to pd's compliance service.
+        async fn compliance_anchors(
+            &self,
+            request: tonic::Request<super::ComplianceAnchorsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ComplianceAnchorsResponse>,
+            tonic::Status,
+        >;
+        /// Query the Merkle proofs needed for compliance ZK proofs.
+        /// This proxies to pd's compliance service.
+        async fn compliance_merkle_proofs(
+            &self,
+            request: tonic::Request<super::ComplianceMerkleProofsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ComplianceMerkleProofsResponse>,
+            tonic::Status,
+        >;
+        /// Query a user's registered compliance leaf.
+        /// This proxies to pd's compliance service.
+        async fn compliance_user_leaf(
+            &self,
+            request: tonic::Request<super::ComplianceUserLeafRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ComplianceUserLeafResponse>,
             tonic::Status,
         >;
     }
@@ -5531,6 +5943,193 @@ pub mod view_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/ComplianceAssetStatus" => {
+                    #[allow(non_camel_case_types)]
+                    struct ComplianceAssetStatusSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::ComplianceAssetStatusRequest>
+                    for ComplianceAssetStatusSvc<T> {
+                        type Response = super::ComplianceAssetStatusResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ComplianceAssetStatusRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::compliance_asset_status(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = ComplianceAssetStatusSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/ComplianceAnchors" => {
+                    #[allow(non_camel_case_types)]
+                    struct ComplianceAnchorsSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::ComplianceAnchorsRequest>
+                    for ComplianceAnchorsSvc<T> {
+                        type Response = super::ComplianceAnchorsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ComplianceAnchorsRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::compliance_anchors(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = ComplianceAnchorsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/ComplianceMerkleProofs" => {
+                    #[allow(non_camel_case_types)]
+                    struct ComplianceMerkleProofsSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::ComplianceMerkleProofsRequest>
+                    for ComplianceMerkleProofsSvc<T> {
+                        type Response = super::ComplianceMerkleProofsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ComplianceMerkleProofsRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::compliance_merkle_proofs(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = ComplianceMerkleProofsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/ComplianceUserLeaf" => {
+                    #[allow(non_camel_case_types)]
+                    struct ComplianceUserLeafSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::UnaryService<super::ComplianceUserLeafRequest>
+                    for ComplianceUserLeafSvc<T> {
+                        type Response = super::ComplianceUserLeafResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ComplianceUserLeafRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::compliance_user_leaf(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = ComplianceUserLeafSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

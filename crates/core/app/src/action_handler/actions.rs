@@ -57,6 +57,8 @@ impl AppActionHandler for Action {
             Action::ActionDutchAuctionEnd(action) => action.check_stateless(()).await,
             Action::ActionDutchAuctionWithdraw(action) => action.check_stateless(()).await,
             Action::ActionLiquidityTournamentVote(action) => action.check_stateless(context).await,
+            Action::ComplianceRegisterAsset(action) => action.check_stateless(()).await,
+            Action::ComplianceRegisterUser(action) => action.check_stateless(()).await,
         }
     }
 
@@ -99,6 +101,8 @@ impl AppActionHandler for Action {
             Action::ActionDutchAuctionEnd(action) => action.check_historical(state).await,
             Action::ActionDutchAuctionWithdraw(action) => action.check_historical(state).await,
             Action::ActionLiquidityTournamentVote(action) => action.check_historical(state).await,
+            Action::ComplianceRegisterAsset(action) => action.check_historical(state).await,
+            Action::ComplianceRegisterUser(action) => action.check_historical(state).await,
         }
     }
 
@@ -141,6 +145,8 @@ impl AppActionHandler for Action {
             Action::ActionDutchAuctionEnd(action) => action.check_and_execute(state).await,
             Action::ActionDutchAuctionWithdraw(action) => action.check_and_execute(state).await,
             Action::ActionLiquidityTournamentVote(action) => action.check_and_execute(state).await,
+            Action::ComplianceRegisterAsset(action) => action.check_and_execute(state).await,
+            Action::ComplianceRegisterUser(action) => action.check_and_execute(state).await,
         }
     }
 }

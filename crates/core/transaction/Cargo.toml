@@ -44,6 +44,7 @@ pbjson-types = {workspace = true}
 penumbra-sdk-asset = {workspace = true, default-features = false}
 penumbra-sdk-community-pool = {workspace = true, default-features = false}
 penumbra-sdk-auction = {workspace = true, default-features = false}
+penumbra-sdk-compliance = {workspace = true, default-features = false}
 penumbra-sdk-dex = {workspace = true, default-features = false}
 penumbra-sdk-fee = {workspace = true, default-features = false}
 penumbra-sdk-funding = {workspace = true, default-features = false}

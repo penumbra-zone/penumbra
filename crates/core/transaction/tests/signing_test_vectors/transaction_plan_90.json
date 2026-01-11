@@ -1,55 +1,29 @@
 {
   "actions": [
     {
-      "communityPoolDeposit": {
-        "value": {
-          "amount": {
-            "lo": "580433248217557752"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        }
+      "proposalWithdraw": {
+        "proposal": "381783401"
       }
     },
     {
-      "validatorDefinition": {
-        "validator": {
-          "identityKey": {
-            "ik": "drk6GBXxw0KK3gUd9YerKCWvfIDShHlWJYgvyqcRYxE="
-          },
-          "consensusKey": "L1b+vbeLToFuNQ0S83RQ1x46M3lHjIJv33P+p5NI9yY=",
-          "name": "test validator",
-          "enabled": true,
-          "governanceKey": {
-            "gk": "drk6GBXxw0KK3gUd9YerKCWvfIDShHlWJYgvyqcRYxE="
-          }
+      "proposalSubmit": {
+        "proposal": {
+          "title": "vdozx-56346196",
+          "description": "tcxlpqthhc-56066794582623128",
+          "signaling": {}
         },
-        "authSig": "5imuUiqee0BI+r7e0Te55UpLjKs+GyhPNpPuNB3OKQVOEN+K2kj1RrZc2MA1OmLMkPXS7h3I1UchwjQU3hVjAw=="
-      }
-    },
-    {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "603275095482739504"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "address": {
-          "inner": "LMc7iyEA/ZOUQAQKsqZab+eNxVK5gjPCW6FLQa9v7YHUaeMId98KpsU3MCL4LjTUMEaVZ1etW6GlbZryg3n5+Md0Nbwp/OxOt/yIcawviHE="
+        "depositAmount": {
+          "lo": "133464321712212793"
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "8826348862",
-    "chainId": "rlrgvbbxzyksy-60",
+    "expiryHeight": "5719471396",
+    "chainId": "gsfampk-529169715281588711584928",
     "fee": {
       "amount": {
-        "lo": "704036978167257025"
+        "lo": "768502346633552824"
       }
     }
   }

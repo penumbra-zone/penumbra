@@ -460,6 +460,22 @@ impl TransactionViewExt for TransactionView {
                     ["Dutch Auction Withdraw", &action]
                 }
                 penumbra_sdk_transaction::ActionView::ActionLiquidityTournamentVote(_) => todo!(),
+                penumbra_sdk_transaction::ActionView::ComplianceRegisterAsset(x) => {
+                    action = format!(
+                        "Register asset {} as {}",
+                        x.asset_id,
+                        if x.is_regulated {
+                            "regulated"
+                        } else {
+                            "unregulated"
+                        }
+                    );
+                    ["Compliance: Register Asset", &action]
+                }
+                penumbra_sdk_transaction::ActionView::ComplianceRegisterUser(x) => {
+                    action = format!("Register user for asset {}", x.leaf.asset_id);
+                    ["Compliance: Register User", &action]
+                }
             };
 
             actions_table.add_row(row);

@@ -1,32 +1,72 @@
 {
   "actions": [
     {
-      "ibcRelayAction": {
-        "rawAction": {
-          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
-          "value": "CrIBCIbCtEsSC2RlZmF1bHRQb3J0GgljaGFubmVsLTAiC2RlZmF1bHRQb3J0KgljaGFubmVsLTAyZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6CwjK/r9iEJi06r4CQOiJsrvJu7aIGBICCgAaCwjK/r9iEJi06r4CIo8BcGVudW1icmExcGhuZDR0cW10dDZqYXZ4MzVqd3ZleHlwdWh1cHUzcHdycGp4NGV1OHFsZ2Q3Z3hlM3EwYTl5dDg1NTNqMnBldmo2ZTJyeWVjbTJqcXlmMm04NHc4NGxoc2ozcTZhOGgwazVla2xoNXZkcHQ0Zm5zZnZ4MHdmcjRqd2N1N2cyMmV6dHY3eWU="
+      "proposalSubmit": {
+        "proposal": {
+          "title": "cctm-6299644602808511289254442",
+          "description": "xesybvdlq-8047272058891303",
+          "signaling": {}
+        },
+        "depositAmount": {
+          "lo": "29659335416470884"
         }
       }
     },
     {
-      "actionDutchAuctionEnd": {
-        "auctionId": {
-          "inner": "sRxMsUvvHGiShxUteMJF1TEEbpucHAK5NRgnXmCLndI="
+      "actionDutchAuctionSchedule": {
+        "description": {
+          "input": {
+            "amount": {
+              "lo": "747439909415632555"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "outputId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          },
+          "maxOutput": {
+            "lo": "411040537309043135"
+          },
+          "minOutput": {
+            "lo": "573067241275640431"
+          },
+          "startHeight": "528930200",
+          "endHeight": "528930201",
+          "stepCount": "116408831",
+          "nonce": "QESGD66PKDnFry3A80PHsAbTtVr6cO9a3pavxglv7sY="
         }
+      }
+    },
+    {
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "Tu9QIdFb/we5YLbp2ICegoKq8LbHStRvXa1WABbUygc="
+          },
+          "consensusKey": "r5V2ieOD3t/MXLjfPBK8pAvZ1x1xJcewYx9zqOmsMcY=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "Tu9QIdFb/we5YLbp2ICegoKq8LbHStRvXa1WABbUygc="
+          }
+        },
+        "authSig": "FLmsKkHYP4t825mv419vv5MIfV4vjF48YNiL8CnSgATZHQ35jwpvKVTZB9PgDyRWHzoDAt/XtWGnpb1R+KXiAw=="
       }
     },
     {
       "positionWithdraw": {
         "reserves": {
           "r1": {
-            "lo": "966399753330479476"
+            "lo": "592540010876546998"
           },
           "r2": {
-            "lo": "763606050867868230"
+            "lo": "763516993983320069"
           }
         },
         "positionId": {
-          "inner": "X5hUCkVTYN9tyKDkj3uAz4SE+AtNg8nY43p6W6BFAkA="
+          "inner": "5Xs6xi/t8IyW4pdFLh5m5nCr68Bjr80GesDwV0x/a7Q="
         },
         "pair": {
           "asset1": {
@@ -41,11 +81,11 @@
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6703689706",
-    "chainId": "qsxey-672714308923798838238291",
+    "expiryHeight": "5161224972",
+    "chainId": "whwshsesgo-636021",
     "fee": {
       "amount": {
-        "lo": "24921229179695470"
+        "lo": "983355596325678740"
       }
     }
   }

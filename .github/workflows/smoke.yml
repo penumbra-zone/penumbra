@@ -14,8 +14,19 @@ concurrency:
 
 jobs:
   smoke:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - uses: actions/checkout@v4
         with:
           lfs: true
@@ -28,10 +39,9 @@ jobs:
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
-          backend: buildjet
 
       - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
+        uses: Swatinem/rust-cache@v2
         with:
           # bust cache with unique key; increment the integer in `^v(\d+)` to force fresh cache
           prefix-key: "v0-rust-smoke"
@@ -40,7 +50,7 @@ jobs:
         run: nix develop --command just smoke
 
   pmonitor:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,10 +64,9 @@ jobs:
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
-          backend: buildjet
 
       - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
+        uses: Swatinem/rust-cache@v2
 
       - name: run the pmonitor integration tests
         run: nix develop --command just integration-pmonitor

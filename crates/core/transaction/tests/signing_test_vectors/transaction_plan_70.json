@@ -1,70 +1,48 @@
 {
   "actions": [
     {
-      "positionClose": {
-        "positionId": {
-          "inner": "ZaXVx44Ksl8LB84e1YlEoRyeoW7LAn3xPE5B8ECxz0c="
-        }
-      }
-    },
-    {
-      "positionOpen": {
-        "position": {
-          "phi": {
-            "component": {
-              "p": {
-                "lo": "633458098361194110"
-              },
-              "q": {
-                "lo": "283318158393225329"
-              }
-            },
-            "pair": {
-              "asset1": {
-                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-              },
-              "asset2": {
-                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-              }
-            }
+      "validatorVote": {
+        "body": {
+          "proposal": "548450464",
+          "vote": {
+            "vote": "VOTE_NO"
           },
-          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-          "state": {
-            "state": "POSITION_STATE_ENUM_OPENED"
+          "identityKey": {
+            "ik": "8/K83bfmK99ewIJhKrnssVMrdYt02He4rIaoALJoGVE="
           },
-          "reserves": {
-            "r1": {
-              "lo": "227531294295513491"
-            },
-            "r2": {
-              "lo": "133548629561605043"
-            }
+          "governanceKey": {
+            "gk": "kGGbuQLAXUU649wGUZl273KGAlSKUmurmNLO5pZW7Qs="
           },
-          "closeOnFill": true
+          "reason": {
+            "reason": "Gc4AfoHbiXu50y32a83TU"
+          }
+        },
+        "authSig": {
+          "inner": "kG4sNcKrVgY91S2DWCuzS0P6wS3Wj762qCVigbbmQgMsmwkzR1194LOnySDxVaCTTR3S4imUAyPcdUXSdjsnAQ=="
         }
       }
     },
     {
       "delegate": {
         "validatorIdentity": {
-          "ik": "1n1wKRwyp0hKMNlHCydIBixHxan2/NIHSfDLMSeNevo="
+          "ik": "soQWTvCXJXXn7aAx47zsGRkTMXn/6tBqkDSlrcyZhsA="
         },
-        "epochIndex": "1552",
+        "epochIndex": "9624",
         "unbondedAmount": {
-          "lo": "988630199176420697"
+          "lo": "315657499921008752"
         },
         "delegationAmount": {
-          "lo": "153702134284315649"
+          "lo": "287228909499277636"
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "208365756",
-    "chainId": "utekqgwijzn-597",
+    "expiryHeight": "5096224830",
+    "chainId": "vfmrcwdooedllsbmymar-29476",
     "fee": {
       "amount": {
-        "lo": "389032767397373614"
+        "lo": "123310200310681106"
       }
     }
   }

@@ -133,6 +133,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-bw6-761"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e0605daf0cc5aa2034b78d008aaf159f56901d92a52ee4f6ecdfdac4f426700"
+dependencies = [
+ "ark-bls12-377",
+ "ark-ec",
+ "ark-ff",
+ "ark-std",
+]
+
+[[package]]
 name = "ark-crypto-primitives"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4858,6 +4870,7 @@ dependencies = [
  "penumbra-sdk-auction",
  "penumbra-sdk-community-pool",
  "penumbra-sdk-compact-block",
+ "penumbra-sdk-compliance",
  "penumbra-sdk-custody",
  "penumbra-sdk-custody-ledger-usb",
  "penumbra-sdk-dex",
@@ -5147,6 +5160,7 @@ dependencies = [
  "penumbra-sdk-auction",
  "penumbra-sdk-community-pool",
  "penumbra-sdk-compact-block",
+ "penumbra-sdk-compliance",
  "penumbra-sdk-dex",
  "penumbra-sdk-distributions",
  "penumbra-sdk-fee",
@@ -5201,6 +5215,8 @@ version = "2.1.0"
 dependencies = [
  "anyhow",
  "ark-ff",
+ "ark-groth16",
+ "ark-snark",
  "async-trait",
  "axum-server",
  "base64 0.21.7",
@@ -5231,6 +5247,7 @@ dependencies = [
  "penumbra-sdk-auction",
  "penumbra-sdk-community-pool",
  "penumbra-sdk-compact-block",
+ "penumbra-sdk-compliance",
  "penumbra-sdk-dex",
  "penumbra-sdk-distributions",
  "penumbra-sdk-fee",
@@ -5254,6 +5271,7 @@ dependencies = [
  "penumbra-sdk-txhash",
  "penumbra-sdk-view",
  "penumbra-sdk-wallet",
+ "poseidon377",
  "prost 0.13.4",
  "rand",
  "rand_chacha",
@@ -5399,6 +5417,7 @@ version = "2.1.0"
 dependencies = [
  "anyhow",
  "ark-bls12-377",
+ "ark-bw6-761",
  "ark-ec",
  "ark-ff",
  "ark-groth16",
@@ -5417,6 +5436,7 @@ dependencies = [
  "num-bigint",
  "once_cell",
  "penumbra-sdk-asset",
+ "penumbra-sdk-compliance",
  "penumbra-sdk-dex",
  "penumbra-sdk-fee",
  "penumbra-sdk-governance",
@@ -5502,6 +5522,46 @@ dependencies = [
  "tendermint 0.40.3",
  "tokio",
  "tokio-stream",
+ "tonic",
+ "tracing",
+]
+
+[[package]]
+name = "penumbra-sdk-compliance"
+version = "2.1.0"
+dependencies = [
+ "anyhow",
+ "ark-ff",
+ "ark-groth16",
+ "ark-r1cs-std",
+ "ark-relations",
+ "ark-serialize",
+ "ark-snark",
+ "async-trait",
+ "bincode",
+ "blake2b_simd 1.0.2",
+ "chacha20poly1305",
+ "cnidarium",
+ "cnidarium-component",
+ "decaf377",
+ "decaf377-fmd",
+ "decaf377-ka",
+ "once_cell",
+ "penumbra-sdk-asset",
+ "penumbra-sdk-keys",
+ "penumbra-sdk-num",
+ "penumbra-sdk-proto",
+ "penumbra-sdk-tct",
+ "penumbra-sdk-txhash",
+ "poseidon377",
+ "rand",
+ "rand_core",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tendermint 0.40.3",
+ "tokio",
  "tonic",
  "tracing",
 ]
@@ -6144,9 +6204,11 @@ dependencies = [
  "ibc-proto",
  "ibc-types",
  "im",
+ "jmt",
  "metrics",
  "once_cell",
  "penumbra-sdk-asset",
+ "penumbra-sdk-compliance",
  "penumbra-sdk-ibc",
  "penumbra-sdk-keys",
  "penumbra-sdk-num",
@@ -6163,6 +6225,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "sha2 0.10.8",
  "tap",
  "tendermint 0.40.3",
  "thiserror 1.0.69",
@@ -6386,6 +6449,7 @@ dependencies = [
  "penumbra-sdk-asset",
  "penumbra-sdk-auction",
  "penumbra-sdk-community-pool",
+ "penumbra-sdk-compliance",
  "penumbra-sdk-dex",
  "penumbra-sdk-fee",
  "penumbra-sdk-funding",
@@ -6455,6 +6519,7 @@ dependencies = [
  "penumbra-sdk-auction",
  "penumbra-sdk-community-pool",
  "penumbra-sdk-compact-block",
+ "penumbra-sdk-compliance",
  "penumbra-sdk-dex",
  "penumbra-sdk-distributions",
  "penumbra-sdk-fee",

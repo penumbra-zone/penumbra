@@ -1,22 +1,22 @@
 {
   "actions": [
     {
-      "actionDutchAuctionWithdraw": {
-        "auctionId": {
-          "inner": "tYen9vdCq6ujbL216qi7ocFMD0wE07BgmY1WKDxSsZ0="
+      "proposalSubmit": {
+        "proposal": {
+          "title": "nromfiijuktxpogek-90609009768903635618",
+          "description": "hugutytbcfvugqebknzrwhabkk-32506429951843931145",
+          "signaling": {}
         },
-        "seq": "618503155",
-        "reservesInput": {
+        "depositAmount": {
+          "lo": "7141268564647823"
+        }
+      }
+    },
+    {
+      "communityPoolSpend": {
+        "value": {
           "amount": {
-            "lo": "84852211894696562"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "reservesOutput": {
-          "amount": {
-            "lo": "949839836777165243"
+            "lo": "312492793201610958"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
@@ -25,36 +25,29 @@
       }
     },
     {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "seefqmo-750448",
-          "description": "iuf-844",
-          "signaling": {}
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "Ou0iVm2PqOL+vNeSDA/lSVvqHqs82cUtXhRXWOMJNGk="
         },
-        "depositAmount": {
-          "lo": "774139197522646266"
-        }
-      }
-    },
-    {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "sefijeqm-92688048104843706673977014363430",
-          "description": "cbpkaruv-593976592810878117828",
-          "signaling": {}
+        "unbondedAmount": {
+          "lo": "401412443223654898"
         },
-        "depositAmount": {
-          "lo": "978143614202696154"
+        "delegationAmount": {
+          "lo": "685231580481298752"
+        },
+        "fromEpoch": {
+          "index": "8272",
+          "startHeight": "8272"
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "7229120705",
-    "chainId": "etu-2",
+    "expiryHeight": "7051137460",
+    "chainId": "rba-0870628",
     "fee": {
       "amount": {
-        "lo": "859783043176233021"
+        "lo": "590466669813173281"
       }
     }
   }

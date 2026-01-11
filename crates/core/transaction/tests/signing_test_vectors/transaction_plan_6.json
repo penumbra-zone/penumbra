@@ -1,63 +1,22 @@
 {
   "actions": [
     {
-      "validatorDefinition": {
-        "validator": {
-          "identityKey": {
-            "ik": "vPptZLJqiCoXLFMv5J1SRLDoU2+ECrjCFkE5STHBfhE="
+      "actionDutchAuctionWithdraw": {
+        "auctionId": {
+          "inner": "zkSZ8OSAaoBm1iulSakCWmzGuPy5z+Fh4EjIj9whMXQ="
+        },
+        "seq": "729112947",
+        "reservesInput": {
+          "amount": {
+            "lo": "95562153369312825"
           },
-          "consensusKey": "NFRherZeRhe4Zik8OH5sVjwWRj72jN/qwVU33URTKPc=",
-          "name": "test validator",
-          "enabled": true,
-          "governanceKey": {
-            "gk": "vPptZLJqiCoXLFMv5J1SRLDoU2+ECrjCFkE5STHBfhE="
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "authSig": "5gWHPMw8U18zdOLSK7Ya5nmBtyv/21spbBIJA1ATywoMh9xfHl0NvXlekJ4zXKzZ5BG9rOMUSs78+Z7iWa72AA=="
-      }
-    },
-    {
-      "positionOpen": {
-        "position": {
-          "phi": {
-            "component": {
-              "p": {
-                "lo": "1350996659030061"
-              },
-              "q": {
-                "lo": "379208078271574850"
-              }
-            },
-            "pair": {
-              "asset1": {
-                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-              },
-              "asset2": {
-                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-              }
-            }
-          },
-          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-          "state": {
-            "state": "POSITION_STATE_ENUM_OPENED"
-          },
-          "reserves": {
-            "r1": {
-              "lo": "991985858870291127"
-            },
-            "r2": {
-              "lo": "990555797588997326"
-            }
-          },
-          "closeOnFill": true
-        }
-      }
-    },
-    {
-      "communityPoolSpend": {
-        "value": {
+        "reservesOutput": {
           "amount": {
-            "lo": "234935465388814513"
+            "lo": "881595201702126300"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
@@ -66,10 +25,10 @@
       }
     },
     {
-      "communityPoolSpend": {
+      "communityPoolDeposit": {
         "value": {
           "amount": {
-            "lo": "462684001873467270"
+            "lo": "717130717886615051"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
@@ -79,11 +38,11 @@
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "7340422367",
-    "chainId": "olkoknzifxexqwhcrjby-6316",
+    "expiryHeight": "5664957360",
+    "chainId": "rkngbwigixegopxk-8084864867583276",
     "fee": {
       "amount": {
-        "lo": "945856827285388196"
+        "lo": "365652264893834315"
       }
     }
   }

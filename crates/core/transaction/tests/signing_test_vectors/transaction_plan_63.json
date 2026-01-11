@@ -1,52 +1,61 @@
 {
   "actions": [
     {
-      "validatorDefinition": {
-        "validator": {
-          "identityKey": {
-            "ik": "Pn2+WdRhy7/26RR1ZS9OCRT5O7c8WnLOd7tMGB/pSgM="
+      "actionDutchAuctionWithdraw": {
+        "auctionId": {
+          "inner": "/qRnYlJBKWMr1ekKXIAcJcwXEGSGZM7TDYy0dN+tlZg="
+        },
+        "seq": "510904154",
+        "reservesInput": {
+          "amount": {
+            "lo": "590441148310505737"
           },
-          "consensusKey": "0nq54naGESkDBAYOJKBEsfYgwyIzJjNqTpwdAp0LThE=",
-          "name": "test validator",
-          "enabled": true,
-          "governanceKey": {
-            "gk": "Pn2+WdRhy7/26RR1ZS9OCRT5O7c8WnLOd7tMGB/pSgM="
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "authSig": "2FG/4KxGPpQfdkl7pHBz5aAfOXQbPom76vQUNJVfDgFmIh9FI01PNwu6iIQW7Hc9s259HYPEGdsPFREbBOnlAQ=="
-      }
-    },
-    {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "ucmvcamks-140575015038568184878994589",
-          "description": "jqemouwcj-48421118",
-          "signaling": {}
-        },
-        "depositAmount": {
-          "lo": "155626920557030080"
-        }
-      }
-    },
-    {
-      "communityPoolSpend": {
-        "value": {
+        "reservesOutput": {
           "amount": {
-            "lo": "888407929484696457"
+            "lo": "340368062280021371"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         }
       }
+    },
+    {
+      "proposalDepositClaim": {
+        "proposal": "699943130",
+        "depositAmount": {
+          "lo": "180420023473836608"
+        },
+        "outcome": {
+          "slashed": {}
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "tbsIHnrJxsWW13e9Gd/ztXIbMBnUUmGKL9xcO/3DP5k="
+        },
+        "epochIndex": "7801",
+        "unbondedAmount": {
+          "lo": "947655412476208725"
+        },
+        "delegationAmount": {
+          "lo": "500111831306700299"
+        }
+      }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6984876858",
-    "chainId": "dadqbuydlzbxtetdbkcgfm-74914942237570976",
+    "expiryHeight": "9150628469",
+    "chainId": "zuqhphnku-104685054955870",
     "fee": {
       "amount": {
-        "lo": "621955823525683618"
+        "lo": "406409382369765508"
       }
     }
   }

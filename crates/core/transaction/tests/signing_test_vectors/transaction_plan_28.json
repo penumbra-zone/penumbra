@@ -1,63 +1,36 @@
 {
   "actions": [
     {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "841433255504353733"
-          },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "address": {
-          "inner": "waUs/UYwv/hsAsQLifKDqgKE1Z/NfXoM0v/zrAYg77z2uHDqM28JDuYwSbBEEDdUJD6wiWuPpv7n5jkXEdrbc9nWQwVxWCG37IRrUnIawbc="
+      "actionDutchAuctionEnd": {
+        "auctionId": {
+          "inner": "f1+ophyLPyUZtbqYc4lE2u2gfiec9w47T+8Ei2mbE9A="
         }
       }
     },
     {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "tzghwlmstdvdsm-945549054283516287874154",
-          "description": "czoootkzeynfznsrdbqwkccps-4759530430344035191885",
-          "signaling": {}
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "iFfJI5q+bt8LMQTbktEiDTXaieYMY0tRmP6rnjZq4Uo="
         },
-        "depositAmount": {
-          "lo": "685651008831161278"
+        "unbondedAmount": {
+          "lo": "962905444866216492"
+        },
+        "delegationAmount": {
+          "lo": "45771916908979524"
+        },
+        "fromEpoch": {
+          "index": "8618",
+          "startHeight": "8618"
         }
-      }
-    },
-    {
-      "positionWithdraw": {
-        "reserves": {
-          "r1": {
-            "lo": "580050595495280666"
-          },
-          "r2": {
-            "lo": "881206186437646783"
-          }
-        },
-        "positionId": {
-          "inner": "vnq33IGSwoxgPf8f7mbPawvuCf5nWEQYGCfwrt6Gpsw="
-        },
-        "pair": {
-          "asset1": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          },
-          "asset2": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          }
-        },
-        "sequence": "1"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "5578173011",
-    "chainId": "agcluxlgrbgatyeqgtfbfphvplgk-7462389386317254",
+    "expiryHeight": "950857935",
+    "chainId": "pkpfluzgobkywhhcmbkgcg-77",
     "fee": {
       "amount": {
-        "lo": "708175036828087322"
+        "lo": "587929899225523869"
       }
     }
   }

@@ -25,6 +25,16 @@ pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub ovk_wrapped_key: OvkWrappedKey,
     pub wrapped_memo_key: WrappedMemoKey,
+    pub compliance_ciphertext: Vec<u8>,
+    pub target_timestamp: u64,
+    /// Blinded receiver leaf hash (for binding with spend circuit)
+    pub receiver_leaf_hash: penumbra_sdk_tct::StateCommitment,
+    /// Blinded counterparty (sender) leaf hash (for binding with spend circuit)
+    pub counterparty_leaf_hash: penumbra_sdk_tct::StateCommitment,
+    /// Compliance tree anchor (user tree root) used during proof generation
+    pub compliance_anchor: penumbra_sdk_tct::StateCommitment,
+    /// Asset tree anchor used during proof generation
+    pub asset_anchor: penumbra_sdk_tct::StateCommitment,
 }
 
 impl EffectingData for Body {
@@ -84,6 +94,12 @@ impl From<Body> for pb::OutputBody {
             balance_commitment: Some(output.balance_commitment.into()),
             wrapped_memo_key: output.wrapped_memo_key.0.to_vec(),
             ovk_wrapped_key: output.ovk_wrapped_key.0.to_vec(),
+            compliance_ciphertext: output.compliance_ciphertext,
+            target_timestamp: output.target_timestamp,
+            receiver_leaf_hash: Some(output.receiver_leaf_hash.into()),
+            counterparty_leaf_hash: Some(output.counterparty_leaf_hash.into()),
+            compliance_anchor: Some(output.compliance_anchor.into()),
+            asset_anchor: Some(output.asset_anchor.into()),
         }
     }
 }
@@ -112,11 +128,43 @@ impl TryFrom<pb::OutputBody> for Body {
             .try_into()
             .context("malformed balance commitment")?;
 
+        let target_timestamp = proto.target_timestamp;
+
+        let receiver_leaf_hash = proto
+            .receiver_leaf_hash
+            .ok_or_else(|| anyhow::anyhow!("missing receiver_leaf_hash"))?
+            .try_into()
+            .context("malformed receiver_leaf_hash")?;
+
+        let counterparty_leaf_hash = proto
+            .counterparty_leaf_hash
+            .ok_or_else(|| anyhow::anyhow!("missing counterparty_leaf_hash"))?
+            .try_into()
+            .context("malformed counterparty_leaf_hash")?;
+
+        let compliance_anchor = proto
+            .compliance_anchor
+            .ok_or_else(|| anyhow::anyhow!("missing compliance_anchor"))?
+            .try_into()
+            .context("malformed compliance_anchor")?;
+
+        let asset_anchor = proto
+            .asset_anchor
+            .ok_or_else(|| anyhow::anyhow!("missing asset_anchor"))?
+            .try_into()
+            .context("malformed asset_anchor")?;
+
         Ok(Body {
             note_payload,
             wrapped_memo_key,
             ovk_wrapped_key,
             balance_commitment,
+            compliance_ciphertext: proto.compliance_ciphertext,
+            target_timestamp,
+            receiver_leaf_hash,
+            counterparty_leaf_hash,
+            compliance_anchor,
+            asset_anchor,
         })
     }
 }

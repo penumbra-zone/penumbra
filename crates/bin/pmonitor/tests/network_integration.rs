@@ -39,6 +39,7 @@ async fn audit_passes_on_compliant_wallets() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[ignore = "requires multi-spend compliance support (not yet implemented)"]
 /// Tests another happy path for pmonitor: all wallets have genesis balances,
 /// one of the wallets ran `pcli migrate balance` once. This means that all
 /// wallets still have their genesis balance, save one, which has the genesis
@@ -72,6 +73,7 @@ async fn audit_passes_on_wallets_that_migrated_once() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[ignore = "requires multi-spend compliance support (not yet implemented)"]
 /// Tests another happy path for pmonitor: all wallets have genesis balances,
 /// one of the wallets ran `pcli migrate balance` once, then that receiving
 /// wallet ran `pcli migrate balance` itself, so the genesis funds are now

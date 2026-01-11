@@ -58,31 +58,69 @@ fn setup_testnet_config() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("could not get parent of current working directory"))?
         .join("testnets");
 
-    // Get the most recent testnet name and its configuration directory
-    let (latest_testnet_name, latest_testnet_dirname) = latest_testnet(&testnets_path)?;
-
-    let latest_testnet_dirpath = Path::join(&testnets_path, &latest_testnet_dirname);
+    // Try to find a numbered testnet subdirectory (old format: 001-valetudo, etc.)
+    // If none found, use the testnets directory directly with CI config files (new format)
+    let (latest_testnet_name, config_dir, validators_file, allocations_file) = match latest_testnet(
+        &testnets_path,
+    ) {
+        Ok((name, dirname)) => {
+            let dir = testnets_path.join(&dirname);
+            (
+                name,
+                dir.clone(),
+                dir.join("validators.json"),
+                dir.join("allocations.csv"),
+            )
+        }
+        Err(_) => {
+            // New format: use validators-ci.json directly from testnets/
+            // For allocations, we'll create a minimal default
+            let validators_path = testnets_path.join("validators-ci.json");
+            if validators_path.exists() {
+                (
+                    "penumbra-localnet".to_string(),
+                    testnets_path.clone(),
+                    validators_path,
+                    testnets_path.join("allocations.csv"),
+                )
+            } else {
+                anyhow::bail!(
+                        "no testnets found in directory {:?} (neither numbered subdirs nor validators-ci.json)",
+                        testnets_path
+                    );
+            }
+        }
+    };
 
     // Output the name of the most recent testnet as a build-time environment variable
     println!("cargo:rustc-env=PD_LATEST_TESTNET_NAME={latest_testnet_name}");
 
-    // Ensure that changes to the allocations files trigger a rebuild of pd.
+    // Ensure that changes to the config files trigger a rebuild of pd.
+    println!("cargo:rerun-if-changed={}", config_dir.display());
+
+    // Set environment variables for validators file
     println!(
-        "cargo:rerun-if-changed={}",
-        latest_testnet_dirpath.display()
+        "cargo:rustc-env=PD_LATEST_TESTNET_VALIDATORS={}",
+        validators_file
+            .to_str()
+            .ok_or_else(|| anyhow::anyhow!("invalid UTF-8 in path"))?
     );
 
-    // For each association of environment variable to filename, set the full path to that file in
-    // the environment variable, so that we can include its contents at build time
-    for (env_var, filename) in [
-        ("PD_LATEST_TESTNET_ALLOCATIONS", "allocations.csv"),
-        ("PD_LATEST_TESTNET_VALIDATORS", "validators.json"),
-    ] {
-        let path = testnets_path.join(&latest_testnet_dirname).join(filename);
+    // Set environment variables for allocations file (may not exist in new format)
+    if allocations_file.exists() {
         println!(
-            "cargo:rustc-env={}={}",
-            env_var,
-            path.to_str()
+            "cargo:rustc-env=PD_LATEST_TESTNET_ALLOCATIONS={}",
+            allocations_file
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("invalid UTF-8 in path"))?
+        );
+    } else {
+        // Create a minimal allocations file path - the code using this will need to handle missing file
+        // For now, point to validators file as a placeholder (code should check existence)
+        println!(
+            "cargo:rustc-env=PD_LATEST_TESTNET_ALLOCATIONS={}",
+            validators_file
+                .to_str()
                 .ok_or_else(|| anyhow::anyhow!("invalid UTF-8 in path"))?
         );
     }
@@ -90,7 +128,7 @@ fn setup_testnet_config() -> anyhow::Result<()> {
     Ok(())
 }
 
-// Scan through the testnets directory to find the latest one
+// Scan through the testnets directory to find the latest numbered one (old format)
 fn latest_testnet(testnets_path: impl AsRef<Path>) -> anyhow::Result<(String, String)> {
     let mut testnets = Vec::new();
     for result in std::fs::read_dir(testnets_path.as_ref()).with_context(|| {
@@ -113,20 +151,11 @@ fn latest_testnet(testnets_path: impl AsRef<Path>) -> anyhow::Result<(String, St
                 .to_string();
             // Split the testnet directory name into (index, name), i.e. `001-valetudo`
             // becomes (1, "valetudo")
-            let (index, name): (u64, _) = dir_name
-                .split_once('-')
-                .ok_or_else(|| {
-                    anyhow::anyhow!("testnet path '{:?}' is not correctly formatted", path)
-                })
-                .and_then(|(index_str, name)| {
-                    Ok((
-                        index_str.parse().with_context(|| {
-                            format!("could not parse testnet index as a number in path '{path:?}'")
-                        })?,
-                        name.to_string(),
-                    ))
-                })?;
-            testnets.push((index, name, dir_name));
+            if let Some((index_str, name)) = dir_name.split_once('-') {
+                if let Ok(index) = index_str.parse::<u64>() {
+                    testnets.push((index, name.to_string(), dir_name));
+                }
+            }
         }
     }
 
@@ -137,7 +166,7 @@ fn latest_testnet(testnets_path: impl AsRef<Path>) -> anyhow::Result<(String, St
         .map(|(_, name, dir_name)| ("penumbra-testnet-".to_string() + &name, dir_name))
         .ok_or_else(|| {
             anyhow::anyhow!(
-                "no testnets found in directory {:?}",
+                "no numbered testnets found in directory {:?}",
                 testnets_path.as_ref()
             )
         })

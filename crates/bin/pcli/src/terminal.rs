@@ -84,6 +84,12 @@ fn pretty_print_transaction_plan(
                 rk: dummy_pk(),
                 encrypted_backref: EncryptedBackref::try_from([0u8; 0])
                     .expect("can create dummy encrypted backref"),
+                compliance_ciphertext: vec![],
+                target_timestamp: 0,
+                sender_leaf_hash: penumbra_sdk_tct::StateCommitment(Fq::default()),
+                counterparty_leaf_hash: penumbra_sdk_tct::StateCommitment(Fq::default()),
+                compliance_anchor: penumbra_sdk_tct::StateCommitment(Fq::default()),
+                asset_anchor: penumbra_sdk_tct::StateCommitment(Fq::default()),
             },
             auth_sig: dummy_sig(),
             proof: dummy_proof_spend(),
@@ -106,6 +112,12 @@ fn pretty_print_transaction_plan(
                 balance_commitment: dummy_commitment(),
                 ovk_wrapped_key: OvkWrappedKey([0u8; 48]),
                 wrapped_memo_key: WrappedMemoKey([0u8; 48]),
+                compliance_ciphertext: vec![],
+                target_timestamp: 0,
+                receiver_leaf_hash: penumbra_sdk_tct::StateCommitment(Fq::default()),
+                counterparty_leaf_hash: penumbra_sdk_tct::StateCommitment(Fq::default()),
+                compliance_anchor: penumbra_sdk_tct::StateCommitment(Fq::default()),
+                asset_anchor: penumbra_sdk_tct::StateCommitment(Fq::default()),
             },
             proof: dummy_proof_output(),
         }
@@ -161,6 +173,8 @@ fn pretty_print_transaction_plan(
             ActionPlan::ActionDutchAuctionWithdraw(_) => None,
             ActionPlan::IbcAction(_) => todo!(),
             ActionPlan::ActionLiquidityTournamentVote(_) => None,
+            ActionPlan::ComplianceRegisterAsset(_) => None,
+            ActionPlan::ComplianceRegisterUser(_) => None,
         }
     }
 

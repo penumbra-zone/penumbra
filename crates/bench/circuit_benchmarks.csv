@@ -1,0 +1,6 @@
+circuit,constraints,proving_time_ms,proving_curve,notes
+BLS Threshold,39689,1613.5,BW6-761,"BLS12-377 pairing verification: e(sig,g2)==e(msg,pk)"
+Spend (with compliance),104873,920.16,BLS12-377,"Full spend circuit with compliance"
+Output (with compliance),82770,708.91,BLS12-377,"Full output circuit with compliance"
+Spend (without compliance),35979,379.70,BLS12-377,"Spend circuit with compliance verification commented out"
+Output (without compliance),13875,121.41,BLS12-377,"Output circuit with compliance verification commented out"

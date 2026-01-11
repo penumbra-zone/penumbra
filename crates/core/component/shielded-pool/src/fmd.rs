@@ -15,6 +15,19 @@ pub fn should_update_fmd_params(fmd_grace_period_blocks: u64, height: u64) -> bo
     height % fmd_grace_period_blocks == 0
 }
 
+/// Domain separator for black hole key derivation.
+static BLACK_HOLE_DOMAIN_SEP: once_cell::sync::Lazy<decaf377::Fq> =
+    once_cell::sync::Lazy::new(|| {
+        decaf377::Fq::from_le_bytes_mod_order(
+            blake2b_simd::blake2b(b"penumbra.black_hole_key").as_bytes(),
+        )
+    });
+
+/// Returns a "black hole" key: a public key with unknown private key.
+pub fn black_hole_key() -> decaf377::Element {
+    decaf377::Element::encode_to_curve(&BLACK_HOLE_DOMAIN_SEP)
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::FmdParameters", into = "pb::FmdParameters")]
 pub struct Parameters {

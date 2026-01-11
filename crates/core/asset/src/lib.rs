@@ -20,3 +20,19 @@ pub static STAKING_TOKEN_DENOM: Lazy<asset::Metadata> = Lazy::new(|| {
         .base()
 });
 pub static STAKING_TOKEN_ASSET_ID: Lazy<asset::Id> = Lazy::new(|| STAKING_TOKEN_DENOM.id());
+
+pub static TEST_USD_DENOM: Lazy<asset::Metadata> = Lazy::new(|| {
+    asset::Cache::with_known_assets()
+        .get_unit("wtest_usd")
+        .expect("unable to get wtest_usd denom, which should be hardcoded")
+        .base()
+});
+pub static TEST_USD_ASSET_ID: Lazy<asset::Id> = Lazy::new(|| TEST_USD_DENOM.id());
+
+pub static REGULATED_USD_DENOM: Lazy<asset::Metadata> = Lazy::new(|| {
+    asset::Cache::with_known_assets()
+        .get_unit("wregulated_usd")
+        .expect("unable to get wregulated_usd denom, which should be hardcoded")
+        .base()
+});
+pub static REGULATED_USD_ASSET_ID: Lazy<asset::Id> = Lazy::new(|| REGULATED_USD_DENOM.id());

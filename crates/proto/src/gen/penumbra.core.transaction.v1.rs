@@ -139,7 +139,7 @@ impl ::prost::Name for DetectionData {
 pub struct Action {
     #[prost(
         oneof = "action::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70, 200"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70, 80, 81, 200"
     )]
     pub action: ::core::option::Option<action::Action>,
 }
@@ -225,6 +225,15 @@ pub mod action {
         #[prost(message, tag = "70")]
         ActionLiquidityTournamentVote(
             super::super::super::component::funding::v1::ActionLiquidityTournamentVote,
+        ),
+        /// Compliance
+        #[prost(message, tag = "80")]
+        ComplianceRegisterAsset(
+            super::super::super::component::compliance::v1::MsgRegisterAsset,
+        ),
+        #[prost(message, tag = "81")]
+        ComplianceRegisterUser(
+            super::super::super::component::compliance::v1::MsgRegisterUser,
         ),
         #[prost(message, tag = "200")]
         Ics20Withdrawal(super::super::super::component::ibc::v1::Ics20Withdrawal),
@@ -471,7 +480,7 @@ impl ::prost::Name for TransactionBodyView {
 pub struct ActionView {
     #[prost(
         oneof = "action_view::ActionView",
-        tags = "1, 2, 3, 4, 21, 35, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 70, 200"
+        tags = "1, 2, 3, 4, 21, 35, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 70, 80, 81, 200"
     )]
     pub action_view: ::core::option::Option<action_view::ActionView>,
 }
@@ -561,6 +570,15 @@ pub mod action_view {
         #[prost(message, tag = "70")]
         ActionLiquidityTournamentVote(
             super::super::super::component::funding::v1::ActionLiquidityTournamentVoteView,
+        ),
+        /// Compliance
+        #[prost(message, tag = "80")]
+        ComplianceRegisterAsset(
+            super::super::super::component::compliance::v1::MsgRegisterAsset,
+        ),
+        #[prost(message, tag = "81")]
+        ComplianceRegisterUser(
+            super::super::super::component::compliance::v1::MsgRegisterUser,
         ),
         #[prost(message, tag = "200")]
         Ics20Withdrawal(super::super::super::component::ibc::v1::Ics20Withdrawal),
@@ -686,7 +704,7 @@ impl ::prost::Name for DetectionDataPlan {
 pub struct ActionPlan {
     #[prost(
         oneof = "action_plan::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 35, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 35, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 70, 80, 81"
     )]
     pub action: ::core::option::Option<action_plan::Action>,
 }
@@ -780,6 +798,15 @@ pub mod action_plan {
         #[prost(message, tag = "70")]
         ActionLiquidityTournamentVote(
             super::super::super::component::funding::v1::ActionLiquidityTournamentVotePlan,
+        ),
+        /// Compliance
+        #[prost(message, tag = "80")]
+        ComplianceRegisterAsset(
+            super::super::super::component::compliance::v1::MsgRegisterAsset,
+        ),
+        #[prost(message, tag = "81")]
+        ComplianceRegisterUser(
+            super::super::super::component::compliance::v1::MsgRegisterUser,
         ),
     }
 }

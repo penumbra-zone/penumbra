@@ -7,6 +7,7 @@ use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_sdk_asset::Value;
 use penumbra_sdk_compact_block::component::CompactBlockManager;
+use penumbra_sdk_compliance::structs::MerklePath;
 use penumbra_sdk_keys::{keys::NullifierKey, test_keys};
 use penumbra_sdk_mock_client::MockClient;
 use penumbra_sdk_num::Amount;
@@ -17,6 +18,7 @@ use penumbra_sdk_sct::{
 use penumbra_sdk_shielded_pool::{
     component::ShieldedPool, Note, SpendPlan, SpendProof, SpendProofPrivate, SpendProofPublic,
 };
+use penumbra_sdk_tct as tct;
 use penumbra_sdk_txhash::{EffectHash, TransactionContext};
 use rand_core::{OsRng, SeedableRng};
 use std::{ops::Deref, sync::Arc};
@@ -61,7 +63,14 @@ async fn spend_happy_path() -> anyhow::Result<()> {
     let dummy_effect_hash = [0u8; 64];
     let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
     let auth_sig = rsk.sign(&mut rng, dummy_effect_hash.as_ref());
-    let spend = spend_plan.spend(&test_keys::FULL_VIEWING_KEY, auth_sig, proof, root);
+    let spend = spend_plan.spend(
+        &test_keys::FULL_VIEWING_KEY,
+        auth_sig,
+        proof,
+        root,
+        &penumbra_sdk_proof_params::SPEND_PROOF_PROVING_KEY,
+        None, // No compliance keys
+    )?;
     let transaction_context = TransactionContext {
         anchor: root,
         effect_hash: EffectHash(dummy_effect_hash),
@@ -143,7 +152,16 @@ async fn invalid_dummy_spend() {
     let dummy_effect_hash = [0u8; 64];
     let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
     let auth_sig = rsk.sign(&mut rng, dummy_effect_hash.as_ref());
-    let mut spend = spend_plan.spend(&test_keys::FULL_VIEWING_KEY, auth_sig, proof.clone(), root);
+    let mut spend = spend_plan
+        .spend(
+            &test_keys::FULL_VIEWING_KEY,
+            auth_sig,
+            proof.clone(),
+            root,
+            &penumbra_sdk_proof_params::SPEND_PROOF_PROVING_KEY,
+            None, // No compliance keys
+        )
+        .expect("can create spend");
 
     let note_zero_value = Note::from_parts(
         note.address(),
@@ -155,11 +173,30 @@ async fn invalid_dummy_spend() {
     )
     .unwrap();
 
+    // Create dummy compliance data for the bad proof
+    let dummy_compliance_anchor = tct::StateCommitment(Fq::from(0u64));
+    let dummy_asset_anchor = tct::StateCommitment(Fq::from(0u64));
+    let dummy_compliance_leaf = penumbra_sdk_compliance::ComplianceLeaf {
+        address: note.address(),
+        key: penumbra_sdk_keys::keys::AddressComplianceKey::new(
+            *penumbra_sdk_compliance::BLACK_HOLE_ACK,
+        ),
+        asset_id: note.asset_id(),
+    };
+    let dummy_merkle_path = MerklePath { layers: vec![] };
+
     let public = SpendProofPublic {
         anchor: root,
         balance_commitment: spend_plan.balance().commit(spend_plan.value_blinding),
         nullifier: spend_plan.nullifier(&test_keys::FULL_VIEWING_KEY),
         rk: spend_plan.rk(&test_keys::FULL_VIEWING_KEY),
+        asset_anchor: dummy_asset_anchor,
+        compliance_anchor: dummy_compliance_anchor,
+        compliance_epk: decaf377::Element::default(),
+        compliance_ciphertext: vec![Fq::from(0u64); 11],
+        target_timestamp: 0,
+        sender_leaf_hash: tct::StateCommitment(Fq::from(0u64)),
+        counterparty_leaf_hash: tct::StateCommitment(Fq::from(0u64)),
     };
 
     // construct a proof for this spend using only public information, attempting to prove a spend
@@ -174,6 +211,15 @@ async fn invalid_dummy_spend() {
         spend_auth_randomizer: Fr::rand(&mut OsRng),
         ak,
         nk,
+        asset_path: dummy_merkle_path.clone(),
+        asset_position: 0,
+        is_regulated: false,
+        compliance_path: dummy_merkle_path,
+        compliance_position: 0,
+        user_leaf: dummy_compliance_leaf.clone(),
+        compliance_ephemeral_secret: Fr::from(0u64),
+        counterparty_leaf: dummy_compliance_leaf,
+        tx_blinding_nonce: Fr::from(0u64),
     };
     let bad_proof = SpendProof::prove(
         Fq::rand(&mut OsRng),

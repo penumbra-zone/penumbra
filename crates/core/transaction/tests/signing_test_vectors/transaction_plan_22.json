@@ -1,71 +1,58 @@
 {
   "actions": [
     {
-      "ics20Withdrawal": {
-        "amount": {
-          "lo": "572239724687197090"
+      "validatorDefinition": {
+        "validator": {
+          "identityKey": {
+            "ik": "xBjCI3QGajTdnQnZxEpT/1H9oe9ac01BaKO6QDFL0ws="
+          },
+          "consensusKey": "51zEd4aSoLDO4otwuyavwMrTqRPCf6P4Y1UOuiLyDto=",
+          "name": "test validator",
+          "enabled": true,
+          "governanceKey": {
+            "gk": "xBjCI3QGajTdnQnZxEpT/1H9oe9ac01BaKO6QDFL0ws="
+          }
         },
-        "denom": {
-          "denom": "A2MGbzORYRg41K8GwMytJ1oqZ0x08"
-        },
-        "destinationChainAddress": "penumbra1hka24z0t5kqff8msam89fwuj60zx3f6xpej0qu49tw5uwy5wak2pn6ugazu79r90t5s0m3q03mmkssdps8mju0ru3dtas0dfeg9e5m7dyq7usdpvwlhpwel9zz6ucq3twl3g2r",
-        "returnAddress": {
-          "inner": "WG1ai0Eo+VBmKuIT9vHnMLYfe24xYc2bsheBAZ1ewrwugYutcjPhxhyPIiV4KibWHijW8byStrrKCdid57odQZbX81iR2avskBL2cr0CZEI="
-        },
-        "timeoutHeight": {
-          "revisionNumber": "345822725",
-          "revisionHeight": "838775103"
-        },
-        "sourceChannel": "channel-0"
+        "authSig": "sOmWuKKZSWnEP3BVu08JNZ6+ZHHjS4IUfstNUEk/zA4fHNJ1PxCDFJLptgBtKDKJVC1jUADDcVM2kwW8t4YmBA=="
       }
     },
     {
-      "ics20Withdrawal": {
-        "amount": {
-          "lo": "390857031570369572"
-        },
-        "denom": {
-          "denom": "2"
-        },
-        "destinationChainAddress": "penumbra1q2ghutkfmpwq4ct2zvjqpksvwdg5xkkq0tg25fde5s87tvp7ucm7y2g693awtxdq0te0j0g7ky69aymk2yc7835tk4qgl36x395w4j7gvtf8ck5dnf7w0xp6quz9d5hzvfpg63",
-        "returnAddress": {
-          "inner": "TXxuazPdQ/sgLgIMxQWVdf/NLf72N/jSQyHiHJ2wAiGk7ZtL1jZfjQ196ATbfyVi3Co2MwTkCKJlCxU0c+COY3tNcbC/9UZJbehTlulvmRk="
-        },
-        "timeoutHeight": {
-          "revisionNumber": "752492919",
-          "revisionHeight": "158576005"
-        },
-        "sourceChannel": "channel-0"
-      }
-    },
-    {
-      "actionDutchAuctionEnd": {
-        "auctionId": {
-          "inner": "a2OfCkeK70+VP2oQgtk5BHUyev6nMFBIRDEVywdyXbo="
+      "ibcRelayAction": {
+        "rawAction": {
+          "typeUrl": "/ibc.core.channel.v1.MsgRecvPacket",
+          "value": "CrMBCJnjkuQCEgtkZWZhdWx0UG9ydBoJY2hhbm5lbC0wIgtkZWZhdWx0UG9ydCoJY2hhbm5lbC0wMmQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgsI+9qUTBCz7e/AAkC4p9f+rNuoxBgSAgoAGgsI+9qUTBCz7e/AAiKPAXBlbnVtYnJhMTJkbWh4bTB2dXRrdTQwZmU2dHMzcHJ1cWxwamw3NjJldnZkMjN2Z3psdzBkOXNhMHp0MDNqMjV5dHFwcDg0OXJleGx3dW4zNGwybWE2cnpxOXA3OGg3eWdramhoNnNnNWwycnp5OWE2Z3N1eXA4OHg0NjNqOWF4MHkzanJocDlycGpuaHJy"
         }
       }
     },
     {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "+BH/P8+1GUpxabAH/z35qtpDT0+7N+Q43i5T0A+Pttk="
+      "positionClose": {
+        "positionId": {
+          "inner": "+8iQeZFL3kpygbOR0d+gd7oQ6GaNApsAO6VmmLeEJJg="
+        }
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "642732100192208591"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
         },
-        "epochIndex": "2415",
-        "unbondedAmount": {
-          "lo": "672535459083675043"
-        },
-        "delegationAmount": {
-          "lo": "489404686650619208"
+        "address": {
+          "inner": "MfB268HLbkbmYTOeB6sVVK/yKzPOWydxzsFr7EnUIievyqYH2W4MvV80PJd0XB0q2SYtZiIxzAYV1IYhuCmFlmkzjm26weIYCBpei632usM="
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "880562544",
-    "chainId": "qaatugygphxmbsuledhdot-1879023991321521745",
+    "expiryHeight": "2269003408",
+    "chainId": "xgsfmcxjzmypnjwfgbobicwanzcze-59148566895472172206",
     "fee": {
       "amount": {
-        "lo": "480035210485212500"
+        "lo": "645476911889769369"
       }
     }
   }

@@ -375,6 +375,19 @@ impl GasCost for ActionPlan {
             ActionPlan::CommunityPoolDeposit(dd) => dd.gas_cost(),
             ActionPlan::Ics20Withdrawal(w) => w.gas_cost(),
             ActionPlan::ActionLiquidityTournamentVote(_) => liquidity_tournament_vote_gas_cost(),
+            // Compliance actions have minimal gas cost (just state writes)
+            ActionPlan::ComplianceRegisterAsset(_) => Gas {
+                block_space: 100,
+                compact_block_space: 100,
+                verification: 0,
+                execution: 10,
+            },
+            ActionPlan::ComplianceRegisterUser(_) => Gas {
+                block_space: 100,
+                compact_block_space: 100,
+                verification: 0,
+                execution: 10,
+            },
         }
     }
 }
@@ -415,6 +428,19 @@ impl GasCost for Action {
             Action::ActionLiquidityTournamentVote(action_liquidity_tournament_vote) => {
                 action_liquidity_tournament_vote.gas_cost()
             }
+            // Compliance actions have minimal gas cost (just state writes)
+            Action::ComplianceRegisterAsset(_) => Gas {
+                block_space: 100,
+                compact_block_space: 100,
+                verification: 0,
+                execution: 10,
+            },
+            Action::ComplianceRegisterUser(_) => Gas {
+                block_space: 100,
+                compact_block_space: 100,
+                verification: 0,
+                execution: 10,
+            },
         }
     }
 }

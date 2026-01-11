@@ -346,6 +346,64 @@ pub trait ViewClient {
         epoch: u64,
         filter: Option<AddressIndex>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<SpendableNoteRecord>>> + Send + 'static>>;
+
+    /// Query the compliance registry for an asset's regulation status.
+    ///
+    /// Returns `Some(true)` if the asset is regulated, `Some(false)` if explicitly unregulated,
+    /// or `None` if the asset is not registered in the compliance system.
+    fn compliance_asset_status(
+        &mut self,
+        asset_id: asset::Id,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<bool>>> + Send + 'static>>;
+
+    /// Query the compliance tree anchors (roots) from the chain.
+    ///
+    /// Returns (compliance_anchor, asset_anchor) - the roots of the user tree
+    /// and asset tree respectively. These are needed by clients to generate
+    /// valid compliance proofs.
+    fn compliance_anchors(
+        &mut self,
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = Result<(
+                        penumbra_sdk_tct::StateCommitment,
+                        penumbra_sdk_tct::StateCommitment,
+                    )>,
+                > + Send
+                + 'static,
+        >,
+    >;
+
+    /// Query the Merkle proofs needed for compliance ZK proofs.
+    ///
+    /// This returns all the data needed to populate SpendPlan/OutputPlan compliance fields:
+    /// - User's Merkle path and position in the compliance tree
+    /// - Asset's Merkle path and position in the asset tree
+    /// - Both tree anchors (roots)
+    /// - Registration and regulation status
+    ///
+    /// # Returns
+    /// A `ComplianceMerkleProofsResponse` containing all paths, positions, and anchors.
+    fn compliance_merkle_proofs(
+        &mut self,
+        address: Address,
+        asset_id: asset::Id,
+    ) -> Pin<Box<dyn Future<Output = Result<pb::ComplianceMerkleProofsResponse>> + Send + 'static>>;
+
+    /// Query a user's registered compliance leaf from the chain.
+    ///
+    /// This retrieves the full ComplianceLeaf (including ACK) that was registered
+    /// on-chain for a user. This is needed for proof generation to ensure the leaf
+    /// used matches what was registered.
+    ///
+    /// # Returns
+    /// A `ComplianceUserLeafResponse` containing the leaf if the user is registered.
+    fn compliance_user_leaf(
+        &mut self,
+        address: Address,
+        asset_id: asset::Id,
+    ) -> Pin<Box<dyn Future<Output = Result<pb::ComplianceUserLeafResponse>> + Send + 'static>>;
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
@@ -1094,6 +1152,120 @@ where
                     Ok(note_record)
                 })
                 .collect()
+        }
+        .boxed()
+    }
+
+    fn compliance_asset_status(
+        &mut self,
+        asset_id: asset::Id,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<bool>>> + Send + 'static>> {
+        let mut self2 = self.clone();
+        async move {
+            let request = pb::ComplianceAssetStatusRequest {
+                asset_id: Some(asset_id.into()),
+            };
+
+            let response = ViewServiceClient::compliance_asset_status(
+                &mut self2,
+                tonic::Request::new(request),
+            )
+            .await?
+            .into_inner();
+
+            // Return Some(is_regulated) if registered, None if not
+            Ok(if response.is_registered {
+                Some(response.is_regulated)
+            } else {
+                None
+            })
+        }
+        .boxed()
+    }
+
+    fn compliance_anchors(
+        &mut self,
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = Result<(
+                        penumbra_sdk_tct::StateCommitment,
+                        penumbra_sdk_tct::StateCommitment,
+                    )>,
+                > + Send
+                + 'static,
+        >,
+    > {
+        let mut self2 = self.clone();
+        async move {
+            let request = pb::ComplianceAnchorsRequest {};
+
+            let response =
+                ViewServiceClient::compliance_anchors(&mut self2, tonic::Request::new(request))
+                    .await?
+                    .into_inner();
+
+            // Parse the anchors from bytes
+            let compliance_anchor: penumbra_sdk_tct::StateCommitment = response
+                .user_tree_root
+                .as_slice()
+                .try_into()
+                .map_err(|e| anyhow::anyhow!("invalid user_tree_root: {:?}", e))?;
+            let asset_anchor: penumbra_sdk_tct::StateCommitment = response
+                .asset_tree_root
+                .as_slice()
+                .try_into()
+                .map_err(|e| anyhow::anyhow!("invalid asset_tree_root: {:?}", e))?;
+
+            Ok((compliance_anchor, asset_anchor))
+        }
+        .boxed()
+    }
+
+    fn compliance_merkle_proofs(
+        &mut self,
+        address: Address,
+        asset_id: asset::Id,
+    ) -> Pin<Box<dyn Future<Output = Result<pb::ComplianceMerkleProofsResponse>> + Send + 'static>>
+    {
+        let mut self2 = self.clone();
+        async move {
+            let request = pb::ComplianceMerkleProofsRequest {
+                address: Some(address.into()),
+                asset_id: Some(asset_id.into()),
+            };
+
+            let response = ViewServiceClient::compliance_merkle_proofs(
+                &mut self2,
+                tonic::Request::new(request),
+            )
+            .await?
+            .into_inner();
+
+            Ok(response)
+        }
+        .boxed()
+    }
+
+    fn compliance_user_leaf(
+        &mut self,
+        address: Address,
+        asset_id: asset::Id,
+    ) -> Pin<Box<dyn Future<Output = Result<pb::ComplianceUserLeafResponse>> + Send + 'static>>
+    {
+        let mut self2 = self.clone();
+        async move {
+            let request = pb::ComplianceUserLeafRequest {
+                address: Some(address.into()),
+                asset_id: Some(asset_id.into()),
+            };
+
+            let response =
+                ViewServiceClient::compliance_user_leaf(&mut self2, tonic::Request::new(request))
+                    .await?
+                    .into_inner();
+
+            Ok(response)
         }
         .boxed()
     }

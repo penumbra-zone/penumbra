@@ -185,6 +185,19 @@ impl PmonitorTestRunner {
         // Ideally we'd use a rust interface to compose the network config, rather than shelling
         // out to `pd`, but the current API for network config isn't ergonomic. Also, we get free
         // integration testing for the `pd` CLI by shelling out, which is nice.
+        // Use single-validator config so the network can produce blocks with just one node.
+        // The default validators-ci.json has 2 validators, requiring 2/3+ voting power (i.e., both nodes).
+        let validators_filepath: PathBuf = [
+            env!("CARGO_MANIFEST_DIR"),
+            "..",
+            "..",
+            "..",
+            "testnets",
+            "validators-single.json",
+        ]
+        .iter()
+        .collect();
+
         let cmd = AssertCommand::cargo_bin("pd")?
             .args([
                 "network",
@@ -202,6 +215,11 @@ impl PmonitorTestRunner {
                 // we must opt in to fees, in order to test the migration functionality!
                 "--gas-price-simple",
                 "500",
+                // Use single validator for local devnet
+                "--validators-input-file",
+                validators_filepath
+                    .to_str()
+                    .expect("failed to convert validators filepath to str"),
                 // include allocations for the generated pcli wallets
                 "--allocations-input-file",
                 &self
@@ -330,6 +348,15 @@ impl PmonitorTestRunner {
         let _pd_result = poll_for_ready("pd").await?;
         let _cmt_result = poll_for_ready("cometbft").await?;
         tracing::debug!("all processes ready, devnet is running");
+
+        // Wait for the network to be fully ready (blocks being produced)
+        poll_for_blocks().await?;
+
+        // Register assets in the compliance registry before tests run.
+        // Use the first wallet for registration transactions.
+        let registration_wallet = self.wallets_dir()?.join("wallet-0");
+        register_compliance_assets(&registration_wallet)?;
+
         Ok(child)
     }
 }
@@ -373,4 +400,59 @@ async fn poll_for_ready(process_name: &str) -> anyhow::Result<()> {
         process_name,
         timeout
     );
+}
+
+/// Block until the network is producing blocks by checking block height.
+/// We need at least one block to be produced before the chain state is queryable.
+async fn poll_for_blocks() -> anyhow::Result<()> {
+    let timeout = 120;
+    let mut elapsed = 0;
+
+    while elapsed < timeout {
+        // Query the latest block height via the tendermint RPC
+        let status_output = Command::new("curl")
+            .args(["-s", "http://127.0.0.1:26657/status"])
+            .output();
+
+        if let Ok(result) = status_output {
+            if result.status.success() {
+                let stdout = String::from_utf8_lossy(&result.stdout);
+                // Extract block height from JSON response
+                // Format: "latest_block_height":"123"
+                if let Some(height_match) = stdout
+                    .split("latest_block_height")
+                    .nth(1)
+                    .and_then(|s| s.split('"').nth(2))
+                {
+                    if let Ok(height) = height_match.parse::<u64>() {
+                        if height > 0 {
+                            tracing::debug!(height, "network is producing blocks");
+                            // Wait for a few more blocks to ensure state is fully committed
+                            tokio::time::sleep(Duration::from_secs(10)).await;
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+        }
+
+        tracing::debug!(
+            "waiting for blocks to be produced (attempt {}/{})",
+            elapsed + 1,
+            timeout
+        );
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        elapsed += 1;
+    }
+
+    anyhow::bail!("network did not produce blocks after {} seconds", timeout);
+}
+
+/// Register required test assets in the compliance registry.
+/// This must be done before any transfers can be made.
+/// Note: the staking token (penumbra) and test_usd are auto-registered
+/// as unregulated at genesis, so no additional registration is needed.
+fn register_compliance_assets(_pcli_home: &PathBuf) -> anyhow::Result<()> {
+    tracing::debug!("skipping asset registration - test_usd is auto-registered at genesis");
+    Ok(())
 }

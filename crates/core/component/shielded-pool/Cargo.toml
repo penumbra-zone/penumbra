@@ -11,6 +11,7 @@ edition = {workspace = true}
 component = [
     "cnidarium-component",
     "cnidarium",
+    "penumbra-sdk-compliance/component",
     "penumbra-sdk-proto/cnidarium",
     "penumbra-sdk-ibc/component",
     "penumbra-sdk-sct/component",
@@ -32,6 +33,7 @@ parallel = [
     "tonic",
 ]
 docsrs = []
+benchmark-helpers = []
 
 [dependencies]
 anyhow = {workspace = true}
@@ -58,9 +60,11 @@ hex = {workspace = true}
 ibc-proto = {workspace = true, default-features = false}
 ibc-types = {workspace = true, features = ["with_serde"], default-features = false}
 im = {workspace = true}
+jmt = {workspace = true}
 metrics = {workspace = true}
 once_cell = {workspace = true}
 penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-compliance = {workspace = true, default-features = false}
 penumbra-sdk-ibc = {workspace = true, default-features = false}
 penumbra-sdk-keys = {workspace = true, default-features = false}
 penumbra-sdk-num = {workspace = true, default-features = false}
@@ -76,6 +80,7 @@ rand_core = {workspace = true, features = ["getrandom"]}
 regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
+sha2 = {workspace = true}
 tap = {workspace = true}
 tendermint = {workspace = true}
 thiserror = {workspace = true}

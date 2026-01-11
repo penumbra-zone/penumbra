@@ -2,6 +2,7 @@ use anyhow::anyhow;
 use penumbra_sdk_auction::auction::dutch::actions::{
     ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
 };
+use penumbra_sdk_compliance::structs::{MsgRegisterAsset, MsgRegisterUser};
 use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
 
@@ -48,6 +49,9 @@ pub enum Action {
     ActionLiquidityTournamentVote(
         penumbra_sdk_funding::liquidity_tournament::ActionLiquidityTournamentVote,
     ),
+
+    ComplianceRegisterAsset(MsgRegisterAsset),
+    ComplianceRegisterUser(MsgRegisterUser),
 }
 
 impl EffectingData for Action {
@@ -78,6 +82,8 @@ impl EffectingData for Action {
             Action::ActionDutchAuctionEnd(a) => a.effect_hash(),
             Action::ActionDutchAuctionWithdraw(a) => a.effect_hash(),
             Action::ActionLiquidityTournamentVote(a) => a.effect_hash(),
+            Action::ComplianceRegisterAsset(a) => a.effect_hash(),
+            Action::ComplianceRegisterUser(a) => a.effect_hash(),
         }
     }
 }
@@ -132,6 +138,12 @@ impl Action {
             Action::ActionLiquidityTournamentVote(_) => {
                 tracing::info_span!("ActionLiquidityTournamentVote", ?idx)
             }
+            Action::ComplianceRegisterAsset(_) => {
+                tracing::info_span!("ComplianceRegisterAsset", ?idx)
+            }
+            Action::ComplianceRegisterUser(_) => {
+                tracing::info_span!("ComplianceRegisterUser", ?idx)
+            }
         }
     }
 
@@ -163,6 +175,8 @@ impl Action {
             Action::ActionDutchAuctionEnd(_) => 54,
             Action::ActionDutchAuctionWithdraw(_) => 55,
             Action::ActionLiquidityTournamentVote(_) => 70,
+            Action::ComplianceRegisterAsset(_) => 80,
+            Action::ComplianceRegisterUser(_) => 81,
         }
     }
 }
@@ -197,6 +211,8 @@ impl IsAction for Action {
             Action::ActionDutchAuctionEnd(action) => action.balance_commitment(),
             Action::ActionDutchAuctionWithdraw(action) => action.balance_commitment(),
             Action::ActionLiquidityTournamentVote(action) => action.balance_commitment(),
+            Action::ComplianceRegisterAsset(_) => balance::Commitment::default(),
+            Action::ComplianceRegisterUser(_) => balance::Commitment::default(),
         }
     }
 
@@ -227,6 +243,8 @@ impl IsAction for Action {
             Action::ActionDutchAuctionEnd(x) => x.view_from_perspective(txp),
             Action::ActionDutchAuctionWithdraw(x) => x.view_from_perspective(txp),
             Action::ActionLiquidityTournamentVote(x) => x.view_from_perspective(txp),
+            Action::ComplianceRegisterAsset(x) => ActionView::ComplianceRegisterAsset(x.to_owned()),
+            Action::ComplianceRegisterUser(x) => ActionView::ComplianceRegisterUser(x.to_owned()),
         }
     }
 }
@@ -315,6 +333,16 @@ impl From<Action> for pb::Action {
                     inner.into(),
                 )),
             },
+            Action::ComplianceRegisterAsset(inner) => {
+                let proto_inner: penumbra_sdk_proto::core::component::compliance::v1::MsgRegisterAsset = inner.into();
+                tracing::debug!(?proto_inner, "serializing ComplianceRegisterAsset to proto");
+                pb::Action {
+                    action: Some(pb::action::Action::ComplianceRegisterAsset(proto_inner)),
+                }
+            }
+            Action::ComplianceRegisterUser(inner) => pb::Action {
+                action: Some(pb::action::Action::ComplianceRegisterUser(inner.into())),
+            },
         }
     }
 }
@@ -323,6 +351,7 @@ impl TryFrom<pb::Action> for Action {
     type Error = anyhow::Error;
     fn try_from(proto: pb::Action) -> anyhow::Result<Self, Self::Error> {
         if proto.action.is_none() {
+            tracing::debug!("proto.action is None - full proto: {:?}", proto);
             anyhow::bail!("missing action content");
         }
         match proto
@@ -391,6 +420,12 @@ impl TryFrom<pb::Action> for Action {
             }
             pb::action::Action::ActionLiquidityTournamentVote(inner) => {
                 Ok(Action::ActionLiquidityTournamentVote(inner.try_into()?))
+            }
+            pb::action::Action::ComplianceRegisterAsset(inner) => {
+                Ok(Action::ComplianceRegisterAsset(inner.try_into()?))
+            }
+            pb::action::Action::ComplianceRegisterUser(inner) => {
+                Ok(Action::ComplianceRegisterUser(inner.try_into()?))
             }
         }
     }

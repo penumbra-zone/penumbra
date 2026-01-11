@@ -514,6 +514,9 @@ mod test {
     #[cfg(test)]
     fn dummy_spend() -> spend::Spend {
         use penumbra_sdk_shielded_pool::EncryptedBackref;
+        use penumbra_sdk_tct::StateCommitment;
+
+        let dummy_anchor = StateCommitment(Fq::default());
 
         spend::Spend {
             body: spend::Body {
@@ -521,6 +524,12 @@ mod test {
                 nullifier: Nullifier(Fq::default()),
                 rk: dummy_pk(),
                 encrypted_backref: EncryptedBackref::dummy(),
+                compliance_ciphertext: vec![],
+                target_timestamp: 0,
+                sender_leaf_hash: dummy_anchor,
+                counterparty_leaf_hash: dummy_anchor,
+                compliance_anchor: dummy_anchor,
+                asset_anchor: dummy_anchor,
             },
             auth_sig: dummy_sig(),
             proof: dummy_proof_spend(),
@@ -529,6 +538,10 @@ mod test {
 
     #[cfg(test)]
     fn dummy_output() -> output::Output {
+        use penumbra_sdk_tct::StateCommitment;
+
+        let dummy_anchor = StateCommitment(Fq::default());
+
         output::Output {
             body: output::Body {
                 note_payload: penumbra_sdk_shielded_pool::NotePayload {
@@ -544,6 +557,12 @@ mod test {
                 balance_commitment: dummy_commitment(),
                 ovk_wrapped_key: OvkWrappedKey([0u8; 48]),
                 wrapped_memo_key: WrappedMemoKey([0u8; 48]),
+                compliance_ciphertext: vec![],
+                target_timestamp: 0,
+                receiver_leaf_hash: dummy_anchor,
+                counterparty_leaf_hash: dummy_anchor,
+                compliance_anchor: dummy_anchor,
+                asset_anchor: dummy_anchor,
             },
             proof: dummy_proof_output(),
         }
@@ -707,6 +726,8 @@ mod test {
             ActionPlan::ActionDutchAuctionWithdraw(_) => None,
             ActionPlan::IbcAction(_) => todo!(),
             ActionPlan::ActionLiquidityTournamentVote(_) => todo!(),
+            ActionPlan::ComplianceRegisterAsset(_) => None,
+            ActionPlan::ComplianceRegisterUser(_) => None,
         }
     }
 

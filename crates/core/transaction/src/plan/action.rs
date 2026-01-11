@@ -8,6 +8,7 @@ use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionEnd;
 use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionSchedule;
 use penumbra_sdk_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 use penumbra_sdk_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_sdk_compliance::structs::{MsgRegisterAsset, MsgRegisterUser};
 use penumbra_sdk_dex::PositionOpen;
 use penumbra_sdk_dex::{
     lp::{
@@ -85,6 +86,11 @@ pub enum ActionPlan {
     ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawPlan),
 
     ActionLiquidityTournamentVote(ActionLiquidityTournamentVotePlan),
+
+    /// Register an asset's regulation status in the compliance registry.
+    ComplianceRegisterAsset(MsgRegisterAsset),
+    /// Register a user's compliance key for a regulated asset.
+    ComplianceRegisterUser(MsgRegisterUser),
 }
 
 impl ActionPlan {
@@ -112,21 +118,33 @@ impl ActionPlan {
                     .get(&note_commitment)
                     .context(format!("could not get proof for {note_commitment:?}"))?;
 
-                Action::Spend(spend_plan.spend(
-                    fvk,
-                    [0; 64].into(),
-                    auth_path.clone(),
-                    // FIXME: why does this need the anchor? isn't that implied by the auth_path?
-                    // cf. delegator_vote
-                    witness_data.anchor,
-                ))
+                Action::Spend(
+                    spend_plan
+                        .spend(
+                            fvk,
+                            [0; 64].into(),
+                            auth_path.clone(),
+                            // FIXME: why does this need the anchor? isn't that implied by the auth_path?
+                            // cf. delegator_vote
+                            witness_data.anchor,
+                            &penumbra_sdk_proof_params::SPEND_PROOF_PROVING_KEY,
+                            None, // No compliance keys for now (POC)
+                        )
+                        .map_err(|e| anyhow::anyhow!("spend proof generation failed: {}", e))?,
+                )
             }
             Output(output_plan) => {
                 let dummy_payload_key: PayloadKey = [0u8; 32].into();
-                Action::Output(output_plan.output(
-                    fvk.outgoing(),
-                    memo_key.as_ref().unwrap_or(&dummy_payload_key),
-                ))
+                Action::Output(
+                    output_plan
+                        .output(
+                            fvk.outgoing(),
+                            memo_key.as_ref().unwrap_or(&dummy_payload_key),
+                            &penumbra_sdk_proof_params::OUTPUT_PROOF_PROVING_KEY,
+                            None, // No compliance keys for now (POC)
+                        )
+                        .map_err(|e| anyhow::anyhow!("output proof generation failed: {}", e))?,
+                )
             }
             Swap(swap_plan) => Action::Swap(swap_plan.swap(fvk)),
             SwapClaim(swap_claim_plan) => {
@@ -180,6 +198,8 @@ impl ActionPlan {
                     auth_path.clone(),
                 ))
             }
+            ComplianceRegisterAsset(msg) => Action::ComplianceRegisterAsset(msg.clone()),
+            ComplianceRegisterUser(msg) => Action::ComplianceRegisterUser(msg.clone()),
         })
     }
 
@@ -211,6 +231,8 @@ impl ActionPlan {
             ActionPlan::ActionDutchAuctionEnd(_) => 54,
             ActionPlan::ActionDutchAuctionWithdraw(_) => 55,
             ActionPlan::ActionLiquidityTournamentVote(_) => 70,
+            ActionPlan::ComplianceRegisterAsset(_) => 80,
+            ActionPlan::ComplianceRegisterUser(_) => 81,
         }
     }
 
@@ -244,7 +266,9 @@ impl ActionPlan {
             IbcAction(_)
             | ValidatorDefinition(_)
             | ValidatorVote(_)
-            | ActionLiquidityTournamentVote(_) => Balance::default(),
+            | ActionLiquidityTournamentVote(_)
+            | ComplianceRegisterAsset(_)
+            | ComplianceRegisterUser(_) => Balance::default(),
         }
     }
 
@@ -277,6 +301,8 @@ impl ActionPlan {
             ActionDutchAuctionEnd(_) => Fr::zero(),
             ActionDutchAuctionWithdraw(_) => Fr::zero(),
             ActionLiquidityTournamentVote(_) => Fr::zero(),
+            ComplianceRegisterAsset(_) => Fr::zero(),
+            ComplianceRegisterUser(_) => Fr::zero(),
         }
     }
 
@@ -285,8 +311,10 @@ impl ActionPlan {
         use ActionPlan::*;
 
         match self {
-            Spend(plan) => plan.spend_body(fvk).effect_hash(),
-            Output(plan) => plan.output_body(fvk.outgoing(), memo_key).effect_hash(),
+            Spend(plan) => plan.spend_body(fvk, None).effect_hash(),
+            Output(plan) => plan
+                .output_body(fvk.outgoing(), memo_key, None)
+                .effect_hash(),
             Delegate(plan) => plan.effect_hash(),
             Undelegate(plan) => plan.effect_hash(),
             UndelegateClaim(plan) => plan.undelegate_claim_body().effect_hash(),
@@ -310,6 +338,8 @@ impl ActionPlan {
             ActionDutchAuctionEnd(plan) => plan.effect_hash(),
             ActionDutchAuctionWithdraw(plan) => plan.to_action().effect_hash(),
             ActionLiquidityTournamentVote(plan) => plan.to_body(fvk).effect_hash(),
+            ComplianceRegisterAsset(plan) => plan.effect_hash(),
+            ComplianceRegisterUser(plan) => plan.effect_hash(),
         }
     }
 }
@@ -466,6 +496,18 @@ impl From<ActionLiquidityTournamentVotePlan> for ActionPlan {
     }
 }
 
+impl From<MsgRegisterAsset> for ActionPlan {
+    fn from(inner: MsgRegisterAsset) -> ActionPlan {
+        ActionPlan::ComplianceRegisterAsset(inner)
+    }
+}
+
+impl From<MsgRegisterUser> for ActionPlan {
+    fn from(inner: MsgRegisterUser) -> ActionPlan {
+        ActionPlan::ComplianceRegisterUser(inner)
+    }
+}
+
 impl DomainType for ActionPlan {
     type Proto = pb_t::ActionPlan;
 }
@@ -564,6 +606,16 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                     inner.into(),
                 )),
             },
+            ActionPlan::ComplianceRegisterAsset(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ComplianceRegisterAsset(
+                    inner.into(),
+                )),
+            },
+            ActionPlan::ComplianceRegisterUser(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ComplianceRegisterUser(
+                    inner.into(),
+                )),
+            },
         }
     }
 }
@@ -659,6 +711,12 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::ActionLiquidityTournamentVote(inner) => {
                 Ok(ActionPlan::ActionLiquidityTournamentVote(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ComplianceRegisterAsset(inner) => {
+                Ok(ActionPlan::ComplianceRegisterAsset(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ComplianceRegisterUser(inner) => {
+                Ok(ActionPlan::ComplianceRegisterUser(inner.try_into()?))
             }
         }
     }

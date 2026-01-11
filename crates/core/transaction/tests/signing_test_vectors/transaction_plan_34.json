@@ -1,17 +1,10 @@
 {
   "actions": [
     {
-      "actionDutchAuctionEnd": {
-        "auctionId": {
-          "inner": "HHtNxwMSJ6F1P0SmGwyCZNDR9dTdwQOlzpwC2MoGZq4="
-        }
-      }
-    },
-    {
       "communityPoolSpend": {
         "value": {
           "amount": {
-            "lo": "608983241186304112"
+            "lo": "753098740309500245"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
@@ -20,41 +13,34 @@
       }
     },
     {
-      "communityPoolSpend": {
-        "value": {
-          "amount": {
-            "lo": "502909648486318144"
+      "validatorVote": {
+        "body": {
+          "proposal": "881559374",
+          "vote": {
+            "vote": "VOTE_NO"
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "identityKey": {
+            "ik": "htuIzZqNQ8uDJcTrhCDea3ehwKPJD6VUbfxq0QqMsIo="
+          },
+          "governanceKey": {
+            "gk": "QNwX8tUsP00+jWkM5E/yR1oo2URyhBP9NgfHuFtRsww="
+          },
+          "reason": {
+            "reason": "NodToPsNqSWqzJ3R8g911i2mf5Goay"
           }
+        },
+        "authSig": {
+          "inner": "JCpNllJPc3OFyp4XFH10aPShmAgrQWt2f9l0rZEfhgSgZ0NzJW+3TNzP0kcfJEy8NsTw7gQN4QlLPl/B/EfuAA=="
         }
-      }
-    },
-    {
-      "undelegateClaim": {
-        "validatorIdentity": {
-          "ik": "jEWeQ/vN2lwyQMWI4pOSAtu/veNeDQvvHklGWpRZj4A="
-        },
-        "penalty": {
-          "inner": "AAAAAAAAAAAAAAAAAAAAAP92X9itq59Vmz0HyEtdzGQ="
-        },
-        "unbondingAmount": {
-          "lo": "8971566673412279"
-        },
-        "balanceBlinding": "LUmPZW9pTKKLP8zpUeYzXx4gDWNSx4gz/ynE2bocxQA=",
-        "proofBlindingR": "1XPp9qjsFdsqhaHBwcb72BXi54wWt4OOljnF2pIpwgI=",
-        "proofBlindingS": "4dpKFpIFSS8U9jdCMgDuL3AOg8stOCIxgqH+0weDhQM=",
-        "unbondingStartHeight": "95137"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "1182098208",
-    "chainId": "ckdecafjpvpxutt-38",
+    "expiryHeight": "5999598707",
+    "chainId": "xfmvvd-634327",
     "fee": {
       "amount": {
-        "lo": "743337841359999839"
+        "lo": "877627595429719663"
       }
     }
   }

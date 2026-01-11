@@ -1,66 +1,94 @@
 {
   "actions": [
     {
-      "proposalDepositClaim": {
-        "proposal": "255573202",
-        "depositAmount": {
-          "lo": "146493481916344182"
+      "swapClaim": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "497998938329643475"
+          },
+          "delta2I": {
+            "lo": "785486851414588162"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "6HGMp9/xTGtJUe3fx4qs//KjW2yF4KEiTPTcjrTG93ObAKIZnBA3jY8c2ntYZK0NFH+vVuj9bthlT9ShO3Z1NFbyf7WQ2w0ZESGil6gWte0="
+          },
+          "rseed": "+bCdjU28A43oebF1WA+v1uF1jMGRiKOfh+P/NvxyGco="
         },
-        "outcome": {
-          "passed": {}
-        }
+        "outputData": {
+          "delta1": {
+            "lo": "1415819238"
+          },
+          "delta2": {
+            "lo": "1282463996"
+          },
+          "lambda1": {
+            "lo": "321"
+          },
+          "lambda2": {
+            "lo": "1382"
+          },
+          "unfilled1": {
+            "lo": "9"
+          },
+          "unfilled2": {
+            "lo": "643"
+          },
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          }
+        },
+        "epochDuration": "1000",
+        "proofBlindingR": "Xyr91VorF0O3yzsADMF+GIpeuRhLoHzYSUl0Ucp8AQo=",
+        "proofBlindingS": "WF8oYmGv6wOa1PHp60g9zulFQC6zPh/KtUVJSmKvogw="
       }
     },
     {
-      "validatorVote": {
-        "body": {
-          "proposal": "597976720",
-          "vote": {
-            "vote": "VOTE_ABSTAIN"
-          },
-          "identityKey": {
-            "ik": "4co8U3KHHWu8nF47s6ULHOyhHyDY/UFc1ftFDIPaj7M="
-          },
-          "governanceKey": {
-            "gk": "fkOxdpp7W1VAccRU7Wi6KkSPfMqNTw8pq3yDKhEOYgw="
-          },
-          "reason": {
-            "reason": "s7w1GFO7N9AFd2EQ31R1r7qm667Ro"
-          }
+      "ics20Withdrawal": {
+        "amount": {
+          "lo": "588051337349754805"
         },
-        "authSig": {
-          "inner": "LGIrMt3exDny5gWJDdICkFyBuhrI+WpkJfGDopY4SQZEAl7nCQkEMsxqFWWkLYKn3YsByaEpj6g/DhPz34m3AA=="
-        }
-      }
-    },
-    {
-      "validatorDefinition": {
-        "validator": {
-          "identityKey": {
-            "ik": "mpr8yTo8APCCVbRO3cZYwemUGkzVa1/C8/E/f77Orwc="
-          },
-          "consensusKey": "zHph7gJB75LJWQmDc94Np6Z+ZDt9fkk1Q4EYKHlzAyc=",
-          "name": "test validator",
-          "enabled": true,
-          "governanceKey": {
-            "gk": "mpr8yTo8APCCVbRO3cZYwemUGkzVa1/C8/E/f77Orwc="
-          }
+        "denom": {
+          "denom": "UMVkTTX7cV14F5J"
         },
-        "authSig": "dr2WncS2gVakc1rM+tmk9GhUShwZHH7SMmL7IuFWnwWoZFcWP45W9oZh5nU+hhxDi8CT3Z13HtP3Tn1xPkReBA=="
+        "destinationChainAddress": "penumbra1nrauwmezae6y996j34auhus0qlddaqrm0e9cv95zd9w5vknaj987qp60tl75gk332t3wlzk59hhd3mka6jzw5tuzx77sa2kg7vda306zkxg7xlqw7m8ey8cnd709ex2wl38l4v",
+        "returnAddress": {
+          "inner": "oUz5BlOWgSJghLwYQ+XJ7qDj8H2bjwmLZtHYfYXbxpK+5r6Omx9dHnWqmI7WcCOBX82a8Hr1BePJT0VB2+0XDKpPw1/j/A8HZEvPMI5TbjM="
+        },
+        "timeoutHeight": {
+          "revisionNumber": "743958748",
+          "revisionHeight": "902584672"
+        },
+        "sourceChannel": "channel-0"
       }
     },
     {
       "proposalWithdraw": {
-        "proposal": "653515287"
+        "proposal": "167927747"
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "120375860",
-    "chainId": "sgzdfwqljpwxclsgdp-7",
+    "expiryHeight": "6346224146",
+    "chainId": "cgbcisbnhergehstidcku-321932025675397",
     "fee": {
       "amount": {
-        "lo": "716224304064910123"
+        "lo": "298010661242139665"
       }
     }
   }

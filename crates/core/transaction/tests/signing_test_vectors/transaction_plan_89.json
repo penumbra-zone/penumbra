@@ -5,7 +5,7 @@
         "description": {
           "input": {
             "amount": {
-              "lo": "181451187935194818"
+              "lo": "57018708172336084"
             },
             "assetId": {
               "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
@@ -15,52 +15,62 @@
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           },
           "maxOutput": {
-            "lo": "981467343483746236"
+            "lo": "721236967336496374"
           },
           "minOutput": {
-            "lo": "816154240701797997"
+            "lo": "405803698889849580"
           },
-          "startHeight": "838332756",
-          "endHeight": "838332757",
-          "stepCount": "79700368",
-          "nonce": "LxX4R1QJUcAL64eNQVtNu2mmCnm2bnzuBdVPV6UieBY="
+          "startHeight": "816588928",
+          "endHeight": "816588929",
+          "stepCount": "231355320",
+          "nonce": "PpL4JEUBaOOs+6ym7jxOT63cWBMUrmIyfomKqn7MgzQ="
         }
       }
     },
     {
-      "actionDutchAuctionSchedule": {
-        "description": {
-          "input": {
-            "amount": {
-              "lo": "17016452041769541"
+      "positionOpenPlan": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "838247285666813945"
+              },
+              "q": {
+                "lo": "81431034717919984"
+              }
             },
-            "assetId": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
             }
           },
-          "outputId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_CLOSED"
           },
-          "maxOutput": {
-            "lo": "364101025380650949"
+          "reserves": {
+            "r1": {
+              "lo": "365083947291155401"
+            },
+            "r2": {
+              "lo": "171472389398861477"
+            }
           },
-          "minOutput": {
-            "lo": "926771860551171596"
-          },
-          "startHeight": "27854867",
-          "endHeight": "27854868",
-          "stepCount": "516191274",
-          "nonce": "UZpstblKi4261jzwv7WKD6GJk6W3ee92X24S2iqSEyE="
+          "closeOnFill": true
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6710415564",
-    "chainId": "ebrul-565648844622071770384975869",
+    "expiryHeight": "7367024377",
+    "chainId": "kposgsyxqgyfbykkjcdtsx-66",
     "fee": {
       "amount": {
-        "lo": "896098301936349283"
+        "lo": "554763094050367181"
       }
     }
   }

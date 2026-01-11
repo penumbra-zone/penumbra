@@ -11,7 +11,7 @@ use rand::{CryptoRng, RngCore};
 use rand_core::OsRng;
 use tracing::instrument;
 
-use crate::{SpendableNoteRecord, ViewClient};
+use crate::{SpendableNoteRecord, ViewClient, ViewClientComplianceExt};
 use anyhow::anyhow;
 use penumbra_sdk_asset::{
     asset::{self, Denom},
@@ -565,6 +565,268 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         filtered
     }
 
+    /// Enrich a transaction plan with compliance details.
+    ///
+    /// This method adds compliance ciphertexts to spend and output actions:
+    /// - For REGULATED assets: encrypts to user's ACK (scannable by registered users)
+    /// - For UNREGULATED assets: encrypts to BLACK_HOLE_ACK (nobody can scan)
+    /// - For UNREGISTERED assets: returns error (transfers not allowed)
+    ///
+    /// This ensures all transfers look identical on-chain regardless of regulation status.
+    ///
+    /// # Limitations
+    /// - Multi-spend transactions are not yet supported
+    async fn enrich_with_compliance<V: ViewClient + ?Sized>(
+        &mut self,
+        view: &mut V,
+        plan: &mut TransactionPlan,
+    ) -> Result<()> {
+        use penumbra_sdk_compliance::{ComplianceLeaf, MerklePath, BLACK_HOLE_ACK};
+        use penumbra_sdk_keys::keys::AddressComplianceKey;
+        use penumbra_sdk_transaction::plan::ActionPlan;
+
+        // First pass: collect indices and check for multi-spend
+        let mut spend_indices = Vec::new();
+        let mut output_indices = Vec::new();
+
+        for (i, action) in plan.actions.iter().enumerate() {
+            match action {
+                ActionPlan::Spend(_) => spend_indices.push(i),
+                ActionPlan::Output(_) => output_indices.push(i),
+                _ => {}
+            }
+        }
+
+        // Need at least one spend and one output for compliance
+        if spend_indices.is_empty() || output_indices.is_empty() {
+            return Ok(());
+        }
+
+        // Multi-spend not yet supported
+        if spend_indices.len() > 1 {
+            tracing::debug!("Multi-spend transaction detected, skipping compliance enrichment");
+            return Ok(());
+        }
+
+        // Get the spend info (we know there's exactly one)
+        let spend_idx = spend_indices[0];
+        let (asset_id, sender_address) = {
+            let ActionPlan::Spend(spend) = &plan.actions[spend_idx] else {
+                unreachable!()
+            };
+            (spend.note.asset_id(), spend.note.address())
+        };
+
+        // Fetch the sender's compliance Merkle proofs from the chain
+        // This includes paths, positions, anchors, and regulation status
+        let sender_proofs = view
+            .get_compliance_merkle_proofs(sender_address.clone(), asset_id)
+            .await?;
+
+        // Check if asset is registered in the compliance registry
+        if !sender_proofs.asset_registered {
+            return Err(anyhow!(
+                "Asset {:?} is not registered in the compliance registry. \
+                Asset issuers must register assets with 'register-asset --regulated' or '--unregulated' before transfers.",
+                asset_id
+            ));
+        }
+
+        let is_regulated = sender_proofs.is_regulated;
+        tracing::debug!(
+            ?asset_id,
+            is_regulated,
+            "Asset regulation status from chain"
+        );
+
+        // Extract anchors from the proofs (they're the same for all users)
+        let compliance_anchor = sender_proofs.compliance_anchor;
+        let asset_anchor = sender_proofs.asset_anchor;
+        tracing::debug!(
+            ?compliance_anchor,
+            ?asset_anchor,
+            "Fetched compliance anchors from chain"
+        );
+
+        // For unregulated assets, we create synthetic leaves with BLACK_HOLE_ACK
+        // For regulated assets, we fetch real leaves from the registry
+        let black_hole_ack = AddressComplianceKey::new(*BLACK_HOLE_ACK);
+
+        // Create a helper to get the appropriate leaf for an address
+        let get_leaf_for_address = |address: &Address, is_regulated: bool| -> ComplianceLeaf {
+            if is_regulated {
+                // Will be replaced with actual fetch below
+                unreachable!("regulated path handled separately")
+            } else {
+                // For unregulated: synthetic leaf with BLACK_HOLE_ACK
+                ComplianceLeaf {
+                    address: address.clone(),
+                    key: black_hole_ack.clone(),
+                    asset_id,
+                }
+            }
+        };
+
+        // Get sender's leaf (real for regulated, synthetic for unregulated)
+        let sender_leaf = if is_regulated {
+            view.get_compliance_leaf(sender_address.clone(), asset_id)
+                .await?
+        } else {
+            get_leaf_for_address(&sender_address, false)
+        };
+
+        // Find the "primary" output (non-change, i.e., different address from sender)
+        // to use as counterparty for the spend
+        let mut primary_output_idx = None;
+        for &idx in &output_indices {
+            let ActionPlan::Output(output) = &plan.actions[idx] else {
+                continue;
+            };
+            if output.value.asset_id == asset_id && output.dest_address != sender_address {
+                primary_output_idx = Some(idx);
+                break;
+            }
+        }
+
+        // If no primary output found, use the first output with matching asset
+        let primary_output_idx = primary_output_idx.unwrap_or_else(|| {
+            output_indices
+                .iter()
+                .copied()
+                .find(|&idx| {
+                    let ActionPlan::Output(output) = &plan.actions[idx] else {
+                        return false;
+                    };
+                    output.value.asset_id == asset_id
+                })
+                .unwrap_or(output_indices[0])
+        });
+
+        // Get primary recipient info for spend's counterparty
+        let primary_recipient_address = {
+            let ActionPlan::Output(output) = &plan.actions[primary_output_idx] else {
+                unreachable!()
+            };
+            output.dest_address.clone()
+        };
+
+        // Get primary recipient's leaf
+        let primary_recipient_leaf = if is_regulated {
+            view.get_compliance_leaf(primary_recipient_address.clone(), asset_id)
+                .await?
+        } else {
+            get_leaf_for_address(&primary_recipient_address, false)
+        };
+
+        // Set compliance details on the spend
+        {
+            let ActionPlan::Spend(spend) = &mut plan.actions[spend_idx] else {
+                unreachable!()
+            };
+            spend.set_compliance_details(
+                &mut self.rng,
+                &sender_leaf.key,
+                &sender_address,
+                is_regulated,
+                &primary_recipient_address,
+                primary_recipient_leaf.clone(),
+            )?;
+            // Set the compliance anchors (always use real anchors from chain)
+            spend.compliance_anchor = compliance_anchor;
+            spend.asset_anchor = asset_anchor;
+
+            // For regulated: use real Merkle paths from chain
+            // For unregulated: use dummy paths (circuit won't verify them)
+            if is_regulated {
+                spend.compliance_path = sender_proofs.compliance_path.clone();
+                spend.compliance_position = sender_proofs.compliance_position;
+            } else {
+                // Dummy compliance path - circuit skips verification for unregulated
+                spend.compliance_path = MerklePath::default();
+                spend.compliance_position = 0;
+            }
+            // Asset path is always real (proves asset's regulation status)
+            spend.asset_path = sender_proofs.asset_path.clone();
+            spend.asset_position = sender_proofs.asset_position;
+        }
+
+        // Get the tx_blinding_nonce from the spend to share with all outputs
+        let tx_blinding_nonce = {
+            let ActionPlan::Spend(spend) = &plan.actions[spend_idx] else {
+                unreachable!()
+            };
+            spend.tx_blinding_nonce
+        };
+
+        // Set compliance details on ALL outputs with matching asset
+        for &idx in &output_indices {
+            let ActionPlan::Output(output) = &mut plan.actions[idx] else {
+                continue;
+            };
+
+            // Skip outputs with different asset
+            if output.value.asset_id != asset_id {
+                continue;
+            }
+
+            let recipient_address = output.dest_address.clone();
+
+            // Get recipient's leaf and proofs
+            let (recipient_leaf, recipient_compliance_path, recipient_compliance_position) =
+                if is_regulated {
+                    let proofs = view
+                        .get_compliance_merkle_proofs(recipient_address.clone(), asset_id)
+                        .await?;
+                    let leaf = view
+                        .get_compliance_leaf(recipient_address.clone(), asset_id)
+                        .await?;
+                    (leaf, proofs.compliance_path, proofs.compliance_position)
+                } else {
+                    // For unregulated: synthetic leaf and dummy path
+                    let leaf = get_leaf_for_address(&recipient_address, false);
+                    (leaf, MerklePath::default(), 0u64)
+                };
+
+            // Set compliance details on this output
+            // Counterparty is always the sender (for both destination and change outputs)
+            output.set_compliance_details(
+                &mut self.rng,
+                &recipient_leaf.key,
+                is_regulated,
+                &sender_address,
+                sender_leaf.clone(),
+                tx_blinding_nonce,
+            )?;
+            // Set the compliance anchors (always use real anchors from chain)
+            output.compliance_anchor = compliance_anchor;
+            output.asset_anchor = asset_anchor;
+
+            // For regulated: use real Merkle paths
+            // For unregulated: use dummy paths (circuit skips verification)
+            output.compliance_path = recipient_compliance_path;
+            output.compliance_position = recipient_compliance_position;
+            // Asset path is always real (from sender's proofs - same for all)
+            output.asset_path = sender_proofs.asset_path.clone();
+            output.asset_position = sender_proofs.asset_position;
+
+            tracing::debug!(
+                "Enriched output {} with compliance details (recipient: {:?}, regulated: {})",
+                idx,
+                recipient_address,
+                is_regulated
+            );
+        }
+
+        tracing::debug!(
+            "Successfully enriched transaction with compliance details for asset {:?} (regulated: {}, {} outputs)",
+            asset_id,
+            is_regulated,
+            output_indices.len()
+        );
+
+        Ok(())
+    }
+
     /// Add spends and change outputs as required to balance the transaction, using the view service
     /// provided to supply the notes and other information.
     pub async fn plan<V: ViewClient + ?Sized>(
@@ -691,12 +953,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // (This really should have been considered witness data. Oh well.)
         let fmd_params = view.fmd_parameters().await?;
 
-        let plan = mem::take(&mut self.action_list).into_plan(
+        let mut plan = mem::take(&mut self.action_list).into_plan(
             &mut self.rng,
             &fmd_params,
             self.transaction_parameters.clone(),
             memo_plan,
         )?;
+
+        // Automatically enrich with compliance details if needed
+        self.enrich_with_compliance(view, &mut plan).await?;
 
         // Reset the planner in case it were reused. We don't want people to do that
         // but otherwise we can't do builder method chaining with &mut self, and forcing
@@ -712,5 +977,859 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.memo_return_address = None;
 
         Ok(plan)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{StatusStreamResponse, SwapRecord, TransactionInfo};
+    use futures::{FutureExt, Stream};
+    use penumbra_sdk_app::params::AppParameters;
+    use penumbra_sdk_asset::Value;
+    use penumbra_sdk_auction::auction::AuctionId;
+    use penumbra_sdk_compliance::TOTAL_WIRE_BYTES;
+    use penumbra_sdk_dex::lp::position;
+    use penumbra_sdk_fee::GasPrices;
+    use penumbra_sdk_proto::view::v1 as pb;
+    use penumbra_sdk_sct::Nullifier;
+    use penumbra_sdk_shielded_pool::{fmd, note, Note};
+    use penumbra_sdk_stake::IdentityKey;
+    use penumbra_sdk_transaction::{
+        plan::ActionPlan, txhash::TransactionId, AuthorizationData, Transaction, TransactionPlan,
+        WitnessData,
+    };
+    use rand_core::OsRng;
+    use std::future::Future;
+    use std::pin::Pin;
+
+    /// Mock ViewClient for testing that always returns regulated status
+    struct MockRegulatedViewClient;
+
+    impl ViewClient for MockRegulatedViewClient {
+        fn compliance_asset_status(
+            &mut self,
+            _asset_id: asset::Id,
+        ) -> Pin<Box<dyn Future<Output = Result<Option<bool>>> + Send + 'static>> {
+            async move { Ok(Some(true)) }.boxed()
+        }
+
+        // Stub implementations for other required methods
+        fn auctions(
+            &mut self,
+            _: Option<AddressIndex>,
+            _: bool,
+            _: bool,
+        ) -> Pin<
+            Box<
+                dyn Future<
+                        Output = Result<
+                            Vec<(
+                                AuctionId,
+                                SpendableNoteRecord,
+                                u64,
+                                Option<pbjson_types::Any>,
+                                Vec<position::Position>,
+                            )>,
+                        >,
+                    > + Send
+                    + 'static,
+            >,
+        > {
+            unimplemented!()
+        }
+        fn status(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<pb::StatusResponse>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn status_stream(
+            &mut self,
+        ) -> Pin<
+            Box<
+                dyn Future<
+                        Output = Result<
+                            Pin<
+                                Box<
+                                    dyn Stream<Item = Result<StatusStreamResponse>>
+                                        + Send
+                                        + 'static,
+                                >,
+                            >,
+                        >,
+                    > + Send
+                    + 'static,
+            >,
+        > {
+            unimplemented!()
+        }
+        fn app_params(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<AppParameters>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn gas_prices(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<GasPrices>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn fmd_parameters(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<fmd::Parameters>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn notes(
+            &mut self,
+            _: pb::NotesRequest,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<SpendableNoteRecord>>> + Send + 'static>>
+        {
+            unimplemented!()
+        }
+        fn notes_for_voting(
+            &mut self,
+            _: pb::NotesForVotingRequest,
+        ) -> Pin<
+            Box<
+                dyn Future<Output = Result<Vec<(SpendableNoteRecord, IdentityKey)>>>
+                    + Send
+                    + 'static,
+            >,
+        > {
+            unimplemented!()
+        }
+        fn balances(
+            &mut self,
+            _: AddressIndex,
+            _: Option<asset::Id>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<(asset::Id, Amount)>>> + Send + 'static>>
+        {
+            unimplemented!()
+        }
+        fn note_by_commitment(
+            &mut self,
+            _: note::StateCommitment,
+        ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn swap_by_commitment(
+            &mut self,
+            _: penumbra_sdk_tct::StateCommitment,
+        ) -> Pin<Box<dyn Future<Output = Result<SwapRecord>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn nullifier_status(
+            &mut self,
+            _: Nullifier,
+        ) -> Pin<Box<dyn Future<Output = Result<bool>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn await_nullifier(
+            &mut self,
+            _: Nullifier,
+        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn await_note_by_commitment(
+            &mut self,
+            _: note::StateCommitment,
+        ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn witness(
+            &mut self,
+            _: &TransactionPlan,
+        ) -> Pin<Box<dyn Future<Output = Result<WitnessData>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn witness_and_build(
+            &mut self,
+            _: TransactionPlan,
+            _: AuthorizationData,
+        ) -> Pin<Box<dyn Future<Output = Result<Transaction>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn assets(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<asset::Cache>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn owned_position_ids(
+            &mut self,
+            _: Option<position::State>,
+            _: Option<TradingPair>,
+            _: Option<AddressIndex>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<position::Id>>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn transaction_info_by_hash(
+            &mut self,
+            _: TransactionId,
+        ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn transaction_info(
+            &mut self,
+            _: Option<u64>,
+            _: Option<u64>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<TransactionInfo>>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn broadcast_transaction(
+            &mut self,
+            _: Transaction,
+            _: bool,
+        ) -> crate::client::BroadcastStatusStream {
+            unimplemented!()
+        }
+        fn address_by_index(
+            &mut self,
+            _: AddressIndex,
+        ) -> Pin<Box<dyn Future<Output = Result<Address>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn index_by_address(
+            &mut self,
+            _: Address,
+        ) -> Pin<Box<dyn Future<Output = Result<Option<AddressIndex>>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn unclaimed_swaps(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<SwapRecord>>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn lqt_voting_notes(
+            &mut self,
+            _: u64,
+            _: Option<AddressIndex>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<SpendableNoteRecord>>> + Send + 'static>>
+        {
+            unimplemented!()
+        }
+        fn compliance_anchors(
+            &mut self,
+        ) -> Pin<
+            Box<
+                dyn Future<
+                        Output = Result<(
+                            penumbra_sdk_tct::StateCommitment,
+                            penumbra_sdk_tct::StateCommitment,
+                        )>,
+                    > + Send
+                    + 'static,
+            >,
+        > {
+            // Return dummy anchors for testing
+            async move {
+                Ok((
+                    penumbra_sdk_tct::StateCommitment(decaf377::Fq::from(0u64)),
+                    penumbra_sdk_tct::StateCommitment(decaf377::Fq::from(0u64)),
+                ))
+            }
+            .boxed()
+        }
+        fn compliance_merkle_proofs(
+            &mut self,
+            _address: Address,
+            _asset_id: asset::Id,
+        ) -> Pin<
+            Box<dyn Future<Output = Result<pb::ComplianceMerkleProofsResponse>> + Send + 'static>,
+        > {
+            // Return mock proofs indicating user is registered and asset is regulated
+            async move {
+                Ok(pb::ComplianceMerkleProofsResponse {
+                    user_registered: true,
+                    asset_registered: true,
+                    is_regulated: true,
+                    compliance_path: None, // Empty path for testing
+                    compliance_position: 0,
+                    asset_path: None,
+                    asset_position: 0,
+                    compliance_anchor: vec![0u8; 32],
+                    asset_anchor: vec![0u8; 32],
+                })
+            }
+            .boxed()
+        }
+        fn compliance_user_leaf(
+            &mut self,
+            address: Address,
+            asset_id: asset::Id,
+        ) -> Pin<Box<dyn Future<Output = Result<pb::ComplianceUserLeafResponse>> + Send + 'static>>
+        {
+            // Return a mock leaf using demo MCK for consistency with original test behavior
+            let leaf = penumbra_sdk_compliance::ComplianceLeaf::new(
+                &penumbra_sdk_keys::keys::MasterComplianceKey::demo(),
+                address,
+                asset_id,
+            );
+            async move {
+                Ok(pb::ComplianceUserLeafResponse {
+                    is_registered: true,
+                    leaf: Some(pb::ComplianceLeaf {
+                        address: Some(leaf.address.into()),
+                        key: Some(pb::ComplianceViewingKey {
+                            inner: leaf.key.0.vartime_compress().0.to_vec(),
+                        }),
+                        asset_id: Some(leaf.asset_id.into()),
+                    }),
+                })
+            }
+            .boxed()
+        }
+    }
+
+    #[tokio::test]
+    async fn test_planner_auto_enriches_compliance() {
+        let mut rng = OsRng;
+
+        // Create sender and recipient addresses
+        let sender_address = Address::dummy(&mut rng);
+        let recipient_address = Address::dummy(&mut rng);
+
+        // Create a test asset
+        let asset_id = asset::Id(decaf377::Fq::from(999u64));
+        let value = Value {
+            amount: 100u64.into(),
+            asset_id,
+        };
+
+        // Create a note for the spend
+        let note = Note::from_parts(
+            sender_address.clone(),
+            value,
+            penumbra_sdk_shielded_pool::Rseed::generate(&mut rng),
+        )
+        .expect("valid note");
+
+        // Create a transaction plan with spend and output
+        let spend_plan = SpendPlan::new(&mut rng, note, 0u64.into());
+        let output_plan = OutputPlan::new(&mut rng, value, recipient_address.clone());
+
+        let mut plan = TransactionPlan {
+            actions: vec![
+                ActionPlan::Spend(spend_plan),
+                ActionPlan::Output(output_plan),
+            ],
+            transaction_parameters: TransactionParameters::default(),
+            detection_data: None,
+            memo: None,
+        };
+
+        // Create a planner (we won't use it to plan, just to call enrich_with_compliance)
+        let mut planner = Planner::new(OsRng);
+        let mut mock_view = MockRegulatedViewClient;
+
+        // Call enrich_with_compliance directly
+        let result = planner
+            .enrich_with_compliance(&mut mock_view, &mut plan)
+            .await;
+        assert!(
+            result.is_ok(),
+            "Compliance enrichment should succeed: {:?}",
+            result.err()
+        );
+
+        // Verify that compliance details were set on both spend and output
+        for action in &plan.actions {
+            match action {
+                ActionPlan::Spend(sp) => {
+                    assert!(
+                        sp.compliance_leaf.is_some(),
+                        "Spend should have compliance leaf set"
+                    );
+                    assert!(
+                        sp.compliance_ephemeral_secret.is_some(),
+                        "Spend should have ephemeral secret"
+                    );
+                    assert!(
+                        sp.counterparty_leaf.is_some(),
+                        "Spend should have counterparty leaf"
+                    );
+                    assert_eq!(sp.is_regulated, true, "Asset should be marked as regulated");
+                }
+                ActionPlan::Output(op) => {
+                    assert!(
+                        op.compliance_leaf.is_some(),
+                        "Output should have compliance leaf set"
+                    );
+                    assert!(
+                        op.compliance_ephemeral_secret.is_some(),
+                        "Output should have ephemeral secret"
+                    );
+                    assert!(
+                        op.counterparty_leaf.is_some(),
+                        "Output should have counterparty leaf"
+                    );
+                    assert_eq!(op.is_regulated, true, "Asset should be marked as regulated");
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Mock ViewClient for testing that always returns unregulated status
+    struct MockUnregulatedViewClient;
+
+    impl ViewClient for MockUnregulatedViewClient {
+        fn compliance_asset_status(
+            &mut self,
+            _asset_id: asset::Id,
+        ) -> Pin<Box<dyn Future<Output = Result<Option<bool>>> + Send + 'static>> {
+            async move { Ok(Some(false)) }.boxed()
+        }
+
+        // Stub implementations (same as above)
+        fn auctions(
+            &mut self,
+            _: Option<AddressIndex>,
+            _: bool,
+            _: bool,
+        ) -> Pin<
+            Box<
+                dyn Future<
+                        Output = Result<
+                            Vec<(
+                                AuctionId,
+                                SpendableNoteRecord,
+                                u64,
+                                Option<pbjson_types::Any>,
+                                Vec<position::Position>,
+                            )>,
+                        >,
+                    > + Send
+                    + 'static,
+            >,
+        > {
+            unimplemented!()
+        }
+        fn status(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<pb::StatusResponse>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn status_stream(
+            &mut self,
+        ) -> Pin<
+            Box<
+                dyn Future<
+                        Output = Result<
+                            Pin<
+                                Box<
+                                    dyn Stream<Item = Result<StatusStreamResponse>>
+                                        + Send
+                                        + 'static,
+                                >,
+                            >,
+                        >,
+                    > + Send
+                    + 'static,
+            >,
+        > {
+            unimplemented!()
+        }
+        fn app_params(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<AppParameters>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn gas_prices(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<GasPrices>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn fmd_parameters(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<fmd::Parameters>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn notes(
+            &mut self,
+            _: pb::NotesRequest,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<SpendableNoteRecord>>> + Send + 'static>>
+        {
+            unimplemented!()
+        }
+        fn notes_for_voting(
+            &mut self,
+            _: pb::NotesForVotingRequest,
+        ) -> Pin<
+            Box<
+                dyn Future<Output = Result<Vec<(SpendableNoteRecord, IdentityKey)>>>
+                    + Send
+                    + 'static,
+            >,
+        > {
+            unimplemented!()
+        }
+        fn balances(
+            &mut self,
+            _: AddressIndex,
+            _: Option<asset::Id>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<(asset::Id, Amount)>>> + Send + 'static>>
+        {
+            unimplemented!()
+        }
+        fn note_by_commitment(
+            &mut self,
+            _: note::StateCommitment,
+        ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn swap_by_commitment(
+            &mut self,
+            _: penumbra_sdk_tct::StateCommitment,
+        ) -> Pin<Box<dyn Future<Output = Result<SwapRecord>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn nullifier_status(
+            &mut self,
+            _: Nullifier,
+        ) -> Pin<Box<dyn Future<Output = Result<bool>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn await_nullifier(
+            &mut self,
+            _: Nullifier,
+        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn await_note_by_commitment(
+            &mut self,
+            _: note::StateCommitment,
+        ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn witness(
+            &mut self,
+            _: &TransactionPlan,
+        ) -> Pin<Box<dyn Future<Output = Result<WitnessData>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn witness_and_build(
+            &mut self,
+            _: TransactionPlan,
+            _: AuthorizationData,
+        ) -> Pin<Box<dyn Future<Output = Result<Transaction>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn assets(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<asset::Cache>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn owned_position_ids(
+            &mut self,
+            _: Option<position::State>,
+            _: Option<TradingPair>,
+            _: Option<AddressIndex>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<position::Id>>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn transaction_info_by_hash(
+            &mut self,
+            _: TransactionId,
+        ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn transaction_info(
+            &mut self,
+            _: Option<u64>,
+            _: Option<u64>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<TransactionInfo>>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn broadcast_transaction(
+            &mut self,
+            _: Transaction,
+            _: bool,
+        ) -> crate::client::BroadcastStatusStream {
+            unimplemented!()
+        }
+        fn address_by_index(
+            &mut self,
+            _: AddressIndex,
+        ) -> Pin<Box<dyn Future<Output = Result<Address>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn index_by_address(
+            &mut self,
+            _: Address,
+        ) -> Pin<Box<dyn Future<Output = Result<Option<AddressIndex>>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn unclaimed_swaps(
+            &mut self,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<SwapRecord>>> + Send + 'static>> {
+            unimplemented!()
+        }
+        fn lqt_voting_notes(
+            &mut self,
+            _: u64,
+            _: Option<AddressIndex>,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<SpendableNoteRecord>>> + Send + 'static>>
+        {
+            unimplemented!()
+        }
+        fn compliance_anchors(
+            &mut self,
+        ) -> Pin<
+            Box<
+                dyn Future<
+                        Output = Result<(
+                            penumbra_sdk_tct::StateCommitment,
+                            penumbra_sdk_tct::StateCommitment,
+                        )>,
+                    > + Send
+                    + 'static,
+            >,
+        > {
+            // Return dummy anchors for testing
+            async move {
+                Ok((
+                    penumbra_sdk_tct::StateCommitment(decaf377::Fq::from(0u64)),
+                    penumbra_sdk_tct::StateCommitment(decaf377::Fq::from(0u64)),
+                ))
+            }
+            .boxed()
+        }
+        fn compliance_merkle_proofs(
+            &mut self,
+            _address: Address,
+            _asset_id: asset::Id,
+        ) -> Pin<
+            Box<dyn Future<Output = Result<pb::ComplianceMerkleProofsResponse>> + Send + 'static>,
+        > {
+            // Return mock proofs indicating asset is NOT regulated
+            async move {
+                Ok(pb::ComplianceMerkleProofsResponse {
+                    user_registered: false,
+                    asset_registered: true,
+                    is_regulated: false, // Key: unregulated
+                    compliance_path: None,
+                    compliance_position: 0,
+                    asset_path: None,
+                    asset_position: 0,
+                    compliance_anchor: vec![0u8; 32],
+                    asset_anchor: vec![0u8; 32],
+                })
+            }
+            .boxed()
+        }
+        fn compliance_user_leaf(
+            &mut self,
+            _address: Address,
+            _asset_id: asset::Id,
+        ) -> Pin<Box<dyn Future<Output = Result<pb::ComplianceUserLeafResponse>> + Send + 'static>>
+        {
+            // Return not registered for unregulated asset
+            async move {
+                Ok(pb::ComplianceUserLeafResponse {
+                    is_registered: false,
+                    leaf: None,
+                })
+            }
+            .boxed()
+        }
+    }
+
+    #[tokio::test]
+    async fn test_planner_skips_compliance_for_unregulated_assets() {
+        let mut rng = OsRng;
+
+        // Create sender and recipient addresses
+        let sender_address = Address::dummy(&mut rng);
+        let recipient_address = Address::dummy(&mut rng);
+
+        // Create a test asset (unregulated)
+        let asset_id = asset::Id(decaf377::Fq::from(888u64));
+        let value = Value {
+            amount: 100u64.into(),
+            asset_id,
+        };
+
+        // Create a note for the spend
+        let note = Note::from_parts(
+            sender_address.clone(),
+            value,
+            penumbra_sdk_shielded_pool::Rseed::generate(&mut rng),
+        )
+        .expect("valid note");
+
+        // Create a transaction plan with spend and output
+        let spend_plan = SpendPlan::new(&mut rng, note, 0u64.into());
+        let output_plan = OutputPlan::new(&mut rng, value, recipient_address.clone());
+
+        let mut plan = TransactionPlan {
+            actions: vec![
+                ActionPlan::Spend(spend_plan),
+                ActionPlan::Output(output_plan),
+            ],
+            transaction_parameters: TransactionParameters::default(),
+            detection_data: None,
+            memo: None,
+        };
+
+        // Create a planner and mock view that returns unregulated status
+        let mut planner = Planner::new(OsRng);
+        let mut mock_view = MockUnregulatedViewClient;
+
+        // Call enrich_with_compliance
+        let result = planner
+            .enrich_with_compliance(&mut mock_view, &mut plan)
+            .await;
+        assert!(
+            result.is_ok(),
+            "Compliance enrichment should succeed even for unregulated assets"
+        );
+
+        // Verify that compliance details ARE set but with unregulated flag
+        // (unregulated assets use BLACK_HOLE_ACK, making ciphertexts indistinguishable)
+        for action in &plan.actions {
+            match action {
+                ActionPlan::Spend(sp) => {
+                    assert!(
+                        sp.compliance_leaf.is_some(),
+                        "Spend should have compliance leaf (with BLACK_HOLE_ACK for unregulated)"
+                    );
+                    assert_eq!(
+                        sp.is_regulated, false,
+                        "Asset should be marked as unregulated"
+                    );
+                }
+                ActionPlan::Output(op) => {
+                    assert!(
+                        op.compliance_leaf.is_some(),
+                        "Output should have compliance leaf (with BLACK_HOLE_ACK for unregulated)"
+                    );
+                    assert_eq!(
+                        op.is_regulated, false,
+                        "Asset should be marked as unregulated"
+                    );
+                }
+                _ => {}
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_planner_enriches_multi_output_with_change() {
+        let mut rng = OsRng;
+
+        // Create sender and recipient addresses
+        let sender_address = Address::dummy(&mut rng);
+        let recipient_address = Address::dummy(&mut rng);
+
+        // Create a test asset (regulated)
+        let asset_id = asset::Id(decaf377::Fq::from(777u64));
+
+        // Value for the main transfer
+        let transfer_value = Value {
+            amount: 100u64.into(),
+            asset_id,
+        };
+
+        // Value for the change (back to sender)
+        let change_value = Value {
+            amount: 50u64.into(),
+            asset_id,
+        };
+
+        // Create a note for the spend (larger than transfer to have change)
+        let spend_value = Value {
+            amount: 150u64.into(),
+            asset_id,
+        };
+        let note = Note::from_parts(
+            sender_address.clone(),
+            spend_value,
+            penumbra_sdk_shielded_pool::Rseed::generate(&mut rng),
+        )
+        .expect("valid note");
+
+        // Create a transaction plan with spend, output to recipient, and change output to sender
+        let spend_plan = SpendPlan::new(&mut rng, note, 0u64.into());
+        let output_to_recipient =
+            OutputPlan::new(&mut rng, transfer_value, recipient_address.clone());
+        let change_output = OutputPlan::new(&mut rng, change_value, sender_address.clone());
+
+        let mut plan = TransactionPlan {
+            actions: vec![
+                ActionPlan::Spend(spend_plan),
+                ActionPlan::Output(output_to_recipient),
+                ActionPlan::Output(change_output),
+            ],
+            transaction_parameters: TransactionParameters::default(),
+            detection_data: None,
+            memo: None,
+        };
+
+        // Create a planner and mock view that returns regulated status
+        let mut planner = Planner::new(OsRng);
+        let mut mock_view = MockRegulatedViewClient;
+
+        // Call enrich_with_compliance
+        let result = planner
+            .enrich_with_compliance(&mut mock_view, &mut plan)
+            .await;
+        assert!(
+            result.is_ok(),
+            "Compliance enrichment should succeed for multi-output: {:?}",
+            result.err()
+        );
+
+        // Verify that compliance details were set on spend and BOTH outputs
+        let mut spend_enriched = false;
+        let mut outputs_enriched = 0;
+
+        for action in &plan.actions {
+            match action {
+                ActionPlan::Spend(sp) => {
+                    assert!(
+                        sp.compliance_leaf.is_some(),
+                        "Spend should have compliance leaf set"
+                    );
+                    assert!(
+                        sp.compliance_ephemeral_secret.is_some(),
+                        "Spend should have ephemeral secret"
+                    );
+                    assert!(
+                        sp.counterparty_leaf.is_some(),
+                        "Spend should have counterparty leaf"
+                    );
+                    assert_eq!(sp.is_regulated, true, "Asset should be marked as regulated");
+                    spend_enriched = true;
+                }
+                ActionPlan::Output(op) => {
+                    assert!(
+                        op.compliance_leaf.is_some(),
+                        "Output should have compliance leaf set"
+                    );
+                    assert!(
+                        op.compliance_ephemeral_secret.is_some(),
+                        "Output should have ephemeral secret"
+                    );
+                    assert!(
+                        op.counterparty_leaf.is_some(),
+                        "Output should have counterparty leaf"
+                    );
+                    assert_eq!(op.is_regulated, true, "Asset should be marked as regulated");
+                    // Verify ciphertext is TOTAL_WIRE_BYTES (not placeholder)
+                    assert_eq!(
+                        op.compliance_ciphertext.len(),
+                        TOTAL_WIRE_BYTES,
+                        "Compliance ciphertext should be TOTAL_WIRE_BYTES"
+                    );
+                    outputs_enriched += 1;
+                }
+                _ => {}
+            }
+        }
+
+        assert!(spend_enriched, "Spend should be enriched");
+        assert_eq!(
+            outputs_enriched, 2,
+            "Both outputs (recipient + change) should be enriched"
+        );
     }
 }

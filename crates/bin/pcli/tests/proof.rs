@@ -4,6 +4,7 @@
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_sdk_asset::{asset, Balance, Value};
+use penumbra_sdk_compliance::{ComplianceLeaf, MerklePath, BLACK_HOLE_ACK};
 use penumbra_sdk_dex::swap::proof::{SwapProofPrivate, SwapProofPublic};
 use penumbra_sdk_dex::swap_claim::{SwapClaimProofPrivate, SwapClaimProofPublic};
 use penumbra_sdk_dex::{
@@ -14,7 +15,7 @@ use penumbra_sdk_fee::Fee;
 use penumbra_sdk_governance::{
     DelegatorVoteProof, DelegatorVoteProofPrivate, DelegatorVoteProofPublic,
 };
-use penumbra_sdk_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_sdk_keys::keys::{AddressComplianceKey, Bip44Path, SeedPhrase, SpendKey};
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proof_params::{
     CONVERT_PROOF_PROVING_KEY, CONVERT_PROOF_VERIFICATION_KEY, DELEGATOR_VOTE_PROOF_PROVING_KEY,
@@ -36,7 +37,48 @@ use penumbra_sdk_stake::undelegate_claim::{
 };
 use penumbra_sdk_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
 use penumbra_sdk_tct as tct;
+use penumbra_sdk_tct::StateCommitment;
 use rand_core::OsRng;
+
+/// Create a dummy 16-layer Merkle path for testing.
+/// The circuit expects exactly 16 layers in the QuadTree path.
+fn dummy_merkle_path() -> MerklePath {
+    MerklePath {
+        layers: (0..16)
+            .map(|_| penumbra_sdk_compliance::structs::MerklePathLayer {
+                siblings: vec![vec![0u8; 32], vec![0u8; 32], vec![0u8; 32]],
+            })
+            .collect(),
+    }
+}
+
+/// Generate valid compliance inputs using real encryption.
+/// Returns (compliance_epk, compliance_ciphertext, ephemeral_secret) that satisfy circuit constraints.
+fn generate_compliance_inputs(
+    ack: &AddressComplianceKey,
+    address: &penumbra_sdk_keys::Address,
+    asset_id: asset::Id,
+    amount: penumbra_sdk_num::Amount,
+) -> (decaf377::Element, Vec<Fq>, Fr) {
+    use penumbra_sdk_compliance::crypto::encrypt_compliance_details;
+
+    let mut rng = OsRng;
+    let date = 0u64; // Day index = 0 corresponds to timestamp = 0
+
+    let (ciphertext_obj, ephemeral_secret) = encrypt_compliance_details(
+        &mut rng,
+        ack,
+        address,
+        date,
+        asset_id,
+        amount,
+        address.clone(), // Use same address as counterparty for testing
+    )
+    .expect("can encrypt compliance details");
+
+    let (epk, ciphertext) = ciphertext_obj.to_circuit_public_inputs();
+    (epk, ciphertext, ephemeral_secret)
+}
 
 #[test]
 fn spend_proof_parameters_vs_current_spend_circuit() {
@@ -75,11 +117,51 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     // Random elements to provide ZK (see Section 3.2 Groth16 paper, bottom of page 17)
     let blinding_r = Fq::rand(&mut OsRng);
     let blinding_s = Fq::rand(&mut OsRng);
+
+    // Compliance values for unregulated asset - use BLACK_HOLE_ACK
+    let black_hole_ack = AddressComplianceKey::new(*BLACK_HOLE_ACK);
+    let user_leaf = ComplianceLeaf {
+        address: sender.clone(),
+        key: black_hole_ack.clone(),
+        asset_id: value_to_send.asset_id,
+    };
+    let counterparty_leaf = ComplianceLeaf {
+        address: sender.clone(), // Use same address for counterparty in test
+        key: black_hole_ack.clone(),
+        asset_id: value_to_send.asset_id,
+    };
+
+    // Generate valid compliance ciphertext using real encryption
+    let (compliance_epk, compliance_ciphertext, ephemeral_secret) = generate_compliance_inputs(
+        &black_hole_ack,
+        &sender,
+        value_to_send.asset_id,
+        value_to_send.amount,
+    );
+
+    let dummy_anchor = StateCommitment(Fq::from(0u64));
+    let tx_blinding_nonce = Fr::from(0u64);
+
+    // Compute blinded leaf hashes
+    let sender_leaf_hash =
+        penumbra_sdk_compliance::blind_sender_leaf(user_leaf.commit(), tx_blinding_nonce);
+    let counterparty_leaf_hash = penumbra_sdk_compliance::blind_counterparty_leaf(
+        counterparty_leaf.commit(),
+        tx_blinding_nonce,
+    );
+
     let public = SpendProofPublic {
         anchor,
         balance_commitment,
         nullifier,
         rk,
+        asset_anchor: dummy_anchor,
+        compliance_anchor: dummy_anchor,
+        compliance_epk,
+        compliance_ciphertext,
+        target_timestamp: 0, // Corresponds to date = 0 used in encryption
+        sender_leaf_hash,
+        counterparty_leaf_hash,
     };
     let private = SpendProofPrivate {
         state_commitment_proof,
@@ -88,6 +170,15 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
         spend_auth_randomizer,
         ak,
         nk,
+        asset_path: dummy_merkle_path(),
+        asset_position: 0,
+        is_regulated: false,
+        compliance_path: dummy_merkle_path(),
+        compliance_position: 0,
+        user_leaf,
+        compliance_ephemeral_secret: ephemeral_secret,
+        counterparty_leaf,
+        tx_blinding_nonce,
     };
     let proof = SpendProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
         .expect("can create proof");
@@ -347,13 +438,61 @@ fn output_proof_parameters_vs_current_output_circuit() {
         let note_commitment = note.commit();
         let balance_commitment = (-Balance::from(value_to_send)).commit(balance_blinding);
 
+        // Compliance values for unregulated asset - use BLACK_HOLE_ACK
+        let black_hole_ack = AddressComplianceKey::new(*BLACK_HOLE_ACK);
+        let user_leaf = ComplianceLeaf {
+            address: dest.clone(),
+            key: black_hole_ack.clone(),
+            asset_id: value_to_send.asset_id,
+        };
+        let counterparty_leaf = ComplianceLeaf {
+            address: dest.clone(), // Use same address for counterparty in test
+            key: black_hole_ack.clone(),
+            asset_id: value_to_send.asset_id,
+        };
+
+        // Generate valid compliance ciphertext using real encryption
+        let (compliance_epk, compliance_ciphertext, ephemeral_secret) = generate_compliance_inputs(
+            &black_hole_ack,
+            &dest,
+            value_to_send.asset_id,
+            value_to_send.amount,
+        );
+
+        let dummy_anchor = StateCommitment(Fq::from(0u64));
+        let tx_blinding_nonce = Fr::from(0u64);
+
+        // Compute blinded leaf hashes (output uses counterparty for receiver, sender for counterparty)
+        let receiver_leaf_hash =
+            penumbra_sdk_compliance::blind_counterparty_leaf(user_leaf.commit(), tx_blinding_nonce);
+        let counterparty_leaf_hash = penumbra_sdk_compliance::blind_sender_leaf(
+            counterparty_leaf.commit(),
+            tx_blinding_nonce,
+        );
+
         let public = OutputProofPublic {
             balance_commitment,
             note_commitment,
+            compliance_epk,
+            compliance_ciphertext,
+            asset_anchor: dummy_anchor,
+            compliance_anchor: dummy_anchor,
+            target_timestamp: 0, // Corresponds to date = 0 used in encryption
+            receiver_leaf_hash,
+            counterparty_leaf_hash,
         };
         let private = OutputProofPrivate {
             note,
             balance_blinding,
+            asset_path: dummy_merkle_path(),
+            asset_position: 0,
+            is_regulated: false,
+            compliance_path: dummy_merkle_path(),
+            compliance_position: 0,
+            user_leaf,
+            compliance_ephemeral_secret: ephemeral_secret,
+            counterparty_leaf,
+            tx_blinding_nonce,
         };
 
         (public, private)

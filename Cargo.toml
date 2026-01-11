@@ -20,6 +20,7 @@ members = [
   "crates/core/component/community-pool",
   "crates/core/component/compact-block",
   "crates/core/component/auction",
+  "crates/core/component/compliance",
   "crates/core/component/dex",
   "crates/core/component/distributions",
   "crates/core/component/fee",
@@ -162,6 +163,7 @@ penumbra-sdk-app                     = { default-features = false, version = "2.
 penumbra-sdk-asset                   = { default-features = false, version = "2.1.0", path = "crates/core/asset" }
 penumbra-sdk-community-pool          = { default-features = false, version = "2.1.0", path = "crates/core/component/community-pool" }
 penumbra-sdk-compact-block           = { default-features = false, version = "2.1.0", path = "crates/core/component/compact-block" }
+penumbra-sdk-compliance              = { default-features = false, version = "2.1.0", path = "crates/core/component/compliance" }
 penumbra-sdk-custody                 = { version = "2.1.0", path = "crates/custody" }
 penumbra-sdk-custody-ledger-usb      = { version = "2.1.0", path = "crates/custody-ledger-usb" }
 penumbra-sdk-auction                 = { default-features = false, version = "2.1.0", path = "crates/core/component/auction" }

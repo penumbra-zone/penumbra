@@ -1,33 +1,58 @@
 {
   "actions": [
     {
-      "spend": {
-        "note": {
-          "value": {
-            "amount": {
-              "lo": "751448120343933306"
-            },
-            "assetId": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
-          },
-          "rseed": "7L/FyeshJmJK7r6Nxuu8hQjRGKrFB0a4dsBwwysOTeI=",
-          "address": {
-            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
-          }
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "nm1n3rW9PUKVh5O+fkvlmdiMUA+hw7qe+S3+kq6mSMA="
         },
-        "position": "243045536227121",
-        "randomizer": "zBErvtCVnUMTlWlfgfVv0wcUt8IbjLUosnDcKscsxQM=",
-        "valueBlinding": "5cq4dH+VPe22+wTob7j4vhzM0j5wdKsoAhCaf6csswA=",
-        "proofBlindingR": "epyCi5mlPW0FAK3FJCclkXvOjrKr7KCFZyPkJS9oKgk=",
-        "proofBlindingS": "vuABakiNPN9iJmam3YkX2FsIJik6dFfPX281mEoQFwg="
+        "unbondedAmount": {
+          "lo": "296880775254139054"
+        },
+        "delegationAmount": {
+          "lo": "521767663081188234"
+        },
+        "fromEpoch": {
+          "index": "9126",
+          "startHeight": "9126"
+        }
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "2vINmlvgaVbe/HdK1t1rj/H6TQY3/EZiWKqC4dg4zGc="
+        },
+        "epochIndex": "9908",
+        "unbondedAmount": {
+          "lo": "670932887469835389"
+        },
+        "delegationAmount": {
+          "lo": "533591996760584333"
+        }
+      }
+    },
+    {
+      "undelegate": {
+        "validatorIdentity": {
+          "ik": "+Yjuv0WCD9HoC/olu8/UsUI7wxqhQNOjLAWlukV5o0s="
+        },
+        "unbondedAmount": {
+          "lo": "559852747881779758"
+        },
+        "delegationAmount": {
+          "lo": "760209913631009863"
+        },
+        "fromEpoch": {
+          "index": "5024",
+          "startHeight": "5024"
+        }
       }
     },
     {
       "communityPoolDeposit": {
         "value": {
           "amount": {
-            "lo": "201164826129915642"
+            "lo": "339461961047865051"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
@@ -37,11 +62,11 @@
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "4505369932",
-    "chainId": "kvbufljmwrscjssoeyosjigztwnrmgnv-40636733089263",
+    "expiryHeight": "5325544102",
+    "chainId": "qliycexbpmwtecmhowmmtsyf-64639018116329008",
     "fee": {
       "amount": {
-        "lo": "605464275970447147"
+        "lo": "830171450747097368"
       }
     }
   }

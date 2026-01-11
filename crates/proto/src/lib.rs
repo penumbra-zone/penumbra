@@ -92,6 +92,13 @@ pub mod penumbra {
                 }
             }
 
+            pub mod compliance {
+                pub mod v1 {
+                    include!("gen/penumbra.core.component.compliance.v1.rs");
+                    include!("gen/penumbra.core.component.compliance.v1.serde.rs");
+                }
+            }
+
             pub mod dex {
                 pub mod v1 {
                     include!("gen/penumbra.core.component.dex.v1.rs");

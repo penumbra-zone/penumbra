@@ -65,8 +65,13 @@ harness = false
 name = "arkworks"
 harness = false
 
+[[bench]]
+name = "bls_threshold"
+harness = false
+
 [dependencies]
 ark-bls12-377 = "0.4.0"
+ark-bw6-761 = "0.4.0"
 ark-ec = {workspace = true}
 ark-ff = {workspace = true, default-features = false}
 ark-groth16 = {workspace = true, default-features = false}
@@ -93,11 +98,12 @@ criterion = {workspace = true, features = ["html_reports"]}
 decaf377-fmd = {workspace = true}
 decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
+penumbra-sdk-compliance = {workspace = true, default-features = true}
 penumbra-sdk-dex = {workspace = true, default-features = true}
 penumbra-sdk-fee = {workspace = true, default-features = true}
 penumbra-sdk-governance = {workspace = true, default-features = true}
 penumbra-sdk-sct = {workspace = true, default-features = true}
-penumbra-sdk-shielded-pool = {workspace = true, default-features = true}
+penumbra-sdk-shielded-pool = {workspace = true, default-features = true, features = ["benchmark-helpers"]}
 penumbra-sdk-stake = {workspace = true, default-features = true}
 penumbra-sdk-tct = {workspace = true, features = ["r1cs"], default-features = true}
 

@@ -4,6 +4,7 @@ package penumbra.core.transaction.v1;
 import "google/protobuf/any.proto";
 import "penumbra/core/asset/v1/asset.proto";
 import "penumbra/core/component/auction/v1/auction.proto";
+import "penumbra/core/component/compliance/v1/compliance.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/governance/v1/governance.proto";
@@ -115,6 +116,10 @@ message Action {
 
     // Funding
     component.funding.v1.ActionLiquidityTournamentVote action_liquidity_tournament_vote = 70;
+
+    // Compliance
+    component.compliance.v1.MsgRegisterAsset compliance_register_asset = 80;
+    component.compliance.v1.MsgRegisterUser compliance_register_user = 81;
 
     component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
   }
@@ -251,7 +256,11 @@ message ActionView {
     component.stake.v1.UndelegateClaim undelegate_claim = 43;
 
     component.funding.v1.ActionLiquidityTournamentVoteView action_liquidity_tournament_vote = 70;
-    
+
+    // Compliance
+    component.compliance.v1.MsgRegisterAsset compliance_register_asset = 80;
+    component.compliance.v1.MsgRegisterUser compliance_register_user = 81;
+
     component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
   }
 }
@@ -351,6 +360,10 @@ message ActionPlan {
 
     // Funding
     component.funding.v1.ActionLiquidityTournamentVotePlan action_liquidity_tournament_vote = 70;
+
+    // Compliance
+    component.compliance.v1.MsgRegisterAsset compliance_register_asset = 80;
+    component.compliance.v1.MsgRegisterUser compliance_register_user = 81;
   }
 }
 

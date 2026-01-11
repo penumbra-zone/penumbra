@@ -13,7 +13,8 @@ publish = false
 dist = true
 
 [features]
-default = ["std", "parallel", "download-proving-keys"]
+default = ["std", "parallel", "download-proving-keys", "demo"]
+demo = ["penumbra-sdk-keys/demo"]
 integration-testnet = []
 download-proving-keys = ["penumbra-sdk-proof-params/download-proving-keys"]
 sct-divergence-check = ["penumbra-sdk-view/sct-divergence-check"]
@@ -67,6 +68,7 @@ penumbra-sdk-app = {workspace = true, default-features = false}
 penumbra-sdk-asset = {workspace = true, default-features = false}
 penumbra-sdk-community-pool = {workspace = true, default-features = false}
 penumbra-sdk-compact-block = {workspace = true, default-features = false}
+penumbra-sdk-compliance = {workspace = true, default-features = true}
 penumbra-sdk-custody = {workspace = true}
 penumbra-sdk-custody-ledger-usb = {workspace = true, optional = true}
 penumbra-sdk-auction = {workspace = true, default-features = false}

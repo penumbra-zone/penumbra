@@ -12,6 +12,7 @@ use penumbra_sdk_auction::component::{Auction, StateReadExt as _, StateWriteExt 
 use penumbra_sdk_community_pool::component::{CommunityPool, StateWriteExt as _};
 use penumbra_sdk_community_pool::StateReadExt as _;
 use penumbra_sdk_compact_block::component::CompactBlockManager;
+use penumbra_sdk_compliance::Compliance;
 use penumbra_sdk_dex::component::StateReadExt as _;
 use penumbra_sdk_dex::component::{Dex, StateWriteExt as _};
 use penumbra_sdk_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
@@ -142,6 +143,9 @@ impl App {
                 Governance::init_chain(&mut state_tx, Some(&genesis.governance_content)).await;
                 FeeComponent::init_chain(&mut state_tx, Some(&genesis.fee_content)).await;
                 Funding::init_chain(&mut state_tx, Some(&genesis.funding_content)).await;
+                // Compliance must be initialized after other components since it auto-registers
+                // the staking token as unregulated, which requires the asset tree to exist.
+                Compliance::init_chain(&mut state_tx, None).await;
 
                 state_tx
                     .finish_block()
@@ -158,6 +162,7 @@ impl App {
                 CommunityPool::init_chain(&mut state_tx, None).await;
                 FeeComponent::init_chain(&mut state_tx, None).await;
                 Funding::init_chain(&mut state_tx, None).await;
+                Compliance::init_chain(&mut state_tx, None).await;
             }
         };
 

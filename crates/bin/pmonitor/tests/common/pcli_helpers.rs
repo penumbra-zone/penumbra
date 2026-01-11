@@ -61,3 +61,23 @@ pub fn pcli_migrate_balance(pcli_home: &PathBuf, fvk: &FullViewingKey) -> Result
     cmd.assert().success();
     Ok(())
 }
+
+/// Register an asset as unregulated in the compliance registry.
+/// This must be called before transfers of the asset can be made.
+#[allow(dead_code)]
+pub fn pcli_register_asset_unregulated(pcli_home: &PathBuf, asset: &str) -> Result<()> {
+    let mut cmd = AssertCommand::cargo_bin("pcli")?;
+    cmd.args([
+        "--home",
+        pcli_home
+            .to_str()
+            .expect("can convert wallet path to string"),
+        "tx",
+        "compliance",
+        "register-asset",
+        asset,
+        "--unregulated",
+    ]);
+    cmd.assert().success();
+    Ok(())
+}

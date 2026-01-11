@@ -425,6 +425,35 @@ pub struct SpendBody {
     /// An encryption of the commitment of the input note to the sender's OVK.
     #[prost(bytes = "vec", tag = "7")]
     pub encrypted_backref: ::prost::alloc::vec::Vec<u8>,
+    /// Compliance ciphertext encrypting input note details for asset issuer.
+    /// 155 bytes total = \[Clue: 8 bytes\] + \[Encrypted Payload: 147 bytes\].
+    /// Payload contains: Amount (16B) + Asset ID (32B) + Rseed (32B) + Address (64B) + Padding (3B).
+    /// Packed in the circuit as 5 field elements of 31 bytes each.
+    #[prost(bytes = "vec", tag = "8")]
+    pub compliance_ciphertext: ::prost::alloc::vec::Vec<u8>,
+    /// Target timestamp for compliance verification (Unix timestamp in seconds).
+    #[prost(uint64, tag = "9")]
+    pub target_timestamp: u64,
+    /// Blinded sender leaf hash (for binding with output circuit).
+    #[prost(message, optional, tag = "10")]
+    pub sender_leaf_hash: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
+    /// Blinded counterparty (receiver) leaf hash (for binding with output circuit).
+    #[prost(message, optional, tag = "11")]
+    pub counterparty_leaf_hash: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
+    /// Compliance tree anchor (user tree root) used during proof generation.
+    #[prost(message, optional, tag = "12")]
+    pub compliance_anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
+    /// Asset tree anchor used during proof generation.
+    #[prost(message, optional, tag = "13")]
+    pub asset_anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
 }
 impl ::prost::Name for SpendBody {
     const NAME: &'static str = "SpendBody";
@@ -513,6 +542,46 @@ pub struct SpendPlan {
     /// The second blinding factor to use for the ZK spend proof.
     #[prost(bytes = "vec", tag = "6")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
+    /// Target timestamp for compliance key derivation (Unix timestamp in seconds).
+    #[prost(uint64, tag = "7")]
+    pub target_timestamp: u64,
+    /// Precomputed compliance ciphertext (256 bytes: 32 EPK + 224 payload, empty when not yet generated).
+    #[prost(bytes = "vec", tag = "8")]
+    pub compliance_ciphertext: ::prost::alloc::vec::Vec<u8>,
+    /// Whether the asset is regulated (requires compliance).
+    #[prost(bool, tag = "9")]
+    pub is_regulated: bool,
+    /// Compliance leaf for ZK proof (sender's registry entry).
+    #[prost(message, optional, tag = "10")]
+    pub compliance_leaf: ::core::option::Option<
+        super::super::compliance::v1::ComplianceLeaf,
+    >,
+    /// Counterparty compliance leaf (recipient's registry entry).
+    #[prost(message, optional, tag = "11")]
+    pub counterparty_leaf: ::core::option::Option<
+        super::super::compliance::v1::ComplianceLeaf,
+    >,
+    /// Ephemeral secret used in compliance ciphertext encryption (needed by circuit).
+    #[prost(bytes = "vec", tag = "12")]
+    pub compliance_ephemeral_secret: ::prost::alloc::vec::Vec<u8>,
+    /// Counterparty address (the recipient of this spend).
+    #[prost(message, optional, tag = "13")]
+    pub counterparty_address: ::core::option::Option<
+        super::super::super::keys::v1::Address,
+    >,
+    /// Shared transaction blinding nonce (same for spend and output in one transaction).
+    #[prost(bytes = "vec", tag = "14")]
+    pub tx_blinding_nonce: ::prost::alloc::vec::Vec<u8>,
+    /// The compliance anchor (user tree root) for proof generation.
+    #[prost(message, optional, tag = "15")]
+    pub compliance_anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
+    /// The asset anchor (asset tree root) for proof generation.
+    #[prost(message, optional, tag = "16")]
+    pub asset_anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
 }
 impl ::prost::Name for SpendPlan {
     const NAME: &'static str = "SpendPlan";
@@ -564,6 +633,34 @@ pub struct OutputBody {
     /// sender's outgoing viewing key. 48 bytes.
     #[prost(bytes = "vec", tag = "4")]
     pub ovk_wrapped_key: ::prost::alloc::vec::Vec<u8>,
+    /// Compliance ciphertext encrypting output note details for asset issuer.
+    /// 160 bytes = 5 field elements (amount, asset_id, note_blinding, receiver_g_d, receiver_pk_d).
+    /// Sender address is captured in the Spend circuit.
+    #[prost(bytes = "vec", tag = "5")]
+    pub compliance_ciphertext: ::prost::alloc::vec::Vec<u8>,
+    /// Target timestamp for compliance verification (Unix timestamp in seconds).
+    #[prost(uint64, tag = "6")]
+    pub target_timestamp: u64,
+    /// Blinded receiver leaf hash (for binding with spend circuit).
+    #[prost(message, optional, tag = "7")]
+    pub receiver_leaf_hash: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
+    /// Blinded counterparty (sender) leaf hash (for binding with spend circuit).
+    #[prost(message, optional, tag = "8")]
+    pub counterparty_leaf_hash: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
+    /// Compliance tree anchor (user tree root) used during proof generation.
+    #[prost(message, optional, tag = "9")]
+    pub compliance_anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
+    /// Asset tree anchor used during proof generation.
+    #[prost(message, optional, tag = "10")]
+    pub asset_anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
 }
 impl ::prost::Name for OutputBody {
     const NAME: &'static str = "OutputBody";
@@ -656,6 +753,46 @@ pub struct OutputPlan {
     /// The second blinding factor to use for the ZK output proof.
     #[prost(bytes = "vec", tag = "6")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
+    /// Target timestamp for compliance key derivation (Unix timestamp in seconds).
+    #[prost(uint64, tag = "7")]
+    pub target_timestamp: u64,
+    /// Precomputed compliance ciphertext (256 bytes: 32 EPK + 224 payload, empty when not yet generated).
+    #[prost(bytes = "vec", tag = "8")]
+    pub compliance_ciphertext: ::prost::alloc::vec::Vec<u8>,
+    /// Whether the asset is regulated (requires compliance).
+    #[prost(bool, tag = "9")]
+    pub is_regulated: bool,
+    /// Compliance leaf for ZK proof (recipient's registry entry).
+    #[prost(message, optional, tag = "10")]
+    pub compliance_leaf: ::core::option::Option<
+        super::super::compliance::v1::ComplianceLeaf,
+    >,
+    /// Counterparty compliance leaf (sender's registry entry).
+    #[prost(message, optional, tag = "11")]
+    pub counterparty_leaf: ::core::option::Option<
+        super::super::compliance::v1::ComplianceLeaf,
+    >,
+    /// Ephemeral secret used in compliance ciphertext encryption (needed by circuit).
+    #[prost(bytes = "vec", tag = "12")]
+    pub compliance_ephemeral_secret: ::prost::alloc::vec::Vec<u8>,
+    /// Counterparty address (the sender of this output).
+    #[prost(message, optional, tag = "13")]
+    pub counterparty_address: ::core::option::Option<
+        super::super::super::keys::v1::Address,
+    >,
+    /// Shared transaction blinding nonce (same for spend and output in one transaction).
+    #[prost(bytes = "vec", tag = "14")]
+    pub tx_blinding_nonce: ::prost::alloc::vec::Vec<u8>,
+    /// The compliance anchor (user tree root) for proof generation.
+    #[prost(message, optional, tag = "15")]
+    pub compliance_anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
+    /// The asset anchor (asset tree root) for proof generation.
+    #[prost(message, optional, tag = "16")]
+    pub asset_anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1::StateCommitment,
+    >,
 }
 impl ::prost::Name for OutputPlan {
     const NAME: &'static str = "OutputPlan";

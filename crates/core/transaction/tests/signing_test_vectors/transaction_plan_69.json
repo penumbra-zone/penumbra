@@ -1,88 +1,85 @@
 {
   "actions": [
     {
-      "delegatorVote": {
-        "proposal": "647286663",
-        "vote": {
-          "vote": "VOTE_NO"
-        },
-        "stakedNote": {
-          "value": {
-            "amount": {
-              "lo": "747309454106584177"
-            },
-            "assetId": {
-              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-            }
-          },
-          "rseed": "vFrmrgWBi5oCGP1e7WJ7qKUk2Y4wKFq3qIcag3JgIwM=",
-          "address": {
-            "inner": "viBlCBOsIYVXTYor4XrErovkbSdZTdXL7qGRdAMwc32wWb3DYnPhmE96UIreUk/wDWu6tcCMj4+72UkhQ3Ogn1K5PTs//kc3ymFZ1TmqVG4="
-          }
-        },
-        "unbondedAmount": {
-          "lo": "439798439469163733"
-        },
-        "randomizer": "NfdqMxHVgXMaHyQu3REnv4MorNkwneNzbJ/Wcfx0HwI=",
-        "proofBlindingR": "OOov646LT/DvRD++suYkiJfRMIwCIfMd/sLorKVdpAU=",
-        "proofBlindingS": "VVWFsQA+ICiXRvjnUSE3aMzha/PF8b6wFHlmpnazuAE="
-      }
-    },
-    {
-      "output": {
+      "communityPoolDeposit": {
         "value": {
           "amount": {
-            "lo": "58341553315828660"
+            "lo": "493897623517261930"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
-        },
-        "destAddress": {
-          "inner": "jqEzfWxPBlAnwYSJHeARyH5taEgzmnkNNT6ahgAeZM64kcL8TP8w6UTYqAfrIxtO1OA2LXkHsj1G83KiHerU22Nv98bz45sFtuoVrv5KQng="
-        },
-        "rseed": "keerivescwx9StOzxMvgLuVNy7sLwo56M64DMm+4WuI=",
-        "valueBlinding": "buawFoaoMAuJOhgGj2GO/mzQBfAAEcMFyFpCsjgXKAE=",
-        "proofBlindingR": "2u8mnMLSvhByoUT+dRPqjazvnBfxiPyvDTiLccgjuAw=",
-        "proofBlindingS": "B29Ti8+Cc9veQ6gJNoSXQ0t1owyeuQZP34dQUyIKEAY="
-      }
-    },
-    {
-      "delegate": {
-        "validatorIdentity": {
-          "ik": "kxP2l1rvVTHHSiA6XQ1fzh7zN0FkvvGAbHbv/xGr47A="
-        },
-        "epochIndex": "7748",
-        "unbondedAmount": {
-          "lo": "971244988940526888"
-        },
-        "delegationAmount": {
-          "lo": "74740601770930067"
         }
       }
     },
     {
-      "communityPoolOutput": {
+      "communityPoolSpend": {
         "value": {
           "amount": {
-            "lo": "675769259619918164"
+            "lo": "524641778127837615"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
+        }
+      }
+    },
+    {
+      "positionOpenPlan": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "53604793951037558"
+              },
+              "q": {
+                "lo": "128731872692502329"
+              }
+            },
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
+            }
+          },
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_CLOSED"
+          },
+          "reserves": {
+            "r1": {
+              "lo": "764725855239940327"
+            },
+            "r2": {
+              "lo": "238536671049819106"
+            }
+          },
+          "closeOnFill": true
+        }
+      }
+    },
+    {
+      "proposalSubmit": {
+        "proposal": {
+          "title": "rpi-7210063444482",
+          "description": "otlznrarmjdlrhruxngonfgzh-62",
+          "signaling": {}
         },
-        "address": {
-          "inner": "Cfsryc8xzoLWxnQUW88wgIl0b09VHO1hPjd/drTwdJZfHTgK65PJQCUbKsTC4eXWrUXW5HgU1nVHCQ95AOwUkW1HX2dsFbeqkxLL2FDTKxM="
+        "depositAmount": {
+          "lo": "387509451810541928"
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "7846038948",
-    "chainId": "unwnyzbvcrmkn-961523796265493082050",
+    "expiryHeight": "5348758081",
+    "chainId": "cpxgt-00211",
     "fee": {
       "amount": {
-        "lo": "909062766742954169"
+        "lo": "668748384050677665"
       }
     }
   }

@@ -105,7 +105,9 @@ impl AppActionHandler for ProposalSubmit {
                         | CommunityPoolDeposit(_)
                         | ActionDutchAuctionSchedule(_)
                         | ActionDutchAuctionEnd(_)
-                        | ActionDutchAuctionWithdraw(_) => {}
+                        | ActionDutchAuctionWithdraw(_)
+                        | ComplianceRegisterAsset(_)
+                        | ComplianceRegisterUser(_) => {}
                     }
                 }
             }

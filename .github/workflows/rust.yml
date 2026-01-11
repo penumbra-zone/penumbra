@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   lint:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,10 +28,9 @@ jobs:
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
-          backend: buildjet
 
       - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
+        uses: Swatinem/rust-cache@v2
 
       # The `rust-toolchain.toml` file dictates which version of rust to setup.
       - name: check rust version
@@ -58,8 +57,19 @@ jobs:
   # As of 2025Q1, the "features" job is the slowest in the CI suite.
   # Consider moving to a scheduled job on main, rather than running on PRs.
   features:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - uses: actions/checkout@v4
         with:
           lfs: true
@@ -72,10 +82,9 @@ jobs:
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
-          backend: buildjet
 
       - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
+        uses: Swatinem/rust-cache@v2
 
       # Build each crate separately, to validate that the feature-gating is working.
       # This is a lighter-weight version of `cargo check-all-features --workspace --release`.
@@ -86,8 +95,19 @@ jobs:
         run: nix develop --command ./deployments/scripts/check-wasm-compat.sh
 
   test:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - uses: actions/checkout@v4
         with:
           lfs: true
@@ -100,10 +120,9 @@ jobs:
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
-          backend: buildjet
 
       - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
+        uses: Swatinem/rust-cache@v2
 
       - name: Run tests with nextest
         run: nix develop --command just test

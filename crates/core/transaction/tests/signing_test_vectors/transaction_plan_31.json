@@ -1,43 +1,187 @@
 {
   "actions": [
     {
-      "ics20Withdrawal": {
-        "amount": {
-          "lo": "3373881155391355"
-        },
-        "denom": {
-          "denom": "0uC"
-        },
-        "destinationChainAddress": "penumbra1xm0z5x3n7gm5fwpg5szzrp5rh9lkhw4krp5sdyau0m583xlresj04m28tgluxlz2wlp48cfw4x5ayxgehq8pdkwmkatmfxmhy5zlrazl2hc8a02dsf4w2ex0xsv9c0hwectyrs",
-        "returnAddress": {
-          "inner": "9bYmDKXUX0u0R4ktQQy6j0ysqLM3adW2VI02twIetL9b488iRLJ6HIggCKijCD7kLadsiRZkQuso8wVf2C1YT4roBJu0qH+/2yYK/Z/snQ8="
-        },
-        "timeoutHeight": {
-          "revisionNumber": "838289593",
-          "revisionHeight": "507170589"
-        },
-        "sourceChannel": "channel-0"
-      }
-    },
-    {
-      "communityPoolSpend": {
+      "output": {
         "value": {
           "amount": {
-            "lo": "228861155409067192"
+            "lo": "638189687752361368"
           },
           "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
+        },
+        "destAddress": {
+          "inner": "7BW5OGeW8IEZJj5H9C1EOs6CaI2EPpc7yFrZt8BmrMbL2PBS0LL1p+qnCtyEZaA3XTXcT7tzkF6SPFMW8hZqkx6N9pnE12DfifHUAnj8Kz0="
+        },
+        "rseed": "qY6RcjGO4QxTm+hk5yJukRQBNUsPNMhaZCAjWfz/toI=",
+        "valueBlinding": "u94mXvYMyWOumAWxnvvshKWwvlyLsCe1DkzQOayYcAM=",
+        "proofBlindingR": "+xJLg+m1DuWXhc3u8cJj15kKYTVM929AcEPy3Q+1LQo=",
+        "proofBlindingS": "g2m+/VD1hTk84EVzW7QPsRDFJbqW0laUUCnI7k5EFA4=",
+        "targetTimestamp": "1767841914",
+        "complianceCiphertext": "fLZ83luXie3O9bi1qcT7VA3aUDm8PLyzzER5LMeWmBKtR765SmpPem42wWq+iOgC6Rv9BLuRqttYENGICBAeEDYJc6pe5u2YD5OY0bhyGXWWODV0QHuGbXgpeEk5TZ8KDb0/h49QBLu76hYy/ydhbCTA6qjEP3SVYmAc1HmD7wHrrEcv5FEFVObHrn3SPuRkGEIIXF2ofF63mNYL9RofEj9AP5R6zb4nMegk575/l54CcOG9sP1RvF5kTlwUebUKiMlNawhQexSiacAMFm6xKZmzmg3S0+ZnjkUyZEtk6QA=",
+        "complianceLeaf": {
+          "walletId": {
+            "inner": "7BW5OGeW8IEZJj5H9C1EOs6CaI2EPpc7yFrZt8BmrMbL2PBS0LL1p+qnCtyEZaA3XTXcT7tzkF6SPFMW8hZqkx6N9pnE12DfifHUAnj8Kz0="
+          },
+          "key": {
+            "inner": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "counterpartyLeaf": {
+          "walletId": {
+            "inner": "7BW5OGeW8IEZJj5H9C1EOs6CaI2EPpc7yFrZt8BmrMbL2PBS0LL1p+qnCtyEZaA3XTXcT7tzkF6SPFMW8hZqkx6N9pnE12DfifHUAnj8Kz0="
+          },
+          "key": {
+            "inner": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "complianceEphemeralSecret": "LLFLu9BTamAtHRGXP66TXyyIk2oNtw3S/HOV1jLNMQE=",
+        "txBlindingNonce": "ts7mRxDM5T+0eKsQh55VuKyP1PM0VOw+10xlGQmSnQE=",
+        "complianceAnchor": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        },
+        "assetAnchor": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        }
+      }
+    },
+    {
+      "spend": {
+        "note": {
+          "value": {
+            "amount": {
+              "lo": "742605087624885570"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "rseed": "btsJOpxujnvxW6KljCJuSPluQ/nU6MyF5E2i0r+rs6w=",
+          "address": {
+            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
+          }
+        },
+        "position": "13500083854830",
+        "randomizer": "spshH3HiMANIXu4UHpVz1JW+Hbm/62UObwMfDCn7lgI=",
+        "valueBlinding": "f8PdbRXK8rEM5P/WQTEQVs0ZyyB4/VaWo7wwtwyq4AI=",
+        "proofBlindingR": "bYs0Xn6bFY1v3wXcmpXywJMvMJ0BXKnt5ALFzParZwA=",
+        "proofBlindingS": "T+nUsTkJz/mW2G8eLswGpIE7mVyKFTmO/+3Y8m4Y5Qc=",
+        "targetTimestamp": "1767841914",
+        "complianceCiphertext": "hiF3hVHRpZ9wXv7sTMhRqG1oiZZqJWQgkEAkjMK+7Actsf6GSRLH+zkoXX2uZbldieVy1E04Eca3wp4tnF8YDsXmrg6s8yXivzKBtLSLpeGFIh0Meun2vW40gwLZUeEO7woSKp6WCHIyBebo/oaodSYqbVVc2CoSR4Eea76WpBCUM6mfniOuS6ClLMDe0vOmdiPrHZnY7JFj3cr5WoZ2Empj+2ucCRN7axgy3TOe+zOTompHNo7jxFWmdqwjGTQFnyUz6F4ByJSljm73TkCbu3md2Xw5f0suIYP1/wr1xQE=",
+        "complianceLeaf": {
+          "walletId": {
+            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
+          },
+          "key": {
+            "inner": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "counterpartyLeaf": {
+          "walletId": {
+            "inner": "r7ae/+8Q9d3QdaAs66/GAAbYBo/Am59nYWeIBU7REchE3LYtFPa1EHW2Lo1KZcRWuXzO/cM54CLSFnv2iArQnxjrlJnTB4nGnuLdFtCY9vc="
+          },
+          "key": {
+            "inner": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        },
+        "complianceEphemeralSecret": "It6r2+cWK17hhZvIbclO+T4LZsDonTctg8w9gd2SEQA=",
+        "txBlindingNonce": "CKJaGqNNqNHr+6ggl/F3nngzl2Qw8eMxajFOe65RwQA=",
+        "complianceAnchor": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        },
+        "assetAnchor": {
+          "inner": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        }
+      }
+    },
+    {
+      "swapClaim": {
+        "swapPlaintext": {
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          },
+          "delta1I": {
+            "lo": "940448717721395982"
+          },
+          "delta2I": {
+            "lo": "878080434546898070"
+          },
+          "claimFee": {
+            "amount": {}
+          },
+          "claimAddress": {
+            "inner": "pt6gWCOL8ZRhjaZrxUo5ifqb6Ufe0X79rMkyL2Od02Q+CrhPcdzh7cKaMBh8M0JAR0jFLQoqTXe/rtbvvnWtZdRAEHMmDA0LbdfnC4UpV9c="
+          },
+          "rseed": "gY2nvJwil799/M0+oeEUZnQ/cUq4tfudxtnVSP1GhuU="
+        },
+        "outputData": {
+          "delta1": {
+            "lo": "920174145"
+          },
+          "delta2": {
+            "lo": "1571987491"
+          },
+          "lambda1": {
+            "lo": "1776"
+          },
+          "lambda2": {
+            "lo": "1241"
+          },
+          "unfilled1": {
+            "lo": "329"
+          },
+          "unfilled2": {
+            "lo": "502"
+          },
+          "tradingPair": {
+            "asset1": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            },
+            "asset2": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
+          }
+        },
+        "epochDuration": "1000",
+        "proofBlindingR": "5wmdHfNwx9toMKDGBwMIkSodoOnOT6RRotmLiJTYqQs=",
+        "proofBlindingS": "kRFHRU9AoLqLvfe6IZgzfZqRMscfPJhX6rTgdgxgGAM="
+      }
+    },
+    {
+      "proposalDepositClaim": {
+        "proposal": "280427891",
+        "depositAmount": {
+          "lo": "128848827710851509"
+        },
+        "outcome": {
+          "slashed": {}
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "9733323270",
-    "chainId": "boztic-225159793053704637422672",
+    "expiryHeight": "1832649256",
+    "chainId": "aklnn-48831",
     "fee": {
       "amount": {
-        "lo": "535445417177531765"
+        "lo": "972464629503390686"
       }
     }
   }

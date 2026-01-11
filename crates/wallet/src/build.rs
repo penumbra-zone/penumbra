@@ -41,7 +41,9 @@ where
         let tx = plan
             .build_concurrent(fvk, &witness_data, &auth_data)
             .await
-            .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?;
+            .map_err(|e| {
+                tonic::Status::failed_precondition(format!("Error building transaction: {}", e))
+            })?;
 
         Ok(tx)
     }

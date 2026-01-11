@@ -1660,7 +1660,9 @@ impl ViewService for ViewServer {
                 // TODO: calling `.build` should provide some mechanism to get progress
                 // updates
                 .build(&fvk, &witness_data, &authorization_data)
-                .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
+                .map_err(|e| {
+                    tonic::Status::failed_precondition(format!("Error building transaction: {}", e))
+                })?
                 .into(),
         );
 
@@ -1952,6 +1954,186 @@ impl ViewService for ViewServer {
         _request: tonic::Request<pb::LpStrategyCatalogRequest>,
     ) -> Result<tonic::Response<Self::LpStrategyCatalogStream>, tonic::Status> {
         unimplemented!("lp_strategy_catalog currently only implemented on web")
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn compliance_asset_status(
+        &self,
+        request: tonic::Request<pb::ComplianceAssetStatusRequest>,
+    ) -> Result<tonic::Response<pb::ComplianceAssetStatusResponse>, tonic::Status> {
+        use penumbra_sdk_proto::core::component::compliance::v1::{
+            query_service_client::QueryServiceClient as ComplianceQueryServiceClient,
+            ComplianceAssetStatusRequest as ComplianceRequest,
+        };
+
+        let asset_id = request
+            .into_inner()
+            .asset_id
+            .ok_or_else(|| tonic::Status::invalid_argument("missing asset_id"))?;
+
+        // Connect to pd's compliance service
+        let mut client = ComplianceQueryServiceClient::connect(self.node.to_string())
+            .await
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("compliance service unavailable: {e}"))
+            })?;
+
+        // Query the compliance service
+        let request = ComplianceRequest {
+            asset_id: Some(asset_id.clone()),
+        };
+        let response = client
+            .compliance_asset_status(tonic::Request::new(request))
+            .await?
+            .into_inner();
+
+        // Return as ViewService response
+        Ok(tonic::Response::new(pb::ComplianceAssetStatusResponse {
+            asset_id: Some(asset_id),
+            is_registered: response.is_registered,
+            is_regulated: response.is_regulated,
+        }))
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn compliance_anchors(
+        &self,
+        _request: tonic::Request<pb::ComplianceAnchorsRequest>,
+    ) -> Result<tonic::Response<pb::ComplianceAnchorsResponse>, tonic::Status> {
+        use penumbra_sdk_proto::core::component::compliance::v1::{
+            query_service_client::QueryServiceClient as ComplianceQueryServiceClient,
+            ComplianceAnchorsRequest as ComplianceRequest,
+        };
+
+        // Connect to pd's compliance service
+        let mut client = ComplianceQueryServiceClient::connect(self.node.to_string())
+            .await
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("compliance service unavailable: {e}"))
+            })?;
+
+        // Query the compliance service for anchors
+        let request = ComplianceRequest {};
+        let response = client
+            .compliance_anchors(tonic::Request::new(request))
+            .await?
+            .into_inner();
+
+        // Return as ViewService response
+        Ok(tonic::Response::new(pb::ComplianceAnchorsResponse {
+            user_tree_root: response.user_tree_root,
+            asset_tree_root: response.asset_tree_root,
+        }))
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn compliance_merkle_proofs(
+        &self,
+        request: tonic::Request<pb::ComplianceMerkleProofsRequest>,
+    ) -> Result<tonic::Response<pb::ComplianceMerkleProofsResponse>, tonic::Status> {
+        use penumbra_sdk_proto::core::component::compliance::v1::{
+            query_service_client::QueryServiceClient as ComplianceQueryServiceClient,
+            ComplianceMerkleProofsRequest as ComplianceRequest,
+        };
+
+        let request_inner = request.into_inner();
+
+        // Connect to pd's compliance service
+        let mut client = ComplianceQueryServiceClient::connect(self.node.to_string())
+            .await
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("compliance service unavailable: {e}"))
+            })?;
+
+        // Query the compliance service for Merkle proofs
+        let compliance_request = ComplianceRequest {
+            address: request_inner.address.clone(),
+            asset_id: request_inner.asset_id.clone(),
+        };
+        let response = client
+            .compliance_merkle_proofs(tonic::Request::new(compliance_request))
+            .await?
+            .into_inner();
+
+        // Convert compliance proto types to view proto types
+        let compliance_path = response.compliance_path.map(|p| pb::MerklePath {
+            layers: p
+                .layers
+                .into_iter()
+                .map(|layer| pb::MerklePathLayer {
+                    siblings: layer.siblings,
+                })
+                .collect(),
+        });
+
+        let asset_path = response.asset_path.map(|p| pb::MerklePath {
+            layers: p
+                .layers
+                .into_iter()
+                .map(|layer| pb::MerklePathLayer {
+                    siblings: layer.siblings,
+                })
+                .collect(),
+        });
+
+        // Return as ViewService response
+        Ok(tonic::Response::new(pb::ComplianceMerkleProofsResponse {
+            user_registered: response.user_registered,
+            asset_registered: response.asset_registered,
+            is_regulated: response.is_regulated,
+            compliance_path,
+            compliance_position: response.compliance_position,
+            asset_path,
+            asset_position: response.asset_position,
+            compliance_anchor: response.compliance_anchor,
+            asset_anchor: response.asset_anchor,
+        }))
+    }
+
+    #[instrument(skip_all, level = "trace")]
+    async fn compliance_user_leaf(
+        &self,
+        request: tonic::Request<pb::ComplianceUserLeafRequest>,
+    ) -> Result<tonic::Response<pb::ComplianceUserLeafResponse>, tonic::Status> {
+        use penumbra_sdk_proto::core::component::compliance::v1::{
+            query_service_client::QueryServiceClient as ComplianceQueryServiceClient,
+            ComplianceUserLeafRequest as ComplianceRequest,
+        };
+
+        let request_inner = request.into_inner();
+
+        // Connect to pd's compliance service
+        let endpoint = get_pd_endpoint(self.node.clone())
+            .await
+            .map_err(|e| tonic::Status::internal(format!("failed to connect to pd: {e}")))?;
+        let channel = endpoint
+            .connect()
+            .await
+            .map_err(|e| tonic::Status::internal(format!("failed to connect to pd: {e}")))?;
+        let mut client = ComplianceQueryServiceClient::new(channel);
+
+        // Query the compliance service for the user's leaf
+        let compliance_request = ComplianceRequest {
+            address: request_inner.address.clone(),
+            asset_id: request_inner.asset_id.clone(),
+        };
+        let response = client
+            .compliance_user_leaf(tonic::Request::new(compliance_request))
+            .await?
+            .into_inner();
+
+        // Convert compliance proto types to view proto types
+        let leaf = response.leaf.map(|l| pb::ComplianceLeaf {
+            address: l.address,
+            key: l.key.map(|k| pb::ComplianceViewingKey { inner: k.inner }),
+            asset_id: l.asset_id,
+        });
+
+        // Return as ViewService response
+        Ok(tonic::Response::new(pb::ComplianceUserLeafResponse {
+            is_registered: response.is_registered,
+            leaf,
+        }))
     }
 }
 

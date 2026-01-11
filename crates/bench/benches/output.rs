@@ -1,59 +1,77 @@
-use std::str::FromStr;
-
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::{Fq, Fr};
-use decaf377_fmd as fmd;
-use decaf377_ka as ka;
-use penumbra_sdk_asset::{Balance, Value};
-use penumbra_sdk_keys::{keys::Diversifier, Address};
+use penumbra_sdk_asset::Balance;
 use penumbra_sdk_proof_params::{DummyWitness, OUTPUT_PROOF_PROVING_KEY};
-use penumbra_sdk_shielded_pool::{
-    output::{OutputProofPrivate, OutputProofPublic},
-    Note, OutputCircuit, OutputProof, Rseed,
-};
+use penumbra_sdk_shielded_pool::output::{OutputProofPrivate, OutputProofPublic};
+use penumbra_sdk_shielded_pool::test_proof_helpers::proof_test_helpers::generate_test_data;
+use penumbra_sdk_shielded_pool::{OutputCircuit, OutputProof};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
-fn prove(r: Fq, s: Fq, public: OutputProofPublic, private: OutputProofPrivate) {
-    let _proof = OutputProof::prove(r, s, &OUTPUT_PROOF_PROVING_KEY, public, private)
-        .expect("can generate proof");
-}
-
 fn output_proving_time(c: &mut Criterion) {
-    let diversifier_bytes = [1u8; 16];
-    let pk_d_bytes = decaf377::Element::GENERATOR.vartime_compress().0;
-    let clue_key_bytes = [1; 32];
-    let diversifier = Diversifier(diversifier_bytes);
-    let address = Address::from_components(
-        diversifier,
-        ka::Public(pk_d_bytes),
-        fmd::ClueKey(clue_key_bytes),
-    )
-    .expect("generated 1 address");
-    let value_to_send = Value::from_str("1upenumbra").expect("valid value");
+    let mut rng = OsRng;
 
-    let note = Note::from_parts(address, value_to_send, Rseed([1u8; 32])).expect("can make a note");
-    let balance_blinding = Fr::from(1u32);
-    let balance_commitment = (-Balance::from(value_to_send)).commit(balance_blinding);
-    let note_commitment = note.commit();
+    // Generate valid test data with compliance encryption
+    let test_data = generate_test_data(&mut rng, 1, 100, false); // unregulated for simplicity
+
+    let note_commitment = test_data.note.commit();
+    let balance_commitment = (-Balance::from(test_data.value)).commit(test_data.balance_blinding);
+
+    // Create dummy leaves and blinded hashes
+    let dummy_leaf = penumbra_sdk_compliance::ComplianceLeaf {
+        address: test_data.address.clone(),
+        key: test_data.ack.clone(),
+        asset_id: test_data.note.asset_id(),
+    };
+    let dummy_nonce = Fr::from(0u64);
+    let receiver_leaf_hash =
+        penumbra_sdk_compliance::blind_counterparty_leaf(dummy_leaf.commit(), dummy_nonce);
+    let counterparty_leaf_hash =
+        penumbra_sdk_compliance::blind_sender_leaf(dummy_leaf.commit(), dummy_nonce);
 
     let public = OutputProofPublic {
         balance_commitment,
         note_commitment,
-    };
-    let private = OutputProofPrivate {
-        note,
-        balance_blinding,
+        compliance_epk: test_data.compliance_epk,
+        compliance_ciphertext: test_data.compliance_ciphertext,
+        asset_anchor: test_data.asset_anchor,
+        compliance_anchor: test_data.compliance_anchor,
+        target_timestamp: test_data.timestamp,
+        receiver_leaf_hash,
+        counterparty_leaf_hash,
     };
 
-    let r = Fq::rand(&mut OsRng);
-    let s = Fq::rand(&mut OsRng);
+    let private = OutputProofPrivate {
+        note: test_data.note,
+        balance_blinding: test_data.balance_blinding,
+        asset_path: penumbra_sdk_compliance::MerklePath::default(),
+        asset_position: 0,
+        is_regulated: false,
+        compliance_path: penumbra_sdk_compliance::MerklePath::default(),
+        compliance_position: 0,
+        user_leaf: test_data.user_leaf,
+        compliance_ephemeral_secret: test_data.ephemeral_secret,
+        counterparty_leaf: dummy_leaf,
+        tx_blinding_nonce: dummy_nonce,
+    };
+
+    let r = Fq::rand(&mut rng);
+    let s = Fq::rand(&mut rng);
 
     c.bench_function("output proving", |b| {
-        b.iter(|| prove(r, s, public.clone(), private.clone()))
+        b.iter(|| {
+            let _proof = OutputProof::prove(
+                r,
+                s,
+                &OUTPUT_PROOF_PROVING_KEY,
+                public.clone(),
+                private.clone(),
+            )
+            .expect("can create proof");
+        })
     });
 
     // Also print out the number of constraints.

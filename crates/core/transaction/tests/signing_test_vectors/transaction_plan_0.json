@@ -1,48 +1,62 @@
 {
   "actions": [
     {
-      "positionWithdraw": {
-        "reserves": {
-          "r1": {
-            "lo": "13648740409960435"
+      "communityPoolOutput": {
+        "value": {
+          "amount": {
+            "lo": "519183040344871563"
           },
-          "r2": {
-            "lo": "756856335878883454"
-          }
-        },
-        "positionId": {
-          "inner": "STNeLtIut4nZAZOgE2tGZMRof1ge1GThQiZ0S3ReG20="
-        },
-        "pair": {
-          "asset1": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
-          },
-          "asset2": {
+          "assetId": {
             "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
           }
         },
-        "sequence": "1"
+        "address": {
+          "inner": "jNviChCg2z6APZH2zdY4BPGomEO/HBQZy9G4dAqQK5ZdEwFSKrtCXr+dcsAfKLY/wOPAD0zhxcUpBAZlWhxSaZsSAVLgkHS2IC45Al3BiPY="
+        }
       }
     },
     {
-      "proposalSubmit": {
-        "proposal": {
-          "title": "eruqiigybuwslelyedqzuejy-9415523",
-          "description": "bnsgnfxdfqopuoofieudfassceif-7983516",
-          "signaling": {}
-        },
+      "communityPoolSpend": {
+        "value": {
+          "amount": {
+            "lo": "436655091853178889"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "communityPoolDeposit": {
+        "value": {
+          "amount": {
+            "lo": "750503470206804545"
+          },
+          "assetId": {
+            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          }
+        }
+      }
+    },
+    {
+      "proposalDepositClaim": {
+        "proposal": "819476246",
         "depositAmount": {
-          "lo": "755307093195598306"
+          "lo": "256860768348724886"
+        },
+        "outcome": {
+          "slashed": {}
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "8043970505",
-    "chainId": "dgptroyoifjvsxy-559380648",
+    "expiryHeight": "6213773827",
+    "chainId": "qbumugigw-67649517342986349949356308654148",
     "fee": {
       "amount": {
-        "lo": "428924731905324533"
+        "lo": "568485241216863812"
       }
     }
   }

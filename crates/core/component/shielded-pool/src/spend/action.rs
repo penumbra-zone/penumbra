@@ -25,6 +25,16 @@ pub struct Body {
     pub nullifier: Nullifier,
     pub rk: VerificationKey<SpendAuth>,
     pub encrypted_backref: EncryptedBackref,
+    pub compliance_ciphertext: Vec<u8>,
+    pub target_timestamp: u64,
+    /// Blinded sender leaf hash (for binding with output circuit)
+    pub sender_leaf_hash: penumbra_sdk_tct::StateCommitment,
+    /// Blinded counterparty (receiver) leaf hash (for binding with output circuit)
+    pub counterparty_leaf_hash: penumbra_sdk_tct::StateCommitment,
+    /// Compliance tree anchor (user tree root) used during proof generation
+    pub compliance_anchor: penumbra_sdk_tct::StateCommitment,
+    /// Asset tree anchor used during proof generation
+    pub asset_anchor: penumbra_sdk_tct::StateCommitment,
 }
 
 impl EffectingData for Body {
@@ -94,6 +104,12 @@ impl From<Body> for pb::SpendBody {
             nullifier: Some(msg.nullifier.into()),
             rk: Some(msg.rk.into()),
             encrypted_backref: msg.encrypted_backref.into(),
+            compliance_ciphertext: msg.compliance_ciphertext,
+            target_timestamp: msg.target_timestamp,
+            sender_leaf_hash: Some(msg.sender_leaf_hash.into()),
+            counterparty_leaf_hash: Some(msg.counterparty_leaf_hash.into()),
+            compliance_anchor: Some(msg.compliance_anchor.into()),
+            asset_anchor: Some(msg.asset_anchor.into()),
         }
     }
 }
@@ -135,11 +151,44 @@ impl TryFrom<pb::SpendBody> for Body {
             return Err(anyhow::anyhow!("invalid encrypted backref length"));
         }
 
+        let compliance_ciphertext = proto.compliance_ciphertext;
+        let target_timestamp = proto.target_timestamp;
+
+        let sender_leaf_hash = proto
+            .sender_leaf_hash
+            .ok_or_else(|| anyhow::anyhow!("missing sender_leaf_hash"))?
+            .try_into()
+            .context("malformed sender_leaf_hash")?;
+
+        let counterparty_leaf_hash = proto
+            .counterparty_leaf_hash
+            .ok_or_else(|| anyhow::anyhow!("missing counterparty_leaf_hash"))?
+            .try_into()
+            .context("malformed counterparty_leaf_hash")?;
+
+        let compliance_anchor = proto
+            .compliance_anchor
+            .ok_or_else(|| anyhow::anyhow!("missing compliance_anchor"))?
+            .try_into()
+            .context("malformed compliance_anchor")?;
+
+        let asset_anchor = proto
+            .asset_anchor
+            .ok_or_else(|| anyhow::anyhow!("missing asset_anchor"))?
+            .try_into()
+            .context("malformed asset_anchor")?;
+
         Ok(Body {
             balance_commitment,
             nullifier,
             rk,
             encrypted_backref,
+            compliance_ciphertext,
+            target_timestamp,
+            sender_leaf_hash,
+            counterparty_leaf_hash,
+            compliance_anchor,
+            asset_anchor,
         })
     }
 }

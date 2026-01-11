@@ -466,7 +466,7 @@ impl NetworkAllocation {
     }
     /// Creates a basic set of genesis [Allocation]s for the provided [Address].
     /// Returns multiple Allocations, so that it's immediately possible to use the DEX,
-    /// for basic interactive testing of swap behavior.
+    /// for basic interactive testing of swap behavior, and compliance system testing.
     /// For more control over precise allocation amounts, use [from_csv].
     pub fn simple(address: Address) -> Vec<Allocation> {
         vec![
@@ -480,7 +480,20 @@ impl NetworkAllocation {
             Allocation {
                 address: address.clone(),
                 raw_denom: "test_usd".into(),
-                raw_amount: (1_000 as u128).into(),
+                // For compliance testing: unregulated asset
+                raw_amount: (1_000_000 as u128).into(),
+            },
+            Allocation {
+                address: address.clone(),
+                raw_denom: "regulated_usd".into(),
+                // For compliance testing: regulated asset
+                raw_amount: (1_000_000 as u128).into(),
+            },
+            Allocation {
+                address: address.clone(),
+                raw_denom: "unknown_token".into(),
+                // For compliance testing: unregistered asset (never registered in compliance registry)
+                raw_amount: (1_000_000 as u128).into(),
             },
         ]
     }
@@ -772,13 +785,14 @@ mod tests {
         )?;
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
-        // No external address template was given, so only 1 validator will be present.
+        // When no validators_input_file is provided, validators are loaded from
+        // PD_LATEST_TESTNET_VALIDATORS (testnets/validators-ci.json) which has 2 validators.
         let penumbra_sdk_app::genesis::AppState::Content(app_state) =
             testnet_config.genesis.app_state
         else {
             unimplemented!("TODO: support checkpointed app state")
         };
-        assert_eq!(app_state.stake_content.validators.len(), 1);
+        assert_eq!(app_state.stake_content.validators.len(), 2);
         Ok(())
     }
 

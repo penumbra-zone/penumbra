@@ -16,10 +16,15 @@ pub use bip44::Bip44Path;
 mod wallet_id;
 pub use wallet_id::WalletId;
 
+mod cvk;
 mod fvk;
 mod ivk;
 mod ovk;
 
+pub use cvk::{
+    day_index, derive_daily_tweak, AddressComplianceKey, DailyKeySet, DailyMasterKey, KeyType,
+    MasterComplianceKey, CVK_LEN_BYTES, SECONDS_PER_DAY,
+};
 pub(crate) use fvk::IVK_DOMAIN_SEP;
 pub use fvk::{
     r1cs::{AuthorizationKeyVar, RandomizedVerificationKey, SpendAuthRandomizerVar},

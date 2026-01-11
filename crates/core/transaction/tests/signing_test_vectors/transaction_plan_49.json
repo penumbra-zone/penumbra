@@ -1,39 +1,119 @@
 {
   "actions": [
     {
-      "communityPoolDeposit": {
-        "value": {
-          "amount": {
-            "lo": "105487505849066331"
+      "delegatorVote": {
+        "proposal": "98760328",
+        "vote": {
+          "vote": "VOTE_ABSTAIN"
+        },
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "361166057864481012"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "rseed": "i1cqAPaRQ2WFQY/rE/FqORK548BzIDUgKoukkXXCqBE=",
+          "address": {
+            "inner": "o80YaqRiyVxuEkE5qY5YdTWvCZQ1N9OIMw7RVDcHoftceuKxETW0p3kk/59tjb9Hl28sK2t+GB+cPRPYXlepwTh+APiHf0UURsF+UOxVOVw="
           }
+        },
+        "unbondedAmount": {
+          "lo": "394575562517051923"
+        },
+        "randomizer": "VFo1SkKckpzU8Dnsaxiy3X5hJg4NlTjPiZXeJFFQgAA=",
+        "proofBlindingR": "4AaeGEjG4gHVbwoJBBSc3MV/LnQeqeiUURgoyt5SVgk=",
+        "proofBlindingS": "7f5xFAhYJAtuY8b+omfteGO+2taN2oz29cDAFrd2hQ4="
+      }
+    },
+    {
+      "delegate": {
+        "validatorIdentity": {
+          "ik": "vGaqqSZ81KUPP5B68lompSDbYgMx+cOe/Jczw6mdiGA="
+        },
+        "epochIndex": "7176",
+        "unbondedAmount": {
+          "lo": "385467735431625128"
+        },
+        "delegationAmount": {
+          "lo": "620357490376429275"
         }
       }
     },
     {
-      "communityPoolOutput": {
-        "value": {
-          "amount": {
-            "lo": "223823246583562188"
+      "delegatorVote": {
+        "proposal": "730794765",
+        "vote": {
+          "vote": "VOTE_YES"
+        },
+        "stakedNote": {
+          "value": {
+            "amount": {
+              "lo": "135040124824281163"
+            },
+            "assetId": {
+              "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+            }
           },
-          "assetId": {
-            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+          "rseed": "TkbvxIplZLaTgSq/GRRNec2RJ1TCz126qriaIWJlbbY=",
+          "address": {
+            "inner": "ljKkdCBTIqF1Bu1lcUcXGtoXKD6iB00e6fBtym/RU/DVG8fAJoh5xgYi8YnhTg3XXrft222CSFQug+DGQ/UYA1gQFT2bDNxGSYwevugCQPU="
           }
         },
-        "address": {
-          "inner": "0nu/JCr7CH2ujOOSE5V30n8Np4JgnVXlacjBbPS/1Id1ADNEdqcu+wSnQ3SwIZZieMDVigyw8R25TI6hQ1W6jnJBiCiKtMt23hRO3Vzg/5M="
+        "unbondedAmount": {
+          "lo": "927668268998839701"
+        },
+        "randomizer": "n3XdWuH3yhlLFjyc0ECizyG9ujnGM4+FfnmfYO5SAQE=",
+        "proofBlindingR": "NSacIbngtlML5+r7KI73ryqlxpPtDLlg4UVAK/HtfAo=",
+        "proofBlindingS": "gbJ6njPL6vcU4zeQJmtrx/qGzdrt/A9np49NyAnuFAE="
+      }
+    },
+    {
+      "positionOpenPlan": {
+        "position": {
+          "phi": {
+            "component": {
+              "p": {
+                "lo": "430394168859103556"
+              },
+              "q": {
+                "lo": "573514452790695097"
+              }
+            },
+            "pair": {
+              "asset1": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              },
+              "asset2": {
+                "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+              }
+            }
+          },
+          "nonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+          "state": {
+            "state": "POSITION_STATE_ENUM_CLOSED"
+          },
+          "reserves": {
+            "r1": {
+              "lo": "185061868431804282"
+            },
+            "r2": {
+              "lo": "423631022195739302"
+            }
+          },
+          "closeOnFill": true
         }
       }
     }
   ],
   "transactionParameters": {
-    "expiryHeight": "6517265301",
-    "chainId": "zzkidrpoeyjqa-309",
+    "expiryHeight": "4288907284",
+    "chainId": "fipyrbeacz-24978244802989867",
     "fee": {
       "amount": {
-        "lo": "370447175926720781"
+        "lo": "662539178873511509"
       }
     }
   }
