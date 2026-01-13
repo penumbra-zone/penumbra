@@ -19,6 +19,7 @@ component = [
     "penumbra-sdk-proto/cnidarium",
     "penumbra-sdk-shielded-pool/component",
     "penumbra-sdk-fee/component",
+    "penumbra-sdk-compliance/component",
     "tokio",
     "tonic",
 ]
@@ -64,6 +65,7 @@ once_cell = {workspace = true}
 parking_lot = {workspace = true}
 pbjson-types = {workspace = true}
 penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-compliance = {workspace = true, default-features = false}
 penumbra-sdk-fee = {workspace = true, default-features = false}
 penumbra-sdk-keys = {workspace = true, default-features = false}
 penumbra-sdk-num = {workspace = true, default-features = false}

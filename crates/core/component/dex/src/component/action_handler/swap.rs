@@ -4,6 +4,7 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
+use penumbra_sdk_compliance::RegulatedAssetCheck;
 use penumbra_sdk_proof_params::SWAP_PROOF_VERIFICATION_KEY;
 use penumbra_sdk_proto::{DomainType as _, StateWriteProto};
 use penumbra_sdk_sct::component::source::SourceContext;
@@ -43,6 +44,17 @@ impl ActionHandler for Swap {
             dex_params.is_enabled,
             "Dex MUST be enabled to process swap actions."
         );
+
+        // Block regulated assets from being swapped
+        state
+            .ensure_assets_not_regulated(
+                &[
+                    self.body.trading_pair.asset_1(),
+                    self.body.trading_pair.asset_2(),
+                ],
+                "Swap",
+            )
+            .await?;
 
         let swap = self;
 

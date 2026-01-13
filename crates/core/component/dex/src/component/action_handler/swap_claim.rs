@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium_component::ActionHandler;
+use penumbra_sdk_compliance::RegulatedAssetCheck;
 use penumbra_sdk_txhash::TransactionContext;
 
 use cnidarium::{StateRead, StateWrite};
@@ -77,6 +78,15 @@ impl ActionHandler for SwapClaim {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // Block regulated assets from being claimed
+        let trading_pair = self.body.output_data.trading_pair;
+        state
+            .ensure_assets_not_regulated(
+                &[trading_pair.asset_1(), trading_pair.asset_2()],
+                "SwapClaim",
+            )
+            .await?;
+
         // 3. Check that the nullifier hasn't been spent before.
         let spent_nullifier = self.body.nullifier;
         state.check_nullifier_unspent(spent_nullifier).await?;

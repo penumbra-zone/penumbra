@@ -14,7 +14,7 @@ component = [
     "tonic",
     "penumbra-sdk-proto/cnidarium",
     "penumbra-sdk-shielded-pool/component",
-
+    "penumbra-sdk-compliance/component",
     "async-stream",
 ]
 default = ["component"]
@@ -35,6 +35,7 @@ metrics = {workspace = true}
 once_cell = {workspace = true}
 pbjson-types = {workspace = true}
 penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-compliance = {workspace = true, default-features = false}
 penumbra-sdk-keys = {workspace = true, default-features = false}
 penumbra-sdk-num = {workspace = true, default-features = false}
 penumbra-sdk-proto = {workspace = true, default-features = false}

@@ -2,6 +2,7 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
+use penumbra_sdk_compliance::RegulatedAssetCheck;
 
 use crate::{
     component::{PositionManager, StateReadExt},
@@ -35,6 +36,17 @@ impl ActionHandler for PositionOpen {
             dex_params.is_enabled,
             "Dex MUST be enabled to open positions."
         );
+
+        // Block regulated assets from being used in positions
+        state
+            .ensure_assets_not_regulated(
+                &[
+                    self.position.phi.pair.asset_1(),
+                    self.position.phi.pair.asset_2(),
+                ],
+                "PositionOpen",
+            )
+            .await?;
 
         state.open_position(self.position.clone()).await?;
         Ok(())

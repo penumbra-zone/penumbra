@@ -4,8 +4,12 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use decaf377::Fr;
+use penumbra_sdk_compliance::RegulatedAssetCheck;
 
-use crate::{component::PositionManager, lp::action::PositionWithdraw};
+use crate::{
+    component::{PositionManager, PositionRead},
+    lp::action::PositionWithdraw,
+};
 
 #[async_trait]
 /// Debits a closed position NFT and credits a withdrawn position NFT and the final reserves.
@@ -18,6 +22,18 @@ impl ActionHandler for PositionWithdraw {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // Lookup position to check if assets are regulated before withdrawal
+        let position = state
+            .position_by_id(&self.position_id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("position not found"))?;
+        state
+            .ensure_assets_not_regulated(
+                &[position.phi.pair.asset_1(), position.phi.pair.asset_2()],
+                "PositionWithdraw",
+            )
+            .await?;
+
         // See comment in check_stateful for why we check the position state here:
         // we need to ensure that we're checking the reserves at the moment we execute
         // the withdrawal, to prevent any possibility of TOCTOU attacks.

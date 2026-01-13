@@ -3,6 +3,7 @@ use ark_ff::Zero;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use decaf377::Fr;
+use penumbra_sdk_compliance::RegulatedAssetCheck;
 use penumbra_sdk_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
 use penumbra_sdk_proto::StateWriteProto as _;
 use penumbra_sdk_txhash::TransactionContext;
@@ -68,6 +69,11 @@ impl ActionHandler for DelegatorVote {
             auth_sig: _, // We already checked this in stateless verification
             proof: _,    // We already checked this in stateless verification
         } = self;
+
+        // Block regulated delegation tokens from being used to vote
+        state
+            .ensure_not_regulated(value.asset_id, "DelegatorVote")
+            .await?;
 
         state.check_proposal_votable(*proposal).await?;
         state

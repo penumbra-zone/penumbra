@@ -49,6 +49,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
         },
     );
     state_tx.put_block_height(height);
+    state_tx.put_block_timestamp(height, tendermint::Time::now());
     state_tx.apply();
 
     // 2. Create a Swap action
@@ -138,7 +139,6 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     Ok(())
 }
 
-/*
 #[tokio::test]
 #[should_panic(expected = "was already spent")]
 async fn swap_claim_duplicate_nullifier_previous_transaction() {
@@ -165,6 +165,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
         },
     );
     state_tx.put_block_height(height);
+    state_tx.put_block_timestamp(height, tendermint::Time::now());
     state_tx.apply();
 
     // 2. Create a Swap action
@@ -176,7 +177,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
     let delta_1 = Amount::from(100_000u64);
     let delta_2 = Amount::from(0u64);
     let fee = Fee::default();
-    let claim_address: Address = *test_keys::ADDRESS_0;
+    let claim_address: Address = test_keys::ADDRESS_0.deref().clone();
 
     let plaintext =
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
@@ -204,7 +205,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    state_tx.finish_block(false).await.unwrap();
+    state_tx.finish_block().await.unwrap();
 
     state_tx.apply();
 
@@ -262,9 +263,12 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
     let claim = claim_plan.swap_claim(&test_keys::FULL_VIEWING_KEY, &swap_auth_path);
 
     // 9. Execute the second SwapClaim action - the test should panic here
+    // Nullifier check is in check_and_execute, not check_historical
     claim.check_historical(state.clone()).await.unwrap();
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(3u8);
+    claim.check_and_execute(&mut state_tx).await.unwrap();
 }
- */
 
 #[tokio::test]
 async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
@@ -282,6 +286,7 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_block_height(height);
+    state_tx.put_block_timestamp(height, tendermint::Time::now());
     state_tx.put_epoch_by_height(
         height,
         Epoch {

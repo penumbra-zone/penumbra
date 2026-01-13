@@ -16,6 +16,7 @@ component = [
     "penumbra-sdk-sct/component",
     "penumbra-sdk-shielded-pool/component",
     "penumbra-sdk-distributions/component",
+    "penumbra-sdk-compliance/component",
     "tokio",
     "im",
     "futures",
@@ -59,6 +60,7 @@ im = {workspace = true, optional = true}
 metrics = {workspace = true, optional = true}
 once_cell = {workspace = true}
 penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-compliance = {workspace = true, default-features = false}
 penumbra-sdk-distributions = {workspace = true, default-features = false}
 penumbra-sdk-keys = {workspace = true, default-features = false}
 penumbra-sdk-num = {workspace = true, default-features = false}

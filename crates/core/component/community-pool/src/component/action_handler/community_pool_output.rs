@@ -2,6 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
+use penumbra_sdk_compliance::RegulatedAssetCheck;
 use penumbra_sdk_sct::CommitmentSource;
 use penumbra_sdk_shielded_pool::component::NoteManager;
 
@@ -16,6 +17,11 @@ impl ActionHandler for CommunityPoolOutput {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // Block regulated assets from being output from the community pool
+        state
+            .ensure_not_regulated(self.value.asset_id, "CommunityPoolOutput")
+            .await?;
+
         // Executing a Community Pool output is just minting a note to the recipient of the output.
         state
             .mint_note(

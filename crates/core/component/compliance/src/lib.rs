@@ -34,6 +34,11 @@ pub mod registry;
 pub use registry::{ComplianceRegistryRead, ComplianceRegistryWrite};
 
 #[cfg(feature = "component")]
+pub mod action_check;
+#[cfg(feature = "component")]
+pub use action_check::RegulatedAssetCheck;
+
+#[cfg(feature = "component")]
 pub mod component;
 #[cfg(feature = "component")]
 pub use component::{Compliance, RpcServer};

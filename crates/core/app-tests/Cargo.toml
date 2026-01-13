@@ -153,6 +153,10 @@ features = [
 name = "compliance_full_flow"
 path = "tests/compliance_full_flow.rs"
 
+[[test]]
+name = "compliance_action_blocking"
+path = "tests/compliance_action_blocking.rs"
+
 # Tests that don't use SpendPlan/OutputPlan (no compliance anchor needed):
 [[test]]
 name = "app_blocktimes_increment"

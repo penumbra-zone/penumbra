@@ -14,6 +14,7 @@ component = [
     "penumbra-sdk-proto/cnidarium",
     "penumbra-sdk-sct/component",
     "penumbra-sdk-stake/component",
+    "penumbra-sdk-compliance/component",
     "tokio",
     "tonic",
 ]
@@ -54,6 +55,7 @@ metrics = {workspace = true}
 once_cell = {workspace = true}
 pbjson-types = {workspace = true}
 penumbra-sdk-asset = {workspace = true, default-features = false}
+penumbra-sdk-compliance = {workspace = true, default-features = false}
 penumbra-sdk-distributions = {workspace = true, default-features = false}
 penumbra-sdk-ibc = {workspace = true, default-features = false}
 penumbra-sdk-keys = {workspace = true, default-features = false}

@@ -2,6 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
+use penumbra_sdk_compliance::RegulatedAssetCheck;
 
 use crate::{component::StateWriteExt as _, CommunityPoolSpend};
 
@@ -15,6 +16,11 @@ impl ActionHandler for CommunityPoolSpend {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // Block regulated assets from being spent from the community pool
+        state
+            .ensure_not_regulated(self.value.asset_id, "CommunityPoolSpend")
+            .await?;
+
         // This will fail if we try to overdraw the Community Pool, so we can never spend more than we have.
         state.community_pool_withdraw(self.value).await
     }

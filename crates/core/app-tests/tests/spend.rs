@@ -49,6 +49,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
     // 1. Simulate BeginBlock
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_block_height(height);
+    state_tx.put_block_timestamp(height, tendermint::Time::now());
     state_tx.put_epoch_by_height(
         height,
         Epoch {
@@ -138,6 +139,7 @@ async fn invalid_dummy_spend() {
     // 1. Simulate BeginBlock
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_block_height(height);
+    state_tx.put_block_timestamp(height, tendermint::Time::now());
     state_tx.put_epoch_by_height(
         height,
         Epoch {
@@ -246,7 +248,6 @@ async fn invalid_dummy_spend() {
         .contains("spend proof did not verify"));
 }
 
-/*
 #[tokio::test]
 #[should_panic(expected = "was already spent")]
 async fn spend_duplicate_nullifier_previous_transaction() {
@@ -278,6 +279,7 @@ async fn spend_duplicate_nullifier_previous_transaction() {
     // 1. Simulate BeginBlock
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_block_height(height);
+    state_tx.put_block_timestamp(height, tendermint::Time::now());
     state_tx.put_epoch_by_height(
         height,
         Epoch {
@@ -292,7 +294,14 @@ async fn spend_duplicate_nullifier_previous_transaction() {
     let dummy_effect_hash = [0u8; 64];
     let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
     let auth_sig = rsk.sign(&mut rng, dummy_effect_hash.as_ref());
-    let spend = spend_plan.spend(&test_keys::FULL_VIEWING_KEY, auth_sig, proof.clone(), root);
+    let spend = spend_plan.spend(
+        &test_keys::FULL_VIEWING_KEY,
+        auth_sig,
+        proof.clone(),
+        root,
+        &penumbra_sdk_proof_params::SPEND_PROOF_PROVING_KEY,
+        None, // No compliance keys
+    ).expect("can create spend");
     let transaction_context = TransactionContext {
         anchor: root,
         effect_hash: EffectHash(dummy_effect_hash),
@@ -320,7 +329,14 @@ async fn spend_duplicate_nullifier_previous_transaction() {
     let dummy_effect_hash = [0u8; 64];
     let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
     let auth_sig = rsk.sign(&mut rng, dummy_effect_hash.as_ref());
-    let spend = spend_plan.spend(&test_keys::FULL_VIEWING_KEY, auth_sig, proof, root);
+    let spend = spend_plan.spend(
+        &test_keys::FULL_VIEWING_KEY,
+        auth_sig,
+        proof,
+        root,
+        &penumbra_sdk_proof_params::SPEND_PROOF_PROVING_KEY,
+        None, // No compliance keys
+    ).expect("can create spend");
     let transaction_context = TransactionContext {
         anchor: root,
         effect_hash: EffectHash(dummy_effect_hash),
@@ -337,96 +353,3 @@ async fn spend_duplicate_nullifier_previous_transaction() {
     spend.check_and_execute(&mut state_tx).await.unwrap();
     state_tx.apply();
 }
-
-#[tokio::test]
-#[should_panic(expected = "Duplicate nullifier in transaction")]
-async fn spend_duplicate_nullifier_same_transaction() {
-    let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1312);
-
-    let storage = TempStorage::new_with_penumbra_prefixes()
-        .await
-        .expect("can start new temp storage")
-        .apply_default_genesis()
-        .await
-        .expect("can apply default genesis");
-    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
-
-    let height = 1;
-
-    // Precondition: This test uses the default genesis which has existing notes for the test keys.
-    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
-    let sk = test_keys::SPEND_KEY.clone();
-    client
-        .sync_to(0, state.deref())
-        .await
-        .expect("can sync to genesis");
-    let note = client.notes.values().next().unwrap().clone();
-    let note_commitment = note.commit();
-    let proof = client.sct.witness(note_commitment).unwrap();
-    let root = client.sct.root();
-    let tct_position = proof.position();
-
-    // 1. Simulate BeginBlock
-    let mut state_tx = state.try_begin_transaction().unwrap();
-    state_tx.put_block_height(height);
-    state_tx.put_epoch_by_height(
-        height,
-        Epoch {
-            index: 0,
-            start_height: 0,
-        },
-    );
-    state_tx.apply();
-
-    // 2. Create a Spend action - This is the first spend of this note.
-    let spend_plan = SpendPlan::new(&mut rng, note.clone(), tct_position);
-    let dummy_effect_hash = [0u8; 64];
-    let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
-    let auth_sig = rsk.sign(&mut rng, dummy_effect_hash.as_ref());
-    let spend_1 = spend_plan.spend(&test_keys::FULL_VIEWING_KEY, auth_sig, proof.clone(), root);
-    let mut synthetic_blinding_factor = spend_plan.value_blinding;
-
-    // 3. Create a second Spend action of the same note - This is a double spend.
-    let spend_plan = SpendPlan::new(&mut rng, note.clone(), tct_position);
-    let dummy_effect_hash = [0u8; 64];
-    let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
-    let auth_sig = rsk.sign(&mut rng, dummy_effect_hash.as_ref());
-    let spend_2 = spend_plan.spend(&test_keys::FULL_VIEWING_KEY, auth_sig, proof, root);
-    synthetic_blinding_factor += spend_plan.value_blinding;
-
-    // 4. We need to create an output to balance the transaction.
-    let value = Value {
-        amount: Amount::from(2u64) * note.amount(),
-        asset_id: note.asset_id(),
-    };
-    let output_plan =
-        penumbra_sdk_shielded_pool::OutputPlan::new(&mut rng, value, *test_keys::ADDRESS_1);
-    let fvk = &test_keys::FULL_VIEWING_KEY;
-    let memo_key = PayloadKey::random_key(&mut rng);
-    let output = output_plan.output(fvk.outgoing(), &memo_key);
-    synthetic_blinding_factor += output_plan.value_blinding;
-
-    // 5. Construct a transaction with both spends that use the same note/nullifier.
-    let transaction_body = TransactionBody {
-        actions: vec![
-            penumbra_sdk_transaction::Action::Spend(spend_1),
-            penumbra_sdk_transaction::Action::Spend(spend_2),
-            penumbra_sdk_transaction::Action::Output(output),
-        ],
-        transaction_parameters: TransactionParameters::default(),
-        detection_data: None,
-        memo: None,
-    };
-    let binding_signing_key = SigningKey::from(synthetic_blinding_factor);
-    let auth_hash = transaction_body.auth_hash();
-    let binding_sig = binding_signing_key.sign(rng, auth_hash.as_bytes());
-    let transaction = Transaction {
-        transaction_body,
-        binding_sig,
-        anchor: root,
-    };
-
-    // 6. Simulate execution of the transaction - the test should panic here
-    transaction.check_stateless(()).await.unwrap();
-}
- */

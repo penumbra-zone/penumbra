@@ -1,6 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
+use penumbra_sdk_asset::STAKING_TOKEN_ASSET_ID;
+use penumbra_sdk_compliance::RegulatedAssetCheck;
 use penumbra_sdk_proto::{DomainType as _, StateWriteProto};
 use penumbra_sdk_sct::component::clock::EpochRead;
 use penumbra_sdk_shielded_pool::component::AssetRegistry;
@@ -19,6 +21,11 @@ impl ActionHandler for Undelegate {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // Defensive check - STAKING_TOKEN should always be unregulated
+        state
+            .ensure_not_regulated(*STAKING_TOKEN_ASSET_ID, "Undelegate")
+            .await?;
+
         // These checks all formerly happened in the `check_historical` method,
         // if profiling shows that they cause a bottleneck we could (CAREFULLY)
         // move some of them back.
