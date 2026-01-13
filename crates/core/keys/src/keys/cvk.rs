@@ -179,10 +179,6 @@ impl MasterComplianceKey {
     /// tweaks `T_detection` and `T_core` can compute:
     /// `dmk_core = dmk_detection - T_detection + T_core`
     ///
-    /// **DO NOT share individual daily keys directly.** Instead:
-    /// 1. The issuer should perform detection/decryption on behalf of auditors, OR
-    /// 2. Use a trusted execution environment (TEE) to isolate key access, OR
-    /// 3. Share only the scanning SERVICE, not the keys themselves
     ///
     /// The tiered encryption still provides value because:
     /// - Without MCK, no keys can be derived
