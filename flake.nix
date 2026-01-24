@@ -26,9 +26,9 @@
           # nix-prefetch-git --url https://github.com/cometbft/cometbft --rev <tag>
           # and review the output.
           cometBftRelease = {
-            version = "0.37.15";
+            version = "0.37.18";
             # Set `sha256` to the value `hash` in the nix-prefetch-git output.
-            sha256 = "sha256-sX3hehsMNWWiQYbepMcdVoUAqz+lK4x76/ohjGb/J08=";
+            sha256 = "sha256-Gh5iGBlB5tFn1KCuF0nthb0me9Ts63quHKOYdNwmhIs=";
             # Set `vendorHash` to "", run `nix build`, and review the hash.
             vendorHash = "sha256-F6km3YpvfdpPeIJB1FwA5lQvPda11odny0EHPD8B6kw=";
           };
