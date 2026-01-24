@@ -25,7 +25,7 @@ install-path = "CARGO_HOME"
 precise-builds = true
 
 [dist.github-custom-runners]
-aarch64-apple-darwin = "macos-13-large"
-x86_64-apple-darwin = "macos-13-large"
+aarch64-apple-darwin = "macos-15-large"
+x86_64-apple-darwin = "macos-15-large"
 x86_64-unknown-linux-gnu = "buildjet-32vcpu-ubuntu-2204"
 aarch64-unknown-linux-gnu = "buildjet-32vcpu-ubuntu-2204-arm"
