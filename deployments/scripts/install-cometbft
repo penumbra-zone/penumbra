@@ -5,7 +5,7 @@ set -euo pipefail
 
 
 # Sane defaults
-COMETBFT_VERSION="${COMETBFT_VERSION:-0.37.15}"
+COMETBFT_VERSION="${COMETBFT_VERSION:-0.37.18}"
 
 # Download and extract
 cometbft_download_url="https://github.com/cometbft/cometbft/releases/download/v${COMETBFT_VERSION}/cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz"

@@ -57,7 +57,7 @@ services:
 
   # The CometBFT node
   cometbft-node0:
-    image: "docker.io/cometbft/cometbft:v0.37.15"
+    image: "docker.io/cometbft/cometbft:v0.37.18"
     ports:
       - "26656:26656"
       - "26657:26657"
