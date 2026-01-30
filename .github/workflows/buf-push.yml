@@ -16,6 +16,8 @@ on:
 
 jobs:
   publish:
+    # Disabled for Cycles fork - enable when BSR publishing is needed
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

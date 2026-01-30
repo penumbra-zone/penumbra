@@ -36,14 +36,12 @@ jobs:
               echo "OK: no changes required to buf.lock"
           fi
 
-      - name: Check for breaking changes
-        uses: bufbuild/buf-breaking-action@v1
-        with:
-          input: "proto"
-          # The 'main' branch of the GitHub repository that defines the module.
-          # Don't use `GITHUB_REPOSITORY`, because then it'll fail when run on forks.
-          # against: "https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto"
-          against: "https://github.com/penumbra-zone/penumbra.git#branch=main,subdir=proto"
+      # Disabled for Cycles fork - we intentionally diverge from upstream Penumbra protos.
+      # - name: Check for breaking changes
+      #   uses: bufbuild/buf-breaking-action@v1
+      #   with:
+      #     input: "proto"
+      #     against: "https://github.com/penumbra-zone/penumbra.git#branch=main,subdir=proto"
 
   # Run our bespoke tooling for codegen, consuming the protocol buffer definitions
   # and emitting generated code. Afterward, there should be no uncommitted changes.

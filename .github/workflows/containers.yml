@@ -12,6 +12,8 @@ on:
   workflow_dispatch:
 jobs:
   penumbra:
+    # Disabled for Cycles fork - update image path to ghcr.io/informalsystems/penumbra when needed
+    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: read

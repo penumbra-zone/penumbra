@@ -12,6 +12,8 @@ jobs:
   # Would be faster if we parallelized it, but it's already <10m,
   # and only runs post-merge on main, so 10m isn't bad.
   build:
+    # Disabled for Cycles fork - needs Firebase config for deployment
+    if: false
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:

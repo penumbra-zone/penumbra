@@ -6,7 +6,8 @@ on:
 
 jobs:
   post_on_merge:
-    if: github.event.pull_request.merged == true
+    # Disabled for Cycles fork
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: myConsciousness/bluesky-post@v3
