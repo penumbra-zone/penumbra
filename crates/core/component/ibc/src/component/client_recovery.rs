@@ -179,7 +179,7 @@ pub fn validate_client_id_format_ics07(client_id: &ClientId) -> Result<()> {
 /// Check that the field of two client states are coherent.
 ///
 /// The goal is to verify that a subject/substitute couple are fundamentally the same client.
-/// Evne if at different points in their lifecyle. This is directly inspired by Cosmos ADR-26,
+/// Evne if at different points in their lifecycle. This is directly inspired by Cosmos ADR-26,
 /// which recognizes that client recovery is a form of controlled mutation: we are not replacing
 /// one client state with an arbitrary other, but ratehr fast-forwarding a stuck client to a
 /// healthy state.
