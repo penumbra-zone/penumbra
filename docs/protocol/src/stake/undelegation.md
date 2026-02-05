@@ -1,44 +1,69 @@
 # Undelegation
 
-The undelegation process unbonds stake from a validator, converting delegation
-tokens `dPEN` to stake `PEN`. Undelegations may be performed in any block, but
-only settle after the undelegation has exited the unbonding queue.
+The undelegation process unbonds stake from a validator's delegation pool. Unlike delegation (which is a single action), undelegation is a two-step process:
 
-The unbonding queue is a FIFO queue allowing only a limited amount of stake to
-be unbonded in each epoch, according to an unbonding rate selected by
-governance. Undelegations are inserted into the unbonding queue in FIFO order.
-Unlike delegations, where only the total amount of newly bonded stake is
-revealed, undelegations reveal the precise amount of newly unbonded stake,
-allowing the unbonding queue to function.
+1. **Undelegate**: Burns delegation tokens and mints unbonding tokens
+2. **UndelegateClaim**: After the unbonding period, burns unbonding tokens and produces staking tokens
 
-Undelegations are accomplished by creating a transaction with a
-`Undelegate` description. This description has different behaviour
-depending on whether or not the validator was slashed.
+This two-step design ensures that delegators cannot escape slashing by racing to undelegate before misbehavior evidence is processed.
 
-In the unslashed case, the undelegate description spends a note with value
-$y$ `dPEN`, reveals $y$, and produces $y \psi_v(e)$ `PEN` for the transaction's
-balance, where $e$ is the index of the current epoch.  However, the nullifiers
-revealed by undelegate descriptions are not immediately included in the
-nullifier set, and new notes created by a transaction containing an undelegate
-description are not immediately included in the state commitment tree. Instead,
-the transaction is placed into the unbonding queue to be applied later. In the
-first block of each epoch, transactions are applied if the corresponding
-validator remains unslashed, until the unbonding limit is reached.
+## Unbonding Tokens
 
-If a validator is slashed, any undelegate transactions currently in the
-unbonding queue are discarded. Because the nullifiers for the notes those
-transactions spent were not included in the nullifier set, the notes remain
-spendable, allowing a user to create a new undelegation description.
+When a user undelegates, they receive **unbonding tokens** instead of staking tokens directly. Unbonding tokens are unique per validator and per epoch:
 
-Undelegations from a slashed validator are settled immediately. The
-undelegate description spends a note with value $y$ `dPEN` and produces
-$sy \psi_v(e_s)$ `PEN`, where $1-s$ is the slashing penalty and
-$e_s$ is the epoch at which the validator was slashed. The remaining value,
-$(1-s)y\psi_v(e_s)$, is burned.
+```
+uunbonding_start_at_<start_height>_<validator_identity>
+```
 
-Because pending undelegations from a slashed validator are discarded without
-applying their nullifiers, those notes can be spent again in a post-slashing
-undelegation description. This causes linkability between the discarded
-undelegations and the post-slashing undelegations, but this is not a concern
-because slashing is a rare and unplanned event which already imposes worse
-losses on delegators.
+For example: `uunbonding_start_at_12345_penumbravalid1abc...`
+
+The unbonding token encodes:
+- The validator identity being undelegated from
+- The block height at which unbonding started (the start of the epoch when the `Undelegate` action was processed)
+
+This allows the chain to track the unbonding period and apply any penalties that occur during it.
+
+## Unbonding Period
+
+The length of the unbonding period is determined by the validator's bonding state:
+
+- **Bonded validators**: Unbonding takes `unbonding_delay` blocks (a chain parameter)
+- **Unbonding validators**: Unbonding completes when the validator's unbonding completes
+- **Unbonded validators**: No unbonding period; tokens can be claimed immediately
+
+During the unbonding period, if the validator is slashed, a penalty is recorded. This penalty will be applied when the unbonding tokens are claimed.
+
+## Claiming Unbonded Stake
+
+After the unbonding period elapses, the user submits an `UndelegateClaim` action to convert their unbonding tokens to staking tokens.
+
+The claim:
+1. Burns the unbonding tokens
+2. Computes the accumulated penalty over the unbonding window
+3. Produces staking tokens equal to the unbonded amount minus the penalty
+4. Uses a zero-knowledge proof to hide the unbonding amount while proving correct penalty application
+
+See [Undelegate Claim](./action/undelegate_claim.md) for the detailed specification.
+
+## Penalty Accumulation
+
+Penalties are stored per-validator per-epoch. When claiming, the total penalty is computed by compounding all penalties from the unbonding start epoch through the current epoch:
+
+$$\text{total\_penalty} = 1 - \prod_{e=\text{start}}^{\text{current}} (1 - p_e)$$
+
+where $p_e$ is the penalty applied in epoch $e$.
+
+For example, if a validator was slashed 1% in epoch 10 and 2% in epoch 15, a claim covering epochs 5-20 would apply a combined penalty of approximately 2.98%:
+
+$$1 - (1 - 0.01)(1 - 0.02) = 1 - (0.99)(0.98) \approx 0.0298$$
+
+## Privacy Considerations
+
+Unlike delegation (where the amount can be hidden), undelegation reveals:
+- The validator identity
+- The amount of delegation tokens being unbonded
+- The epoch at which unbonding started
+
+This information is visible on-chain because the unbonding period calculation requires knowing when unbonding started.
+
+However, the `UndelegateClaim` action hides the final unbonded amount using a zero-knowledge proof. An observer can see that someone claimed unbonding tokens from a validator, but cannot determine the exact amount received.

@@ -2,53 +2,110 @@
 
 Validators in Penumbra undergo various transitions depending on chain activity.
 
+## State Machine
+
 ```
-                                 ┌────────────────────────────────────────────────────────────────────────────┐
-                                 │                                                                            │
-                                 │            ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─                                           │
-                                 │              Genesis Validator  │                                          │
-                                 │            │                             ┏━━━━━━━━━━━━━━━━━━━━━━━┓         │
-                                 │             ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘        ┃      Tombstoned       ┃         │
-                                 │                       │          ┌──────▶┃     (Misbehavior)     ┃         │
-                                 │                       │          │       ┗━━━━━━━━━━━━━━━━━━━━━━━┛         │
-                                 │                       │          │                                         │
-┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─            │                       ▼          │                                         ▼
-      Validator      │      ┏━━━━━━━━━┓              ╔══════╗       │                                   ┏━━━━━━━━━━━┓
-│     Definition     ──────▶┃Inactive ┃─────────────▶║Active║───────┼────────────────────────────────┬─▶┃ Disabled  ┃
-   (in transaction)  │      ┗━━━━━━━━━┛              ╚══════╝       │                                │  ┗━━━━━━━━━━━┛
-└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─            ▲                                  │       ┏━━━━━━━━━━━━━━━━━━━━━┓  │        │
-                                 │                                  └──────▶┃ Jailed (Inactivity) ┃──┘        │
-                                 │                                          ┗━━━━━━━━━━━━━━━━━━━━━┛           │
-                                 │                                                     │                      │
-                                 └─────────────────────────────────────────────────────┴──────────────────────┘
+          ┌───────────────────────────────────────────────────────┐
+          │                      ┌──────────────────────────────┐ │
+          ▼                      ▼                              │ │
+  ╔═══════════════╗       ┌────────────┐                        │ │
+ ▶║    Defined    ║◀─────▶│  Disabled  │                        │ │
+  ╚═══════════════╝       └────────────┘                        │ │
+         │                      │                               │ │
+         │                      ▼                               │ │
+         │               ┏━━━━━━━━━━━━┓                         │ │
+         └──────────────▶┃            ┃                         │ │
+                         ┃ Tombstoned ┃◀────────────┐           │ │
+         ┌──────────────▶┃            ┃             │           │ │
+         │               ┗━━━━━━━━━━━━┛             │           │ │
+         │                      ▲                   │           │ │
+         │                      │           ┌──────────────┐    │ │
+  ┌─────────────┐        ┌────────────┐     │              │◀───┘ │
+  │   Jailed    │◀───────│   Active   │◀───▶│   Inactive   │      │
+  └─────────────┘        └────────────┘     │              │◀─────┘
+         │                                  └──────────────┘
+         │                                          ▲
+         └──────────────────────────────────────────┘
+
+  ╔═════════════════╗
+  ║ starting state  ║
+  ╚═════════════════╝
+  ┏━━━━━━━━━━━━━━━━━┓
+  ┃ terminal state  ┃
+  ┗━━━━━━━━━━━━━━━━━┛
 ```
 
-Single lines represent unbonded stake, and double lines represent bonded stake.
+Validators become known to the chain either at genesis, or by means of a transaction with a `ValidatorDefinition` action. Validators transition through six states:
 
-Validators become known to the chain either at genesis, or by means of a transaction with a `ValidatorDefinition` action in them. Validators transition through five states:
+* **Defined**: the initial state for non-genesis validators. The validator definition has been published, but the delegation pool has not yet reached the minimum stake threshold required to be indexed.
+* **Inactive**: a validator whose delegation pool meets the minimum stake threshold but is not large enough to be in the active consensus set.
+* **Active**: a validator whose delegation pool is large enough to participate in consensus and must meet uptime requirements.
+* **Jailed**: a validator that has been slashed for downtime, that may return later.
+* **Tombstoned**: a validator that has been permanently slashed for byzantine misbehavior and may not return.
+* **Disabled**: a validator that has been manually disabled by the operator.
 
-* **Inactive**: a validator whose delegation pool is too small to participate in consensus set
-* **Active**: a validator whose delegation pool is large enough to participate in consensus and must meet uptime requirements
-* **Jailed**: a validator that has been slashed and removed from consensus for downtime, that may return later
-* **Tombstoned**: a validator that has been permanently slashed and removed from consensus for byzantine misbehavior and may not return
-* **Disabled**: a validator that has been manually disabled by the operator, that may return to `Inactive` later
+## Validator Lifecycle
 
-Validators specified in the genesis config begin in the active state, with whatever stake was allocated to their delegation pool at genesis. Otherwise, new validators begin in the inactive state, with no stake in their delegation pool.  At this point, the validator is known to the chain, and stake can be contributed to its delegation pool.  Stake contributed to an inactive validator's delegation pool does not earn rewards (the validator's rates are held constant), but it is also not bonded, so undelegations are effective immediately, with no unbonding period and no output quarantine.
+### Genesis Validators
 
-The chain chooses a validator limit N as a consensus parameter. When a validator's delegation pool (a) has a nonzero balance and (b) its (voting-power-adjusted) size is in the top N validators, it moves into the active state during the next epoch transition.  Active validators participate in consensus, and are communicated to Tendermint. Stake contributed to an active validator's delegation pool earns rewards (the validator's rates are updated at each epoch to track the rewards accruing to the pool). That stake is bonded, so undelegations have an unbonding period and an output quarantine. An active validator can exit the consensus set in four ways.
+Validators specified in the genesis config begin in the **Active** state, with whatever stake was allocated to their delegation pool at genesis. Their stake is immediately bonded.
 
-First, the validator could be jailed and slashed for inactivity.  This can happen in any block, triggering an unscheduled epoch transition.  Jailed validators are immediately removed from the consensus set. The validator's rates are updated to price in the slashing penalty, and are then held constant. Validators jailed for inactivity are not permanently prohibited from participation in consensus, and their operators can re-activate them by re-uploading the validator definition. Stake cannot be delegated to a slashed validator. Stake already contributed to a slashed validator's delegation pool will enter an unbonding period to hold the validator accountable for any byzantine behavior during the unbonding period. Re-delegations may occur after the validator enters the "Inactive" state.
+### New Validators
 
-Second, the validator could be tombstoned and slashed for byzantine misbehavior.  This can happen in any block, triggering an unscheduled epoch transition.  Tombstoned validators are immediately removed from the consensus set. Any pending undelegations from a slashed validator are cancelled: the quarantined output notes are deleted, and the quarantined nullifiers are removed from the nullifier set.  The validator's rates are updated to price in the slashing penalty, and are then held constant. Tombstoned validators are permanently prohibited from participation in consensus (though their operators can create new identity keys, if they'd like to). Stake cannot be delegated to a tombstoned validator. Stake already contributed to a tombstoned validator's delegation pool is not bonded (the validator has already been slashed and tombstoned), so undelegations are effective immediately, with no unbonding period and no quarantine.
+New validators (created via `ValidatorDefinition` transactions) begin in the **Defined** state with zero voting power and unbonded stake. At this point, the validator is known to the chain, and stake can be contributed to its delegation pool.
 
-Third, the validator could be manually disabled by the operator. The validator is then in the disabled state.  It does not participate in consensus, and the stake in its delegation pool does not earn rewards (the validator's rates are held constant).  The stake in its delegation pool will enter an unbonding period at the time the validator becomes disabled. The only valid state a disabled validator may enter into is "inactive", if the operator re-activates it by updating the validator definition.
+When the validator's delegation pool reaches the `min_validator_stake` threshold (a chain parameter), the validator transitions to the **Inactive** state at the next epoch boundary. This transition is checked automatically during epoch processing.
 
-Fourth, the validator could be displaced from the validator set by another validator with more stake in its delegation pool. The validator is then in the inactive state.  It does not participate in consensus, and the stake in its delegation pool does not earn rewards (the validator's rates are held constant).  The stake in its delegation pool will enter an unbonding period at the time the validator becomes inactive.  Inactive validators have three possible state transitions:
+Stake contributed to a Defined or Inactive validator's delegation pool does not earn rewards (the validator's rates are held constant), and is not bonded, so undelegations can be claimed immediately without waiting for an unbonding period.
 
-1. they can become active again, if new delegations boost its weight back into the top N;
-2. they can be tombstoned, if evidence of misbehavior arises during the unbonding period;
-3. they can be disabled, if the operator chooses.
+### Becoming Active
 
-If (2) occurs, the same state transitions as in regular tombstoning occur: all pending undelegations are cancelled, etc.
-If (3) occurs, the unbonding period continues and the validator enters the disabled state.
-If (1) occurs, the validator stops unbonding, and all delegations become bonded again.
+The chain chooses a validator limit N as a consensus parameter. When a validator's delegation pool is in the top N validators by voting power, it moves into the **Active** state during the next epoch transition.
+
+Active validators:
+- Participate in consensus and are communicated to CometBFT
+- Earn rewards (their exchange rates increase each epoch)
+- Have bonded stake (undelegations require waiting through an unbonding period)
+
+### Leaving the Active Set
+
+An active validator can exit the consensus set in four ways:
+
+**1. Jailed for downtime**
+
+If a validator misses too many blocks, it is jailed and slashed. This can happen in any block, triggering an unscheduled epoch transition. Jailed validators are immediately removed from the consensus set. The validator's rates are updated to record the slashing penalty. Validators jailed for downtime are not permanently prohibited from participation in consensus; their operators can re-activate them by re-uploading the validator definition with the `enabled` flag set to true.
+
+**2. Tombstoned for misbehavior**
+
+If evidence of byzantine misbehavior is detected, the validator is tombstoned and slashed. This can happen in any block, triggering an unscheduled epoch transition. Tombstoned validators are immediately removed from the consensus set. The validator's rates are updated to record the slashing penalty. Tombstoned validators are permanently prohibited from participation in consensus (though their operators can create new identity keys if they choose).
+
+**3. Manually disabled**
+
+The operator can disable the validator by uploading a new validator definition with `enabled: false`. The validator enters the **Disabled** state and does not participate in consensus. Its rates are held constant (no rewards). The operator can later re-enable the validator, which transitions it to **Inactive** (or **Defined** if below the minimum stake threshold).
+
+**4. Displaced by higher-stake validator**
+
+If another validator accumulates more stake and pushes this validator out of the top N, the validator transitions to **Inactive** (or **Defined** if it falls below the minimum stake threshold). It does not participate in consensus and its rates are held constant.
+
+### Slashing and Penalties
+
+When a validator is slashed (either jailed or tombstoned), a penalty is recorded in the chain state for that epoch. This penalty affects delegators through the undelegation mechanism:
+
+- Undelegations produce **unbonding tokens** that must be held for an unbonding period
+- During the unbonding period, any penalties applied to the validator accumulate
+- When the unbonding period ends and the delegator claims their stake via `UndelegateClaim`, all accumulated penalties are applied
+
+This design ensures that delegators cannot escape slashing by racing to undelegate before evidence is processed.
+
+### Bonding States
+
+In addition to the validator state, each validator has a **bonding state** that tracks whether its stake is bonded:
+
+* **Bonded**: The validator is in the active set. Delegated stake is locked and subject to slashing. Undelegations require waiting through the unbonding period.
+* **Unbonding**: The validator has left the active set and its stake is transitioning to unbonded. A specific block height marks when unbonding completes.
+* **Unbonded**: The validator is not in the active set and its stake is not locked. Undelegations can be claimed immediately.
+
+The bonding state is managed automatically based on validator state transitions:
+- Active validators are always Bonded
+- When a validator leaves Active, it enters Unbonding (unless Tombstoned, which goes directly to Unbonded)
+- After the unbonding period elapses, the validator becomes Unbonded
