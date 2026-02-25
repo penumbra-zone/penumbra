@@ -94,7 +94,7 @@ pub mod tournament_votes_response {
         pub transaction: ::core::option::Option<
             super::super::super::core::txhash::v1::TransactionId,
         >,
-        /// Epoch index the vote occured in.
+        /// Epoch index the vote occurred in.
         #[prost(uint64, tag = "5")]
         pub epoch_index: u64,
     }

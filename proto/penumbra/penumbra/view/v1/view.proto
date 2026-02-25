@@ -202,7 +202,7 @@ message TournamentVotesResponse {
     core.asset.v1.Value reward = 3;
     // The transaction ID for the vote. 
     core.txhash.v1.TransactionId transaction = 4;
-    // Epoch index the vote occured in.
+    // Epoch index the vote occurred in.
     uint64 epoch_index = 5;
   }
   
