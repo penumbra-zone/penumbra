@@ -4,6 +4,9 @@
 [Penumbra] is a fully shielded zone for the Cosmos ecosystem, allowing anyone to securely transact,
 stake, swap, or marketmake without broadcasting their personal information to the world.
 
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square)](https://github.com/penumbra-zone/penumbra/blob/main/LICENSE-APACHE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://github.com/penumbra-zone/penumbra/blob/main/LICENSE-MIT)
+
 ## Getting involved
 
 The primary communication hub is our [Discord]; click the link to join the
