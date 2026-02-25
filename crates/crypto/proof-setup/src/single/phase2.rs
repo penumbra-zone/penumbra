@@ -196,7 +196,7 @@ impl RawContribution {
 
 impl Hashable for RawContribution {
     fn hash(&self) -> ContributionHash {
-        let mut hasher = GroupHasher::new(b"PC$:contrbution2");
+        let mut hasher = GroupHasher::new(b"PC$:contribution2");
         hasher.eat_bytes(self.parent.as_ref());
         hasher.eat_bytes(self.new_elements.hash().as_ref());
         hasher.eat_bytes(self.linking_proof.hash().as_ref());

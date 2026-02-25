@@ -340,7 +340,7 @@ impl RawContribution {
 
 impl Hashable for RawContribution {
     fn hash(&self) -> ContributionHash {
-        let mut hasher = GroupHasher::new(b"PC$:contrbution1");
+        let mut hasher = GroupHasher::new(b"PC$:contribution1");
         hasher.eat_bytes(self.parent.as_ref());
         hasher.eat_bytes(self.new_elements.hash().as_ref());
         // Note: we could hide this behind another level of indirection, but contribution

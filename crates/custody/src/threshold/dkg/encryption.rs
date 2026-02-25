@@ -132,7 +132,7 @@ impl DecryptionKey {
         self.clone().into()
     }
 
-    /// Decrypt a ciphertext, extracitng out the corresponding message.
+    /// Decrypt a ciphertext, extracting out the corresponding message.
     ///
     /// This may potentially fail, if the ciphertext is malformed, or was tampered with.
     pub fn decrypt(&self, rng: &mut impl CryptoRngCore, ciphertext: &[u8]) -> Result<Vec<u8>> {
