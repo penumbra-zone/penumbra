@@ -1,0 +1,167 @@
+syntax = "proto3";
+package penumbra.core.component.tokenfactory.v1;
+
+import "google/protobuf/any.proto";
+import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/num/v1/num.proto";
+
+// The configuration parameters for the token factory component.
+message TokenFactoryParameters {}
+
+
+// Query operations for the token factory component.
+service QueryService {
+  // Get the current state of a token factory by ID.
+  rpc TokenFactoryStateById(TokenFactoryStateByIdRequest) returns (TokenFactoryStateByIdResponse);
+}
+
+message TokenFactoryStateByIdRequest {
+  TokenFactoryId id = 1;
+}
+
+message TokenFactoryStateByIdResponse {
+  // If present, the state of the token factory. If not present, no such token factory is known.
+  TokenFactoryState state = 1;
+}
+
+// A unique identifier for a token factory, obtained from hashing the nonce
+message TokenFactoryId {
+  bytes inner = 1;
+}
+
+// A bearer NFT tracking minting authority for a token factory
+message TokenFactoryNft {
+  TokenFactoryId id = 1;
+  uint64 seq = 2;
+}
+
+// Describes the creation of a new token
+message TokenFactoryDescription {
+  // The metadata for the new token
+  asset.v1.Metadata metadata = 1;
+  // The initial supply of the token
+  num.v1.Amount initial_supply = 2;
+  // A random nonce used to generate the token factory ID
+  bytes nonce = 3;
+}
+
+message TokenFactoryState {
+  // The sequence number of the token factory state
+  uint64 seq = 1;
+  // The total supply of the token
+  num.v1.Amount total_supply = 2;
+}
+
+// Initiates creation of a new token
+message ActionTokenFactoryCreate {
+  TokenFactoryDescription description = 1;
+}
+
+// Mints additional tokens using the token factory NFT
+message ActionTokenFactoryMint {
+  // The token factory to mint from
+  TokenFactoryId factory_id = 1;
+  // The amount to mint
+  num.v1.Amount amount = 2;
+  // The sequence number of the mint
+  uint64 seq = 3;
+}
+
+// Burns tokens explicitly
+message ActionBurn {
+  // The value to burn
+  asset.v1.Value value = 1;
+}
+
+// View types for client display
+
+message ActionTokenFactoryCreateView {
+  ActionTokenFactoryCreate action = 1;
+  TokenFactoryId factory_id = 2;
+  asset.v1.Metadata token_metadata = 3;
+}
+
+message ActionTokenFactoryMintView {
+  ActionTokenFactoryMint action = 1;
+  asset.v1.Metadata token_metadata = 2;
+}
+
+message ActionBurnView {
+  ActionBurn action = 1;
+  asset.v1.ValueView value = 2;
+}
+
+// Events
+
+message EventTokenFactoryCreated {
+  TokenFactoryId factory_id = 1;
+  TokenFactoryDescription description = 2;
+}
+
+message EventTokenFactoryMinted {
+  TokenFactoryId factory_id = 1;
+  num.v1.Amount amount = 2;
+  TokenFactoryState state = 3;
+}
+
+message EventTokensBurned {
+  asset.v1.Value value = 1;
+}
+
+// Circuit breaker events similar to auction component
+message EventValueCircuitBreakerCredit {
+  asset.v1.AssetId asset_id = 1;
+  num.v1.Amount previous_balance = 2;
+  num.v1.Amount new_balance = 3;
+}
+
+message EventValueCircuitBreakerDebit {
+  asset.v1.AssetId asset_id = 1;
+  num.v1.Amount previous_balance = 2;
+  num.v1.Amount new_balance = 3;
+}
+
+// Describes the bonding curve configuration
+message BondingCurveConfig {
+  // The base token (maybe hardcode this to be UM) used for the bonding curve
+  asset.v1.AssetId base_token = 1;
+  // The deposit limit that equates to "bonding curve completed". This may want to be hardcoded so that each token has a predictable total supply and the price of each token is more understadable
+  num.v1.Amount deposit_limit = 2;
+  // Maximum supply cap for the token. This may want to be hardcoded so that each token has a predictable total supply and the price of each token is more understadable
+  num.v1.Amount max_supply = 3;
+}
+
+// A bearer NFT tracking the bonding curve state
+message BondingCurveNft {
+  TokenFactoryId factory_id = 1;
+  uint32 section = 2;  // 1-100, represents current position in the curve
+  num.v1.Amount current_price = 3;  // Price = deposit_limit/(max_supply-current_supply) (but this is stepwise approximated)
+  num.v1.Amount current_supply = 4;  // Current total supply
+}
+
+// Creates a new token with bonding curve
+message ActionTokenFactoryCreateWithBondingCurve {
+  // The metadata for the new token
+  asset.v1.Metadata metadata = 1;
+  // A random nonce used to generate the token factory ID
+  bytes nonce = 2;
+  // Bonding curve configuration
+  BondingCurveConfig curve_config = 3;
+}
+
+// View type for client display
+message ActionTokenFactoryCreateWithBondingCurveView {
+  ActionTokenFactoryCreateWithBondingCurve action = 1;
+  TokenFactoryId factory_id = 2;
+  asset.v1.Metadata token_metadata = 3;
+  BondingCurveNft initial_curve_state = 4;
+}
+
+// Additional event for bonding curve updates
+message EventBondingCurveUpdated {
+  TokenFactoryId factory_id = 1;
+  uint32 previous_section = 2;
+  uint32 new_section = 3;
+  num.v1.Amount previous_price = 4;
+  num.v1.Amount new_price = 5;
+}

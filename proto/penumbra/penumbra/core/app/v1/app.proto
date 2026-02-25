@@ -12,6 +12,7 @@ import "penumbra/core/component/ibc/v1/ibc.proto";
 import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
 import "penumbra/core/component/stake/v1/stake.proto";
+import "penumbra/core/compoenent/factory/v1/factory.proto";
 import "penumbra/core/transaction/v1/transaction.proto";
 
 // Query operations for the overall Penumbra application.
