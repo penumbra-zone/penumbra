@@ -1545,7 +1545,7 @@ impl MockRelayer {
 
         // Since multiple send_packet events can occur in a single deliver tx response,
         // we accumulate all the events and process them in a loop.
-        let mut recv_tx_deliver_tx_events: Vec<Event> = Vec::new();
+        let mut recv_tx_deliver_tx_events: Vec<Event> = Vec::with_capacity(deliver_tx_events.len());
         // Now that the withdrawal has been processed on Chain A, the relayer
         // tells chain B to process the transfer. It does this by forwarding a
         // MsgRecvPacket to chain B.

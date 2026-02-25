@@ -109,7 +109,8 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             .union(&consensus_set)
             .collect::<BTreeSet<_>>();
 
-        let mut funding_queue: Vec<(IdentityKey, FundingStreams, Amount)> = Vec::new();
+        let mut funding_queue: Vec<(IdentityKey, FundingStreams, Amount)> =
+            Vec::with_capacity(validators_to_process.len());
 
         for validator_identity in validators_to_process {
             let total_delegations = delegations_by_validator

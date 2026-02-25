@@ -138,7 +138,7 @@ impl Worker {
         let all_transactions =
             fetch_transactions(self.channel.clone(), filtered_block.height).await?;
 
-        let mut transactions = Vec::new();
+        let mut transactions = Vec::with_capacity(all_transactions.len());
 
         for tx in all_transactions {
             let tx_id = tx.id().0;

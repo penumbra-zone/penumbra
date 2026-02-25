@@ -58,7 +58,7 @@ pub async fn scan_genesis_block(
 
         // Trial-decrypt the notes in this block, keeping track of the ones that were meant for the FVK
         // we're monitoring.
-        let mut note_decryptions = Vec::new();
+        let mut note_decryptions = Vec::with_capacity(state_payloads.len());
 
         // We only care about notes, so we're ignoring swaps and rolled-up commitments.
         for payload in state_payloads.iter() {
