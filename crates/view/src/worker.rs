@@ -228,8 +228,14 @@ impl Worker {
 
             let height = block.height;
             if height != expected_height {
-                tracing::warn!("out of order block detected");
-                continue;
+                anyhow::bail!(
+                    "expected compact block at height {} but got height {} — \
+                     the compact block stream delivered blocks out of order. \
+                     The sync loop will retry from the last committed height, \
+                     rebuilding the in-memory SCT from storage.",
+                    expected_height,
+                    height,
+                );
             }
             expected_height += 1;
 
