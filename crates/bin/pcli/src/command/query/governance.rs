@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use futures::TryStreamExt;
-use penumbra_sdk_governance::Vote;
+use penumbra_sdk_governance::{proposal_state::State as ProposalState, Vote};
 use penumbra_sdk_proto::core::component::governance::v1::{
     query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
     AllTalliedDelegatorVotesForProposalRequest, ProposalDataRequest, ProposalListRequest,
@@ -72,15 +72,17 @@ impl GovernanceCmd {
                         .expect("proposal should always be set");
                     let proposal_title = proposal.title;
 
-                    let proposal_state = proposal_response
+                    let proposal_state: ProposalState = proposal_response
                         .state
-                        .expect("proposal state should always be set");
+                        .expect("proposal state should always be set")
+                        .try_into()
+                        .context("cannot parse proposal state")?;
 
                     let proposal_id = proposal.id;
 
                     writeln!(
                         writer,
-                        "#{proposal_id} {proposal_state:?}    {proposal_title}"
+                        "#{proposal_id} [{proposal_state}] {proposal_title}"
                     )?;
                 }
                 Ok(())

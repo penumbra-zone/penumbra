@@ -1,3 +1,5 @@
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 use penumbra_sdk_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
@@ -68,6 +70,28 @@ impl State {
                 Outcome::Passed => Withdrawn::No,
                 Outcome::Failed { withdrawn } | Outcome::Slashed { withdrawn } => withdrawn,
             },
+        }
+    }
+}
+
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            State::Voting => write!(f, "VOTING"),
+            State::Withdrawn { .. } => write!(f, "WITHDRAWN"),
+            State::Finished { outcome } | State::Claimed { outcome } => {
+                write!(f, "{outcome}")
+            }
+        }
+    }
+}
+
+impl<W> fmt::Display for Outcome<W> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Outcome::Passed => write!(f, "PASSED"),
+            Outcome::Failed { .. } => write!(f, "FAILED"),
+            Outcome::Slashed { .. } => write!(f, "SLASHED"),
         }
     }
 }
