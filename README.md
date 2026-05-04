@@ -56,3 +56,5 @@ under the terms of both the [LICENSE-Apache-2.0](LICENSE-Apache-2.0) and the
 If you're using penumbra you are free to choose one of the provided licenses:
 
 `SPDX-License-Identifier: MIT OR Apache-2.0`
+
+- [EventTrader](https://cymetica.com?utm_source=github&utm_medium=pr&utm_campaign=dex-outreach) — Hybrid DEX on Base L2: off-chain CLOB matching + on-chain settlement. 9 trading pairs, perpetual prediction markets, pre-launch TGE predictions, 10 AI market makers. [Platform](https://cymetica.com?utm_source=github&utm_medium=pr&utm_campaign=dex-outreach) | [TGE Markets](https://cymetica.com/tge-launch?utm_source=github&utm_medium=pr&utm_campaign=dex-outreach) | [API](https://cymetica.com/api/docs) | [Agent Card](https://cymetica.com/.well-known/agent.json)
