@@ -36,17 +36,21 @@ jobs:
       # Previously we used a GHA helper to look up the version, which was overkill.
       # Let's still log the version of the docs we intend to build.
       - name: Print version component of deployment path
-        run: echo ${{ github.event.inputs.image_tag || github.ref_name }}
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image_tag || github.ref_name }}
+        run: echo "$IMAGE_TAG"
 
       - name: Build protocol spec
         run: cd docs/protocol/ && nix develop --command mdbook build
 
       - name: Move protocol spec to subdirectory
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image_tag || github.ref_name }}
         run: |
           cd docs/protocol
           rm -rf firebase-tmp
           mkdir firebase-tmp
-          mv book/html firebase-tmp/${{ github.event.inputs.image_tag || github.ref_name }}
+          mv book/html "firebase-tmp/${IMAGE_TAG}"
           tree firebase-tmp
 
       - name: Deploy protocol spec to firebase
@@ -62,13 +66,15 @@ jobs:
         run: nix develop .#nightly --command ./deployments/scripts/rust-docs
 
       - name: Move API docs to subdirectory
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image_tag || github.ref_name }}
         run: |
           cd docs/rustdoc
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
-          mv ../../target/doc firebase-tmp/${{ github.event.inputs.image_tag || github.ref_name }}
+          mv ../../target/doc "firebase-tmp/${IMAGE_TAG}"
           # Copy in the static index file
-          cp index.html firebase-tmp/${{ github.event.inputs.image_tag || github.ref_name }}
+          cp index.html "firebase-tmp/${IMAGE_TAG}"
 
       - name: Deploy API docs to firebase
         uses: w9jds/firebase-action@v12.9.0
