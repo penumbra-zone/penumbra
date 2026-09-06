@@ -48,9 +48,9 @@ pub enum TokenFactoryCmd {
         /// Can be 0 for bridge tokens that will be minted on demand.
         #[clap(long)]
         supply: String,
-        /// If true, outputs a MintCapability allowing future minting.
-        /// If false (default), creates a fairlaunch token with fixed supply.
-        #[clap(long, default_value = "false")]
+        /// If set, outputs a MintCapability allowing future minting.
+        /// If omitted (default), creates a fairlaunch token with fixed supply.
+        #[clap(long)]
         enable_mint: bool,
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
