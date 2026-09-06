@@ -42,6 +42,9 @@ impl serde::Serialize for AppParameters {
         if self.auction_params.is_some() {
             len += 1;
         }
+        if self.token_factory_params.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.app.v1.AppParameters", len)?;
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
@@ -79,6 +82,9 @@ impl serde::Serialize for AppParameters {
         if let Some(v) = self.auction_params.as_ref() {
             struct_ser.serialize_field("auctionParams", v)?;
         }
+        if let Some(v) = self.token_factory_params.as_ref() {
+            struct_ser.serialize_field("tokenFactoryParams", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -113,6 +119,8 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
             "dexParams",
             "auction_params",
             "auctionParams",
+            "token_factory_params",
+            "tokenFactoryParams",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -129,6 +137,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
             ShieldedPoolParams,
             DexParams,
             AuctionParams,
+            TokenFactoryParams,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -163,6 +172,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                             "shieldedPoolParams" | "shielded_pool_params" => Ok(GeneratedField::ShieldedPoolParams),
                             "dexParams" | "dex_params" => Ok(GeneratedField::DexParams),
                             "auctionParams" | "auction_params" => Ok(GeneratedField::AuctionParams),
+                            "tokenFactoryParams" | "token_factory_params" => Ok(GeneratedField::TokenFactoryParams),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -194,6 +204,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                 let mut shielded_pool_params__ = None;
                 let mut dex_params__ = None;
                 let mut auction_params__ = None;
+                let mut token_factory_params__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
@@ -268,6 +279,12 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                             }
                             auction_params__ = map_.next_value()?;
                         }
+                        GeneratedField::TokenFactoryParams => {
+                            if token_factory_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tokenFactoryParams"));
+                            }
+                            token_factory_params__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -286,6 +303,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                     shielded_pool_params: shielded_pool_params__,
                     dex_params: dex_params__,
                     auction_params: auction_params__,
+                    token_factory_params: token_factory_params__,
                 })
             }
         }

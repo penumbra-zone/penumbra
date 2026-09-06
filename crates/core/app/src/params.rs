@@ -12,6 +12,7 @@ use penumbra_sdk_proto::DomainType;
 use penumbra_sdk_sct::params::SctParameters;
 use penumbra_sdk_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_sdk_stake::params::StakeParameters;
+use penumbra_sdk_token_factory::TokenFactoryParameters;
 use serde::{Deserialize, Serialize};
 
 pub mod change;
@@ -31,6 +32,7 @@ pub struct AppParameters {
     pub sct_params: SctParameters,
     pub shielded_pool_params: ShieldedPoolParameters,
     pub stake_params: StakeParameters,
+    pub token_factory_params: TokenFactoryParameters,
 }
 
 impl DomainType for AppParameters {
@@ -87,6 +89,13 @@ impl TryFrom<pb::AppParameters> for AppParameters {
                 .dex_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing dex params"))?
                 .try_into()?,
+            // Treat missing token factory params as the default (dormant), so
+            // parameters serialized before this field existed still deserialize.
+            token_factory_params: msg
+                .token_factory_params
+                .map(TryInto::try_into)
+                .transpose()?
+                .unwrap_or_default(),
         })
     }
 }
@@ -106,6 +115,7 @@ impl From<AppParameters> for pb::AppParameters {
             shielded_pool_params: Some(params.shielded_pool_params.into()),
             stake_params: Some(params.stake_params.into()),
             dex_params: Some(params.dex_params.into()),
+            token_factory_params: Some(params.token_factory_params.into()),
         }
     }
 }

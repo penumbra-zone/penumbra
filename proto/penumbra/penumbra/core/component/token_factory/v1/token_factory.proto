@@ -88,6 +88,20 @@ message AllTokensResponse {
   bytes next_cursor = 2;
 }
 
+// Governance-controlled parameters for the token factory.
+//
+// Both switches default to false, so the component ships dormant: activating the
+// app upgrade enables no token creation until governance turns each capability on.
+message TokenFactoryParameters {
+  // Master switch: whether any token can be created at all. Off at genesis.
+  bool token_factory_enabled = 1;
+  // Whether mintable tokens are allowed (a create with a MintCapability, i.e.
+  // unlimited, non-fairlaunch supply) and whether the mint action is permitted.
+  // Gating the mint action lets governance freeze minting even for already-issued
+  // capabilities. Off at genesis.
+  bool mintable_enabled = 2;
+}
+
 // Query service for token factory state.
 service QueryService {
   // Get metadata for a specific token by ID.

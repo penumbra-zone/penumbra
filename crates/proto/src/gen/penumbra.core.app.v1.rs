@@ -98,6 +98,11 @@ pub struct AppParameters {
     pub auction_params: ::core::option::Option<
         super::super::component::auction::v1::AuctionParameters,
     >,
+    /// Token factory module parameters.
+    #[prost(message, optional, tag = "13")]
+    pub token_factory_params: ::core::option::Option<
+        super::super::component::token_factory::v1::TokenFactoryParameters,
+    >,
 }
 impl ::prost::Name for AppParameters {
     const NAME: &'static str = "AppParameters";

@@ -13,6 +13,7 @@ use penumbra_sdk_governance::{params::GovernanceParameters, tally::Ratio};
 use penumbra_sdk_ibc::params::IBCParameters;
 use penumbra_sdk_sct::params::SctParameters;
 use penumbra_sdk_shielded_pool::params::ShieldedPoolParameters;
+use penumbra_sdk_token_factory::TokenFactoryParameters;
 use penumbra_sdk_stake::params::StakeParameters;
 
 use super::AppParameters;
@@ -114,6 +115,11 @@ impl AppParameters {
                     max_positions_per_pair: _,
                     max_execution_budget: _,
                 },
+            token_factory_params:
+                TokenFactoryParameters {
+                    token_factory_enabled: _,
+                    mintable_enabled: _,
+                },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
@@ -213,6 +219,11 @@ impl AppParameters {
                     max_hops: _,
                     max_positions_per_pair: _,
                     max_execution_budget: _,
+                },
+            token_factory_params:
+                TokenFactoryParameters {
+                    token_factory_enabled: _,
+                    mintable_enabled: _,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;

@@ -11,6 +11,7 @@ import "penumbra/core/component/governance/v1/governance.proto";
 import "penumbra/core/component/ibc/v1/ibc.proto";
 import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
+import "penumbra/core/component/token_factory/v1/token_factory.proto";
 import "penumbra/core/component/stake/v1/stake.proto";
 import "penumbra/core/transaction/v1/transaction.proto";
 
@@ -61,6 +62,8 @@ message AppParameters {
   core.component.dex.v1.DexParameters dex_params = 11;
   // Auction module parameters.
   core.component.auction.v1.AuctionParameters auction_params = 12;
+  // Token factory module parameters.
+  core.component.token_factory.v1.TokenFactoryParameters token_factory_params = 13;
 }
 
 // Requests the global configuration data for the app.

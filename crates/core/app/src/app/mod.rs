@@ -28,6 +28,7 @@ use penumbra_sdk_sct::component::sct::Sct;
 use penumbra_sdk_sct::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_sdk_sct::epoch::Epoch;
 use penumbra_sdk_shielded_pool::component::{ShieldedPool, StateReadExt as _, StateWriteExt as _};
+use penumbra_sdk_token_factory::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_sdk_stake::component::{
     stake::ConsensusUpdateRead, Staking, StateReadExt as _, StateWriteExt as _,
 };
@@ -704,6 +705,7 @@ pub trait StateReadExt: StateRead {
         let stake_params = self.get_stake_params().await?;
         let dex_params = self.get_dex_params().await?;
         let auction_params = self.get_auction_params().await?;
+        let token_factory_params = self.token_factory_parameters().await?;
 
         Ok(AppParameters {
             chain_id,
@@ -718,6 +720,7 @@ pub trait StateReadExt: StateRead {
             shielded_pool_params,
             stake_params,
             dex_params,
+            token_factory_params,
         })
     }
 
@@ -807,6 +810,7 @@ pub trait StateWriteExt: StateWrite {
             shielded_pool_params,
             stake_params,
             dex_params,
+            token_factory_params,
         } = params;
 
         // Ignore writes to the chain_id
@@ -826,6 +830,7 @@ pub trait StateWriteExt: StateWrite {
         self.put_shielded_pool_params(shielded_pool_params);
         self.put_stake_params(stake_params);
         self.put_dex_params(dex_params);
+        self.put_token_factory_parameters(&token_factory_params);
     }
 }
 

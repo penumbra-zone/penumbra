@@ -205,6 +205,32 @@ impl ::prost::Name for AllTokensResponse {
         "/penumbra.core.component.token_factory.v1.AllTokensResponse".into()
     }
 }
+/// Governance-controlled parameters for the token factory.
+///
+/// Both switches default to false, so the component ships dormant: activating the
+/// app upgrade enables no token creation until governance turns each capability on.
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct TokenFactoryParameters {
+    /// Master switch: whether any token can be created at all. Off at genesis.
+    #[prost(bool, tag = "1")]
+    pub token_factory_enabled: bool,
+    /// Whether mintable tokens are allowed (a create with a MintCapability, i.e.
+    /// unlimited, non-fairlaunch supply) and whether the mint action is permitted.
+    /// Gating the mint action lets governance freeze minting even for already-issued
+    /// capabilities. Off at genesis.
+    #[prost(bool, tag = "2")]
+    pub mintable_enabled: bool,
+}
+impl ::prost::Name for TokenFactoryParameters {
+    const NAME: &'static str = "TokenFactoryParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.token_factory.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "penumbra.core.component.token_factory.v1.TokenFactoryParameters".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/penumbra.core.component.token_factory.v1.TokenFactoryParameters".into()
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
