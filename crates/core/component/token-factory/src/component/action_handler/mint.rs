@@ -41,9 +41,12 @@ impl ActionHandler for ActionTokenFactoryMint {
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Governance gate: minting can be frozen by governance even for
-        // already-issued mint capabilities.
+        // already-issued mint capabilities. Require BOTH switches so that the
+        // master `token_factory_enabled` is a true kill-switch for minting too,
+        // not just for creation.
+        let params = state.token_factory_parameters().await?;
         anyhow::ensure!(
-            state.token_factory_parameters().await?.mintable_enabled,
+            params.token_factory_enabled && params.mintable_enabled,
             "token minting is disabled; it must be enabled by governance"
         );
 
