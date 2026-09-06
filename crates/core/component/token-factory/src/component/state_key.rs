@@ -2,6 +2,16 @@
 
 use crate::TokenFactoryId;
 
+/// State key for the master enable switch (governance-controlled).
+pub fn param_enabled() -> &'static str {
+    "token_factory/parameters/token_factory_enabled"
+}
+
+/// State key for the mintable-tokens enable switch (governance-controlled).
+pub fn param_mintable_enabled() -> &'static str {
+    "token_factory/parameters/mintable_enabled"
+}
+
 /// State key for tracking whether a token factory nonce has been used.
 ///
 /// The presence of this key indicates the nonce has been consumed.

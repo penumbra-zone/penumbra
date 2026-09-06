@@ -41,6 +41,7 @@
 mod error;
 mod id;
 mod mint_capability;
+mod params;
 
 pub mod actions;
 
@@ -50,6 +51,7 @@ pub mod component;
 pub use error::TokenFactoryError;
 pub use id::TokenFactoryId;
 pub use mint_capability::MintCapability;
+pub use params::TokenFactoryParameters;
 
 pub use actions::{ActionTokenFactoryCreate, ActionTokenFactoryMint};
 

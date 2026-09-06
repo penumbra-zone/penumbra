@@ -6,7 +6,10 @@ use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_sdk_proto::StateWriteProto as _;
 
-use crate::{component::{event, StateWriteExt as _}, ActionTokenFactoryCreate};
+use crate::{
+    component::{event, StateReadExt as _, StateWriteExt as _},
+    ActionTokenFactoryCreate,
+};
 
 #[async_trait]
 impl ActionHandler for ActionTokenFactoryCreate {
@@ -21,6 +24,20 @@ impl ActionHandler for ActionTokenFactoryCreate {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // Governance gate: the factory is dormant until enabled, and the mintable
+        // (unlimited-supply) path is enabled separately from fair-launch.
+        let params = state.token_factory_parameters().await?;
+        anyhow::ensure!(
+            params.token_factory_enabled,
+            "token factory is disabled; it must be enabled by governance"
+        );
+        if self.enable_mint {
+            anyhow::ensure!(
+                params.mintable_enabled,
+                "mintable tokens are disabled; the mint-capability path must be enabled by governance"
+            );
+        }
+
         // Check that the nonce hasn't been used before and mark it as used.
         // This prevents replay attacks and ensures each token ID is unique.
         state.token_factory_mark_nonce_used(&self.nonce).await?;

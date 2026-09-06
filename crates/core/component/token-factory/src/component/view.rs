@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_sdk_asset::asset;
 
-use crate::{error::TokenFactoryError, TokenFactoryId};
+use crate::{error::TokenFactoryError, TokenFactoryId, TokenFactoryParameters};
 
 use super::state_key;
 
@@ -29,6 +29,25 @@ pub trait StateReadExt: StateRead {
         let proto =
             penumbra_sdk_proto::core::asset::v1::Metadata::decode(bytes.as_slice())?;
         Ok(Some(asset::Metadata::try_from(proto)?))
+    }
+
+    /// Read the governance-controlled token factory parameters.
+    ///
+    /// Absent keys read as `false`, so a chain that has never set them has the
+    /// token factory fully disabled (dormant) — the intended launch state.
+    async fn token_factory_parameters(&self) -> Result<TokenFactoryParameters> {
+        let token_factory_enabled = matches!(
+            self.get_raw(state_key::param_enabled()).await?,
+            Some(b) if b.first() == Some(&1u8)
+        );
+        let mintable_enabled = matches!(
+            self.get_raw(state_key::param_mintable_enabled()).await?,
+            Some(b) if b.first() == Some(&1u8)
+        );
+        Ok(TokenFactoryParameters {
+            token_factory_enabled,
+            mintable_enabled,
+        })
     }
 }
 
@@ -60,6 +79,18 @@ pub trait StateWriteExt: StateWrite {
         let key = state_key::token_metadata(id);
         let proto: penumbra_sdk_proto::core::asset::v1::Metadata = metadata.clone().into();
         self.put_raw(key, proto.encode_to_vec());
+    }
+
+    /// Write the governance-controlled token factory parameters.
+    fn put_token_factory_parameters(&mut self, params: &TokenFactoryParameters) {
+        self.put_raw(
+            state_key::param_enabled().to_string(),
+            vec![params.token_factory_enabled as u8],
+        );
+        self.put_raw(
+            state_key::param_mintable_enabled().to_string(),
+            vec![params.mintable_enabled as u8],
+        );
     }
 }
 

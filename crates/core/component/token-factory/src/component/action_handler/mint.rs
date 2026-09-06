@@ -6,7 +6,10 @@ use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_sdk_proto::StateWriteProto as _;
 
-use crate::{component::event, ActionTokenFactoryMint};
+use crate::{
+    component::{event, StateReadExt as _},
+    ActionTokenFactoryMint,
+};
 
 #[async_trait]
 impl ActionHandler for ActionTokenFactoryMint {
@@ -37,6 +40,13 @@ impl ActionHandler for ActionTokenFactoryMint {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // Governance gate: minting can be frozen by governance even for
+        // already-issued mint capabilities.
+        anyhow::ensure!(
+            state.token_factory_parameters().await?.mintable_enabled,
+            "token minting is disabled; it must be enabled by governance"
+        );
+
         // Replay protection is provided by the value balance system:
         // - The action consumes mint NFT (seq=N)
         // - The action produces mint NFT (seq=N+1)
