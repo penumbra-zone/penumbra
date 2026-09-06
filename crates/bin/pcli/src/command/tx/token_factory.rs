@@ -14,14 +14,19 @@ use clap::Parser;
 use dialoguer::Confirm;
 use penumbra_sdk_asset::{asset, Value};
 use penumbra_sdk_dex::{
-    lp::{position::Position, Reserves},
+    lp::{
+        position::{self, Position},
+        LpNft, Reserves,
+    },
     DirectedTradingPair,
 };
 use penumbra_sdk_fee::FeeTier;
 use penumbra_sdk_keys::keys::AddressIndex;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_shielded_pool::ActionBurnPlan;
-use penumbra_sdk_token_factory::{ActionTokenFactoryCreate, ActionTokenFactoryMint, TokenFactoryId};
+use penumbra_sdk_token_factory::{
+    ActionTokenFactoryCreate, ActionTokenFactoryMint, MintCapability, TokenFactoryId,
+};
 use penumbra_sdk_view::{Planner, ViewClient};
 use rand_core::{CryptoRngCore, OsRng};
 
@@ -381,21 +386,11 @@ impl TokenFactoryCmd {
                     true, // enable mint so we get the cap
                 ).context("invalid create parameters")?;
 
-                // build the mint cap asset id for burning
-                let mint_cap_denom = format!("factory_mint_0_{}", hex::encode(token_id.as_bytes()));
-                let mint_cap_metadata = asset::Metadata::try_from(
-                    penumbra_sdk_proto::core::asset::v1::Metadata {
-                        base: mint_cap_denom.clone(),
-                        display: mint_cap_denom.clone(),
-                        name: mint_cap_denom.clone(),
-                        symbol: mint_cap_denom.clone(),
-                        ..Default::default()
-                    }
-                )?;
-                let mint_cap_value = Value {
-                    amount: Amount::from(1u64),
-                    asset_id: mint_cap_metadata.id(),
-                };
+                // The mint capability the create action produces (seq 0). Burning it
+                // makes supply immutable. Derive it via the MintCapability type so the
+                // asset id matches what `create` emits (factory/{id}/mint/0) rather
+                // than a hand-built denom that would target a phantom asset.
+                let mint_cap_value = MintCapability::initial(token_id.clone()).value();
 
                 let mut planner = Planner::new(OsRng);
                 planner
@@ -412,20 +407,12 @@ impl TokenFactoryCmd {
                 // 3. open all positions and burn their lpnfts
                 for position in &positions {
                     planner.position_open(position.clone());
-                    // the lpnft will be burned - we add burn plans for each
-                    let lp_nft_denom = format!("lpnft_opened_{}", position.id());
-                    let lp_nft_metadata = asset::Metadata::try_from(
-                        penumbra_sdk_proto::core::asset::v1::Metadata {
-                            base: lp_nft_denom.clone(),
-                            display: lp_nft_denom.clone(),
-                            name: lp_nft_denom.clone(),
-                            symbol: lp_nft_denom.clone(),
-                            ..Default::default()
-                        }
-                    )?;
+                    // Burn the opened-position LP NFT so the position can never be
+                    // closed or withdrawn — the liquidity is locked. Derive the asset
+                    // id via LpNft so it matches what `position_open` actually produces.
                     let lp_nft_value = Value {
                         amount: Amount::from(1u64),
-                        asset_id: lp_nft_metadata.id(),
+                        asset_id: LpNft::new(position.id(), position::State::Opened).asset_id(),
                     };
                     let lp_burn = ActionBurnPlan::new(&mut OsRng, lp_nft_value);
                     planner.action_burn(lp_burn);
