@@ -17,8 +17,8 @@ pub fn token_factory_create(action: &ActionTokenFactoryCreate) -> pb::EventToken
 /// Create an event for token minting.
 pub fn token_factory_mint(action: &ActionTokenFactoryMint) -> pb::EventTokenFactoryMint {
     pb::EventTokenFactoryMint {
-        id: Some(action.token_id.clone().into()),
-        seq: action.current_seq,
-        amount: Some(action.amount.into()),
+        id: Some(action.token_id().clone().into()),
+        seq: action.current_seq(),
+        amount: Some(action.amount().into()),
     }
 }

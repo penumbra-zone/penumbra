@@ -13,6 +13,20 @@ pub enum TokenFactoryError {
     #[error("token factory nonce already used")]
     NonceAlreadyUsed,
 
+    /// The mint amount was zero.
+    ///
+    /// Previously reported as `MintAmountTooLarge(0, 1)`, which was misleading:
+    /// a zero mint is not an over-limit mint.
+    #[error("mint amount must be non-zero")]
+    ZeroMintAmount,
+
+    /// A denom could not be converted to an asset ID.
+    ///
+    /// Reachable from wire input, so it must be an error rather than a panic:
+    /// panicking here would halt every validator deterministically.
+    #[error("could not derive asset id from denom: {0}")]
+    InvalidDenomAssetId(String),
+
     /// The initial supply exceeds the maximum allowed.
     #[error("initial supply {0} exceeds maximum {1}")]
     InitialSupplyTooLarge(u128, u128),

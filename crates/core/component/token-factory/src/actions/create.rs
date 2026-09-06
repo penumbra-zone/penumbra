@@ -20,13 +20,14 @@
 //! The metadata's `base` field MUST match the denom derived from the nonce
 //! (`factory/{hex_nonce}`). This prevents impersonation attacks.
 
-use crate::{error::TokenFactoryError, MintCapability, TokenFactoryId, MAX_INITIAL_SUPPLY};
+use crate::{
+    asset_id_from_denom, error::TokenFactoryError, MintCapability, TokenFactoryId,
+    MAX_INITIAL_SUPPLY,
+};
 use anyhow::anyhow;
 use penumbra_sdk_asset::{asset, Balance, Value};
 use penumbra_sdk_num::Amount;
-use penumbra_sdk_proto::{
-    core::asset::v1 as pb_asset, core::component::token_factory::v1 as pb, DomainType,
-};
+use penumbra_sdk_proto::{core::component::token_factory::v1 as pb, DomainType};
 use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
@@ -38,16 +39,6 @@ pub const MAX_SYMBOL_LENGTH: usize = 32;
 
 /// Maximum length for token description in bytes.
 pub const MAX_DESCRIPTION_LENGTH: usize = 1024;
-
-/// Compute asset ID from a raw denom string.
-fn asset_id_from_denom(denom: &str) -> asset::Id {
-    let proto = pb_asset::AssetId {
-        inner: vec![],
-        alt_bech32m: String::new(),
-        alt_base_denom: denom.to_string(),
-    };
-    asset::Id::try_from(proto).expect("asset id computation from valid denom cannot fail")
-}
 
 /// Action to create a new token.
 ///
@@ -164,9 +155,16 @@ impl ActionTokenFactoryCreate {
     /// Returns:
     /// - The initial supply as positive balance (tokens produced)
     /// - If `enable_mint`, also the MintCapability(seq=0) as positive balance
+    // `expect` is on an always-well-formed derived denom: `nonce` is a
+    // length-validated `TokenFactoryId`, so `factory/{hex}` always derives a valid
+    // asset id. `balance()` returns `Balance` and cannot propagate a `Result`.
+    #[allow(clippy::expect_used)]
     pub fn balance(&self) -> Balance {
         let token_denom = self.nonce.denom();
-        let asset_id = asset_id_from_denom(&token_denom);
+        let asset_id = asset_id_from_denom(&token_denom).expect(
+            "TokenFactoryId is length-validated, so its factory/{hex} denom always \
+             derives a valid asset id",
+        );
 
         let mut balance = Balance::default();
 

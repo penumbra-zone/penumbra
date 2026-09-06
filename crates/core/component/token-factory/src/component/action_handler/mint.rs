@@ -13,9 +13,26 @@ impl ActionHandler for ActionTokenFactoryMint {
     type CheckStatelessContext = ();
 
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        // Stateless validation is done in the constructor:
-        // - Amount is non-zero
-        // - Amount doesn't exceed MAX_MINT_AMOUNT
+        // Re-validate here rather than trusting the constructor.
+        //
+        // These are PROTOCOL invariants, not deserialisation side effects. The
+        // constructor is currently the only path (fields are private, and
+        // TryFrom<proto> calls it), but a future refactor that builds an action
+        // internally would silently drop the mint cap. check_stateless is the
+        // documented place for exactly this, and it is cheap.
+        if self.amount().value() == 0 {
+            anyhow::bail!("token factory mint amount must be non-zero");
+        }
+        if self.amount().value() > crate::MAX_MINT_AMOUNT {
+            anyhow::bail!(
+                "token factory mint amount {} exceeds maximum {}",
+                self.amount().value(),
+                crate::MAX_MINT_AMOUNT
+            );
+        }
+        if self.current_seq() == u64::MAX {
+            anyhow::bail!("token factory mint sequence would overflow");
+        }
         Ok(())
     }
 

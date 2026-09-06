@@ -6,24 +6,14 @@
 //! creating an auditable chain of mints.
 
 use anyhow::{anyhow, Context};
-use penumbra_sdk_asset::{asset, Value};
+use penumbra_sdk_asset::Value;
 use penumbra_sdk_num::Amount;
 use penumbra_sdk_proto::{
-    core::asset::v1 as pb_asset, penumbra::core::component::token_factory::v1 as pb, DomainType,
+    penumbra::core::component::token_factory::v1 as pb, DomainType,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{TokenFactoryError, TokenFactoryId};
-
-/// Compute asset ID from a raw denom string.
-fn asset_id_from_denom(denom: &str) -> asset::Id {
-    let proto = pb_asset::AssetId {
-        inner: vec![],
-        alt_bech32m: String::new(),
-        alt_base_denom: denom.to_string(),
-    };
-    asset::Id::try_from(proto).expect("asset id computation from valid denom cannot fail")
-}
+use crate::{asset_id_from_denom, TokenFactoryError, TokenFactoryId};
 
 /// Mint capability for a token factory.
 ///
@@ -84,8 +74,20 @@ impl MintCapability {
     }
 
     /// Compute the asset ID for this mint capability.
-    pub fn asset_id(&self) -> asset::Id {
-        asset_id_from_denom(&self.denom_str())
+    ///
+    /// `expect` is safe here: `TokenFactoryId` is length-validated on
+    /// construction, so `denom_str()` is always `factory/{64 hex}/mint/{seq}` and
+    /// the derivation cannot fail. Callers with unvalidated input should use the
+    /// fallible `asset_id_from_denom` directly. Returns `Id` (not `Result`).
+    #[allow(clippy::expect_used)]
+    pub fn asset_id(&self) -> penumbra_sdk_asset::asset::Id {
+        // Infallible in practice: `TokenFactoryId` is length-validated when it
+        // is deserialised, so `denom_str()` is always `factory/{64 hex chars}`.
+        // The fallible helper stays fallible for callers with unvalidated input.
+        asset_id_from_denom(&self.denom_str()).expect(
+            "TokenFactoryId is length-validated on construction (InvalidIdLength), so \
+             its derived `factory/{hex}` denom is always well-formed; this cannot fail"
+        )
     }
 
     /// Create a Value representing one unit of this capability.

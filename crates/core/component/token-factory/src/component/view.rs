@@ -1,10 +1,12 @@
 //! State read and write extensions for token factory.
 
+// prost::Message provides encode_to_vec()/decode(); without it this module
+// does not compile under the `component` feature.
+use prost::Message as _;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_sdk_asset::asset;
-use penumbra_sdk_proto::DomainType;
 
 use crate::{error::TokenFactoryError, TokenFactoryId};
 

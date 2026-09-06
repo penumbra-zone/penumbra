@@ -12,11 +12,16 @@ use crate::TokenFactoryId;
 
 use super::StateReadExt;
 
+/// gRPC query service for the token factory component.
+///
+/// Serves token metadata and enumeration to clients; read-only, no consensus
+/// involvement.
 pub struct Server {
     storage: Storage,
 }
 
 impl Server {
+    /// Construct a query server backed by the given storage.
     pub fn new(storage: Storage) -> Self {
         Self { storage }
     }
@@ -37,7 +42,7 @@ impl QueryService for Server {
             .try_into()
             .map_err(|_| Status::invalid_argument("token_id must be exactly 32 bytes"))?;
 
-        let id = TokenFactoryId::from(token_id_bytes);
+        let id = TokenFactoryId::new(token_id_bytes);
 
         let metadata = state
             .token_factory_metadata(&id)

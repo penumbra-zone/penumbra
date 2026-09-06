@@ -67,3 +67,26 @@ pub const MAX_INITIAL_SUPPLY: u128 = (1 << 112) - 1;
 ///
 /// Same limit as initial supply to maintain consistency.
 pub const MAX_MINT_AMOUNT: u128 = (1 << 112) - 1;
+
+/// Derive an asset ID from a raw denom string.
+///
+/// Single definition shared by `mint` and `mint_capability`: these previously
+/// had separate copies, and if they ever diverged `mint` would produce a
+/// different asset than `create` registered.
+///
+/// Fallible on purpose. The denom is derived from a `TokenFactoryId` that
+/// arrives over the wire, so an `expect()` here is reachable from untrusted
+/// input and would panic every validator identically — a chain halt rather
+/// than a rejected transaction.
+pub fn asset_id_from_denom(
+    denom: &str,
+) -> Result<penumbra_sdk_asset::asset::Id, crate::error::TokenFactoryError> {
+    use penumbra_sdk_proto::core::asset::v1 as pb_asset;
+    let proto = pb_asset::AssetId {
+        inner: vec![],
+        alt_bech32m: String::new(),
+        alt_base_denom: denom.to_string(),
+    };
+    penumbra_sdk_asset::asset::Id::try_from(proto)
+        .map_err(|_| crate::error::TokenFactoryError::InvalidDenomAssetId(denom.to_string()))
+}

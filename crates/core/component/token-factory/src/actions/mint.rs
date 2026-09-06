@@ -27,25 +27,13 @@
 //! 3. MPC submits tx: Spend(capability) + Mint + Output(new capability) + Output(wNEAR to user)
 //! 4. User receives shielded wNEAR
 
-use crate::{error::TokenFactoryError, MintCapability, TokenFactoryId, MAX_MINT_AMOUNT};
+use crate::{asset_id_from_denom, error::TokenFactoryError, MintCapability, TokenFactoryId, MAX_MINT_AMOUNT};
 use anyhow::anyhow;
-use penumbra_sdk_asset::{asset, Balance, Value};
+use penumbra_sdk_asset::{Balance, Value};
 use penumbra_sdk_num::Amount;
-use penumbra_sdk_proto::{
-    core::asset::v1 as pb_asset, core::component::token_factory::v1 as pb, DomainType,
-};
+use penumbra_sdk_proto::{core::component::token_factory::v1 as pb, DomainType};
 use penumbra_sdk_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
-
-/// Compute asset ID from a raw denom string.
-fn asset_id_from_denom(denom: &str) -> asset::Id {
-    let proto = pb_asset::AssetId {
-        inner: vec![],
-        alt_bech32m: String::new(),
-        alt_base_denom: denom.to_string(),
-    };
-    asset::Id::try_from(proto).expect("asset id computation from valid denom cannot fail")
-}
 
 /// Action to mint additional tokens.
 ///
@@ -58,11 +46,18 @@ fn asset_id_from_denom(denom: &str) -> asset::Id {
 )]
 pub struct ActionTokenFactoryMint {
     /// The token factory ID to mint from.
-    pub token_id: TokenFactoryId,
+    ///
+    /// Fields are PRIVATE deliberately. They were public, which meant an
+    /// instance could be built directly with `amount = 0`, `amount >
+    /// MAX_MINT_AMOUNT`, or `current_seq = u64::MAX`, bypassing every check in
+    /// `new()` — and `produced_capability()` then panics on overflow. Keeping
+    /// them private makes `new()`/`TryFrom<proto>` the only constructors, so
+    /// the validated invariants hold for every value that exists.
+    token_id: TokenFactoryId,
     /// The current sequence number of the mint capability being consumed.
-    pub current_seq: u64,
+    current_seq: u64,
     /// Amount to mint.
-    pub amount: Amount,
+    amount: Amount,
 }
 
 impl ActionTokenFactoryMint {
@@ -81,7 +76,7 @@ impl ActionTokenFactoryMint {
     ) -> Result<Self, TokenFactoryError> {
         // Validate amount is non-zero
         if amount.value() == 0 {
-            return Err(TokenFactoryError::MintAmountTooLarge(0, 1));
+            return Err(TokenFactoryError::ZeroMintAmount);
         }
 
         // Validate amount doesn't exceed max
@@ -104,6 +99,21 @@ impl ActionTokenFactoryMint {
         })
     }
 
+    /// The token factory this action mints from.
+    pub fn token_id(&self) -> &TokenFactoryId {
+        &self.token_id
+    }
+
+    /// Sequence number of the capability being consumed.
+    pub fn current_seq(&self) -> u64 {
+        self.current_seq
+    }
+
+    /// Amount minted by this action.
+    pub fn amount(&self) -> Amount {
+        self.amount
+    }
+
     /// Get the mint capability being consumed.
     pub fn consumed_capability(&self) -> MintCapability {
         MintCapability::new(self.token_id.clone(), self.current_seq)
@@ -111,15 +121,14 @@ impl ActionTokenFactoryMint {
 
     /// Get the mint capability being produced (next sequence).
     ///
-    /// # Panics
-    ///
-    /// This will not panic because the constructor validates that
-    /// the sequence can be incremented.
+    /// `expect` is unreachable: fields are private and `new()` rejects
+    /// `current_seq == u64::MAX`, and `check_stateless` re-asserts it. This
+    /// returns `MintCapability` (not `Result`), so the invariant is asserted here.
+    #[allow(clippy::expect_used)]
     pub fn produced_capability(&self) -> MintCapability {
-        // Safe because constructor validates current_seq < u64::MAX
         self.consumed_capability()
             .next()
-            .expect("constructor validates sequence can increment")
+            .expect("new() rejects current_seq == u64::MAX; fields are private")
     }
 
     /// Compute the value balance for this action.
@@ -127,12 +136,18 @@ impl ActionTokenFactoryMint {
     /// Returns:
     /// - Negative: MintCapability(seq=N) consumed
     /// - Positive: MintCapability(seq=N+1) + minted tokens produced
+    // `expect` on an always-well-formed derived denom (length-validated token_id);
+    // `balance()` returns `Balance` and cannot propagate a `Result`.
+    #[allow(clippy::expect_used)]
     pub fn balance(&self) -> Balance {
         let consumed_cap = self.consumed_capability();
         let produced_cap = self.produced_capability();
 
         let token_denom = self.token_id.denom();
-        let token_asset_id = asset_id_from_denom(&token_denom);
+        let token_asset_id = asset_id_from_denom(&token_denom).expect(
+            "TokenFactoryId is length-validated on construction (InvalidIdLength), so \
+             its derived `factory/{hex}` denom is always well-formed; this cannot fail"
+        );
 
         let minted_tokens = Value {
             asset_id: token_asset_id,
