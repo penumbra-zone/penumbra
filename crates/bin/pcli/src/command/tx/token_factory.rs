@@ -176,10 +176,13 @@ impl TokenFactoryCmd {
                 );
 
                 // Create metadata for the token
+                // `display` must reference one of the denom units; the only unit
+                // is the base (`factory/{hex}`), so display == base. The friendly
+                // name is carried by `name`/`symbol`.
                 let metadata = asset::Metadata::try_from(
                     penumbra_sdk_proto::core::asset::v1::Metadata {
                         base: token_id.denom(),
-                        display: name.clone(),
+                        display: token_id.denom(),
                         name: name.clone(),
                         symbol: name.clone(),
                         ..Default::default()
@@ -323,10 +326,13 @@ impl TokenFactoryCmd {
                 );
 
                 // create metadata
+                // `display` must reference one of the denom units; the only unit
+                // is the base (`factory/{hex}`), so display == base. The friendly
+                // name is carried by `name`/`symbol`.
                 let metadata = asset::Metadata::try_from(
                     penumbra_sdk_proto::core::asset::v1::Metadata {
                         base: token_id.denom(),
-                        display: name.clone(),
+                        display: token_id.denom(),
                         name: name.clone(),
                         symbol: name.clone(),
                         ..Default::default()
