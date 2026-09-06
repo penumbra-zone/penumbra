@@ -19,10 +19,17 @@ pub struct ActionBurnPlan {
 
 impl ActionBurnPlan {
     /// Create a new burn plan for the given value.
-    pub fn new<R: CryptoRng + Rng>(rng: &mut R, value: Value) -> Self {
+    ///
+    /// The value blinding is deliberately zero: a burn is a public-value action
+    /// (the built `ActionBurn` carries the value in the clear, and the
+    /// transaction commits its balance with the identity blinding), so the
+    /// blinding fed into the binding signing key must match — a random blinding
+    /// here makes the binding signature fail to verify. The `rng` argument is
+    /// retained for API compatibility.
+    pub fn new<R: CryptoRng + Rng>(_rng: &mut R, value: Value) -> Self {
         Self {
             value,
-            value_blinding: Fr::rand(rng),
+            value_blinding: Fr::from(0u64),
         }
     }
 
