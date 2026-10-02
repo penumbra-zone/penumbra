@@ -1,0 +1,150 @@
+name: recovery-release
+
+# Builds the pd `migrate-restart` binary for the penumbra-1 recovery and, on a
+# tag (or a manual run with a tag), publishes it as a GitHub Release alongside
+# the reference genesis, checksums and operator script.
+#
+# The binary is a convenience. The real cross-check for operators is the genesis
+# sha256 that their own `pd migrate-restart` reproduces
+# (386a4f58f53316e7c410f860bba6ee5c8cf0acd97bca808cb874a80b951788a8), not this
+# artifact. Anyone can rebuild from source and sha-match instead of trusting it.
+
+on:
+  push:
+    tags:
+      - 'recovery-*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to create (blank = build only, no release)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: recovery-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04   # glibc 2.35: portable down to older hosts than bookworm
+    env:
+      GENESIS_SHA256: 386a4f58f53316e7c410f860bba6ee5c8cf0acd97bca808cb874a80b951788a8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false        # pd does not need the web LFS assets
+
+      # Build deps, matching deployments/containerfiles/Dockerfile. No protoc:
+      # the proto crate ships generated code.
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libssl-dev clang
+
+      # Honors rust-toolchain.toml (1.83) and caches the build.
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+
+      - name: Build pd (release, locked)
+        run: cargo build --release --locked -p pd
+
+      - name: Verify pd is 2.0.6 and has migrate-restart
+        run: |
+          set -euo pipefail
+          BIN=target/release/pd
+          "$BIN" --version
+          "$BIN" --version 2>&1 | grep -q '2\.0\.6' || { echo "pd is not 2.0.6"; exit 1; }
+          "$BIN" migrate-restart --help >/dev/null 2>&1 || { echo "migrate-restart subcommand missing"; exit 1; }
+          echo "OK: pd 2.0.6 with migrate-restart"
+
+      - name: Assemble release bundle
+        id: bundle
+        run: |
+          set -euo pipefail
+          VER="$("target/release/pd" --version | awk '{print $2}')"
+          NAME="pd-recovery-${VER}-x86_64-linux-gnu"
+          mkdir -p "dist/$NAME"
+          cp target/release/pd "dist/$NAME/pd"
+          # Reference genesis + operator material shipped on the branch.
+          cp restart/candidate-genesis-penumbra-1-restart-12598601-disable.json "dist/$NAME/"
+          cp restart/RELEASE-SHA256SUMS        "dist/$NAME/" || true
+          cp restart/validator-map.tsv         "dist/$NAME/" || true
+          cp restart/penumbra-restart.sh       "dist/$NAME/"
+          cp restart/README.md                 "dist/$NAME/"
+          cp restart/recovery-runbook.md       "dist/$NAME/" || true
+          cp restart/coordination.md           "dist/$NAME/" || true
+          cp restart/upgrade-process.md        "dist/$NAME/" || true
+          cp restart/pd-migrate-restart-v2.0.6.src.patch "dist/$NAME/" || true
+          chmod +x "dist/$NAME/pd" "dist/$NAME/penumbra-restart.sh"
+
+          tar -C dist -czf "dist/$NAME.tar.gz" "$NAME"
+          ( cd dist && sha256sum "$NAME.tar.gz" "$NAME/pd" \
+              "$NAME/candidate-genesis-penumbra-1-restart-12598601-disable.json" \
+              > SHA256SUMS )
+          echo "--- SHA256SUMS ---"; cat dist/SHA256SUMS
+
+          # Confirm the shipped genesis matches the published hash.
+          GOT="$(sha256sum "dist/$NAME/candidate-genesis-penumbra-1-restart-12598601-disable.json" | awk '{print $1}')"
+          [ "$GOT" = "$GENESIS_SHA256" ] || { echo "shipped genesis sha mismatch: $GOT"; exit 1; }
+          echo "genesis matches published hash"
+
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "ver=$VER"   >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifacts (always)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pd-recovery
+          path: |
+            dist/${{ steps.bundle.outputs.name }}.tar.gz
+            dist/SHA256SUMS
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub Release
+        if: ${{ steps.tag.outputs.tag != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          NAME: ${{ steps.bundle.outputs.name }}
+          VER: ${{ steps.bundle.outputs.ver }}
+        run: |
+          set -euo pipefail
+          NOTES="$RUNNER_TEMP/notes.md"
+          cat > "$NOTES" <<EOF
+          penumbra-1 recovery build — pd ${VER} with the \`migrate-restart\` subcommand.
+
+          Coordinated restart of penumbra-1 after the liveness halt at height
+          12598600. This continues the same chain-id; all balances and delegations
+          are preserved. See \`restart/README.md\`.
+
+          Verify, do not trust:
+          - Reference genesis sha256: \`${GENESIS_SHA256}\`
+          - Your own \`pd migrate-restart\` must reproduce that exact hash — that,
+            not this binary, is the cross-check.
+          - Reproduce the binary from source: \`cargo build --release --locked -p pd\`
+            on this tag, or apply \`restart/pd-migrate-restart-v2.0.6.src.patch\` to
+            stock v2.0.6 (\`f833ace\`).
+
+          Built on ubuntu-22.04 (glibc 2.35), x86_64-linux-gnu.
+          EOF
+          gh release create "$TAG" \
+            --target "${{ github.sha }}" \
+            --title "penumbra-1 recovery — pd ${VER}" \
+            --notes-file "$NOTES" \
+            "dist/${NAME}.tar.gz" \
+            "dist/SHA256SUMS" \
+            "dist/${NAME}/pd" \
+            "dist/${NAME}/candidate-genesis-penumbra-1-restart-12598601-disable.json"

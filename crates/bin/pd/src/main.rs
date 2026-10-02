@@ -12,7 +12,7 @@ use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{MigrateCommand, NetworkCommand, Opt, RootCommand},
-    migrate::Migration::{IbcClientRecovery, NoOp, ReadyToStart},
+    migrate::Migration::{IbcClientRecovery, Mainnet6, NoOp, ReadyToStart},
     network::{
         config::{get_network_dir, parse_tm_address, url_has_necessary_parts},
         generate::NetworkConfig,
@@ -531,6 +531,17 @@ async fn main() -> anyhow::Result<()> {
                         .await
                         .context("failed to perform IBC client recovery")?;
                 }
+                Some(MigrateCommand::Mainnet6) => {
+                    // Every validator must write the same genesis.json, so the genesis
+                    // time comes from the halted chain's last block, never the wall clock.
+                    let genesis_start = pd::migrate::last_block_timestamp(pd_home.clone()).await?;
+                    tracing::info!(?genesis_start, "performing mainnet-6 migration");
+                    Mainnet6
+                        .migrate(pd_home, comet_home, Some(genesis_start), force)
+                        .instrument(pd_migrate_span)
+                        .await
+                        .context("failed to perform mainnet-6 migration")?;
+                }
                 Some(MigrateCommand::NoOp { target_app_version }) => {
                     tracing::info!(target_app_version, "performing no-op migration");
                     NoOp.migrate_with_params(
@@ -560,7 +571,7 @@ async fn main() -> anyhow::Result<()> {
 
                     let genesis_start = pd::migrate::last_block_timestamp(pd_home.clone()).await?;
                     tracing::info!(?genesis_start, "last block timestamp");
-                    tracing::error!("This is the wrong migration routine for APP_VERSION=12. Read the documentation, and use the IBC client recovery routine");
+                    tracing::error!("This is the wrong migration routine for APP_VERSION=12. Mainnet upgrades with `pd migrate mainnet6`");
                 }
             }
         }

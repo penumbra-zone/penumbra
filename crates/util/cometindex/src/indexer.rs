@@ -172,6 +172,27 @@ async fn catchup(
                 };
                 IndexingManager::update_index_state(&mut dbtx, &name, new_state).await?;
 
+                // Emit a Postgres NOTIFY inside the same transaction so
+                // subscribers only see a tick if the commit actually lands.
+                // Consumers (veil SSE, downstream services) LISTEN on
+                // `pindexer_tick` and receive one payload per indexer per
+                // batch: {"indexer":<name>,"height":<last_height>}. Payload
+                // stays small — a listener that wants row-level data does
+                // its own SELECT keyed off the height it just saw. Failure
+                // to emit must not abort indexing, so a log + swallow.
+                let payload = format!(
+                    r#"{{"indexer":"{}","height":{}}}"#,
+                    name.replace('\\', "\\\\").replace('"', "\\\""),
+                    last_height,
+                );
+                if let Err(e) = sqlx::query("SELECT pg_notify('pindexer_tick', $1)")
+                    .bind(&payload)
+                    .execute(dbtx.as_mut())
+                    .await
+                {
+                    tracing::warn!(index_name = &name, error = %e, "pg_notify failed");
+                }
+
                 dbtx.commit().await?;
             }
             Ok(())

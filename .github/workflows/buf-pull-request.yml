@@ -48,7 +48,7 @@ jobs:
   # Run our bespoke tooling for codegen, consuming the protocol buffer definitions
   # and emitting generated code. Afterward, there should be no uncommitted changes.
   build:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout the source code
         uses: actions/checkout@v4

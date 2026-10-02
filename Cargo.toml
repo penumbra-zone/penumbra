@@ -43,7 +43,6 @@ members = [
   "crates/custody",
   "crates/custody-ledger-usb",
   "crates/misc/measure",
-  "crates/misc/tct-visualize",
   "crates/proto",
   "crates/test/mock-client",
   "crates/test/mock-consensus",

@@ -14,7 +14,7 @@ on:
 
 jobs:
   publish:
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     env:
       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
     steps:
@@ -30,10 +30,9 @@ jobs:
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
-          backend: buildjet
 
       - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
+        uses: Swatinem/rust-cache@v2
 
       # The `rust-toolchain.toml` file dictates which version of rust to setup.
       - name: check rust version

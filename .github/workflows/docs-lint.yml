@@ -10,7 +10,7 @@ jobs:
     # We use a custom script to generate the index page for https://rustdoc.penumbra.zone,
     # and refactors to rust deps can break that generation. Let's ensure this script exits 0
     # on PRs, but we'll still only deploy after merge into main.
-    runs-on: buildjet-8vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,11 +24,10 @@ jobs:
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
-          backend: buildjet
 
       # Loading cache takes ~15s, but saves us minutes of build.
       - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
+        uses: Swatinem/rust-cache@v2
 
       # Building with warm cache takes ~40s, depending on changes.
       - name: Build rustdocs
@@ -38,20 +37,50 @@ jobs:
   # In particular, links are checked within the docs.
   mdbook:
     # Downgrading runner size to 4vcpu, since we're not compiling code.
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: false
 
-      - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
+      # This job only builds the books; it never compiles workspace code, so it
+      # does not need the rust 1.83 that rust-toolchain.toml pins. It must not
+      # use it, in fact: the current mdbook tools have outgrown that version
+      # (mdbook 0.5 declares rustc 1.88, and mdbook-katex / mdbook-mermaid want
+      # the `edition2024` cargo feature stabilized in 1.85), so installing them
+      # under the workspace toolchain fails outright. Taking current stable here
+      # keeps the docs tooling installable without pinning versions that would
+      # need bumping again the next time these crates raise their MSRV.
+      - name: install current stable rust for the mdbook tools
+        uses: dtolnay/rust-toolchain@stable
 
-      # Don't bother importing nix env, since we only need a few cargo deps.
-      # It's OK to install from crates, building from source, because the
-      # rust-cache restore on the previous step reduces the install step to ~5s.
+      - name: Load rust cache
+        uses: Swatinem/rust-cache@v2
+
+      # `+stable` is required and not redundant with the step above. Installing
+      # the toolchain does not make it the active one: rust-toolchain.toml still
+      # wins for any cargo invocation inside the checkout, so a plain
+      # `cargo install` here runs under 1.83 and fails even though 1.98 is
+      # present. `+stable` selects it explicitly.
+      #
+      # `--locked` uses each tool's own Cargo.lock, so an unrelated upstream
+      # release cannot break this job.
+      #
+      # The whole docs toolchain is held at its mdbook-0.4 generation, and the
+      # versions have to move together -- preprocessors and backends talk to
+      # mdbook over a JSON protocol that changed in 0.5:
+      #
+      #   mdbook          ^0.4  -- 0.5 rejects `multilingual` in book.toml
+      #   mdbook-katex    ^0.9  -- 0.10 speaks 0.5's format ("missing field `items`")
+      #   mdbook-mermaid  ^0.16 -- 0.16.2 depends on mdbook ^0.4.36; 0.17 dropped it
+      #   mdbook-linkcheck      -- no release since 2023, so 0.4-only
+      #
+      # `[output.linkcheck]` in docs/protocol/book.toml is what enforces link
+      # checking, and nothing in the 0.5 generation replaces it, so moving up
+      # would mean silently losing that. Upgrading the docs toolchain is a real
+      # piece of work; this keeps it building.
       - name: Install mdbook dependencies
-        run: cargo install mdbook mdbook-katex mdbook-mermaid mdbook-linkcheck
+        run: cargo +stable install --locked mdbook@^0.4 mdbook-katex@^0.9 mdbook-mermaid@^0.16 mdbook-linkcheck
 
       - name: Build protocol docs
         run: cd docs/protocol && mdbook build

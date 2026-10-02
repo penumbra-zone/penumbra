@@ -588,7 +588,12 @@ pub mod parse {
 
     lazy_static! {
         static ref IBC_RE: regex::Regex = regex::Regex::new(
-            r"^(?<path>transfer/[a-z0-9][a-z0-9\-]{0,63}(?:/transfer/[a-z0-9][a-z0-9\-]{0,63})*)/(?<denom>[^/][A-Za-z0-9/._\-]*)$"
+            // The base denom character class follows the ICS-20 / Cosmos SDK
+            // definition of a valid denom (`sdk.ValidateDenom`, used by ibc-go's
+            // `ValidateIBCDenom`), which permits `[a-zA-Z0-9/:._-]`. In particular
+            // `:` is required for EVM-bridged assets such as Injective's native
+            // USDC, `erc20:0xa00C59fF5a080D2b954d0c75e46E22a0c371235a`.
+            r"^(?<path>transfer/[a-z0-9][a-z0-9\-]{0,63}(?:/transfer/[a-z0-9][a-z0-9\-]{0,63})*)/(?<denom>[^/][A-Za-z0-9/:._\-]*)$"
         ).expect("regex compilation works");
     }
 
@@ -598,6 +603,8 @@ pub mod parse {
         // - transfer/channel-4/factory/osmo1q77cw0mmlluxu0wr29fcdd0tdnh78gzhkvhe4n6ulal9qvrtu43qtd0nh8/shitmos
         // - transfer/channel-0/transfer/08-wasm-1369/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
         // - transfer/channel-4/gamm/pool/1402
+        // - transfer/channel-18/erc20:0xa00C59fF5a080D2b954d0c75e46E22a0c371235a
+        // - transfer/channel-18/peggy0xdAC17F958D2ee523a2206206994597C13D831ec7
         let caps = IBC_RE.captures(base)?;
         Some((caps["path"].to_owned(), caps["denom"].to_owned()))
     }
@@ -630,6 +637,62 @@ mod ibc_transfer_path_tests {
                 "factory/osmo1q77cw0mmlluxu0wr29fcdd0tdnh78gzhkvhe4n6ulal9qvrtu43qtd0nh8/shitmos"
                     .to_string()
             ))
+        );
+    }
+
+    /// Injective's native USDC, whose base denom contains a `:`
+    /// transfer/channel-18/erc20:0xa00C59fF5a080D2b954d0c75e46E22a0c371235a
+    #[test]
+    fn injective_erc20_usdc() {
+        let got = p("transfer/channel-18/erc20:0xa00C59fF5a080D2b954d0c75e46E22a0c371235a");
+        assert_eq!(
+            got,
+            Some((
+                "transfer/channel-18".to_string(),
+                "erc20:0xa00C59fF5a080D2b954d0c75e46E22a0c371235a".to_string()
+            ))
+        );
+    }
+
+    /// A Gravity Bridge (peggy) denom, which has no `:`
+    /// transfer/channel-18/peggy0xdAC17F958D2ee523a2206206994597C13D831ec7
+    #[test]
+    fn peggy_usdt() {
+        let got = p("transfer/channel-18/peggy0xdAC17F958D2ee523a2206206994597C13D831ec7");
+        assert_eq!(
+            got,
+            Some((
+                "transfer/channel-18".to_string(),
+                "peggy0xdAC17F958D2ee523a2206206994597C13D831ec7".to_string()
+            ))
+        );
+    }
+
+    /// A multi-hop path whose base denom contains a `:`.
+    #[test]
+    fn multihop_erc20() {
+        let got = p("transfer/channel-4/transfer/channel-18/erc20:0xa00C59fF5a080D2b954d0c75e46E22a0c371235a");
+        assert_eq!(
+            got,
+            Some((
+                "transfer/channel-4/transfer/channel-18".to_string(),
+                "erc20:0xa00C59fF5a080D2b954d0c75e46E22a0c371235a".to_string()
+            ))
+        );
+    }
+
+    /// An empty base denom is not a valid IBC transfer path.
+    #[test]
+    fn empty_base_denom_rejected() {
+        assert_eq!(p("transfer/channel-18/"), None);
+    }
+
+    /// Characters outside the ICS-20 denom character class are still rejected.
+    #[test]
+    fn invalid_character_rejected() {
+        assert_eq!(
+            p("transfer/channel-18/erc20:0xa00C59 fF5a080D2b954d0c"),
+            None
         );
     }
 

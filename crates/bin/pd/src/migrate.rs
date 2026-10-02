@@ -78,6 +78,10 @@ pub enum Migration {
     ///
     /// Uses the new migration framework.
     Mainnet5,
+    /// Mainnet-6 migration:
+    /// - Bump the app version to 12
+    /// - Recover the expired Cosmos Hub, Celestia and Osmosis IBC clients
+    Mainnet6,
     /// IBC client recovery
     /// - Swap IBC client state
     IbcClientRecovery,
@@ -185,6 +189,14 @@ impl Migration {
                     app_version,
                 );
                 migration
+                    .run(pd_home.clone(), comet_home.clone(), genesis_start)
+                    .await?;
+                // Early return since the new framework handles genesis generation.
+                return Ok(());
+            }
+            Migration::Mainnet6 => {
+                storage.release().await;
+                migrate2::mainnet6::Mainnet6Migration
                     .run(pd_home.clone(), comet_home.clone(), genesis_start)
                     .await?;
                 // Early return since the new framework handles genesis generation.

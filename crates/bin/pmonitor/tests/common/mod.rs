@@ -8,7 +8,6 @@ use assert_cmd::Command as AssertCommand;
 use once_cell::sync::Lazy;
 use pcli::config::PcliConfig;
 use penumbra_sdk_keys::address::Address;
-use process_compose_openapi_client::Client;
 use std::fs::{create_dir_all, remove_dir_all, File};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
@@ -338,17 +337,24 @@ impl PmonitorTestRunner {
 /// in its status API. Polls once per second, timing out after 60s.
 async fn poll_for_ready(process_name: &str) -> anyhow::Result<()> {
     // Connect to the running process-compose service, via the custom port.
-    let c = Client::new(format!("http://localhost:{}", PROCESS_COMPOSE_PORT).as_str());
+    let client = reqwest::Client::new();
+    let url = format!(
+        "http://localhost:{}/process/{}",
+        PROCESS_COMPOSE_PORT, process_name
+    );
 
     // Configure timeout, so we can error out if the service never comes up.
     let timeout = 60;
     let mut elapsed = 0;
     while elapsed < timeout {
-        let resp = c.get_process(process_name).await;
         // Ignore error to API server, process-compose may not be up yet.
+        let resp = match client.get(&url).send().await {
+            Ok(r) => r.json::<serde_json::Value>().await,
+            Err(e) => Err(e),
+        };
         if let Ok(r) = resp {
-            let state = r.into_inner().is_ready;
-            match state.as_deref() {
+            let state = r.get("is_ready").and_then(|v| v.as_str());
+            match state {
                 Some("-") => {
                     tracing::debug!("still waiting for process to be ready: {}", process_name);
                 }

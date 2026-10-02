@@ -4,6 +4,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Container image tag to deploy docs from (defaults to the ref name)"
+        required: false
+        type: string
   workflow_call:
 
 jobs:
@@ -13,7 +18,7 @@ jobs:
   # and only runs post-merge on main, so 10m isn't bad.
   build:
     timeout-minutes: 30
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout the source code
         uses: actions/checkout@v4
@@ -28,10 +33,9 @@ jobs:
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
-          backend: buildjet
 
       - name: Load Rust caching
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
+        uses: Swatinem/rust-cache@v2
 
       # Previously we used a GHA helper to look up the version, which was overkill.
       # Let's still log the version of the docs we intend to build.

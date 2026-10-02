@@ -165,6 +165,9 @@ pub enum MigrateCommand {
         #[clap(long, value_name = "VERSION")]
         target_app_version: Option<u64>,
     },
+    /// Upgrade mainnet to APP_VERSION 12 and recover the expired Cosmos Hub, Celestia
+    /// and Osmosis IBC clients. Takes no arguments: the recoveries are hardcoded.
+    Mainnet6,
     /// Perform a no-op migration that resets the halt bit and produces a new genesis.
     NoOp {
         /// Optional app version to set during migration.

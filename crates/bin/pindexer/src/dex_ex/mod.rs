@@ -1525,9 +1525,23 @@ impl AppView for Component {
         let mut last_time = None;
         for block in batch.events_by_block() {
             let mut events = Events::extract(&block, self.ignore_arb_executions)?;
-            let time = events
-                .time
-                .expect(&format!("no block root event at height {}", block.height()));
+            // A block missing from the source cometbft store carries no root
+            // event and therefore no time. Every other pindexer indexer
+            // (block, supply, stake/*, governance, lqt, ibc) already tolerates
+            // this by producing an empty batch for the missing height; only
+            // dex_ex used to `.expect()` and panic, which crash-looped the
+            // whole pindexer process and froze the trade UI's data source
+            // until we manually bumped the watermark past the gap. Skip the
+            // block instead — nothing downstream can be recorded without a
+            // time, and any DEX activity in a missing block is already lost
+            // upstream (it isn't in cometbft to read).
+            let Some(time) = events.time else {
+                tracing::warn!(
+                    height = %block.height(),
+                    "dex_ex: skipping block with no root event (gap in source cometbft)"
+                );
+                continue;
+            };
             last_time = Some(time);
 
             self.record_all_transactions(dbtx, time, block).await?;
